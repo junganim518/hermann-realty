@@ -1,20 +1,62 @@
 'use client';
 
+import { useState } from 'react';
+
 export default function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navItems = ['매물검색', '매물 의뢰하기', '부동산 소식', '질문과 답변', '공지사항', '회사소개'];
+
   return (
     <header style={{ width: '100%', position: 'sticky', top: 0, zIndex: 1000 }}>
 
+      <style>{`
+        @media (max-width: 1024px) {
+          .header-left { display: none !important; }
+          .header-right { display: none !important; }
+          .header-hamburger { display: flex !important; }
+          .header-logo-bar { padding: 0 20px !important; }
+        }
+        @media (min-width: 1025px) {
+          .header-hamburger { display: none !important; }
+          .header-mobile-menu { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .header-logo span { font-size: 22px !important; }
+          .header-logo img { width: 36px !important; height: 36px !important; }
+          .header-nav { gap: 20px !important; }
+          .header-nav a { font-size: 13px !important; }
+        }
+      `}</style>
+
       {/* 로고 바 - 3열 구조 */}
-      <div style={{ background: '#111111', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 500px', borderBottom: '1px solid #333' }}>
+      <div
+        className="header-logo-bar"
+        style={{
+          background: '#111111',
+          height: '90px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 clamp(16px, calc(50% - 560px), 500px)',
+          borderBottom: '1px solid #333'
+        }}
+      >
 
         {/* 좌측: 문의 전화 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#999', fontSize: '17px', fontWeight: '700', minWidth: '220px' }}>
+        <div
+          className="header-left"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#999', fontSize: '17px', fontWeight: '700', minWidth: '220px' }}
+        >
           <span>☎ 문의</span>
           <span style={{ color: '#C8843A', fontWeight: '700', fontSize: '17px' }}>010-8680-8151</span>
         </div>
 
         {/* 중앙: 로고 */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+        <div
+          className="header-logo"
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img src="/logo.png" alt="로고" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
             <span style={{ fontSize: '32px', fontWeight: '700', color: '#C8843A' }}>헤르만부동산</span>
@@ -22,8 +64,11 @@ export default function Header() {
           <div style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#999' }}>REAL ESTATE & INVESTMENTS</div>
         </div>
 
-        {/* 우측: 로그인 등 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}>
+        {/* 우측: 링크들 */}
+        <div
+          className="header-right"
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}
+        >
           <a href="#" style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>직거래매물등록</a>
           <span style={{ color: '#555' }}>|</span>
           <a href="#" style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>로그인</a>
@@ -31,18 +76,72 @@ export default function Header() {
           <a href="#" style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>회원가입</a>
         </div>
 
+        {/* 햄버거 버튼 */}
+        <button
+          className="header-hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#999' }}
+          aria-label="메뉴"
+        >
+          {menuOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          )}
+        </button>
+
       </div>
 
       {/* 네비게이션 바 */}
-      <nav style={{ background: '#ffffff', borderBottom: '1px solid #dddddd', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '56px' }}>
-        {['매물검색', '매물 의뢰하기', '부동산 소식', '질문과 답변', '공지사항', '회사소개'].map((menu) => (
-          <a key={menu} href="#" style={{ fontSize: '18px', fontWeight: '500', color: '#333333', textDecoration: 'none', whiteSpace: 'nowrap' }}
+      <nav
+        className="header-nav"
+        style={{ background: '#ffffff', borderBottom: '1px solid #dddddd', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '56px' }}
+      >
+        {navItems.map((menu) => (
+          <a
+            key={menu}
+            href="#"
+            style={{ fontSize: '18px', fontWeight: '500', color: '#333333', textDecoration: 'none', whiteSpace: 'nowrap' }}
             onMouseEnter={e => (e.target as HTMLElement).style.color = '#C8843A'}
-            onMouseLeave={e => (e.target as HTMLElement).style.color = '#333333'}>
+            onMouseLeave={e => (e.target as HTMLElement).style.color = '#333333'}
+          >
             {menu}
           </a>
         ))}
       </nav>
+
+      {/* 모바일 메뉴 */}
+      {menuOpen && (
+        <div className="header-mobile-menu" style={{ background: '#111', borderTop: '1px solid #333' }}>
+          {navItems.map((menu) => (
+            <a
+              key={menu}
+              href="#"
+              onClick={() => setMenuOpen(false)}
+              style={{
+                display: 'block',
+                padding: '14px 20px',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#ccc',
+                textDecoration: 'none',
+                borderBottom: '1px solid #222'
+              }}
+            >
+              {menu}
+            </a>
+          ))}
+          <div style={{ padding: '14px 20px', display: 'flex', gap: '16px', borderTop: '1px solid #333' }}>
+            <a href="#" style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>직거래매물등록</a>
+            <a href="#" style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>로그인</a>
+            <a href="#" style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>회원가입</a>
+          </div>
+        </div>
+      )}
 
     </header>
   );

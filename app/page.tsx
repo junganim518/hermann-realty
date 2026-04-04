@@ -102,8 +102,8 @@ export default function Home() {
             <p className="text-[20px] font-semibold text-[#C8843A] tracking-[0.05em] m-0 p-0">
               상가·사무실 NO.1 전문 중개
             </p>
-            <h1 className="text-[64px] font-extrabold text-white m-0 p-0">헤르만부동산</h1>
-            <p className="text-[22px] font-light text-[rgba(255,255,255,0.9)] tracking-[0.05em] m-0 p-0">공인중개사사무소</p>
+            <h1 className="text-[40px] md:text-[56px] lg:text-[64px] font-extrabold text-white m-0 p-0">헤르만부동산</h1>
+            <p className="text-[18px] md:text-[22px] font-light text-[rgba(255,255,255,0.9)] tracking-[0.05em] m-0 p-0">공인중개사사무소</p>
             <div className="flex gap-4 justify-center mt-2">
               <button className="bg-[#C8843A] hover:bg-[#A06828] text-white px-8 py-[14px] rounded-lg text-[16px] font-semibold transition">
                 매물 검색하기
@@ -117,9 +117,9 @@ export default function Home() {
       </section>
 
       {/* 검색바 섹션 */}
-      <section className="bg-white py-6 px-6">
+      <section className="bg-white py-6 px-4 md:px-6">
         <div
-          className="max-w-lg mx-auto flex items-center"
+          className="w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto flex items-center"
           style={{
             boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
             borderRadius: '4px',
@@ -146,11 +146,11 @@ export default function Home() {
       </section>
 
       {/* 3열 레이아웃: 좌측 사이드바 + 중앙 콘텐츠 + 우측 패널 */}
-      <div className="flex" style={{ width: 'calc(100% - 48px)', margin: '0 24px', alignItems: 'flex-start' }}>
+      <div className="flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
 
-        {/* 좌측 사이드바 160px */}
+        {/* 좌측 사이드바 220px - lg 이상에서만 표시 */}
         <aside
-          className="shrink-0 border border-gray-200 bg-white"
+          className="hidden lg:block shrink-0 border border-gray-200 bg-white"
           style={{ minWidth: '220px', maxWidth: '220px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 
@@ -203,7 +203,7 @@ export default function Home() {
           {/* 매물 종류 섹션 */}
           <section style={{ padding: '16px', backgroundColor: '#fff' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>매물종류</h2>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
               {propertyTypes.map((type) => (
                 <div
                   key={type.id}
@@ -234,7 +234,7 @@ export default function Home() {
           {/* 테마 종류 섹션 */}
           <section style={{ padding: '16px', backgroundColor: '#f9f9f9' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>다양한 조건별 매물 검색</h2>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {themeTypes.map((theme, index) => (
                 <div
                   key={index}
@@ -268,7 +268,7 @@ export default function Home() {
 
             {/* 탭 */}
             <div className="flex justify-center" style={{ marginBottom: '16px' }}>
-              <div className="flex border rounded-lg overflow-hidden">
+              <div className="flex border rounded-lg overflow-hidden overflow-x-auto max-w-full">
                 {['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'].map((tab) => (
                   <button
                     key={tab}
@@ -287,7 +287,7 @@ export default function Home() {
             </div>
 
             {/* 매물 그리드 */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {recentProperties.map((property) => (
                 <div key={property.id} className="border border-gray-200 overflow-hidden" style={{ height: 'auto' }}>
                   <div className="bg-[#C8843A] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
@@ -336,9 +336,9 @@ export default function Home() {
 
         </div>
 
-        {/* 우측 패널 260px */}
+        {/* 우측 패널 260px - xl 이상에서만 표시 */}
         <aside
-          className="shrink-0 border border-gray-200 bg-white"
+          className="hidden xl:block shrink-0 border border-gray-200 bg-white"
           style={{ minWidth: '260px', maxWidth: '260px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 

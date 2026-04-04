@@ -1,495 +1,365 @@
 'use client';
 
-import { Header } from '@/components/Header';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-interface PropertyDetail {
-  id: string;
-  title: string;
-  location: string;
-  transactionType: string;
-  deposit: string;
-  monthly: string;
-  maintenanceFee: string;
-  keyMoney: string;
-  area: {
-    supply: string;
-    exclusive: string;
-  };
-  floor: {
-    current: string;
-    total: string;
-  };
-  propertyType: string;
-  themes: string[];
-  images: string[];
-  description: string[];
-  transportation: {
-    subway: Array<{
-      line: string;
-      color: string;
-      station: string;
-      distance: string;
-    }>;
-    bus: Array<{
-      number: string;
-      stop: string;
-      distance: string;
-    }>;
-  };
-  facilities: {
-    convenience: string[];
-    safety: string[];
-    education: string[];
-  };
+const images = [
+  'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&q=80',
+  'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=800&q=80',
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80',
+  'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80',
+  'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',
+];
+
+const thumbnails = [
+  'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=200&q=80',
+  'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=200&q=80',
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&q=80',
+  'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&q=80',
+  'https://images.unsplash.com/photo-1534723452862-4c874956a9ba?w=200&q=80',
+];
+
+const infoRows = [
+  { label: '주소',       value: '서울 마포구 망원동 123-45' },
+  { label: '거래유형',   value: '월세' },
+  { label: '매물종류',   value: '상가' },
+  { label: '보증금',     value: '2,500만원', gold: true },
+  { label: '월세',       value: '120만원', gold: true },
+  { label: '관리비',     value: '90,000원' },
+  { label: '권리금',     value: '협의가능', red: true },
+  { label: '공급면적',   value: '40㎡' },
+  { label: '전용면적',   value: '34.4㎡' },
+  { label: '현재층',     value: '1층(지하)' },
+  { label: '전체층',     value: '4층' },
+  { label: '방향',       value: '남향' },
+  { label: '주차',       value: '가능' },
+  { label: '엘리베이터', value: '없음' },
+  { label: '입주가능일', value: '즉시 입주 가능' },
+  { label: '사용승인일', value: '2005년 3월' },
+  { label: '테마종류',   value: '휴게음식점, 미용관련업, 소매점' },
+];
+
+const navTabs = ['매물번호', '매물 정보', '매물 설명', '주변 교통정보', '위치 및 주변시설', '다른 매물'];
+
+const subwayLines = [
+  { line: '2호선', bg: '#00A84D', station: '홍대입구역', dist: '350m' },
+  { line: '6호선', bg: '#CD6A28', station: '망원역',     dist: '470m' },
+];
+
+const busLines = [
+  { num: '271',  stop: '망원동 주민센터', dist: '50m' },
+  { num: '672',  stop: '망원역 1번 출구', dist: '120m' },
+  { num: '7613', stop: '마포구청 방향',   dist: '200m' },
+];
+
+const descPhotos = [
+  'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=800&q=80',
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80',
+  'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80',
+];
+
+/* ── 섹션 헤더 컴포넌트 ── */
+function SectionHeader({ icon, title, open, onToggle }: { icon: string; title: string; open: boolean; onToggle: () => void }) {
+  return (
+    <div
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8f8f8', padding: '10px 16px', borderLeft: '3px solid #C8843A', marginBottom: open ? '12px' : 0, cursor: 'pointer' }}
+      onClick={onToggle}
+    >
+      <span style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a' }}>{icon} {title}</span>
+      <span style={{ fontSize: '13px', color: '#888', userSelect: 'none' }}>{open ? '∧' : '∨'}</span>
+    </div>
+  );
 }
 
-const mockProperty: PropertyDetail = {
-  id: 'HM-2024-001',
-  title: '헤르만 망원동 역세권 유동인구 많은 1층 상가',
-  location: '서울 마포구 망원동',
-  transactionType: '월세',
-  deposit: '2,500만원',
-  monthly: '120만원',
-  maintenanceFee: '90,000원',
-  keyMoney: '협의가능',
-  area: {
-    supply: '40㎡',
-    exclusive: '34.4㎡'
-  },
-  floor: {
-    current: '1층(지하)',
-    total: '4층'
-  },
-  propertyType: '상가',
-  themes: ['휴게음식점', '미용관련업', '소매점'],
-  images: [
-    'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&q=80',
-    'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=200&q=80',
-    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&q=80',
-    'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&q=80',
-    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&q=80',
-    'https://images.unsplash.com/photo-1534723452862-4c874956a9ba?w=200&q=80'
-  ],
-  description: [
-    '망원동 중심 상권에 위치한 역세권 상가',
-    '유동인구가 많아 상업적 잠재력이 높음',
-    '1층 스트리트 상가로 가시성이 우수',
-    '주변에 다양한 편의시설 및 주거단지 밀집',
-    '교통이 편리한 입지 조건'
-  ],
-  transportation: {
-    subway: [
-      { line: '6호선', color: '#8B50A4', station: '망원역', distance: '350m' },
-      { line: '2호선', color: '#00A84D', station: '홍대입구역', distance: '800m' }
-    ],
-    bus: [
-      { number: '7016', stop: '망원역', distance: '200m' },
-      { number: '7730', stop: '망원시장', distance: '150m' }
-    ]
-  },
-  facilities: {
-    convenience: ['망원시장', '카페거리', '편의점', '은행', '약국'],
-    safety: ['경찰서', '소방서', '병원', '약국'],
-    education: ['망원초등학교', '서울여상', '홍익대학교']
-  }
-};
+export default function PropertyDetailPage() {
+  const [currentImage, setCurrentImage] = useState(0);
+  const [activeTab, setActiveTab] = useState('매물 정보');
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [tabHeight, setTabHeight] = useState(0);
 
-const tabs = [
-  { id: 'number', label: '매물번호' },
-  { id: 'info', label: '매물 정보' },
-  { id: 'description', label: '매물 설명' },
-  { id: 'transport', label: '주변 교통정보' },
-  { id: 'location', label: '위치 및 주변시설' },
-  { id: 'others', label: '다른 매물' }
-];
+  useEffect(() => {
+    const header = document.querySelector('header') as HTMLElement;
+    const tabBar = document.querySelector('.tab-bar') as HTMLElement;
+    if (header) setHeaderHeight(header.offsetHeight);
+    if (tabBar) setTabHeight(tabBar.offsetHeight);
+  }, []);
 
-const facilityTabs = [
-  { id: 'convenience', label: '편의시설' },
-  { id: 'safety', label: '안전시설' },
-  { id: 'education', label: '교육시설' }
-];
+  /* 섹션별 접기 상태 */
+  const [openInfo,     setOpenInfo]     = useState(true);
+  const [openDesc,     setOpenDesc]     = useState(true);
+  const [openSubway,   setOpenSubway]   = useState(true);
+  const [openBus,      setOpenBus]      = useState(true);
+  const [openLocation, setOpenLocation] = useState(true);
+  const [facilityTab,  setFacilityTab]  = useState('편의시설');
 
-const otherProperties = [
-  {
-    id: 'HM-2024-002',
-    title: '망원동 스트리트 1층 상가',
-    location: '서울 마포구 망원동',
-    price: '보증금 1억 / 월세 80만원',
-    image: 'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=400&q=80'
-  },
-  {
-    id: 'HM-2024-003',
-    title: '망원동 유동인구 상가',
-    location: '서울 마포구 망원동',
-    price: '보증금 1억 2천 / 월세 85만원',
-    image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80'
-  },
-  {
-    id: 'HM-2024-004',
-    title: '망원동 코너 상가',
-    location: '서울 마포구 망원동',
-    price: '보증금 9,500만원 / 월세 78만원',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80'
-  }
-];
-
-export default function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState('info');
-  const [activeFacilityTab, setActiveFacilityTab] = useState('convenience');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % mockProperty.images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + mockProperty.images.length) % mockProperty.images.length);
-  };
+  const prevImage = () => setCurrentImage((p) => (p === 0 ? images.length - 1 : p - 1));
+  const nextImage = () => setCurrentImage((p) => (p === images.length - 1 ? 0 : p + 1));
 
   return (
-    <div className="min-h-screen bg-white">
-      <Header />
+    <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
-      {/* 상단 탭 네비게이션 */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex space-x-8">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`pb-2 font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'text-[#C8843A] border-b-2 border-[#C8843A]'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {tab.label}
+      {/* ── 상단 탭 바 ── */}
+      <div className="tab-bar" style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'sticky', top: headerHeight, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex' }}>
+            {navTabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '11px 14px',
+                  fontSize: '16px',
+                  fontWeight: activeTab === tab ? 700 : 400,
+                  color: activeTab === tab ? '#C8843A' : '#555',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: activeTab === tab ? '2px solid #C8843A' : '2px solid transparent',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'color 0.2s',
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {['평으로변환', '∧ 위로이동', '〈 이전', '다음 〉'].map((label, i) => (
+              <button key={i} style={{ fontSize: '16px', color: '#666', background: 'none', border: '1px solid #ddd', borderRadius: '3px', padding: '5px 8px', cursor: 'pointer' }}>{label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2열 본문 ── */}
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '20px 48px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+
+        {/* ── 좌측 본문 ── */}
+        <div style={{ flex: 1, minWidth: 0, maxWidth: '860px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* 이미지 캐러셀 (그대로 유지) */}
+          <div style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+            <div style={{ position: 'relative', height: '520px' }}>
+              <img src={images[currentImage]} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button onClick={prevImage} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', border: 'none', color: '#fff', borderRadius: '50%', width: '44px', height: '44px', fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+              <button onClick={nextImage} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', border: 'none', color: '#fff', borderRadius: '50%', width: '44px', height: '44px', fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+              <div style={{ position: 'absolute', right: '16px', bottom: '16px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '13px', padding: '4px 10px', borderRadius: '20px' }}>
+                {currentImage + 1}/{images.length}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', padding: '10px' }}>
+              {thumbnails.map((thumb, i) => (
+                <div key={i} onClick={() => setCurrentImage(i)} style={{ flex: 1, height: '80px', cursor: 'pointer', overflow: 'hidden', border: currentImage === i ? '2px solid #C8843A' : '2px solid #e0e0e0', transition: 'border 0.2s' }}>
+                  <img
+                    src={i === 4 ? 'https://images.unsplash.com/photo-1534723452862-4c874956a9ba?w=200&q=80' : thumb}
+                    alt={`썸네일${i + 1}`}
+                    style={{ width: '100%', height: '80px', objectFit: 'cover' }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 🏠 매물 정보 */}
+          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+            <SectionHeader icon="🏠" title="매물 정보" open={openInfo} onToggle={() => setOpenInfo(!openInfo)} />
+            {openInfo && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e0e0e0' }}>
+                <tbody>
+                  {Array.from({ length: Math.ceil(infoRows.length / 2) }, (_, ri) => {
+                    const left  = infoRows[ri * 2];
+                    const right = infoRows[ri * 2 + 1];
+                    return (
+                      <tr key={ri} style={{ borderBottom: '1px solid #e8e8e8' }}>
+                        <td style={{ background: '#fafafa', fontSize: '15px', color: '#666', padding: '12px 16px', width: '110px', whiteSpace: 'nowrap' }}>{left.label}</td>
+                        <td style={{ fontSize: '16px', fontWeight: left.gold || left.red ? 700 : 400, padding: '12px 16px', color: left.gold ? '#C8843A' : left.red ? '#E53935' : '#333' }}>{left.value}</td>
+                        {right ? (
+                          <>
+                            <td style={{ background: '#fafafa', fontSize: '15px', color: '#666', padding: '12px 16px', width: '110px', whiteSpace: 'nowrap', borderLeft: '1px solid #e8e8e8' }}>{right.label}</td>
+                            <td style={{ fontSize: '16px', fontWeight: right.gold || right.red ? 700 : 400, padding: '12px 16px', color: right.gold ? '#C8843A' : right.red ? '#E53935' : '#333' }}>{right.value}</td>
+                          </>
+                        ) : (
+                          <td colSpan={2} style={{ borderLeft: '1px solid #e8e8e8' }} />
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* 📝 매물 설명 */}
+          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+            <SectionHeader icon="📝" title="매물 설명" open={openDesc} onToggle={() => setOpenDesc(!openDesc)} />
+            {openDesc && (
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                  {[
+                    '망원역 도보 5분 거리의 역세권 상가입니다.',
+                    '유동인구가 많은 대로변에 위치하여 가시성이 뛰어납니다.',
+                    '반지층 구조로 임대료 대비 넓은 면적을 제공합니다.',
+                    '휴게음식점, 미용관련업, 소매점 등 다양한 업종 가능합니다.',
+                    '인테리어 협의 가능하며 즉시 입주 가능합니다.',
+                  ].map((desc, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      <span style={{ color: '#C8843A', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: '17px', color: '#333', lineHeight: 1.8 }}>{desc}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+                  {descPhotos.map((img, i) => (
+                    <img key={i} src={img} alt={`설명 사진 ${i + 1}`} style={{ width: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 🚇 인근 지하철 */}
+          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+            <SectionHeader icon="🚇" title="인근 지하철 (주변 5km 이내)" open={openSubway} onToggle={() => setOpenSubway(!openSubway)} />
+            {openSubway && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {subwayLines.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: s.bg, color: '#fff', fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{s.line}</span>
+                    <span style={{ fontSize: '15px', fontWeight: 500, color: '#222' }}>{s.station}</span>
+                    <span style={{ fontSize: '15px', color: '#888' }}>도보 {s.dist}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 🚌 인근 버스 */}
+          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+            <SectionHeader icon="🚌" title="인근 버스 (주변 500m 이내)" open={openBus} onToggle={() => setOpenBus(!openBus)} />
+            {openBus && (
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
+                  {busLines.map((b, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ background: '#1a73e8', color: '#fff', fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{b.num}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 500, color: '#222' }}>{b.stop}</span>
+                      <span style={{ fontSize: '15px', color: '#888' }}>도보 {b.dist}</span>
+                    </div>
+                  ))}
+                </div>
+                <button style={{ fontSize: '13px', color: '#555', background: '#fff', border: '1px solid #ddd', borderRadius: '4px', padding: '6px 14px', cursor: 'pointer', width: '100%' }}>
+                  버스 전체보기 ∨
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 🗺 위치 및 주변시설 */}
+          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+            <SectionHeader icon="🗺" title="위치 및 주변시설" open={openLocation} onToggle={() => setOpenLocation(!openLocation)} />
+            {openLocation && (
+              <div>
+                {/* 카카오맵 placeholder */}
+                <div style={{ width: '100%', height: '300px', background: '#e8e8e8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', color: '#888', borderRadius: '4px', marginBottom: '16px' }}>
+                  카카오맵 위치 표시 영역
+                </div>
+                {/* 시설 탭 */}
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                  {['편의시설', '안전시설', '교육시설'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setFacilityTab(tab)}
+                      style={{ padding: '6px 14px', fontSize: '13px', fontWeight: facilityTab === tab ? 700 : 400, background: facilityTab === tab ? '#C8843A' : '#fff', color: facilityTab === tab ? '#fff' : '#555', border: `1px solid ${facilityTab === tab ? '#C8843A' : '#ddd'}`, borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                {/* 시설 목록 */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {[
+                    { icon: '🏪', name: '망원시장' },
+                    { icon: '☕', name: '카페거리' },
+                    { icon: '🏦', name: '편의점' },
+                    { icon: '🏥', name: '약국' },
+                    { icon: '🏧', name: '은행 ATM' },
+                  ].map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f8f8f8', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '7px 12px', fontSize: '13px', color: '#333' }}>
+                      <span>{f.icon}</span><span>{f.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* ── 우측 패널 300px ── */}
+        <aside style={{ width: '380px', flexShrink: 0, position: 'sticky', top: headerHeight + tabHeight + 8, alignSelf: 'flex-start', maxHeight: `calc(100vh - ${headerHeight + tabHeight + 8}px)`, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* 매물 정보 카드 */}
+          <div style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>
+            {/* 매물번호 뱃지 */}
+            <div style={{ background: '#f0f0f0', fontSize: '12px', color: '#555', padding: '4px 8px', display: 'inline-block', borderRadius: '3px', marginBottom: '10px' }}>
+              HM-2024-001
+            </div>
+
+            {/* 가격 */}
+            <p style={{ fontSize: '22px', fontWeight: 700, color: '#C8843A', lineHeight: 1.5, marginBottom: '4px' }}>
+              보증금 2,500만원 월세 120만원
+            </p>
+            <p style={{ fontSize: '15px', color: '#666', marginBottom: '12px' }}>관리비 90,000원</p>
+
+            {/* 위치 / 종류·면적·층수 */}
+            <p style={{ fontSize: '14px', color: '#444', marginBottom: '4px' }}>📍 서울 마포구 망원동</p>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '14px' }}>상가 · 전용 34.4㎡ · 1층(지하) / 전체 4층</p>
+
+            {/* 문의 버튼 */}
+            <button
+              style={{ width: '100%', height: '48px', background: '#C8843A', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: '10px', transition: 'background 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#A06828')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#C8843A')}
+            >
+              매물 문의하기
+            </button>
+
+            {/* 아이콘 버튼 4개 */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[{ icon: '♡', label: '찜하기' }, { icon: '🖨', label: '인쇄' }, { icon: '📤', label: '공유' }, { icon: '🔗', label: '링크복사' }].map((btn, i) => (
+                <button key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '7px 4px', background: '#fff', cursor: 'pointer', fontSize: '13px', color: '#555' }}>
+                  <span style={{ fontSize: '15px' }}>{btn.icon}</span>
+                  {btn.label}
                 </button>
               ))}
             </div>
-            <div className="flex space-x-2">
-              <button className="p-2 text-gray-400 hover:text-gray-600">‹ 이전</button>
-              <button className="p-2 text-gray-400 hover:text-gray-600">다음 ›</button>
+          </div>
+
+          {/* 공인중개사 카드 */}
+          <div style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👤</div>
+              <div>
+                <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '1px' }}>황정아</p>
+                <p style={{ fontSize: '13px', color: '#888' }}>대표공인중개사</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '10px' }}>📞 010-8680-8151</p>
+            
+            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              {[
+                '사무소: 헤르만공인중개사사무소',
+                '주소: 부천시 신흥로 223 101동 712호',
+                '등록번호: 제41192-2024-00113호',
+              ].map((info, i) => (
+                <p key={i} style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>{info}</p>
+              ))}
             </div>
           </div>
-        </div>
+
+
+        </aside>
+
       </div>
-
-      {/* 메인 컨텐츠 */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* 좌측 본문 */}
-          <div className="flex-1">
-            {/* 이미지 캐러셀 */}
-            <div className="mb-8">
-              <div className="relative h-[480px] rounded-lg overflow-hidden mb-4">
-                <img
-                  src={mockProperty.images[currentImageIndex]}
-                  alt={mockProperty.title}
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition"
-                >
-                  ‹
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition"
-                >
-                  ›
-                </button>
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1}/{mockProperty.images.length}
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                {mockProperty.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                      index === currentImageIndex ? 'border-[#C8843A]' : 'border-gray-200'
-                    }`}
-                  >
-                    <img src={image} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 매물 정보 테이블 */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">매물 정보</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">주소</span>
-                    <span className="font-medium">{mockProperty.location}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">거래유형</span>
-                    <span className="font-medium">{mockProperty.transactionType}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">매물종류</span>
-                    <span className="font-medium">{mockProperty.propertyType}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">보증금</span>
-                    <span className="font-medium text-[#C8843A]">{mockProperty.deposit}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">월세</span>
-                    <span className="font-medium text-[#C8843A]">{mockProperty.monthly}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">관리비</span>
-                    <span className="font-medium">{mockProperty.maintenanceFee}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">권리금</span>
-                    <span className="font-medium text-red-600">{mockProperty.keyMoney}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">면적(공급/전용)</span>
-                    <span className="font-medium">{mockProperty.area.supply} / {mockProperty.area.exclusive}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">층수(현재/전체)</span>
-                    <span className="font-medium">{mockProperty.floor.current} / {mockProperty.floor.total}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">방향</span>
-                    <span className="font-medium">남향</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">주차</span>
-                    <span className="font-medium">가능</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">엘리베이터</span>
-                    <span className="font-medium">있음</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">입주가능일</span>
-                    <span className="font-medium">즉시입주</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">사용승인일</span>
-                    <span className="font-medium">1995년</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">테마종류</span>
-                    <span className="font-medium">{mockProperty.themes.join(', ')}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 매물 설명 섹션 */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">매물 설명</h2>
-              <div className="space-y-3">
-                {mockProperty.description.map((item, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 주변 교통정보 섹션 */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">주변 교통정보</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-3">인근 지하철</h3>
-                  <div className="space-y-2">
-                    {mockProperty.transportation.subway.map((subway, index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <span
-                          className="px-2 py-1 rounded text-white text-xs font-bold"
-                          style={{ backgroundColor: subway.color }}
-                        >
-                          {subway.line}
-                        </span>
-                        <span className="text-gray-700">{subway.station}</span>
-                        <span className="text-gray-500">{subway.distance}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-3">인근 버스</h3>
-                  <div className="space-y-2">
-                    {mockProperty.transportation.bus.map((bus, index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
-                          {bus.number}
-                        </span>
-                        <span className="text-gray-700">{bus.stop}</span>
-                        <span className="text-gray-500">{bus.distance}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 위치 및 주변시설 섹션 */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">위치 및 주변시설</h2>
-              <div className="bg-gray-100 h-[300px] rounded-lg mb-6 flex items-center justify-center">
-                <span className="text-gray-500">카카오맵 위치 표시 영역</span>
-              </div>
-              <div className="flex space-x-4 mb-4">
-                {facilityTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveFacilityTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition ${
-                      activeFacilityTab === tab.id
-                        ? 'bg-[#C8843A] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                {mockProperty.facilities[activeFacilityTab as keyof typeof mockProperty.facilities].map((facility, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-400">🏢</span>
-                    <span className="text-sm">{facility}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 다른 매물 섹션 */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">같은 구의 다른 매물</h2>
-              <div className="flex space-x-4 overflow-x-auto">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="min-w-[300px] bg-white border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="h-48 bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-500">매물 이미지</span>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold mb-2">망원동 상가 {item}</h3>
-                      <p className="text-sm text-gray-600 mb-2">서울 마포구 망원동</p>
-                      <p className="text-[#C8843A] font-bold">보증금 1억 / 월세 80만원</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 우측 고정 패널 */}
-          <div className="w-[320px] sticky top-24 h-fit">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              {/* 추천 뱃지 */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="bg-[#C8843A] text-white px-3 py-1 rounded-full text-sm font-bold">
-                  추천
-                </span>
-                <span className="text-gray-500 text-sm">{mockProperty.id}</span>
-              </div>
-
-              {/* 제목 */}
-              <h1 className="text-lg font-semibold mb-4 leading-tight">
-                {mockProperty.title}
-              </h1>
-
-              {/* 가격 정보 */}
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">권리금</span>
-                  <span className="text-red-600 font-bold">{mockProperty.keyMoney}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">보증금</span>
-                  <span className="text-[#C8843A] font-bold">{mockProperty.deposit}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">월세</span>
-                  <span className="text-[#C8843A] font-bold">{mockProperty.monthly}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">관리비</span>
-                  <span className="text-gray-500">{mockProperty.maintenanceFee}</span>
-                </div>
-              </div>
-
-              {/* 위치 */}
-              <div className="flex items-center space-x-2 mb-4">
-                <span className="text-gray-400">📍</span>
-                <span className="text-sm">{mockProperty.location}</span>
-              </div>
-
-              {/* 면적 + 층수 */}
-              <div className="space-y-2 mb-6">
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-400">📐</span>
-                  <span className="text-sm">면적 {mockProperty.area.exclusive}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-400">🏢</span>
-                  <span className="text-sm">층수 {mockProperty.floor.current}</span>
-                </div>
-              </div>
-
-              {/* 문의 버튼 */}
-              <button className="w-full bg-[#C8843A] text-white py-3 rounded-lg font-semibold mb-4 hover:bg-[#A06828] transition">
-                매물 문의하기
-              </button>
-
-              {/* 아이콘 버튼들 */}
-              <div className="flex justify-center space-x-4 mb-6">
-                <button className="p-2 text-gray-400 hover:text-red-500 transition">♡</button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition">🖨</button>
-                <button className="p-2 text-gray-400 hover:text-blue-500 transition">📤</button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition">🔗</button>
-              </div>
-
-              <hr className="mb-6" />
-
-              {/* 공인중개사 정보 */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-gray-500">👤</span>
-                </div>
-                <h3 className="font-semibold mb-1">김헤르만</h3>
-                <p className="text-sm text-gray-600 mb-3">(대표공인중개사)</p>
-                <div className="space-y-1 text-sm text-gray-600 mb-4">
-                  <p>📞 02-123-4567</p>
-                  <p>📱 010-1234-5678</p>
-                </div>
-                <button className="w-full bg-yellow-400 text-black py-2 rounded-lg font-semibold hover:bg-yellow-500 transition mb-4">
-                  카카오톡 문의
-                </button>
-                <div className="text-xs text-gray-500 space-y-1">
-                  <p>헤르만부동산</p>
-                  <p>대표자: 김헤르만</p>
-                  <p>서울 마포구 망원동 123-45</p>
-                  <p>등록번호: 123-456-789012</p>
-                  <p>대표번호: 02-123-4567</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </main>
   );
 }
