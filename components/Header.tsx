@@ -102,7 +102,7 @@ export default function Header() {
         {navItems.map((menu) => (
           <a
             key={menu}
-            href="#"
+            href={menu === '매물검색' ? '/map' : '#'}
             style={{ fontSize: '18px', fontWeight: '500', color: '#333333', textDecoration: 'none', whiteSpace: 'nowrap' }}
             onMouseEnter={e => (e.target as HTMLElement).style.color = '#e2a06e'}
             onMouseLeave={e => (e.target as HTMLElement).style.color = '#333333'}

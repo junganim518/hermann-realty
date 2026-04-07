@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Hermann Realty',
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
       </head>
-      <body className="font-pretendard"><Header />{children}</body>
+      <body className="font-pretendard">
+        <Header />{children}<Footer />
+      </body>
     </html>
   );
 }

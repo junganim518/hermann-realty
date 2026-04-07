@@ -10,12 +10,28 @@ const formatAddress = (address: string) => {
   return match ? match[1] : address;
 };
 
-const toPyeong = (sqm: number) => Math.round(sqm * 0.3025);
+const toPyeong = (sqm: number) => (sqm * 0.3025).toFixed(1);
 
-const formatPrice = (amount: number) => {
-  if (!amount) return '-';
-  const man = Math.floor(amount / 10000);
-  return `${man.toLocaleString()}만원`;
+const formatPrice = (v: number) => {
+  if (!v) return '-';
+  const uk  = Math.floor(v / 10000);
+  const man = v % 10000;
+  if (uk > 0) {
+    return man > 0 ? `${uk}억 ${man.toLocaleString()}만원` : `${uk}억`;
+  }
+  return `${v.toLocaleString()}만원`;
+};
+
+const buildPriceStr = (p: any) => {
+  if (p.transaction_type === '매매') {
+    const v = p.sale_price || p.deposit;
+    return v ? `매매가 ${formatPrice(v)}` : '-';
+  }
+  const parts = [
+    p.deposit      ? `보증금 ${formatPrice(p.deposit)}` : null,
+    p.monthly_rent ? `월세 ${formatPrice(p.monthly_rent)}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' / ') : '-';
 };
 
 export default function Home() {
@@ -58,45 +74,97 @@ export default function Home() {
     async function fetchProperties() {
       const { data } = await supabase
         .from('properties')
-        .select('*, property_images(*)')
-        .eq('is_recommended', true)
-        .limit(4);
+        .select('*')
+        .eq('property_type', activeTab)
+        .order('created_at', { ascending: false })
+        .limit(8);
       if (data && data.length > 0) {
-        setRecentProperties(data.map((p: any) => ({
-          id: p.property_number,
-          title: p.title,
-          location: p.address,
-          area: p.supply_area,
-          type: p.property_type,
-          floor: p.current_floor,
-          deposit: p.deposit,
-          monthly: p.monthly_rent,
-          image: p.property_images?.[0]?.image_url ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
-          badges: p.badges ?? [],
-        })));
+        // 각 매물의 대표 이미지를 property_id로 조회
+        const mapped = await Promise.all(
+          data.map(async (p: any) => {
+            const { data: imgs } = await supabase
+              .from('property_images')
+              .select('image_url')
+              .eq('property_id', p.id)
+              .order('order_index', { ascending: true })
+              .limit(1);
+            return {
+              id: p.property_number,
+              title: p.title,
+              location: p.address,
+              area: p.exclusive_area,
+              exclusive_area: p.exclusive_area,
+              type: p.property_type,
+              floor: p.current_floor,
+              deposit: p.deposit,
+              monthly_rent: p.monthly_rent,
+              sale_price: p.sale_price,
+              transaction_type: p.transaction_type,
+              image: imgs?.[0]?.image_url ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
+              badges: p.badges ?? [],
+            };
+          })
+        );
+        setRecentProperties(mapped);
+      } else {
+        setRecentProperties([]);
       }
     }
     fetchProperties();
+  }, [activeTab]);
+
+  const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
+  const [themeCounts, setThemeCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    async function fetchCounts() {
+      const types  = ['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'];
+      const themes = ['추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
+
+      const tc: Record<string, number> = {};
+      const hc: Record<string, number> = {};
+
+      await Promise.all([
+        ...types.map(async (t) => {
+          const { count } = await supabase
+            .from('properties')
+            .select('*', { count: 'exact', head: true })
+            .eq('property_type', t);
+          tc[t] = count ?? 0;
+        }),
+        ...themes.map(async (t) => {
+          const { count } = await supabase
+            .from('properties')
+            .select('*', { count: 'exact', head: true })
+            .eq('theme_type', t);
+          hc[t] = count ?? 0;
+        }),
+      ]);
+
+      setTypeCounts(tc);
+      setThemeCounts(hc);
+    }
+    fetchCounts();
   }, []);
 
   const propertyTypes = [
-    { id: '상가', name: '상가', eng: 'STORE', count: 1247, icon: '🏪', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
-    { id: '사무실', name: '사무실', eng: 'OFFICE', count: 892, icon: '🏢', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
-    { id: '원룸·투룸', name: '원룸·투룸', eng: '1·2 ROOM', count: 2156, icon: '🏠', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80' },
-    { id: '쓰리룸이상', name: '쓰리룸이상', eng: '3ROOM+', count: 1567, icon: '🏘', image: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&q=80' },
-    { id: '아파트', name: '아파트', eng: 'APT', count: 1876, icon: '🏙', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&q=80' },
-    { id: '건물매매', name: '건물매매', eng: 'BUILDING', count: 234, icon: '🏗', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
+    { id: '상가', name: '상가', eng: 'STORE', icon: '🏪', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
+    { id: '사무실', name: '사무실', eng: 'OFFICE', icon: '🏢', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
+    { id: '원룸·투룸', name: '원룸·투룸', eng: '1·2 ROOM', icon: '🏠', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80' },
+    { id: '쓰리룸이상', name: '쓰리룸이상', eng: '3ROOM+', icon: '🏘', image: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&q=80' },
+    { id: '아파트', name: '아파트', eng: 'APT', icon: '🏙', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&q=80' },
+    { id: '건물매매', name: '건물매매', eng: 'BUILDING', icon: '🏗', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
   ];
 
   const themeTypes = [
-    { name: '추천매물', desc: '헤르만 추천 베스트 매물', count: 234, image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
-    { name: '사옥형 및 통임대', desc: '사옥형 건물 및 통임대 매물', count: 89, image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&q=80' },
-    { name: '대형 상가', desc: '대형 상가 매물', count: 156, image: 'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=400&q=80' },
-    { name: '대형사무실', desc: '대형 사무실 매물', count: 78, image: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=400&q=80' },
-    { name: '무권리 상가', desc: '권리금 없는 깔끔한 상가', count: 445, image: 'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=400&q=80' },
-    { name: '프랜차이즈 양도양수', desc: '프랜차이즈 양도양수 매물', count: 123, image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80' },
-    { name: '1층 상가', desc: '1층에 위치한 상가 매물', count: 678, image: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=400&q=80' },
-    { name: '2층 이상 상가', desc: '2층 이상에 위치한 상가', count: 234, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
+    { id: '추천매물', name: '추천매물', desc: '헤르만 추천 베스트 매물', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
+    { id: '사옥형및통임대', name: '사옥형 및 통임대', desc: '사옥형 건물 및 통임대 매물', image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&q=80' },
+    { id: '대형상가', name: '대형 상가', desc: '대형 상가 매물', image: 'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=400&q=80' },
+    { id: '대형사무실', name: '대형사무실', desc: '대형 사무실 매물', image: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=400&q=80' },
+    { id: '무권리상가', name: '무권리 상가', desc: '권리금 없는 깔끔한 상가', image: 'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=400&q=80' },
+    { id: '프랜차이즈양도양수', name: '프랜차이즈 양도양수', desc: '프랜차이즈 양도양수 매물', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80' },
+    { id: '1층상가', name: '1층 상가', desc: '1층에 위치한 상가 매물', image: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=400&q=80' },
+    { id: '2층이상상가', name: '2층 이상 상가', desc: '2층 이상에 위치한 상가', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
   ];
 
   const [recentProperties, setRecentProperties] = useState<any[]>([
@@ -107,8 +175,9 @@ export default function Home() {
       area: '165㎡',
       type: '상가',
       floor: '1층',
-      deposit: 500000000,
-      monthly: 5000000,
+      deposit: 5000,
+      monthly_rent: 500,
+      transaction_type: '월세',
       image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
       badges: ['역세권', '코너상가']
     },
@@ -119,8 +188,9 @@ export default function Home() {
       area: '120㎡',
       type: '사무실',
       floor: '5층',
-      deposit: 250000000,
-      monthly: 2500000,
+      deposit: 25000,
+      monthly_rent: 250,
+      transaction_type: '전세',
       image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400',
       badges: ['역세권', '엘리베이터']
     },
@@ -131,8 +201,9 @@ export default function Home() {
       area: '23㎡',
       type: '원룸·투룸',
       floor: '3층',
-      deposit: 10000000,
-      monthly: 600000,
+      deposit: 1000,
+      monthly_rent: 60,
+      transaction_type: '월세',
       image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
       badges: ['풀옵션', '신축']
     },
@@ -143,8 +214,8 @@ export default function Home() {
       area: '120㎡',
       type: '쓰리룸이상',
       floor: '7층',
-      deposit: 250000000,
-      monthly: 1200000,
+      deposit: 85000,
+      transaction_type: '매매',
       image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
       badges: ['넓은 평수', '가족주택']
     },
@@ -346,7 +417,7 @@ export default function Home() {
                     className="absolute top-2 right-2 bg-[#e2a06e] text-white font-bold rounded-full flex items-center justify-center"
                     style={{ fontSize: '11px', width: '28px', height: '28px' }}
                   >
-                    {type.count.toLocaleString()}
+                    {(typeCounts[type.id] ?? 0).toLocaleString()}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                     <p style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>{type.eng}</p>
@@ -377,7 +448,7 @@ export default function Home() {
                     className="absolute top-2 right-2 bg-[#e2a06e] text-white font-bold rounded-full flex items-center justify-center"
                     style={{ fontSize: '11px', width: '28px', height: '28px' }}
                   >
-                    {theme.count}
+                    {(themeCounts[theme.id] ?? 0).toLocaleString()}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                     <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '2px' }}>{theme.name}</h3>
@@ -447,18 +518,29 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="p-3">
-                    <div className="text-gray-500 mb-2" style={{ fontSize: '14px' }}>
-                      <p>{formatAddress(property.location ?? '')} · {property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : property.area ? `전용 ${property.area}㎡` : ''} · {property.type} · {property.floor}</p>
+                    <div className="mb-2">
+                      <p style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
+                        {formatAddress(property.location ?? '')}
+                      </p>
+                      <p style={{ fontSize: '13px', color: '#666' }}>
+                        {property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : property.area ? `전용 ${property.area}㎡` : ''}{property.type ? ` · ${property.type}` : ''}{property.floor ? ` · ${property.floor}` : ''}
+                      </p>
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="bg-green-100 text-green-800 rounded" style={{ fontSize: '14px', padding: '4px 10px' }}>보증금</span>
-                        <span style={{ fontSize: '18px', fontWeight: 700 }}>{typeof property.deposit === 'number' ? formatPrice(property.deposit) : property.deposit}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="bg-green-100 text-green-800 rounded" style={{ fontSize: '14px', padding: '4px 10px' }}>월세</span>
-                        <span style={{ fontSize: '18px', fontWeight: 700 }}>{typeof property.monthly === 'number' ? formatPrice(property.monthly) : property.monthly}</span>
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {property.transaction_type && (() => {
+                        const colors: Record<string, { bg: string; border: string; text: string }> = {
+                          '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                          '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                          '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
+                        };
+                        const c = colors[property.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                        return (
+                          <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                            {property.transaction_type}
+                          </span>
+                        );
+                      })()}
+                      <span style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(property)}</span>
                     </div>
                   </div>
                 </Link>
@@ -532,43 +614,6 @@ export default function Home() {
 
       
 
-      {/* 푸터 */}
-      <footer className="bg-[#111111] text-white py-12 px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <img src="/logo.png" alt="헤르만부동산 로고" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                <h3 className="text-xl font-bold">헤르만부동산</h3>
-              </div>
-              <div className="text-[13px] text-gray-300" style={{ lineHeight: 1.8 }}>
-                <p>상호: 헤르만공인중개사사무소</p>
-                <p>대표자: 황정아</p>
-                <p>주소: 경기도 부천시 신흥로 223 신중동역 랜드마크 푸르지오시티 101동 712호</p>
-                <p>등록번호: 제41192-2024-00113호</p>
-                <p>전화: 010-8680-8151</p>
-                <p>이메일: hermann2024@naver.com</p>
-              </div>
-            </div>
-            <div className="lg:text-right">
-              <h4 className="text-lg font-bold mb-4">대표전화 CALL CENTER</h4>
-              <p className="text-3xl font-bold text-[#e2a06e]">010-8680-8151</p>
-              <p className="text-[13px] text-gray-300 mt-2" style={{ lineHeight: 1.8 }}>평일 10:00 - 19:00 (토요일 10:00 - 19:00)</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-600 pt-6 text-center">
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-300 mb-4">
-              <a href="#" className="hover:text-white transition">회사소개</a>
-              <a href="#" className="hover:text-white transition">매물 의뢰하기</a>
-              <a href="#" className="hover:text-white transition">부동산 소식</a>
-              <a href="#" className="hover:text-white transition">공지사항</a>
-            </div>
-            <p className="text-xs text-gray-400">
-              Powered by HERMANN © 2026 헤르만부동산. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }
