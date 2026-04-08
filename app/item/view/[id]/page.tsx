@@ -8,7 +8,13 @@ declare global {
   interface Window { kakao: any; }
 }
 
-const navTabs = ['매물 정보', '매물 설명', '위치', '주변 교통정보', '비슷한 매물'];
+const navTabs = [
+  { label: '매물 정보', id: 'section-info' },
+  { label: '매물 설명', id: 'section-desc' },
+  { label: '위치', id: 'section-location' },
+  { label: '주변 교통정보', id: 'section-transport' },
+  { label: '비슷한 매물', id: 'section-similar' },
+];
 
 
 const calcDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -24,29 +30,51 @@ const formatDist = (m: number) => m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${
 /* ── 평수 계산 함수 ── */
 const toPyeong = (sqm: number) => (sqm * 0.3025).toFixed(1);
 
-/* ── 주소 자르기 (도로명: ~로/길 까지, 지번: ~동 까지) ── */
-const trimAddress = (address: string) => {
-  if (!address) return '';
-  // "~로 숫자" 또는 "~길 숫자" 앞까지 (도로명)
-  const road = address.match(/^(.+(?:로|길))(?:\s|$)/);
-  if (road) return road[1];
-  // "한글+동" 뒤 번지 제거 (지번) — 숫자동(101동) 제외
-  const dong = address.match(/^(.+[가-힣]동)(?:\s|$)/);
-  if (dong) return dong[1];
-  return address;
+/* ── 호수 포맷: 숫자만이면 "호" 붙이기 ── */
+const formatUnit = (v?: string) => {
+  if (!v) return '';
+  return /^\d+$/.test(v.trim()) ? `${v.trim()}호` : v;
+};
+
+/* ── 층수 포맷: 숫자만이면 "층" 붙이기 ── */
+const formatFloor = (v: any) => {
+  if (!v) return '';
+  const s = String(v).trim();
+  return /^\d+$/.test(s) ? `${s}층` : s;
+};
+
+/* ── 주소 정규화 ── */
+const normalizeAddr = (addr: string) =>
+  addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
+
+/* ── 주소 2줄 분리: { line1: "경기도 부천시", line2: "신흥로" } ── */
+const splitAddress = (address: string): { line1: string; line2: string } => {
+  if (!address) return { line1: '', line2: '' };
+  const n = normalizeAddr(address);
+  // 도로명: ~로/길 까지
+  const road = n.match(/^(.*?(?:시|군))\s+(.*?(?:구)\s+)?(\S+(?:로|길))/);
+  if (road) {
+    const city = road[1];
+    return { line1: city, line2: ((road[2] ?? '') + road[3]).trim() };
+  }
+  // 지번: 한글동 까지
+  const dong = n.match(/^(.*?(?:시|군))\s+((?:\S+구\s+)?\S*[가-힣]동)/);
+  if (dong) {
+    return { line1: dong[1], line2: dong[2] };
+  }
+  return { line1: n, line2: '' };
 };
 
 /* ── 짧은 버전: 로/길명 또는 동명만 ── */
 const formatAddress = (address: string) => {
-  const trimmed = trimAddress(address);
-  // 마지막 토큰만 추출
-  const parts = trimmed.split(/\s+/);
-  return parts[parts.length - 1] || address;
+  const { line2, line1 } = splitAddress(address);
+  return line2 || line1;
 };
 
-/* ── 긴 버전: 도+시+로/길 또는 도+시+구+동 ── */
+/* ── 긴 버전: 전체 (줄바꿈 없이) ── */
 const formatAddressLong = (address: string) => {
-  return trimAddress(address);
+  const { line1, line2 } = splitAddress(address);
+  return [line1, line2].filter(Boolean).join(' ');
 };
 
 /* ── 금액 포맷 함수 ── */
@@ -86,8 +114,11 @@ function SectionHeader({ icon, title, open, onToggle }: { icon: string; title: s
 }
 
 interface Property {
+  id?: string;
   property_number?: string;
+  title?: string;
   address?: string;
+  unit_number?: string;
   transaction_type?: string;
   property_type?: string;
   deposit?: number;
@@ -107,6 +138,8 @@ interface Property {
   usage_type?: string;
   theme_types?: string;
   description?: string;
+  admin_memo?: string;
+  is_sold?: boolean;
   latitude?: number | string;
   longitude?: number | string;
   sale_price?: number;
@@ -120,9 +153,10 @@ export default function PropertyDetailPage() {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [similarProperties, setSimilarProperties] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [currentImage, setCurrentImage] = useState(0);
-  const [activeTab, setActiveTab] = useState('매물 정보');
+  const [activeTab, setActiveTab] = useState('section-info');
   const [headerHeight, setHeaderHeight] = useState(0);
 
   const [isPyeong, setIsPyeong] = useState(false);
@@ -135,6 +169,34 @@ export default function PropertyDetailPage() {
   useEffect(() => {
     const header = document.querySelector('header') as HTMLElement;
     if (header) setHeaderHeight(header.offsetHeight);
+  }, []);
+
+  // ── 스크롤 시 탭 활성화 자동 변경
+  useEffect(() => {
+    const sectionIds = navTabs.map(t => t.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveTab(entry.target.id);
+            break;
+          }
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' }
+    );
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [property]);
+
+  // 관리자 여부 확인 (로그인된 유저 = 관리자)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAdmin(!!data.user);
+    });
   }, []);
 
   useEffect(() => {
@@ -164,23 +226,52 @@ export default function PropertyDetailPage() {
       setLoading(false);
 
       if (data?.property_type) {
-        // 비슷한 매물도 이미지 별도 조회
-        const { data: similarRaw } = await supabase
+        // 1차: 같은 property_type + transaction_type + 면적 ±50%
+        const area = parseFloat(data.exclusive_area);
+        let query1 = supabase
           .from('properties')
           .select('*')
           .eq('property_type', data.property_type)
           .neq('property_number', data.property_number)
-          .limit(3);
+          .order('created_at', { ascending: false })
+          .limit(10);
 
+        if (data.transaction_type) {
+          query1 = query1.eq('transaction_type', data.transaction_type);
+        }
+
+        const { data: raw1 } = await query1;
+        let results = (raw1 ?? []).filter((p: any) => {
+          if (!area || isNaN(area)) return true;
+          const pArea = parseFloat(p.exclusive_area);
+          if (isNaN(pArea)) return true;
+          return pArea >= area * 0.5 && pArea <= area * 1.5;
+        }).slice(0, 3);
+
+        // 2차: 3개 못 채우면 같은 property_type만으로 보충
+        if (results.length < 3) {
+          const existIds = new Set(results.map((r: any) => r.property_number));
+          existIds.add(data.property_number);
+          const { data: raw2 } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('property_type', data.property_type)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          const extra = (raw2 ?? []).filter((p: any) => !existIds.has(p.property_number));
+          results = [...results, ...extra].slice(0, 3);
+        }
+
+        // 이미지 조회
         const withImages = await Promise.all(
-          (similarRaw ?? []).map(async (p: any) => {
+          results.map(async (p: any) => {
             const { data: imgs } = await supabase
               .from('property_images')
-              .select('*')
+              .select('image_url')
               .eq('property_id', p.id)
               .order('order_index', { ascending: true })
               .limit(1);
-            return { ...p, property_images: imgs ?? [] };
+            return { ...p, image: imgs?.[0]?.image_url ?? null };
           })
         );
         setSimilarProperties(withImages);
@@ -231,18 +322,27 @@ export default function PropertyDetailPage() {
       });
       console.log('[지도] 지도 + 원 생성 완료');
 
+      // services 라이브러리 확인
+      if (!window.kakao?.maps?.services) {
+        console.error('[지도] services 라이브러리 없음 — 지하철 검색 불가');
+        return;
+      }
+
       // 주변 지하철역 검색
+      console.log('[지하철] cancelled 상태:', cancelled);
+      console.log('[지하철] 검색 시작', lat, lng);
+      console.log('[지하철] services.Places 존재:', !!window.kakao?.maps?.services?.Places);
       const ps = new window.kakao.maps.services.Places();
       ps.keywordSearch('지하철역', (data: any, status: any) => {
-        if (cancelled) return;
-        console.log('[지도] 지하철 검색 결과:', status, data?.length);
+        console.log('[지하철] 콜백 실행:', status, data?.length);
         if (status === window.kakao.maps.services.Status.OK) {
           const items = data.map((d: any) => ({
             name: d.place_name, dist: calcDistance(lat, lng, parseFloat(d.y), parseFloat(d.x)),
           })).sort((a: any, b: any) => a.dist - b.dist).slice(0, 5);
           setNearbySubway(items);
         }
-      }, { location: pos, radius: 2000, sort: window.kakao.maps.services.SortBy.DISTANCE });
+      }, { x: lng, y: lat, radius: 2000, sort: window.kakao.maps.services.SortBy?.DISTANCE });
+      console.log('[지하철] keywordSearch 호출 완료');
 
     };
 
@@ -288,9 +388,19 @@ export default function PropertyDetailPage() {
       document.head.appendChild(script);
     };
 
-    if (typeof window.kakao?.maps?.Map === 'function') {
-      console.log('[지도] SDK 이미 로드됨');
+    if (typeof window.kakao?.maps?.Map === 'function' && window.kakao?.maps?.services) {
+      console.log('[지도] SDK + services 이미 로드됨');
       initWithSdk();
+    } else if (typeof window.kakao?.maps?.Map === 'function' && !window.kakao?.maps?.services) {
+      // SDK는 로드됐지만 services 없음 → 새 스크립트 강제 삽입
+      console.log('[지도] services 없음 → 스크립트 재삽입');
+      const s = document.createElement('script');
+      s.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services';
+      s.async = true;
+      s.onload = () => {
+        window.kakao.maps.load(() => { if (!cancelled) initWithSdk(); });
+      };
+      document.head.appendChild(s);
     } else if (window.kakao?.maps?.load) {
       console.log('[지도] SDK 스크립트 있음, load() 호출');
       window.kakao.maps.load(() => { if (!cancelled) initWithSdk(); });
@@ -352,22 +462,30 @@ export default function PropertyDetailPage() {
           <div style={{ display: 'flex' }}>
             {navTabs.map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  const el = document.getElementById(tab.id);
+                  if (el) {
+                    const tabBarH = 50;
+                    const top = el.getBoundingClientRect().top + window.scrollY - headerHeight - tabBarH;
+                    window.scrollTo({ top, behavior: 'smooth' });
+                  }
+                }}
                 style={{
                   padding: '11px 14px',
                   fontSize: '16px',
-                  fontWeight: activeTab === tab ? 700 : 400,
-                  color: activeTab === tab ? '#e2a06e' : '#555',
+                  fontWeight: activeTab === tab.id ? 700 : 400,
+                  color: activeTab === tab.id ? '#e2a06e' : '#555',
                   background: 'none',
                   border: 'none',
-                  borderBottom: activeTab === tab ? '2px solid #e2a06e' : '2px solid transparent',
+                  borderBottom: activeTab === tab.id ? '2px solid #e2a06e' : '2px solid transparent',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   transition: 'color 0.2s',
                 }}
               >
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -386,7 +504,7 @@ export default function PropertyDetailPage() {
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* 이미지 캐러셀 */}
-          <div style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+          <div style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0', position: 'relative' }}>
             {hasImages ? (
               <>
                 <div style={{ position: 'relative', height: '600px' }}>
@@ -427,10 +545,18 @@ export default function PropertyDetailPage() {
                 <p style={{ fontSize: '15px', fontWeight: 600, color: '#999' }}>이미지 준비중</p>
               </div>
             )}
+            {/* 거래완료 오버레이 (이미지 유무 상관없이 컨테이너 위에 표시) */}
+            {property.is_sold && (
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                <div style={{ border: '4px solid #e04a4a', color: '#e04a4a', fontSize: '48px', fontWeight: 900, padding: '12px 32px', transform: 'rotate(-15deg)', letterSpacing: '4px' }}>
+                  거래완료
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 🏠 매물 정보 */}
-          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-info" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏠" title="매물 정보" open={openInfo} onToggle={() => setOpenInfo(!openInfo)} />
             {openInfo && (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -438,7 +564,7 @@ export default function PropertyDetailPage() {
                   {/* 1행: 주소 | 매물종류 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>주소</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.address ? formatAddressLong(property.address) : '-'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</td>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>매물종류</td>
                     <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.property_type ?? '-'}</td>
                   </tr>
@@ -454,7 +580,7 @@ export default function PropertyDetailPage() {
                   {/* 3행: 권리금 | 관리비 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>권리금</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#E53935', fontWeight: 700 }}>{!property.premium ? '무권리' : '협의'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '16px', color: property.premium ? '#333' : '#E53935', fontWeight: 700 }}>{property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리'}</td>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>관리비</td>
                     <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음'}</td>
                   </tr>
@@ -482,7 +608,7 @@ export default function PropertyDetailPage() {
                     </td>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>층수</td>
                     <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>
-                      {[property.current_floor && `${property.current_floor}층`, property.total_floor && `전체 ${property.total_floor}층`].filter(Boolean).join(' / ') || '-'}
+                      {[property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-'}
                     </td>
                   </tr>
                   {/* 5행: 방향 | 입주가능일 */}
@@ -517,7 +643,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 📝 매물 설명 */}
-          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-desc" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="📝" title="매물 설명" open={openDesc} onToggle={() => setOpenDesc(!openDesc)} />
             {openDesc && (
               <div>
@@ -528,8 +654,21 @@ export default function PropertyDetailPage() {
             )}
           </div>
 
-          {/* 🗺 위치 및 주변시설 */}
-          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          {/* 🔒 관리자 메모 (로그인 시에만 표시) */}
+          {isAdmin && property?.admin_memo && (
+            <div style={{ background: '#fffdf0', border: '1px solid #f0e6b8', padding: '16px', borderRadius: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '16px' }}>🔒</span>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#8b7000' }}>관리자 메모</span>
+              </div>
+              <p style={{ whiteSpace: 'pre-line', lineHeight: '1.8', fontSize: '14px', color: '#666', background: '#fffef5', padding: '12px', borderRadius: '4px', border: '1px solid #f0e6b8' }}>
+                {property.admin_memo}
+              </p>
+            </div>
+          )}
+
+          {/* 📍 위치 */}
+          <div id="section-location" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="📍" title="위치" open={openLocation} onToggle={() => setOpenLocation(!openLocation)} />
             {openLocation && (
               <div>
@@ -546,7 +685,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 🚇 인근 지하철 */}
-          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-transport" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🚇" title="인근 지하철 (주변 2km 이내)" open={openSubway} onToggle={() => setOpenSubway(!openSubway)} />
             {openSubway && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -566,17 +705,17 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 🏘 비슷한 매물 */}
-          <div style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-similar" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏢" title="비슷한 매물" open={true} onToggle={() => {}} />
             {similarProperties.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 {similarProperties.map((p: any) => {
-                  const thumb = p.property_images?.[0]?.thumbnail_url ?? p.property_images?.[0]?.image_url ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400';
+                  const pyeong = p.exclusive_area ? toPyeong(parseFloat(p.exclusive_area)) : null;
                   return (
                     <a
                       key={p.property_number}
                       href={`/item/view/${p.property_number}`}
-                      style={{ textDecoration: 'none', color: 'inherit', display: 'block', border: '1px solid #e0e0e0', overflow: 'hidden', transition: 'all 0.2s ease', cursor: 'pointer' }}
+                      style={{ textDecoration: 'none', color: 'inherit', display: 'block', border: '1px solid #e0e0e0', overflow: 'hidden', transition: 'all 0.2s ease', cursor: 'pointer', background: '#fff' }}
                       onMouseEnter={e => {
                         (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
                         (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
@@ -586,20 +725,40 @@ export default function PropertyDetailPage() {
                         (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                       }}
                     >
-                      <div style={{ background: '#e2a06e', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', color: '#fff', fontWeight: 500 }}>{p.property_number}</span>
-                        <span style={{ fontSize: '11px', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' }}>{p.title}</span>
+                      {/* 썸네일 4:3 */}
+                      <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#f0f0f0' }}>
+                        {p.image
+                          ? <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#bbb' }}>준비중</div>
+                        }
                       </div>
-                      <div style={{ height: '100px', overflow: 'hidden' }}>
-                        <img src={thumb} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                      <div style={{ padding: '8px' }}>
+                      <div style={{ padding: '10px' }}>
+                        <p style={{ fontSize: '11px', color: '#bbb', marginBottom: '2px' }}>{p.property_number}</p>
+                        <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {(p.title ?? '').replace(/헤르만\s*/g, '')}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {formatAddressLong(p.address ?? '')}
+                        </p>
                         <p style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>
-                          {[p.address ? formatAddress(p.address) : null, p.exclusive_area, p.current_floor && `${p.current_floor}층`].filter(Boolean).join(' · ')}
+                          {[p.property_type, p.exclusive_area ? `${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
                         </p>
-                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#e2a06e' }}>
-                          {buildPriceStr(p)}
-                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {p.transaction_type && (() => {
+                            const colors: Record<string, { bg: string; border: string; text: string }> = {
+                              '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                              '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                              '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
+                            };
+                            const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                            return (
+                              <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', flexShrink: 0 }}>
+                                {p.transaction_type}
+                              </span>
+                            );
+                          })()}
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
+                        </div>
                       </div>
                     </a>
                   );
@@ -623,12 +782,20 @@ export default function PropertyDetailPage() {
             <p style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e', lineHeight: 1.5, marginBottom: '4px' }}>
               {buildPriceStr(property)}
             </p>
-            {property.maintenance_fee && (
-              <p style={{ fontSize: '15px', color: '#666', marginBottom: '12px' }}>관리비 {formatPrice(property.maintenance_fee)}</p>
-            )}
-            <p style={{ fontSize: '16px', color: '#444', marginBottom: '4px' }}>📍 {property.address ? formatAddressLong(property.address) : '-'}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '22px', fontWeight: 700, color: '#e04a4a' }}>
+                {property.premium ? (isAdmin ? `권리금 ${formatPrice(property.premium)}` : '권리금 협의') : '무권리'}
+              </span>
+              {property.maintenance_fee && (
+                <>
+                  <span style={{ color: '#ddd' }}>|</span>
+                  <span style={{ fontSize: '15px', color: '#666' }}>관리비 {formatPrice(property.maintenance_fee)}</span>
+                </>
+              )}
+            </div>
+            <p style={{ fontSize: '16px', color: '#444', marginBottom: '4px' }}>📍 {property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</p>
             <p style={{ fontSize: '16px', color: '#666', marginBottom: '14px' }}>
-              {[property.property_type, property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`, property.current_floor && `${property.current_floor}층`].filter(Boolean).join(' · ')}
+              {[property.property_type, property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`, property.current_floor && formatFloor(property.current_floor)].filter(Boolean).join(' · ')}
             </p>
             <button
               style={{ width: '100%', height: '48px', background: '#e2a06e', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: '10px', transition: 'background 0.2s' }}
@@ -667,6 +834,43 @@ export default function PropertyDetailPage() {
               ))}
             </div>
           </div>
+
+          {/* 수정/삭제 (로그인 시에만) */}
+          {isAdmin && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+              <a
+                href={`/admin/properties/${property.property_number}/edit`}
+                style={{ flex: 1, display: 'block', textAlign: 'center', padding: '12px', background: '#f8f8f8', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', fontSize: '15px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+              >
+                매물 수정
+              </a>
+              <button
+                onClick={async () => {
+                  if (!confirm(`매물 ${property.property_number} "${property.title}"을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+                  const pid = property.id;
+                  // 1) 이미지 조회 + Storage 삭제
+                  const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', pid);
+                  if (imgs && imgs.length > 0) {
+                    const paths = imgs.map((img: any) => {
+                      const m = (img.image_url as string).match(/property-images\/(.+)$/);
+                      return m ? m[1] : null;
+                    }).filter(Boolean) as string[];
+                    if (paths.length > 0) await supabase.storage.from('property-images').remove(paths);
+                    // 2) property_images 삭제
+                    await supabase.from('property_images').delete().eq('property_id', pid);
+                  }
+                  // 3) properties 삭제
+                  const { error } = await supabase.from('properties').delete().eq('id', pid);
+                  if (error) { alert(`삭제 실패: ${error.message}`); return; }
+                  alert('매물이 삭제되었습니다.');
+                  window.location.href = '/map';
+                }}
+                style={{ flex: 1, padding: '12px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                매물 삭제
+              </button>
+            </div>
+          )}
 
         </aside>
 

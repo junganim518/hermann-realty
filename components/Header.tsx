@@ -1,9 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
   const navItems = ['매물검색', '매물 의뢰하기', '부동산 소식', '공지사항', '회사소개'];
 
@@ -53,25 +70,28 @@ export default function Header() {
         </div>
 
         {/* 중앙: 로고 */}
-        <div
+        <a
+          href="/"
           className="header-logo"
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img src="/logo.png" alt="로고" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
             <span style={{ fontSize: '32px', fontWeight: '700', color: '#e2a06e' }}>헤르만부동산</span>
           </div>
           <div style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#999' }}>REAL ESTATE & INVESTMENTS</div>
-        </div>
+        </a>
 
         {/* 우측: 링크들 */}
         <div
           className="header-right"
           style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}
         >
-          <a href="#" style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>로그인</a>
-          <span style={{ color: '#555' }}>|</span>
-          <a href="#" style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>회원가입</a>
+          {user ? (
+            <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
+          ) : (
+            <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>로그인</a>
+          )}
         </div>
 
         {/* 햄버거 버튼 */}
@@ -134,8 +154,11 @@ export default function Header() {
             </a>
           ))}
           <div style={{ padding: '14px 20px', display: 'flex', gap: '16px', borderTop: '1px solid #333' }}>
-            <a href="#" style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>로그인</a>
-            <a href="#" style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>회원가입</a>
+            {user ? (
+              <button onClick={handleLogout} style={{ color: '#999', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>로그아웃</button>
+            ) : (
+              <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>로그인</a>
+            )}
           </div>
         </div>
       )}

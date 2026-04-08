@@ -25,13 +25,20 @@ export default function NewPropertyPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── 로그인 체크
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) router.replace('/login');
+    });
+  }, []);
+
   // ── 폼 상태
   const [form, setForm] = useState({
     property_number: '',
     title: '',
     transaction_type: '월세',
     property_type: '상가',
-    theme_type: '',
+    theme_types: [] as string[],
     address: '',
     latitude: '',
     longitude: '',
@@ -55,6 +62,7 @@ export default function NewPropertyPage() {
     is_recommended: false,
     is_new: false,
     description: '',
+    admin_memo: '',
   });
 
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
@@ -80,14 +88,51 @@ export default function NewPropertyPage() {
     fetchNextNumber();
   }, []);
 
-  // ── 카카오 주소검색 스크립트 로드
+  // ── 다음 우편번호 + 카카오맵 SDK 로드
+  const [kakaoReady, setKakaoReady] = useState(false);
+
   useEffect(() => {
-    if (document.getElementById('daum-postcode-script')) return;
-    const script = document.createElement('script');
-    script.id = 'daum-postcode-script';
-    script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
-    script.async = true;
-    document.head.appendChild(script);
+    // 다음 우편번호
+    if (!document.getElementById('daum-postcode-script')) {
+      const s1 = document.createElement('script');
+      s1.id = 'daum-postcode-script';
+      s1.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+      s1.async = true;
+      document.head.appendChild(s1);
+    }
+
+    // 카카오맵 SDK
+    const initKakao = () => {
+      if (typeof window.kakao?.maps?.services?.Geocoder === 'function') {
+        setKakaoReady(true);
+        return;
+      }
+      if (window.kakao?.maps?.load) {
+        window.kakao.maps.load(() => setKakaoReady(true));
+        return;
+      }
+      // 스크립트 동적 삽입
+      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"]')) {
+        const s2 = document.createElement('script');
+        s2.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services';
+        s2.async = true;
+        s2.onload = () => {
+          window.kakao.maps.load(() => setKakaoReady(true));
+        };
+        document.head.appendChild(s2);
+      } else {
+        // 스크립트 태그는 있지만 아직 로드 안 됨
+        const t = setInterval(() => {
+          if (typeof window.kakao?.maps?.services?.Geocoder === 'function') {
+            clearInterval(t); setKakaoReady(true);
+          } else if (window.kakao?.maps?.load) {
+            clearInterval(t);
+            window.kakao.maps.load(() => setKakaoReady(true));
+          }
+        }, 200);
+      }
+    };
+    initKakao();
   }, []);
 
   // ── 폼 업데이트 헬퍼
@@ -101,24 +146,31 @@ export default function NewPropertyPage() {
     }
 
     new window.daum.Postcode({
-      oncomplete: async (data: any) => {
-        const addr = data.roadAddress || data.jibunAddress;
-        set('address', addr);
+      oncomplete: (data: any) => {
+        // 사용자가 선택한 주소 유형에 따라 저장
+        const addr = data.userSelectedType === 'J'
+          ? (data.jibunAddress || data.autoJibunAddress)
+          : (data.roadAddress || data.autoRoadAddress);
+        setForm(prev => ({ ...prev, address: addr }));
+        console.log('[주소] 선택 유형:', data.userSelectedType, '주소:', addr);
 
-        // 카카오 REST API로 좌표 변환
-        try {
-          const res = await fetch(
-            `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(addr)}`,
-            { headers: { Authorization: `KakaoAK 8a478b4b6ea5e02722a33f6ac2fa34b6` } }
-          );
-          const json = await res.json();
-          if (json.documents?.length > 0) {
-            const { y, x } = json.documents[0];
-            setForm(prev => ({ ...prev, address: addr, latitude: y, longitude: x }));
-          }
-        } catch {
-          // 좌표 변환 실패 시 주소만 저장
+        if (!kakaoReady) {
+          console.warn('[주소] 카카오 SDK 미로드 — 좌표 변환 불가');
+          return;
         }
+
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(addr, (result: any, status: any) => {
+          console.log('[주소] Geocoder 결과:', status, result?.[0]);
+          if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+            const lat = result[0].y;
+            const lng = result[0].x;
+            setForm(prev => ({ ...prev, address: addr, latitude: lat, longitude: lng }));
+            console.log('[주소] 좌표 저장 — 위도:', lat, '경도:', lng);
+          } else {
+            console.warn('[주소] Geocoder 실패:', status);
+          }
+        });
       },
     }).open();
   };
@@ -194,7 +246,7 @@ export default function NewPropertyPage() {
         transaction_type: form.transaction_type,
         property_type: form.property_type,
         usage_type: form.usage_type || null,
-        theme_type: form.theme_type || null,
+        theme_type: form.theme_types.length > 0 ? form.theme_types.join(',') : null,
         address: form.address,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
@@ -222,6 +274,7 @@ export default function NewPropertyPage() {
         is_recommended: form.is_recommended,
         is_new: form.is_new,
         description: form.description || null,
+        admin_memo: form.admin_memo || null,
       };
 
       console.log('[1] properties INSERT 시작:', propertyNumber);
@@ -323,11 +376,26 @@ export default function NewPropertyPage() {
               </select>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelSt}>테마종류</label>
-              <select value={form.theme_type} onChange={e => set('theme_type', e.target.value)} style={selectSt}>
-                <option value="">선택 안함</option>
-                {THEME_TYPES.map(t => <option key={t}>{t}</option>)}
-              </select>
+              <label style={labelSt}>테마종류 <span style={{ fontSize: '11px', color: '#aaa', fontWeight: 400 }}>(다중 선택 가능)</span></label>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '8px 0' }}>
+                {THEME_TYPES.map(t => (
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px', color: '#444' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.theme_types.includes(t)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          set('theme_types', [...form.theme_types, t]);
+                        } else {
+                          set('theme_types', form.theme_types.filter((v: string) => v !== t));
+                        }
+                      }}
+                      style={{ width: '16px', height: '16px', accentColor: '#e2a06e', cursor: 'pointer' }}
+                    />
+                    {t}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -374,7 +442,7 @@ export default function NewPropertyPage() {
             </div>
             <div>
               <label style={labelSt}>권리금</label>
-              <input type="number" value={form.premium} onChange={e => set('premium', e.target.value)} placeholder="없으면 비워두세요" style={inputSt} />
+              <input type="number" value={form.premium} onChange={e => set('premium', e.target.value)} placeholder="0 입력 시 무권리" style={inputSt} />
             </div>
           </div>
         </div>
@@ -469,6 +537,17 @@ export default function NewPropertyPage() {
             onChange={e => set('description', e.target.value)}
             placeholder="매물 설명을 입력하세요. 줄바꿈이 그대로 적용됩니다."
             style={{ width: '100%', minHeight: '180px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }}
+          />
+        </div>
+
+        {/* ════════════ 관리자 메모 ════════════ */}
+        <div style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
+          <h2 style={{ ...sectionTitle, borderBottom: '2px solid #d4a017' }}>🔒 관리자 메모 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(상세페이지에서 관리자만 볼 수 있음)</span></h2>
+          <textarea
+            value={form.admin_memo}
+            onChange={e => set('admin_memo', e.target.value)}
+            placeholder="관리자 전용 메모를 입력하세요. (예: 건물주 연락처, 특이사항, 내부 참고사항 등)"
+            style={{ width: '100%', minHeight: '120px', border: '1px solid #e0d8a8', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit', background: '#fffef8' }}
           />
         </div>
 

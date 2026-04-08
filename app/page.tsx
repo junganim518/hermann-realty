@@ -136,7 +136,7 @@ export default function Home() {
           const { count } = await supabase
             .from('properties')
             .select('*', { count: 'exact', head: true })
-            .eq('theme_type', t);
+            .ilike('theme_type', `%${t}%`);
           hc[t] = count ?? 0;
         }),
       ]);
@@ -360,7 +360,7 @@ export default function Home() {
               {propertyTypes.map((type) => (
                 <li key={type.id}>
                   <a
-                    href="#"
+                    href={`/properties?type=${encodeURIComponent(type.id)}`}
                     className="flex items-center justify-between text-[#333] border-b border-gray-100 hover:text-[#e2a06e] transition-colors"
                     style={{ fontSize: '16px', padding: '9px 16px' }}
                   >
@@ -381,7 +381,7 @@ export default function Home() {
               {themeTypes.map((theme, index) => (
                 <li key={index}>
                   <a
-                    href="#"
+                    href={`/properties?theme=${encodeURIComponent(theme.id)}`}
                     className="flex items-center justify-between text-[#333] border-b border-gray-100 last:border-b-0 hover:text-[#e2a06e] transition-colors"
                     style={{ fontSize: '16px', padding: '9px 16px' }}
                   >
@@ -402,14 +402,16 @@ export default function Home() {
             <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>매물종류</h2>
             <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
               {propertyTypes.map((type) => (
-                <div
+                <a
                   key={type.id}
+                  href={`/properties?type=${encodeURIComponent(type.id)}`}
                   className="relative rounded-[4px] overflow-hidden cursor-pointer group"
                   style={{
                     height: '220px',
                     backgroundImage: `url('${type.image}')`,
                     backgroundSize: 'cover',
-                    backgroundPosition: 'center'
+                    backgroundPosition: 'center',
+                    display: 'block', textDecoration: 'none',
                   }}
                 >
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
@@ -423,7 +425,7 @@ export default function Home() {
                     <p style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>{type.eng}</p>
                     <h3 style={{ fontSize: '24px', fontWeight: 700 }}>{type.name}</h3>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </section>
@@ -433,14 +435,16 @@ export default function Home() {
             <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>테마별 매물 검색</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {themeTypes.map((theme, index) => (
-                <div
+                <a
                   key={index}
+                  href={`/properties?theme=${encodeURIComponent(theme.id)}`}
                   className="relative rounded-[4px] overflow-hidden cursor-pointer group"
                   style={{
                     height: '280px',
                     backgroundImage: `url('${theme.image}')`,
                     backgroundSize: 'cover',
-                    backgroundPosition: 'center'
+                    backgroundPosition: 'center',
+                    display: 'block', textDecoration: 'none',
                   }}
                 >
                   <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 transition-colors"></div>
@@ -454,7 +458,7 @@ export default function Home() {
                     <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '2px' }}>{theme.name}</h3>
                     <p style={{ fontSize: '13px', opacity: 0.85 }}>{theme.desc}</p>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </section>

@@ -11,8 +11,12 @@ declare global {
 // ── 유틸 ────────────────────────────────────────────────────
 const formatAddress = (addr: string) => {
   if (!addr) return '';
-  const m = addr.match(/(.+동)/);
-  return m ? m[1] : addr;
+  const normalized = addr.replace(/^경기\s/, '경기도 ');
+  const roadMatch = normalized.match(/^(.*?(?:시|군|구)\s+\S+(?:로|길))/);
+  if (roadMatch) return roadMatch[1];
+  const dongMatch = normalized.match(/^(.*?[가-힣]+동)/);
+  if (dongMatch) return dongMatch[1];
+  return normalized;
 };
 
 const formatPrice = (v: number) => {
@@ -62,23 +66,13 @@ const PROP_TYPES  = ['', '상가', '사무실', '원룸·투룸', '쓰리룸이�
 const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~40평', '40~50평', '50평 이상'];
 const THEME_TYPES = ['전체', '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
 
-const MARKER_SVG = encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
-    <ellipse cx="16" cy="37" rx="5" ry="2.5" fill="rgba(0,0,0,0.18)"/>
-    <path d="M16 0C9.4 0 4 5.4 4 12c0 9 12 24 12 24S28 21 28 12C28 5.4 22.6 0 16 0z" fill="#e2a06e"/>
-    <circle cx="16" cy="12" r="5" fill="#fff"/>
-  </svg>`
-);
-
 // ── 컴포넌트 ─────────────────────────────────────────────────
 export default function MapPage() {
   // refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapObjRef       = useRef<any>(null);
   const clustererRef    = useRef<any>(null);
-  const infowindowRef   = useRef<any>(null);
   const markersRef      = useRef<any[]>([]);
-  const circlesRef      = useRef<any[]>([]);
   const listRef         = useRef<HTMLDivElement>(null);
   const cardRefs        = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -88,6 +82,7 @@ export default function MapPage() {
   const [mapReady, setMapReady]         = useState(false);
   const [headerH, setHeaderH]           = useState(144);
   const [highlightId, setHighlightId]   = useState<string | null>(null);
+  const [visibleIds, setVisibleIds]     = useState<Set<string> | null>(null);
 
   const [searchInput, setSearchInput]   = useState('');
   const [search, setSearch]             = useState('');
@@ -112,7 +107,8 @@ export default function MapPage() {
 
       const map = new window.kakao.maps.Map(mapContainerRef.current, {
         center: new window.kakao.maps.LatLng(37.5040479677868, 126.77522691726),
-        level: 6,
+        level: 7,
+        minLevel: 4,
       });
       mapObjRef.current = map;
 
@@ -122,7 +118,8 @@ export default function MapPage() {
       clustererRef.current = new window.kakao.maps.MarkerClusterer({
         map,
         averageCenter: true,
-        minLevel: 5,
+        minClusterSize: 1,
+        disableClickZoom: true,
         styles: [{
           width: '44px', height: '44px',
           background: 'rgba(226,160,110,0.92)',
@@ -135,7 +132,6 @@ export default function MapPage() {
         }],
       });
 
-      infowindowRef.current = new window.kakao.maps.InfoWindow({ zIndex: 10 });
       if (!cancelled) setMapReady(true);
     };
 
@@ -147,7 +143,7 @@ export default function MapPage() {
 
     // script 태그 동적 생성
     const script = document.createElement('script');
-    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=clusterer';
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services,clusterer';
     script.async = true;
     script.onload = () => {
       window.kakao.maps.load(() => {
@@ -192,7 +188,7 @@ export default function MapPage() {
       if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
       if (filterType && p.property_type !== filterType) return false;
       if (!matchArea(p.exclusive_area, filterArea)) return false;
-      if (filterTheme !== '전체' && p.theme_type !== filterTheme && p.theme_types !== filterTheme) return false;
+      if (filterTheme !== '전체' && !(p.theme_type ?? '').split(',').includes(filterTheme)) return false;
       if (q && !String(p.title ?? '').toLowerCase().includes(q)
              && !String(p.address ?? '').toLowerCase().includes(q)
              && !String(p.property_number ?? '').toLowerCase().includes(q)) return false;
@@ -203,104 +199,62 @@ export default function MapPage() {
   // ── 마커 + 원 업데이트
   useEffect(() => {
     if (!mapReady || !mapObjRef.current) return;
-    const map = mapObjRef.current;
 
     // 기존 제거
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
-    circlesRef.current.forEach(c => c.setMap(null));
-    circlesRef.current = [];
     clustererRef.current?.clear();
-    infowindowRef.current?.close();
-
-    const markerImage = new window.kakao.maps.MarkerImage(
-      `data:image/svg+xml;charset=utf-8,${MARKER_SVG}`,
-      new window.kakao.maps.Size(32, 40),
-      { offset: new window.kakao.maps.Point(16, 40) }
-    );
 
     const newMarkers: any[] = [];
-    const newCircles: any[] = [];
 
     filtered
       .filter(p => p.latitude && p.longitude)
       .forEach(p => {
         const position = new window.kakao.maps.LatLng(p.latitude, p.longitude);
 
-        // 마커 (줌 5 이상에서 표시, 클러스터링용)
-        const marker = new window.kakao.maps.Marker({
-          position,
-          image: markerImage,
-        });
+        const marker = new window.kakao.maps.Marker({ position });
+        (marker as any)._pnum = p.property_number;
 
-        // 반경 원 (줌 4 이하에서 표시)
-        const circle = new window.kakao.maps.Circle({
-          center: position,
-          radius: 100,
-          strokeWeight: 1.5,
-          strokeColor: '#e2a06e',
-          strokeOpacity: 0.8,
-          fillColor: '#e2a06e',
-          fillOpacity: 0.2,
-        });
-
-        // 클릭 이벤트 (마커 & 원 공통)
-        const handleClick = () => {
-          const price = buildPriceStr(p);
-
-          infowindowRef.current.setContent(`
-            <div style="padding:10px 14px;font-family:Pretendard,sans-serif;min-width:190px;line-height:1.5;">
-              <p style="font-size:11px;color:#aaa;margin:0 0 2px;">${p.property_number ?? ''}</p>
-              <p style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0 0 3px;">${String(p.title ?? '').replace(/헤르만\s*/g, '')}</p>
-              <p style="font-size:13px;color:#e2a06e;font-weight:700;margin:0 0 6px;">${price}</p>
-              <a href="/item/view/${p.property_number}" style="font-size:12px;color:#e2a06e;text-decoration:underline;">상세보기 →</a>
-            </div>
-          `);
-          infowindowRef.current.open(map, marker);
-
+        // 클릭 이벤트 — 카드 하이라이트 + 스크롤만
+        window.kakao.maps.event.addListener(marker, 'click', () => {
           setHighlightId(p.property_number);
           const card = cardRefs.current[p.property_number];
           if (card && listRef.current) {
             listRef.current.scrollTo({ top: card.offsetTop - 16, behavior: 'smooth' });
           }
-        };
-
-        window.kakao.maps.event.addListener(marker, 'click', handleClick);
-        window.kakao.maps.event.addListener(circle, 'click', handleClick);
+        });
 
         newMarkers.push(marker);
-        newCircles.push(circle);
       });
 
     markersRef.current = newMarkers;
-    circlesRef.current = newCircles;
+    clustererRef.current?.addMarkers(newMarkers);
 
-    // 줌 레벨에 따라 마커/원 전환
-    const updateVisibility = () => {
-      const level = map.getLevel();
-      const zoomed = level <= 4; // 줌 4 이하 = 확대 상태
-
-      // 원: 확대 시 표시
-      newCircles.forEach(c => c.setMap(zoomed ? map : null));
-
-      // 마커+클러스터: 축소 시 표시
-      if (zoomed) {
-        clustererRef.current?.clear();
-        newMarkers.forEach(m => m.setMap(null));
-      } else {
-        newMarkers.forEach(m => m.setMap(null)); // 클러스터러가 관리
-        clustererRef.current?.clear();
-        clustererRef.current?.addMarkers(newMarkers);
-      }
+    // 클러스터 클릭 → 해당 매물만 목록 표시
+    const handleClusterClick = (cluster: any) => {
+      const bounds = cluster.getBounds();
+      const ids = new Set<string>();
+      markersRef.current.forEach((m: any) => {
+        if (bounds.contain(m.getPosition()) && m._pnum) ids.add(m._pnum);
+      });
+      if (ids.size > 0) setVisibleIds(ids);
     };
 
-    window.kakao.maps.event.addListener(map, 'zoom_changed', updateVisibility);
-    updateVisibility(); // 초기 적용
+    if (clustererRef.current) {
+      window.kakao.maps.event.addListener(clustererRef.current, 'clusterclick', handleClusterClick);
+    }
 
     return () => {
-      window.kakao.maps.event.removeListener(map, 'zoom_changed', updateVisibility);
+      if (clustererRef.current) {
+        window.kakao.maps.event.removeListener(clustererRef.current, 'clusterclick', handleClusterClick);
+      }
     };
   }, [filtered, mapReady]);
+
+  // ── 지도 내 표시 목록
+  const displayList = visibleIds
+    ? filtered.filter(p => visibleIds.has(p.property_number))
+    : filtered;
 
   // ── 핸들러
   const runSearch = () => setSearch(searchInput);
@@ -308,12 +262,13 @@ export default function MapPage() {
     setSearchInput(''); setSearch('');
     setFilterTx('전체'); setFilterType('');
     setFilterArea('전체'); setFilterTheme('전체');
+    setVisibleIds(null);
   };
 
   // ── 스타일 상수
   const selectSt: React.CSSProperties = {
-    height: '34px', border: '1px solid #ddd', borderRadius: '4px',
-    padding: '0 8px', fontSize: '13px', color: '#555',
+    height: '40px', border: '1px solid #ddd', borderRadius: '4px',
+    padding: '0 10px', fontSize: '15px', color: '#555',
     background: '#fff', cursor: 'pointer', outline: 'none',
   };
 
@@ -325,7 +280,7 @@ export default function MapPage() {
       <div style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: '#fff', borderBottom: '1px solid #e0e0e0',
-        padding: '10px 20px', display: 'flex', alignItems: 'center',
+        padding: '14px 24px', display: 'flex', alignItems: 'center',
         gap: '8px', flexWrap: 'wrap', flexShrink: 0,
         boxShadow: '0 2px 6px rgba(0,0,0,0.07)',
       }}>
@@ -337,15 +292,15 @@ export default function MapPage() {
             onKeyDown={e => e.key === 'Enter' && runSearch()}
             placeholder="매물번호 / 제목 / 주소 검색"
             style={{
-              width: '230px', height: '34px',
+              width: '280px', height: '40px',
               border: '1px solid #ddd', borderRight: 'none',
-              borderRadius: '4px 0 0 4px', padding: '0 10px',
-              fontSize: '13px', outline: 'none',
+              borderRadius: '4px 0 0 4px', padding: '0 12px',
+              fontSize: '15px', outline: 'none',
             }}
           />
           <button
             onClick={runSearch}
-            style={{ height: '34px', padding: '0 14px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '0 4px 4px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+            style={{ height: '40px', padding: '0 16px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '0 4px 4px 0', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
           >
             검색
           </button>
@@ -375,12 +330,12 @@ export default function MapPage() {
         {/* 초기화 */}
         <button
           onClick={resetAll}
-          style={{ height: '34px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '13px', color: '#666', background: '#fff', cursor: 'pointer' }}
+          style={{ height: '40px', padding: '0 14px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '15px', color: '#666', background: '#fff', cursor: 'pointer' }}
         >
           초기화
         </button>
 
-        <span style={{ fontSize: '13px', color: '#555', marginLeft: 'auto' }}>
+        <span style={{ fontSize: '15px', color: '#555', marginLeft: 'auto' }}>
           매물 <strong style={{ color: '#e2a06e' }}>{filtered.length}</strong>개
         </span>
       </div>
@@ -403,13 +358,21 @@ export default function MapPage() {
         </div>
 
         {/* ── 우측 매물 목록 */}
-        <div style={{ width: '400px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+        <div style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
 
           {/* 헤더 */}
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', flexShrink: 0 }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>
-              지도 내 매물&nbsp;<span style={{ color: '#e2a06e' }}>{filtered.length}</span>개
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
+              지도 내 매물&nbsp;<span style={{ color: '#e2a06e' }}>{displayList.length}</span>개
             </span>
+            {visibleIds && (
+              <button
+                onClick={() => setVisibleIds(null)}
+                style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '15px', fontWeight: 600, cursor: 'pointer', padding: '2px 4px' }}
+              >
+                전체보기
+              </button>
+            )}
           </div>
 
           {/* 카드 리스트 */}
@@ -419,13 +382,13 @@ export default function MapPage() {
                 <span style={{ fontSize: '24px' }}>⏳</span>
                 <p style={{ fontSize: '14px' }}>매물을 불러오는 중...</p>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : displayList.length === 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', flexDirection: 'column', gap: '8px', color: '#aaa' }}>
                 <span style={{ fontSize: '28px' }}>🏚</span>
                 <p style={{ fontSize: '14px', color: '#666', fontWeight: 600 }}>조건에 맞는 매물이 없습니다</p>
               </div>
             ) : (
-              filtered.map(p => {
+              displayList.map(p => {
                 const thumb    = p.property_images?.[0]?.image_url ?? null;
                 const title    = String(p.title ?? '').replace(/헤르만\s*/g, '');
                 const pyeong   = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
@@ -445,28 +408,41 @@ export default function MapPage() {
                   >
                     <Link
                       href={`/item/view/${p.property_number}`}
-                      style={{ display: 'flex', gap: '12px', padding: '12px 16px', textDecoration: 'none', color: 'inherit' }}
+                      style={{ display: 'flex', gap: '14px', padding: '16px 20px', textDecoration: 'none', color: 'inherit' }}
                     >
                       {/* 썸네일 */}
-                      <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0' }}>
+                      <div style={{ width: '100px', height: '100px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
                         {thumb
                           ? <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#bbb' }}>준비중</div>
+                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#bbb' }}>준비중</div>
                         }
+                        {p.is_sold && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ color: '#fff', fontSize: '12px', fontWeight: 800, letterSpacing: '1px', border: '1px solid #fff', padding: '2px 6px', borderRadius: '3px' }}>거래완료</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* 텍스트 */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
-                        <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
-                        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</p>
+                        <p style={{ fontSize: '13px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
+                        <p style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
+                        <p style={{ fontSize: '14px', color: '#888', margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          {p.transaction_type && (
-                            <span style={{ background: '#fff8f2', border: '1px solid #e2a06e', color: '#e2a06e', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', flexShrink: 0 }}>
-                              {p.transaction_type}
-                            </span>
-                          )}
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
+                          {p.transaction_type && (() => {
+                            const colors: Record<string, { bg: string; border: string; text: string }> = {
+                              '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                              '전세': { bg: '#f0f4ff', border: '#4a7cdc', text: '#4a7cdc' },
+                              '매매': { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a' },
+                            };
+                            const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                            return (
+                              <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                                {p.transaction_type}
+                              </span>
+                            );
+                          })()}
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
                         </div>
                       </div>
                     </Link>
