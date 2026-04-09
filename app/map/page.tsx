@@ -87,6 +87,16 @@ export default function MapPage() {
   const [drawerDragY, setDrawerDragY]   = useState(0);
   const drawerStartY = useRef(0);
 
+  // 드로어 열릴 때 body 스크롤 막기
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [drawerOpen]);
+
   const [searchInput, setSearchInput]   = useState('');
   const [search, setSearch]             = useState('');
   const [filterTx, setFilterTx]         = useState('전체');
@@ -521,9 +531,9 @@ export default function MapPage() {
 
       {/* ════════════ 모바일 드로어 ════════════ */}
       {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, touchAction: 'none' }} onClick={() => setDrawerOpen(false)}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200 }} onClick={() => setDrawerOpen(false)}>
           {/* 배경 오버레이 */}
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', touchAction: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
           {/* 드로어 시트 */}
           <div
             onClick={e => e.stopPropagation()}
@@ -533,16 +543,16 @@ export default function MapPage() {
               borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
               boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
               display: 'flex', flexDirection: 'column',
+              overscrollBehavior: 'contain',
               transform: `translateY(${drawerDragY}px)`,
               transition: drawerDragY === 0 ? 'transform 0.3s ease' : 'none',
             }}
           >
             {/* 드로어 핸들 + 헤더 */}
             <div
-              style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'none' }}
+              style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'pan-y' }}
               onTouchStart={e => { drawerStartY.current = e.touches[0].clientY; setDrawerDragY(0); }}
               onTouchMove={e => {
-                e.preventDefault();
                 const diff = e.touches[0].clientY - drawerStartY.current;
                 setDrawerDragY(diff > 0 ? diff : 0);
               }}
