@@ -302,7 +302,7 @@ export default function MapPage() {
 
   // ── 렌더
   return (
-    <div style={{ height: `calc(100vh - ${headerH}px)`, display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden' }}>
+    <div className="map-container" style={{ height: `calc(100vh - ${headerH}px)`, display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 1199px) {
@@ -329,7 +329,8 @@ export default function MapPage() {
           .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
           .map-filter-bar .map-count { display: none !important; }
           .map-panel { display: none !important; }
-          .map-area { width: 100% !important; height: 55vh !important; }
+          .map-container { height: auto !important; overflow: visible !important; }
+          .map-area { width: 100% !important; height: 60vh !important; }
           .map-drawer-toggle { display: flex !important; }
           .map-card-text { padding: 12px 14px !important; }
           .map-card-text .map-card-pnum { font-size: 11px !important; }
