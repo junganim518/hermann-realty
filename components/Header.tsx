@@ -22,143 +22,148 @@ export default function Header() {
     window.location.reload();
   };
 
-  const navItems = ['매물검색', '매물 의뢰하기', '부동산 소식', '공지사항', '회사소개'];
+  const navItems = [
+    { label: '매물검색', href: '/map' },
+    { label: '매물 의뢰하기', href: '#' },
+    { label: '부동산 소식', href: '#' },
+    { label: '공지사항', href: '#' },
+    { label: '회사소개', href: '#' },
+  ];
 
   return (
     <header style={{ width: '100%', position: 'sticky', top: 0, zIndex: 1000 }}>
 
       <style>{`
-        @media (max-width: 1024px) {
-          .header-left { display: none !important; }
-          .header-right { display: none !important; }
-          .header-hamburger { display: flex !important; }
-          .header-logo-bar { padding: 0 20px !important; }
-        }
-        @media (min-width: 1025px) {
-          .header-hamburger { display: none !important; }
-          .header-mobile-menu { display: none !important; }
-        }
         @media (max-width: 768px) {
-          .header-logo span { font-size: 22px !important; }
-          .header-logo img { width: 36px !important; height: 36px !important; }
-          .header-nav { gap: 20px !important; }
-          .header-nav a { font-size: 13px !important; }
+          .h-phone { display: none !important; }
+          .h-auth-desktop { display: none !important; }
+          .h-nav-desktop { display: none !important; }
+          .h-hamburger { display: flex !important; }
+          .h-logo-bar { padding: 0 16px !important; height: 64px !important; }
+          .h-logo-text { font-size: 22px !important; }
+          .h-logo-img { width: 36px !important; height: 36px !important; }
+          .h-logo-sub { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .h-hamburger { display: none !important; }
         }
       `}</style>
 
-      {/* 로고 바 - 3열 구조 */}
+      {/* ── 로고 바 ── */}
       <div
-        className="header-logo-bar"
+        className="h-logo-bar"
         style={{
-          background: '#111111',
-          height: '90px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          background: '#111', height: '90px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 clamp(16px, calc(50% - 560px), 500px)',
-          borderBottom: '1px solid #333'
+          borderBottom: '1px solid #333',
         }}
       >
-
-        {/* 좌측: 문의 전화 */}
-        <div
-          className="header-left"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#999', fontSize: '17px', fontWeight: '700', minWidth: '220px' }}
-        >
-          <span>☎ 문의</span>
-          <span style={{ color: '#e2a06e', fontWeight: '700', fontSize: '17px' }}>010-8680-8151</span>
+        {/* 좌: 전화번호 */}
+        <div className="h-phone" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '220px' }}>
+          <span style={{ color: '#999', fontSize: '17px', fontWeight: 700 }}>☎ 문의</span>
+          <span style={{ color: '#e2a06e', fontSize: '17px', fontWeight: 700 }}>010-8680-8151</span>
         </div>
 
         {/* 중앙: 로고 */}
-        <a
-          href="/"
-          className="header-logo"
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
-        >
+        <a href="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/logo.png" alt="로고" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
-            <span style={{ fontSize: '32px', fontWeight: '700', color: '#e2a06e' }}>헤르만부동산</span>
+            <img className="h-logo-img" src="/logo.png" alt="로고" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
+            <span className="h-logo-text" style={{ fontSize: '32px', fontWeight: 700, color: '#e2a06e' }}>헤르만부동산</span>
           </div>
-          <div style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#999' }}>REAL ESTATE & INVESTMENTS</div>
+          <div className="h-logo-sub" style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#999' }}>REAL ESTATE & INVESTMENTS</div>
         </a>
 
-        {/* 우측: 링크들 */}
-        <div
-          className="header-right"
-          style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}
-        >
+        {/* 우: 로그인 (데스크톱) */}
+        <div className="h-auth-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}>
           {user ? (
-            <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
+            <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
           ) : (
-            <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#999', fontSize: '17px', fontWeight: '700', textDecoration: 'none' }}>로그인</a>
+            <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#999', fontSize: '17px', fontWeight: 700, textDecoration: 'none' }}>로그인</a>
           )}
         </div>
 
-        {/* 햄버거 버튼 */}
+        {/* 햄버거 (모바일) */}
         <button
-          className="header-hamburger"
+          className="h-hamburger"
           onClick={() => setMenuOpen(!menuOpen)}
           style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#999' }}
           aria-label="메뉴"
         >
-          {menuOpen ? (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          )}
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {menuOpen
+              ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+              : <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>
+            }
+          </svg>
         </button>
-
       </div>
 
-      {/* 네비게이션 바 */}
+      {/* ── 네비게이션 바 (데스크톱) ── */}
       <nav
-        className="header-nav"
-        style={{ background: '#ffffff', borderBottom: '1px solid #dddddd', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '56px' }}
+        className="h-nav-desktop"
+        style={{ background: '#fff', borderBottom: '1px solid #ddd', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '56px' }}
       >
-        {navItems.map((menu) => (
+        {navItems.map((item) => (
           <a
-            key={menu}
-            href={menu === '매물검색' ? '/map' : '#'}
-            style={{ fontSize: '18px', fontWeight: '500', color: '#333333', textDecoration: 'none', whiteSpace: 'nowrap' }}
+            key={item.label}
+            href={item.href}
+            style={{ fontSize: '18px', fontWeight: 500, color: '#333', textDecoration: 'none', whiteSpace: 'nowrap' }}
             onMouseEnter={e => (e.target as HTMLElement).style.color = '#e2a06e'}
-            onMouseLeave={e => (e.target as HTMLElement).style.color = '#333333'}
+            onMouseLeave={e => (e.target as HTMLElement).style.color = '#333'}
           >
-            {menu}
+            {item.label}
           </a>
         ))}
       </nav>
 
-      {/* 모바일 메뉴 */}
+      {/* ── 모바일 드로어 메뉴 ── */}
       {menuOpen && (
-        <div className="header-mobile-menu" style={{ background: '#111', borderTop: '1px solid #333' }}>
-          {navItems.map((menu) => (
-            <a
-              key={menu}
-              href="#"
-              onClick={() => setMenuOpen(false)}
-              style={{
-                display: 'block',
-                padding: '14px 20px',
-                fontSize: '16px',
-                fontWeight: '500',
-                color: '#ccc',
-                textDecoration: 'none',
-                borderBottom: '1px solid #222'
-              }}
-            >
-              {menu}
-            </a>
-          ))}
-          <div style={{ padding: '14px 20px', display: 'flex', gap: '16px', borderTop: '1px solid #333' }}>
-            {user ? (
-              <button onClick={handleLogout} style={{ color: '#999', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>로그아웃</button>
-            ) : (
-              <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#999', fontSize: '14px', textDecoration: 'none' }}>로그인</a>
-            )}
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)',
+        }} onClick={() => setMenuOpen(false)}>
+          <div
+            style={{
+              position: 'absolute', top: 0, right: 0,
+              width: '280px', height: '100%',
+              background: '#111', overflowY: 'auto',
+              boxShadow: '-4px 0 20px rgba(0,0,0,0.3)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 닫기 버튼 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #333' }}>
+              <span style={{ color: '#e2a06e', fontSize: '18px', fontWeight: 700 }}>메뉴</span>
+              <button onClick={() => setMenuOpen(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '24px', lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* 메뉴 항목 */}
+            {navItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                style={{ display: 'block', padding: '16px 20px', fontSize: '16px', fontWeight: 500, color: '#ccc', textDecoration: 'none', borderBottom: '1px solid #222' }}
+              >
+                {item.label}
+              </a>
+            ))}
+
+            {/* 전화번호 */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #222' }}>
+              <p style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>대표전화</p>
+              <a href="tel:01086808151" style={{ fontSize: '20px', fontWeight: 700, color: '#e2a06e', textDecoration: 'none' }}>010-8680-8151</a>
+            </div>
+
+            {/* 로그인/로그아웃 */}
+            <div style={{ padding: '16px 20px' }}>
+              {user ? (
+                <button onClick={() => { handleLogout(); setMenuOpen(false); }} style={{ color: '#999', fontSize: '15px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>로그아웃</button>
+              ) : (
+                <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#e2a06e', fontSize: '15px', fontWeight: 600, textDecoration: 'none' }}>로그인</a>
+              )}
+            </div>
           </div>
         </div>
       )}

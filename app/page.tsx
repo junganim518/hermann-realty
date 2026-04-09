@@ -224,8 +224,26 @@ export default function Home() {
   return (
     <main className="w-full text-[#1a1a1a] leading-7">
 
+      <style>{`
+        @media (max-width: 768px) {
+          .card-header { padding: 5px 8px !important; }
+          .card-header span { font-size: 11px !important; }
+          .card-body { padding: 6px 8px !important; }
+          .card-body .card-addr { font-size: 11px !important; }
+          .card-body .card-meta { font-size: 11px !important; }
+          .card-body .card-price { font-size: 13px !important; }
+          .card-body .card-badge { font-size: 9px !important; padding: 1px 5px !important; }
+          .section-title { font-size: 20px !important; margin-bottom: 16px !important; }
+          .section-pad { padding: 10px !important; }
+          .type-card { height: 140px !important; }
+          .type-card h3 { font-size: 18px !important; }
+          .theme-card { height: 180px !important; }
+          .theme-card h3 { font-size: 18px !important; }
+        }
+      `}</style>
+
       {/* 히어로 배너 */}
-      <section className="relative w-full min-h-[650px] overflow-hidden">
+      <section className="relative w-full min-h-[400px] sm:min-h-[650px] overflow-hidden">
 
         <style>{`
           @keyframes fadeIn {
@@ -249,7 +267,7 @@ export default function Home() {
               key={i}
               src={slide.image}
               alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover', flexShrink: 0, minHeight: '650px' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', flexShrink: 0, minHeight: '400px' }}
             />
           ))}
         </div>
@@ -316,7 +334,7 @@ export default function Home() {
       {/* 검색바 섹션 */}
       <section className="bg-white py-6 px-4 md:px-6">
         <div
-          className="w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto flex items-center"
+          className="w-full max-w-full sm:max-w-md lg:max-w-lg mx-auto flex items-center"
           style={{
             boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
             borderRadius: '4px',
@@ -398,14 +416,14 @@ export default function Home() {
         <div className="flex-1 min-w-0 px-4">
 
           {/* 매물 종류 섹션 */}
-          <section style={{ padding: '16px', backgroundColor: '#fff' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>매물종류</h2>
-            <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
+          <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
+            <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>매물종류</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
               {propertyTypes.map((type) => (
                 <a
                   key={type.id}
                   href={`/properties?type=${encodeURIComponent(type.id)}`}
-                  className="relative rounded-[4px] overflow-hidden cursor-pointer group"
+                  className="type-card relative rounded-[4px] overflow-hidden cursor-pointer group"
                   style={{
                     height: '220px',
                     backgroundImage: `url('${type.image}')`,
@@ -431,14 +449,14 @@ export default function Home() {
           </section>
 
           {/* 테마 종류 섹션 */}
-          <section style={{ padding: '16px', backgroundColor: '#f9f9f9' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>테마별 매물 검색</h2>
+          <section className="section-pad" style={{ padding: '16px', backgroundColor: '#f9f9f9' }}>
+            <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>테마별 매물 검색</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {themeTypes.map((theme, index) => (
                 <a
                   key={index}
                   href={`/properties?theme=${encodeURIComponent(theme.id)}`}
-                  className="relative rounded-[4px] overflow-hidden cursor-pointer group"
+                  className="theme-card relative rounded-[4px] overflow-hidden cursor-pointer group"
                   style={{
                     height: '280px',
                     backgroundImage: `url('${theme.image}')`,
@@ -464,8 +482,8 @@ export default function Home() {
           </section>
 
           {/* 최신매물 섹션 */}
-          <section style={{ padding: '16px', backgroundColor: '#fff' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>최신매물</h2>
+          <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
+            <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>최신매물</h2>
 
             {/* 탭 */}
             <div className="flex justify-center" style={{ marginBottom: '16px' }}>
@@ -488,7 +506,7 @@ export default function Home() {
             </div>
 
             {/* 매물 그리드 */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
               {recentProperties.map((property) => (
                 <Link
                   key={property.id}
@@ -504,11 +522,11 @@ export default function Home() {
                   }}
                   className="border border-gray-200 overflow-hidden"
                 >
-                  <div className="bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
+                  <div className="card-header bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 500 }}>{property.id}</span>
                     <span style={{ fontSize: '13px', fontWeight: 600 }} className="truncate ml-2">{(property.title ?? '').replace('헤르만 ', '')}</span>
                   </div>
-                  <div className="relative" style={{ height: '260px' }}>
+                  <div className="relative h-[120px] sm:h-[180px] md:h-[260px]">
                     <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
                     <button className="absolute top-2 right-2 text-white text-xl hover:text-red-500 transition-colors" onClick={e => e.preventDefault()}>
                       ♡
@@ -521,16 +539,16 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                  <div className="p-3">
-                    <div className="mb-2">
-                      <p style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
+                  <div className="card-body p-3">
+                    <div className="mb-1 md:mb-2">
+                      <p className="card-addr" style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
                         {formatAddress(property.location ?? '')}
                       </p>
-                      <p style={{ fontSize: '13px', color: '#666' }}>
+                      <p className="card-meta" style={{ fontSize: '13px', color: '#666' }}>
                         {property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : property.area ? `전용 ${property.area}㎡` : ''}{property.type ? ` · ${property.type}` : ''}{property.floor ? ` · ${property.floor}` : ''}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       {property.transaction_type && (() => {
                         const colors: Record<string, { bg: string; border: string; text: string }> = {
                           '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
@@ -539,12 +557,12 @@ export default function Home() {
                         };
                         const c = colors[property.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                         return (
-                          <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                          <span className="card-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
                             {property.transaction_type}
                           </span>
                         );
                       })()}
-                      <span style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(property)}</span>
+                      <span className="card-price" style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(property)}</span>
                     </div>
                   </div>
                 </Link>
