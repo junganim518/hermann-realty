@@ -258,9 +258,12 @@ export default function Home() {
           .theme-card { height: 180px !important; }
           .theme-card h3 { font-size: 18px !important; }
           .hero-sub { font-size: 14px !important; }
-          .hero-title { font-size: 32px !important; }
-          .hero-desc { font-size: 15px !important; }
-          .hero-body { font-size: 12px !important; }
+          .hero-title { font-size: 28px !important; }
+          .hero-desc { font-size: 14px !important; }
+          .hero-body { font-size: 11px !important; }
+          .hero-text { padding-bottom: 100px !important; }
+          .hero-btns { bottom: 24px !important; }
+          .hero-btns a, .hero-btns button { padding: 8px 0 !important; font-size: 13px !important; width: 130px !important; }
           .main-layout { width: 100% !important; margin: 0 !important; }
           .center-content { padding-left: 0 !important; padding-right: 0 !important; }
           .search-section { padding-left: 8px !important; padding-right: 8px !important; }
@@ -323,7 +326,7 @@ export default function Home() {
         </div>
 
         {/* 레이어 3: 버튼 (슬라이드와 독립적으로 항상 표시) */}
-        <div className="flex flex-row gap-2 sm:gap-4 justify-center" style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+        <div className="hero-btns flex flex-row gap-2 sm:gap-4 justify-center" style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
           <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg font-semibold transition" style={{ textDecoration: 'none', padding: '10px 0', fontSize: '15px', width: '160px', textAlign: 'center', display: 'inline-block' }}>
             매물 검색하기
           </a>
