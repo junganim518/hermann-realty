@@ -329,7 +329,7 @@ export default function MapPage() {
           .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
           .map-filter-bar .map-count { display: none !important; }
           .map-panel { display: none !important; }
-          .map-area { width: 100% !important; }
+          .map-area { width: 100% !important; height: 55vh !important; }
           .map-drawer-toggle { display: flex !important; }
           .map-card-text { padding: 12px 14px !important; }
           .map-card-text .map-card-pnum { font-size: 11px !important; }
