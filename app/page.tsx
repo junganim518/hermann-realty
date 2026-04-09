@@ -448,8 +448,8 @@ export default function Home() {
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="지역, 매물종류, 키워드 검색"
-            className="search-input flex-1 px-3 py-4 text-[16px] text-gray-700 placeholder-gray-400 outline-none border-none bg-white"
-            style={{ minWidth: 0 }}
+            className="search-input flex-1 px-3 py-4 text-[16px] placeholder-gray-400 outline-none border-none bg-white"
+            style={{ minWidth: 0, color: '#333' }}
           />
           <button
             onClick={handleSearch}

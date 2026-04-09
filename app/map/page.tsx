@@ -340,7 +340,7 @@ export default function MapPage() {
               width: '280px', height: '40px',
               border: '1px solid #ddd', borderRight: 'none',
               borderRadius: '4px 0 0 4px', padding: '0 12px',
-              fontSize: '15px', outline: 'none',
+              fontSize: '15px', outline: 'none', color: '#333',
             }}
           />
           <button

@@ -299,7 +299,7 @@ export default function PropertiesPage() {
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="지역, 매물종류, 키워드 검색"
-              style={{ flex: 1, height: '44px', border: 'none', outline: 'none', fontSize: '15px', padding: '0 10px', background: '#fff', minWidth: 0 }}
+              style={{ flex: 1, height: '44px', border: 'none', outline: 'none', fontSize: '15px', padding: '0 10px', background: '#fff', minWidth: 0, color: '#333' }}
             />
             <button
               onClick={handleSearch}
