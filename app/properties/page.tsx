@@ -409,7 +409,7 @@ export default function PropertiesPage() {
                             </span>
                           );
                         })()}
-                        <span className="prop-price" style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
+                        <span style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                       </div>
                     </div>
                   </Link>

@@ -15,6 +15,16 @@ html {
 }
 
 body {
-  color: #1a1a1a;
-  background: #fff;
+  color: #1a1a1a !important;
+  background: #fff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html, body, *, *::before, *::after {
+    color-scheme: light only !important;
+  }
+  body {
+    color: #1a1a1a !important;
+    background: #fff !important;
+  }
 }
