@@ -536,23 +536,23 @@ export default function MapPage() {
       </div>
 
       {/* ════════════ 모바일 드로어 ════════════ */}
+      {/* 배경 오버레이 */}
       {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200 }} onClick={() => setDrawerOpen(false)}>
-          {/* 배경 오버레이 */}
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
-          {/* 드로어 시트 */}
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              height: '60vh', maxHeight: '60vh', background: '#fff',
-              borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
-              boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
-              display: 'flex', flexDirection: 'column',
-              overscrollBehavior: 'contain',
-              transform: `translateY(${drawerDragY}px)`,
-              transition: drawerDragY === 0 ? 'transform 0.3s ease' : 'none',
-            }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.4)' }} onClick={() => setDrawerOpen(false)} />
+      )}
+      {/* 드로어 시트 (항상 렌더, transform으로 표시/숨김) */}
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%',
+          height: '60vh', maxHeight: '60vh', background: '#fff',
+          borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
+          boxShadow: drawerOpen ? '0 -4px 20px rgba(0,0,0,0.15)' : 'none',
+          display: 'flex', flexDirection: 'column',
+          overscrollBehavior: 'contain', zIndex: 200,
+          transform: drawerOpen ? `translateY(${drawerDragY}px)` : 'translateY(100%)',
+          transition: drawerDragY === 0 ? 'transform 0.3s ease' : 'none',
+        }}
           >
             {/* 드로어 핸들 + 헤더 */}
             <div
@@ -614,9 +614,7 @@ export default function MapPage() {
                 );
               })}
             </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
