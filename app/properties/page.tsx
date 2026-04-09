@@ -103,6 +103,7 @@ export default function PropertiesPage() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get('type') ?? '';
   const themeParam = searchParams.get('theme') ?? '';
+  const searchParam = searchParams.get('search') ?? '';
 
   const [allProperties, setAllProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,14 +115,16 @@ export default function PropertiesPage() {
   const [filterDeposit, setFilterDeposit] = useState('전체');
   const [filterRent, setFilterRent] = useState('전체');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState(searchParam);
 
   useEffect(() => {
     setFilterType(typeParam || '전체');
     setFilterTheme(themeParam || '전체');
+    setSearchInput(searchParam);
     setCurrentPage(1);
-  }, [typeParam, themeParam]);
+  }, [typeParam, themeParam, searchParam]);
 
-  const title = filterTheme !== '전체' ? filterTheme : filterType !== '전체' ? `${filterType} 매물` : '전체 매물';
+  const title = searchParam ? `"${searchParam}" 검색 결과` : filterTheme !== '전체' ? filterTheme : filterType !== '전체' ? `${filterType} 매물` : '전체 매물';
 
   useEffect(() => {
     const h = document.querySelector('header') as HTMLElement;
@@ -131,7 +134,11 @@ export default function PropertiesPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
+      if (searchParam) {
+        query = query.or(`address.ilike.%${searchParam}%,title.ilike.%${searchParam}%,property_number.ilike.%${searchParam}%,property_type.ilike.%${searchParam}%,transaction_type.ilike.%${searchParam}%,theme_type.ilike.%${searchParam}%,description.ilike.%${searchParam}%`);
+      }
+      const { data } = await query;
 
       const withImages = await Promise.all(
         (data ?? []).map(async (p: any) => {
@@ -147,7 +154,7 @@ export default function PropertiesPage() {
       setAllProperties(withImages);
       setLoading(false);
     })();
-  }, []);
+  }, [searchParam]);
 
   const filtered = allProperties.filter(p => {
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
@@ -158,6 +165,15 @@ export default function PropertiesPage() {
     if (!matchRent(p.monthly_rent, filterRent)) return false;
     return true;
   });
+
+  const handleSearch = () => {
+    const q = searchInput.trim();
+    const params = new URLSearchParams();
+    if (q) params.set('search', q);
+    if (filterType !== '전체') params.set('type', filterType);
+    if (filterTheme !== '전체') params.set('theme', filterTheme);
+    window.location.href = `/properties${params.toString() ? '?' + params.toString() : ''}`;
+  };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -270,6 +286,27 @@ export default function PropertiesPage() {
             <p style={{ fontSize: '14px', color: '#888', marginTop: '4px' }}>
               총 <strong style={{ color: '#e2a06e' }}>{filtered.length}</strong>개 매물
             </p>
+          </div>
+
+          {/* 검색바 */}
+          <div style={{ marginBottom: '16px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '6px', overflow: 'hidden', maxWidth: '600px', margin: '0 auto 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 10px', background: '#fff', color: '#aaa' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+            </div>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="지역, 매물종류, 키워드 검색"
+              style={{ flex: 1, height: '44px', border: 'none', outline: 'none', fontSize: '15px', padding: '0 10px', background: '#fff', minWidth: 0 }}
+            />
+            <button
+              onClick={handleSearch}
+              style={{ padding: '0 20px', height: '44px', background: '#e2a06e', color: '#fff', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              검색
+            </button>
           </div>
 
           {/* 필터 바 */}

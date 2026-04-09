@@ -342,7 +342,27 @@ export default function NewPropertyPage() {
 
   // ── 렌더
   return (
-    <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '24px' }}>
+    <main className="admin-page" style={{ background: '#f5f5f5', minHeight: '100vh', padding: '24px' }}>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 1199px) {
+          .admin-page { padding: 16px !important; }
+        }
+        @media (max-width: 767px) {
+          .admin-page { padding: 12px 8px !important; }
+          .admin-page h1 { font-size: 22px !important; }
+          .admin-form-grid { grid-template-columns: 1fr !important; }
+          .admin-section { padding: 16px 12px !important; margin-bottom: 12px !important; }
+          .admin-section-title { font-size: 16px !important; margin-bottom: 12px !important; padding-bottom: 8px !important; }
+          .admin-img-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .admin-btn-row { flex-direction: column !important; }
+          .admin-btn-row button, .admin-btn-row a { width: 100% !important; text-align: center !important; }
+          .admin-checkbox-row { gap: 12px !important; }
+          .admin-theme-row { gap: 8px !important; }
+          .admin-theme-row label { font-size: 13px !important; }
+        }
+      ` }} />
+
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
         {/* 페이지 헤더 */}
@@ -352,9 +372,9 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 기본 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>기본 정보</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>기본 정보</h2>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>매물번호 <span style={{ fontSize: '11px', color: '#aaa', fontWeight: 400 }}>(자동생성 — 수정 가능)</span></label>
               <input value={form.property_number} onChange={e => set('property_number', e.target.value)} placeholder="자동 생성 중..." style={inputSt} />
@@ -377,7 +397,7 @@ export default function NewPropertyPage() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>테마종류 <span style={{ fontSize: '11px', color: '#aaa', fontWeight: 400 }}>(다중 선택 가능)</span></label>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '8px 0' }}>
+              <div className="admin-theme-row" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '8px 0' }}>
                 {THEME_TYPES.map(t => (
                   <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px', color: '#444' }}>
                     <input
@@ -401,8 +421,8 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 위치 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>위치 정보</h2>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>위치 정보</h2>
           <div style={{ marginBottom: '12px' }}>
             <label style={labelSt}>주소 *</label>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -412,7 +432,7 @@ export default function NewPropertyPage() {
               </button>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>위도</label>
               <input value={form.latitude} onChange={e => set('latitude', e.target.value)} placeholder="자동 입력" style={{ ...inputSt, background: '#f9f9f9' }} />
@@ -425,9 +445,9 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 금액 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>금액 정보 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(만원 단위)</span></h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>금액 정보 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(만원 단위)</span></h2>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>보증금</label>
               <input type="number" value={form.deposit} onChange={e => set('deposit', e.target.value)} placeholder="예: 5000" style={inputSt} />
@@ -448,9 +468,9 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 상세 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>상세 정보</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>상세 정보</h2>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>공급면적 (㎡)</label>
               <input value={form.supply_area} onChange={e => set('supply_area', e.target.value)} placeholder="예: 85.5" style={inputSt} />
@@ -509,7 +529,7 @@ export default function NewPropertyPage() {
           </div>
 
           {/* 체크박스 그룹 */}
-          <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div className="admin-checkbox-row" style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
             {[
               { key: 'parking', label: '주차 가능' },
               { key: 'elevator', label: '엘리베이터' },
@@ -530,8 +550,8 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 매물 설명 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>매물 설명</h2>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>매물 설명</h2>
           <textarea
             value={form.description}
             onChange={e => set('description', e.target.value)}
@@ -541,7 +561,7 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 관리자 메모 ════════════ */}
-        <div style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
+        <div className="admin-section" style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
           <h2 style={{ ...sectionTitle, borderBottom: '2px solid #d4a017' }}>🔒 관리자 메모 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(상세페이지에서 관리자만 볼 수 있음)</span></h2>
           <textarea
             value={form.admin_memo}
@@ -552,8 +572,8 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 이미지 업로드 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/20 — 드래그로 순서 변경)</span></h2>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/20 — 드래그로 순서 변경)</span></h2>
 
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
@@ -562,6 +582,7 @@ export default function NewPropertyPage() {
             onDragOver={e => { e.preventDefault(); setFileDragOver(true); }}
             onDragLeave={() => setFileDragOver(false)}
             onDrop={handleFileDrop}
+            className="admin-img-grid"
             style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px',
               padding: '12px', borderRadius: '8px', minHeight: '160px',
@@ -621,7 +642,7 @@ export default function NewPropertyPage() {
         </div>
 
         {/* ════════════ 저장 버튼 ════════════ */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingBottom: '40px' }}>
+        <div className="admin-btn-row" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingBottom: '40px' }}>
           <button
             onClick={() => router.back()}
             style={{ height: '48px', padding: '0 32px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '16px', color: '#666', background: '#fff', cursor: 'pointer' }}

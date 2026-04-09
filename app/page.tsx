@@ -39,7 +39,13 @@ export default function Home() {
   const [headerHeight, setHeaderHeight] = useState(200);
   const [heroIndex, setHeroIndex] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const contactRef = useRef<HTMLDivElement>(null);
+
+  const handleSearch = () => {
+    const q = searchQuery.trim();
+    if (q) window.location.href = `/properties?search=${encodeURIComponent(q)}`;
+  };
 
   // 문의하기 드롭업: 외부 클릭 닫기 + 5초 자동 닫기
   useEffect(() => {
@@ -291,8 +297,7 @@ export default function Home() {
           .hero-desc { font-size: 14px !important; }
           .hero-body { font-size: 11px !important; }
           .hero-text { padding-bottom: 100px !important; }
-          .hero-btns { bottom: 80px !important; }
-          .hero-btns a, .hero-btns button { padding: 8px 0 !important; font-size: 13px !important; width: 130px !important; }
+          .hero-btns { bottom: 80px !important; left: 0 !important; right: 0 !important; width: 100% !important; display: flex !important; justify-content: center !important; align-items: center !important; transform: none !important; }
           .search-section { padding-left: 8px !important; padding-right: 8px !important; }
           .search-input { font-size: 14px !important; }
           .search-btn { font-size: 14px !important; padding: 0 12px !important; }
@@ -353,14 +358,14 @@ export default function Home() {
         </div>
 
         {/* 레이어 3: 버튼 (슬라이드와 독립적으로 항상 표시) */}
-        <div className="hero-btns flex flex-row gap-2 sm:gap-4 justify-center items-center" style={{ position: 'absolute', bottom: '80px', left: 0, right: 0, zIndex: 3 }}>
-          <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg font-semibold transition" style={{ textDecoration: 'none', padding: '10px 0', fontSize: '15px', width: '160px', textAlign: 'center', display: 'inline-block' }}>
+        <div className="hero-btns" style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 3, display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '400px', padding: '0 20px' }}>
+          <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg transition" style={{ textDecoration: 'none', width: '160px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '15px', fontWeight: 700 }}>
             매물 검색하기
           </a>
           <div ref={contactRef} style={{ position: 'relative', width: '160px' }}>
             <button
               onClick={() => setContactOpen(!contactOpen)}
-              style={{ width: '100%', padding: '10px 0', fontSize: '15px', fontWeight: 700, border: '2px solid #fff', color: '#fff', background: 'transparent', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+              style={{ width: '100%', height: '44px', padding: 0, fontSize: '15px', fontWeight: 700, border: '2px solid #fff', color: '#fff', background: 'transparent', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#e2a06e'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#fff'; }}
             >
@@ -368,21 +373,21 @@ export default function Home() {
             </button>
             {contactOpen && (
                 <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '8px', background: '#fff', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', overflow: 'hidden', minWidth: '180px', zIndex: 20 }}>
-                  <a href="tel:010-8680-8151" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
+                  <a href="tel:010-8680-8151" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#fff8f2'; e.currentTarget.style.color = '#e2a06e'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     전화 문의
                   </a>
-                  <a href="sms:010-8680-8151" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
+                  <a href="sms:010-8680-8151" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#fff8f2'; e.currentTarget.style.color = '#e2a06e'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     문자 문의
                   </a>
-                  <a href="#" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none' }}
+                  <a href="#" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#FEF9E7'; e.currentTarget.style.color = '#3C1E1E'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
                   >
@@ -425,7 +430,7 @@ export default function Home() {
       {/* 검색바 섹션 */}
       <section className="search-section bg-white py-6 px-4 md:px-6">
         <div
-          className="w-full max-w-full sm:max-w-md lg:max-w-lg mx-auto flex items-center"
+          className="w-full max-w-full sm:max-w-md lg:max-w-lg mx-auto flex items-stretch"
           style={{
             boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
             borderRadius: '4px',
@@ -439,11 +444,15 @@ export default function Home() {
           </div>
           <input
             type="text"
-            placeholder="지역명, 지하철역, 키워드 검색"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            placeholder="지역, 매물종류, 키워드 검색"
             className="search-input flex-1 px-3 py-4 text-[16px] text-gray-700 placeholder-gray-400 outline-none border-none bg-white"
             style={{ minWidth: 0 }}
           />
           <button
+            onClick={handleSearch}
             className="search-btn px-8 py-4 text-white text-[18px] font-semibold whitespace-nowrap transition hover:opacity-90"
             style={{ backgroundColor: '#e2a06e' }}
           >
@@ -642,7 +651,7 @@ export default function Home() {
                         {formatAddress(property.location ?? '')}
                       </p>
                       <p className="card-meta" style={{ fontSize: '13px', color: '#666' }}>
-                        {property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : property.area ? `전용 ${property.area}㎡` : ''}{property.type ? ` · ${property.type}` : ''}{property.floor ? ` · ${property.floor}` : ''}
+                        {property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : property.area ? `전용 ${property.area}㎡` : ''}{property.type ? ` · ${property.type}` : ''}{property.floor ? ` · ${/^\d+$/.test(String(property.floor)) ? `${property.floor}층` : property.floor}` : ''}
                       </p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>

@@ -306,7 +306,29 @@ export default function EditPropertyPage() {
   const totalImages = existingImages.length + newImages.length;
 
   return (
-    <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '24px' }}>
+    <main className="admin-page" style={{ background: '#f5f5f5', minHeight: '100vh', padding: '24px' }}>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 1199px) {
+          .admin-page { padding: 16px !important; }
+        }
+        @media (max-width: 767px) {
+          .admin-page { padding: 12px 8px !important; }
+          .admin-page h1 { font-size: 22px !important; }
+          .admin-form-grid { grid-template-columns: 1fr !important; }
+          .admin-section { padding: 16px 12px !important; margin-bottom: 12px !important; }
+          .admin-section-title { font-size: 16px !important; margin-bottom: 12px !important; padding-bottom: 8px !important; }
+          .admin-img-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .admin-btn-row { flex-direction: column !important; }
+          .admin-btn-row button { width: 100% !important; }
+          .admin-checkbox-row { gap: 12px !important; }
+          .admin-theme-row { gap: 8px !important; }
+          .admin-theme-row label { font-size: 13px !important; }
+          .admin-sold-row { padding: 12px 12px !important; }
+          .admin-sold-row span { font-size: 15px !important; }
+          .admin-sold-row p { font-size: 11px !important; }
+        }
+      ` }} />
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
         <div style={{ marginBottom: '24px' }}>
@@ -315,14 +337,14 @@ export default function EditPropertyPage() {
         </div>
 
         {/* ════════════ 거래완료 ════════════ */}
-        <div style={{ background: form.is_sold ? '#fff0f0' : '#fff', border: `2px solid ${form.is_sold ? '#e04a4a' : '#e0e0e0'}`, borderRadius: '8px', padding: '16px 24px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
+        <div className="admin-sold-row" style={{ background: form.is_sold ? '#fff0f0' : '#fff', border: `2px solid ${form.is_sold ? '#e04a4a' : '#e0e0e0'}`, borderRadius: '8px', padding: '16px 24px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ flex: 1, minWidth: '150px' }}>
             <span style={{ fontSize: '18px', fontWeight: 700, color: form.is_sold ? '#e04a4a' : '#333' }}>
               {form.is_sold ? '거래완료 상태입니다' : '거래 진행 중'}
             </span>
             <p style={{ fontSize: '13px', color: '#888', marginTop: '2px' }}>거래완료 시 매물 카드에 "거래완료" 표시가 됩니다.</p>
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}>
             <input
               type="checkbox"
               checked={form.is_sold}
@@ -334,9 +356,9 @@ export default function EditPropertyPage() {
         </div>
 
         {/* ════════════ 기본 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>기본 정보</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>기본 정보</h2>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>매물번호</label>
               <input value={form.property_number} readOnly style={{ ...inputSt, background: '#f5f5f5', color: '#999' }} />
@@ -359,7 +381,7 @@ export default function EditPropertyPage() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>테마종류 <span style={{ fontSize: '11px', color: '#aaa', fontWeight: 400 }}>(다중 선택 가능)</span></label>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '8px 0' }}>
+              <div className="admin-theme-row" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '8px 0' }}>
                 {THEME_TYPES.map(t => (
                   <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px', color: '#444' }}>
                     <input
@@ -383,8 +405,8 @@ export default function EditPropertyPage() {
         </div>
 
         {/* ════════════ 위치 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>위치 정보</h2>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>위치 정보</h2>
           <div style={{ marginBottom: '12px' }}>
             <label style={labelSt}>주소</label>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -392,16 +414,16 @@ export default function EditPropertyPage() {
               <button onClick={searchAddress} style={{ height: '40px', padding: '0 20px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>주소 검색</button>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div><label style={labelSt}>위도</label><input value={form.latitude} onChange={e => set('latitude', e.target.value)} style={{ ...inputSt, background: '#f9f9f9' }} /></div>
             <div><label style={labelSt}>경도</label><input value={form.longitude} onChange={e => set('longitude', e.target.value)} style={{ ...inputSt, background: '#f9f9f9' }} /></div>
           </div>
         </div>
 
         {/* ════════════ 금액 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>금액 정보 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(만원 단위)</span></h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>금액 정보 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(만원 단위)</span></h2>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div><label style={labelSt}>보증금</label><input type="number" value={form.deposit} onChange={e => set('deposit', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>월세</label><input type="number" value={form.monthly_rent} onChange={e => set('monthly_rent', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>관리비</label><input type="number" value={form.maintenance_fee} onChange={e => set('maintenance_fee', e.target.value)} style={inputSt} /></div>
@@ -410,9 +432,9 @@ export default function EditPropertyPage() {
         </div>
 
         {/* ════════════ 상세 정보 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>상세 정보</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>상세 정보</h2>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div><label style={labelSt}>공급면적 (㎡)</label><input value={form.supply_area} onChange={e => set('supply_area', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전용면적 (㎡)</label><input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
@@ -440,7 +462,7 @@ export default function EditPropertyPage() {
             </div>
             <div><label style={labelSt}>사용승인일</label><input value={form.approval_date} onChange={e => set('approval_date', e.target.value)} placeholder="예: 2026.03.14" style={inputSt} /></div>
           </div>
-          <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div className="admin-checkbox-row" style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
             {[{ key: 'parking', label: '주차 가능' }, { key: 'elevator', label: '엘리베이터' }, { key: 'is_recommended', label: '추천매물' }, { key: 'is_new', label: '신규매물' }].map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#444' }}>
                 <input type="checkbox" checked={(form as any)[key]} onChange={e => set(key, e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#e2a06e' }} /> {label}
@@ -450,26 +472,27 @@ export default function EditPropertyPage() {
         </div>
 
         {/* ════════════ 매물 설명 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>매물 설명</h2>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>매물 설명</h2>
           <textarea value={form.description} onChange={e => set('description', e.target.value)} style={{ width: '100%', minHeight: '180px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }} />
         </div>
 
         {/* ════════════ 관리자 메모 ════════════ */}
-        <div style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
+        <div className="admin-section" style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
           <h2 style={{ ...sectionTitle, borderBottom: '2px solid #d4a017' }}>🔒 관리자 메모</h2>
           <textarea value={form.admin_memo} onChange={e => set('admin_memo', e.target.value)} placeholder="관리자 전용 메모" style={{ width: '100%', minHeight: '120px', border: '1px solid #e0d8a8', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit', background: '#fffef8' }} />
         </div>
 
         {/* ════════════ 이미지 ════════════ */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitle}>이미지 ({totalImages}/20)</h2>
+        <div className="admin-section" style={sectionSt}>
+          <h2 className="admin-section-title" style={sectionTitle}>이미지 ({totalImages}/20)</h2>
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
           <div
             onDragOver={e => { e.preventDefault(); setFileDragOver(true); }}
             onDragLeave={() => setFileDragOver(false)}
             onDrop={handleFileDrop}
+            className="admin-img-grid"
             style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px',
               padding: '12px', borderRadius: '8px', minHeight: '160px',
@@ -510,7 +533,7 @@ export default function EditPropertyPage() {
         </div>
 
         {/* ════════════ 버튼 ════════════ */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingBottom: '40px' }}>
+        <div className="admin-btn-row" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingBottom: '40px' }}>
           <button onClick={() => router.back()} style={{ height: '48px', padding: '0 32px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '16px', color: '#666', background: '#fff', cursor: 'pointer' }}>취소</button>
           <button onClick={handleSave} disabled={saving} style={{ height: '48px', padding: '0 40px', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 700, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? '#ccc' : '#e2a06e' }}>
             {saving ? '저장 중...' : '매물 수정'}

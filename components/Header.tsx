@@ -79,7 +79,10 @@ export default function Header() {
         {/* 우: 로그인 (데스크톱) */}
         <div className="h-auth-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}>
           {user ? (
-            <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
+            <>
+              <a href="/admin/properties/new" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none' }}>매물 등록</a>
+              <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
+            </>
           ) : (
             <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#999', fontSize: '17px', fontWeight: 700, textDecoration: 'none' }}>로그인</a>
           )}
@@ -206,9 +209,12 @@ export default function Header() {
             </div>
 
             {/* 로그인/로그아웃 */}
-            <div style={{ padding: '16px 20px' }}>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {user ? (
-                <button onClick={() => { handleLogout(); setMenuOpen(false); }} style={{ color: '#999', fontSize: '15px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>로그아웃</button>
+                <>
+                  <a href="/admin/properties/new" onClick={() => setMenuOpen(false)} style={{ display: 'block', background: '#e2a06e', color: '#fff', fontSize: '15px', fontWeight: 600, padding: '10px 0', borderRadius: '6px', textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
+                  <button onClick={() => { handleLogout(); setMenuOpen(false); }} style={{ color: '#999', fontSize: '15px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>로그아웃</button>
+                </>
               ) : (
                 <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ color: '#e2a06e', fontSize: '15px', fontWeight: 600, textDecoration: 'none' }}>로그인</a>
               )}

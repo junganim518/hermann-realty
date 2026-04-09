@@ -298,20 +298,26 @@ export default function MapPage() {
         }
         @media (max-width: 767px) {
           .map-filter-bar {
-            padding: 8px 10px !important;
-            flex-wrap: wrap !important;
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
             gap: 6px !important;
+            padding: 8px 10px !important;
             width: 100% !important;
             box-sizing: border-box !important;
           }
-          .map-filter-bar .map-search { width: 100% !important; }
+          .map-filter-bar .map-search { grid-column: 1 / -1 !important; display: flex !important; }
           .map-filter-bar .map-search input { flex: 1 !important; width: auto !important; height: 36px !important; font-size: 13px !important; }
           .map-filter-bar .map-search button { height: 36px !important; font-size: 13px !important; }
-          .map-filter-bar select { height: 34px !important; font-size: 12px !important; padding: 0 6px !important; flex: 1 1 calc(50% - 3px) !important; min-width: 0 !important; }
-          .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 10px !important; }
+          .map-filter-bar select { width: 100% !important; height: 34px !important; font-size: 12px !important; padding: 0 4px !important; }
+          .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
           .map-filter-bar .map-count { display: none !important; }
           .map-panel { display: none !important; }
           .map-drawer-toggle { display: flex !important; }
+          .map-card-text { padding: 12px 14px !important; }
+          .map-card-text .map-card-pnum { font-size: 11px !important; }
+          .map-card-text .map-card-title { font-size: 14px !important; }
+          .map-card-text .map-card-addr { font-size: 12px !important; }
+          .map-card-text .map-card-detail { font-size: 12px !important; }
         }
       ` }} />
 
@@ -329,7 +335,7 @@ export default function MapPage() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && runSearch()}
-            placeholder="매물번호 / 제목 / 주소 검색"
+            placeholder="지역, 매물종류, 키워드 검색"
             style={{
               width: '280px', height: '40px',
               border: '1px solid #ddd', borderRight: 'none',
@@ -450,10 +456,10 @@ export default function MapPage() {
                 const pyeong   = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const isHl     = highlightId === p.property_number;
                 const price    = buildPriceStr(p);
-                const meta     = [
-                  formatAddress(p.address ?? ''),
+                const addr     = formatAddress(p.address ?? '');
+                const detail   = [
                   p.exclusive_area ? `전용 ${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null,
-                  p.current_floor  ? `${p.current_floor}층` : null,
+                  p.current_floor  ? (/^\d+$/.test(String(p.current_floor)) ? `${p.current_floor}층` : p.current_floor) : null,
                 ].filter(Boolean).join(' · ');
 
                 return (
@@ -480,10 +486,11 @@ export default function MapPage() {
                       </div>
 
                       {/* 텍스트 */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '13px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
-                        <p style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
-                        <p style={{ fontSize: '14px', color: '#888', margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</p>
+                      <div className="map-card-text" style={{ flex: 1, minWidth: 0 }}>
+                        <p className="map-card-pnum" style={{ fontSize: '13px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
+                        <p className="map-card-title" style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
+                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</p>
+                        {detail && <p className="map-card-detail" style={{ fontSize: '13px', color: '#888', margin: '0 0 5px' }}>{detail}</p>}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           {p.transaction_type && (() => {
                             const colors: Record<string, { bg: string; border: string; text: string }> = {
@@ -541,7 +548,13 @@ export default function MapPage() {
               {displayList.map(p => {
                 const thumb = p.property_images?.[0]?.image_url ?? null;
                 const title = String(p.title ?? '').replace(/헤르만\s*/g, '');
+                const pyeong = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const price = buildPriceStr(p);
+                const floorStr = p.current_floor ? (/^\d+$/.test(String(p.current_floor)) ? `${p.current_floor}층` : p.current_floor) : null;
+                const detailStr = [
+                  p.exclusive_area ? `전용 ${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null,
+                  floorStr,
+                ].filter(Boolean).join(' · ');
                 return (
                   <a key={p.property_number} href={`/item/view/${p.property_number}`} style={{ display: 'flex', gap: '12px', padding: '14px 20px', textDecoration: 'none', color: 'inherit', borderBottom: '1px solid #f0f0f0' }}>
                     <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0' }}>
@@ -549,9 +562,21 @@ export default function MapPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
-                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
-                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 4px' }}>{formatAddress(p.address ?? '')}</p>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
+                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatAddress(p.address ?? '')}</p>
+                      {detailStr && <p style={{ fontSize: '12px', color: '#888', margin: '0 0 4px' }}>{detailStr}</p>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {p.transaction_type && (() => {
+                          const colors: Record<string, { bg: string; border: string; text: string }> = {
+                            '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                            '전세': { bg: '#f0f4ff', border: '#4a7cdc', text: '#4a7cdc' },
+                            '매매': { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a' },
+                          };
+                          const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                          return <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px' }}>{p.transaction_type}</span>;
+                        })()}
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
+                      </div>
                     </div>
                   </a>
                 );
