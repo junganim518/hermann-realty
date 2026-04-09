@@ -521,9 +521,9 @@ export default function MapPage() {
 
       {/* ════════════ 모바일 드로어 ════════════ */}
       {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200 }} onClick={() => setDrawerOpen(false)}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, touchAction: 'none' }} onClick={() => setDrawerOpen(false)}>
           {/* 배경 오버레이 */}
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', touchAction: 'none' }} />
           {/* 드로어 시트 */}
           <div
             onClick={e => e.stopPropagation()}
@@ -542,6 +542,7 @@ export default function MapPage() {
               style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'none' }}
               onTouchStart={e => { drawerStartY.current = e.touches[0].clientY; setDrawerDragY(0); }}
               onTouchMove={e => {
+                e.preventDefault();
                 const diff = e.touches[0].clientY - drawerStartY.current;
                 setDrawerDragY(diff > 0 ? diff : 0);
               }}
