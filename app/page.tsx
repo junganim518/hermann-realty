@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -38,6 +38,24 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('상가');
   const [headerHeight, setHeaderHeight] = useState(200);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [contactOpen, setContactOpen] = useState(false);
+  const contactRef = useRef<HTMLDivElement>(null);
+
+  // 문의하기 드롭업: 외부 클릭 닫기 + 5초 자동 닫기
+  useEffect(() => {
+    if (!contactOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contactRef.current && !contactRef.current.contains(e.target as Node)) {
+        setContactOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    const timer = setTimeout(() => setContactOpen(false), 5000);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearTimeout(timer);
+    };
+  }, [contactOpen]);
 
   const heroSlides = [
     {
@@ -302,17 +320,51 @@ export default function Home() {
           <p className="hero-body text-[15px] text-[rgba(255,255,255,0.75)] leading-relaxed m-0 p-0 whitespace-pre-line">
             {heroSlides[heroIndex].body}
           </p>
-          <div className="flex flex-row gap-2 sm:gap-4 justify-center mt-2">
-            <button className="bg-[#e2a06e] hover:bg-[#A06828] text-white px-3 py-2 sm:px-8 sm:py-[14px] rounded-lg text-[13px] sm:text-[16px] font-semibold transition">
-              매물 검색하기
+        </div>
+
+        {/* 레이어 3: 버튼 (슬라이드와 독립적으로 항상 표시) */}
+        <div className="flex flex-row gap-2 sm:gap-4 justify-center" style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+          <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg font-semibold transition" style={{ textDecoration: 'none', padding: '10px 0', fontSize: '15px', width: '160px', textAlign: 'center', display: 'inline-block' }}>
+            매물 검색하기
+          </a>
+          <div ref={contactRef} style={{ position: 'relative', width: '160px' }}>
+            <button
+              onClick={() => setContactOpen(!contactOpen)}
+              style={{ width: '100%', padding: '10px 0', fontSize: '15px', fontWeight: 700, border: '2px solid #fff', color: '#fff', background: 'transparent', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#e2a06e'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#fff'; }}
+            >
+              문의하기
             </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-[#e2a06e] px-3 py-2 sm:px-8 sm:py-[14px] rounded-lg text-[13px] sm:text-[16px] font-semibold transition">
-              상담 신청하기
-            </button>
+            {contactOpen && (
+                <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '8px', background: '#fff', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', overflow: 'hidden', minWidth: '180px', zIndex: 20 }}>
+                  <a href="tel:010-8680-8151" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fff8f2'; e.currentTarget.style.color = '#e2a06e'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    전화 문의
+                  </a>
+                  <a href="sms:010-8680-8151" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fff8f2'; e.currentTarget.style.color = '#e2a06e'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    문자 문의
+                  </a>
+                  <a href="#" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEF9E7'; e.currentTarget.style.color = '#3C1E1E'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.48 3 2 6.58 2 10.94c0 2.8 1.86 5.27 4.68 6.67-.15.56-.97 3.6-.99 3.83 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.28-2.83.55.08 1.11.12 1.7.12 5.52 0 10-3.58 10-7.94S17.52 3 12 3z"/></svg>
+                    카카오톡 문의
+                  </a>
+                </div>
+            )}
           </div>
         </div>
 
-        {/* 레이어 3: 화살표 + 인디케이터 */}
+        {/* 레이어 4: 화살표 + 인디케이터 */}
         <button
           onClick={() => changeSlide((heroIndex - 1 + heroSlides.length) % heroSlides.length)}
           className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center justify-center text-white text-3xl"
@@ -496,18 +548,23 @@ export default function Home() {
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>최신매물</h2>
 
             {/* 탭 */}
-            <div className="flex justify-center" style={{ marginBottom: '16px' }}>
-              <div className="flex border rounded-lg overflow-hidden overflow-x-auto max-w-full">
+            <div style={{ marginBottom: '16px' }}>
+              <div className="tab-grid" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }}>
                 {['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`border-r last:border-r-0 transition-colors ${
-                      activeTab === tab
-                        ? 'bg-[#e2a06e] text-white border-[#e2a06e]'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                    style={{ fontSize: '16px', padding: '6px 16px' }}
+                    style={{
+                      fontSize: '14px', padding: '0',
+                      height: '44px', width: 'calc(33.33% - 4px)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                      borderRadius: '4px', border: '1px solid #ddd', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: activeTab === tab ? '#e2a06e' : '#fff',
+                      color: activeTab === tab ? '#fff' : '#555',
+                      fontWeight: activeTab === tab ? 700 : 400,
+                      borderColor: activeTab === tab ? '#e2a06e' : '#ddd',
+                    }}
                   >
                     {tab}
                   </button>
@@ -602,43 +659,40 @@ export default function Home() {
 
           <div style={{ padding: '16px' }}>
             <p style={{ fontSize: '26px', fontWeight: 700, color: '#e2a06e', marginBottom: '4px' }}>010-8680-8151</p>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px', lineHeight: 1.6 }}>평일 10:00 - 19:00<br />토요일 10:00 - 19:00</p>
+            <p style={{ fontSize: '12px', color: '#888', marginBottom: '16px', lineHeight: 1.6 }}>평일 10:00 - 19:00<br />토요일 10:00 - 19:00</p>
 
-            <p style={{ fontSize: '16px', fontWeight: 600, color: '#333', marginBottom: '8px' }}>상담 신청</p>
-
-            <form className="space-y-2">
-              <input
-                type="text"
-                placeholder="이름"
-                className="w-full border border-gray-300 rounded focus:outline-none focus:border-[#e2a06e]"
-                style={{ fontSize: '15px', padding: '10px 12px' }}
-              />
-              <input
-                type="tel"
-                placeholder="연락처"
-                className="w-full border border-gray-300 rounded focus:outline-none focus:border-[#e2a06e]"
-                style={{ fontSize: '15px', padding: '10px 12px' }}
-              />
-              <textarea
-                placeholder="문의 내용"
-                rows={4}
-                className="w-full border border-gray-300 rounded focus:outline-none focus:border-[#e2a06e] resize-none"
-                style={{ fontSize: '15px', padding: '10px 12px' }}
-              />
-              <div className="flex items-start gap-2">
-                <input type="checkbox" id="privacy-side" className="w-4 h-4 mt-0.5 shrink-0" />
-                <label htmlFor="privacy-side" style={{ fontSize: '12px', color: '#666', lineHeight: '1.5' }}>
-                  개인정보 수집 및 이용에 동의합니다.
-                </label>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-[#e2a06e] hover:bg-[#A06828] text-white rounded font-semibold transition"
-                style={{ fontSize: '18px', padding: '12px' }}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* 전화 문의 */}
+              <a
+                href="tel:010-8680-8151"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#e2a06e', color: '#fff', fontSize: '15px', fontWeight: 700, borderRadius: '8px', textDecoration: 'none', border: 'none', transition: 'background 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#c4884e')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#e2a06e')}
               >
-                상담 신청하기
-              </button>
-            </form>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                전화 문의하기
+              </a>
+              {/* 문자 문의 */}
+              <a
+                href="sms:010-8680-8151"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#fff', color: '#e2a06e', fontSize: '15px', fontWeight: 700, borderRadius: '8px', border: '1px solid #e2a06e', textDecoration: 'none', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#e2a06e'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#e2a06e'; }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                문자 문의하기
+              </a>
+              {/* 카카오톡 문의 */}
+              <a
+                href="#"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#FEE500', color: '#3C1E1E', fontSize: '15px', fontWeight: 700, borderRadius: '8px', border: 'none', textDecoration: 'none', transition: 'opacity 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.48 3 2 6.58 2 10.94c0 2.8 1.86 5.27 4.68 6.67-.15.56-.97 3.6-.99 3.83 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.28-2.83.55.08 1.11.12 1.7.12 5.52 0 10-3.58 10-7.94S17.52 3 12 3z"/></svg>
+                카카오톡 문의
+              </a>
+            </div>
           </div>
         </aside>
 

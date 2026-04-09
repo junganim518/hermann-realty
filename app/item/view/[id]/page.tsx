@@ -306,7 +306,7 @@ export default function PropertyDetailPage() {
       console.log('[지도] buildMap 실행 — lat:', lat, 'lng:', lng);
 
       const pos = new window.kakao.maps.LatLng(lat, lng);
-      const map = new window.kakao.maps.Map(locationMapRef.current, { center: pos, level: 4 });
+      const map = new window.kakao.maps.Map(locationMapRef.current, { center: pos, level: 4, minLevel: 3 });
       locationMapObjRef.current = map;
 
       // 반경 200m 원으로 근방 표시
@@ -456,10 +456,31 @@ export default function PropertyDetailPage() {
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
+      <style>{`
+        @media (max-width: 768px) {
+          .detail-tab-inner { padding: 0 12px !important; }
+          .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
+          .detail-tab-inner .detail-tab-utils { display: none !important; }
+          .detail-body { padding: 12px 8px 0 !important; flex-direction: column !important; gap: 12px !important; }
+          .detail-main { order: 2; }
+          .detail-aside { width: 100% !important; position: static !important; max-height: none !important; order: 1; }
+          .detail-carousel-img { height: 260px !important; }
+          .detail-carousel-thumb { height: 60px !important; }
+          .detail-info-table td { display: block !important; width: 100% !important; padding: 6px 12px !important; font-size: 14px !important; }
+          .detail-info-table tr { display: flex; flex-wrap: wrap; border-bottom: 1px solid #f0f0f0; }
+          .detail-info-table td[class="detail-td-label"] { background: #f8f8f8; font-weight: 600; }
+          .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
+          .detail-section { padding: 12px !important; }
+          .detail-watermark span:first-child { font-size: 18px !important; letter-spacing: 4px !important; }
+          .detail-watermark span:last-child { font-size: 10px !important; }
+          .detail-pnum { font-size: 12px !important; padding: 2px 6px !important; }
+        }
+      `}</style>
+
       {/* ── 상단 탭 바 ── */}
       <div className="tab-bar" style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'sticky', top: headerHeight, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <div style={{ width: '100%', maxWidth: '100%', padding: '0 350px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex' }}>
+        <div className="detail-tab-inner" style={{ width: '100%', maxWidth: '100%', padding: '0 350px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="detail-tab-btns" style={{ display: 'flex', overflowX: 'auto' }}>
             {navTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -489,7 +510,7 @@ export default function PropertyDetailPage() {
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <div className="detail-tab-utils" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {['평으로변환', '∧ 위로이동', '〈 이전', '다음 〉'].map((label, i) => (
               <button key={i} style={{ fontSize: '16px', color: '#666', background: 'none', border: '1px solid #ddd', borderRadius: '3px', padding: '5px 8px', cursor: 'pointer' }}>{label}</button>
             ))}
@@ -498,19 +519,19 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* ── 2열 본문 ── */}
-      <div style={{ width: '100%', maxWidth: '100%', padding: '20px 350px 0', display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', padding: '20px 350px 0', display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
 
         {/* ── 좌측 본문 ── */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* 이미지 캐러셀 */}
           <div style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0', position: 'relative' }}>
             {hasImages ? (
               <>
-                <div style={{ position: 'relative', height: '600px' }}>
+                <div className="detail-carousel-img" style={{ position: 'relative', height: '600px' }}>
                   <img src={images[currentImage]} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   {/* 좌측 상단: 매물번호 */}
-                  <div style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px' }}>
+                  <div className="detail-pnum" style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', zIndex: 2 }}>
                     매물번호 {property.property_number ?? id}
                   </div>
                   {images.length > 1 && (
@@ -520,7 +541,7 @@ export default function PropertyDetailPage() {
                     </>
                   )}
                   {/* 중앙 워터마크 */}
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.55, pointerEvents: 'none' }}>
+                  <div className="detail-watermark" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.55, pointerEvents: 'none' }}>
                     <span style={{ color: '#e2a06e', fontSize: '40px', fontWeight: 300, letterSpacing: '8px', fontFamily: 'Georgia, "Times New Roman", serif' }}>HERMANN REALTY</span>
                     <span style={{ color: '#e2a06e', fontSize: '20px', fontWeight: 400, letterSpacing: '4px', marginTop: '8px' }}>헤르만부동산</span>
                   </div>
@@ -532,7 +553,7 @@ export default function PropertyDetailPage() {
                 {thumbnails.length > 1 && (
                   <div style={{ display: 'flex', gap: '6px', padding: '10px' }}>
                     {thumbnails.map((thumb, i) => (
-                      <div key={i} onClick={() => setCurrentImage(i)} style={{ flex: 1, height: '120px', cursor: 'pointer', overflow: 'hidden', border: currentImage === i ? '2px solid #e2a06e' : '2px solid #e0e0e0', transition: 'border 0.2s' }}>
+                      <div key={i} onClick={() => setCurrentImage(i)} className="detail-carousel-thumb" style={{ flex: 1, height: '120px', cursor: 'pointer', overflow: 'hidden', border: currentImage === i ? '2px solid #e2a06e' : '2px solid #e0e0e0', transition: 'border 0.2s' }}>
                         <img src={thumb} alt={`썸네일${i + 1}`} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
                       </div>
                     ))}
@@ -556,38 +577,38 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 🏠 매물 정보 */}
-          <div id="section-info" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-info" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏠" title="매물 정보" open={openInfo} onToggle={() => setOpenInfo(!openInfo)} />
             {openInfo && (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="detail-info-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   {/* 1행: 주소 | 매물종류 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>주소</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>매물종류</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.property_type ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>주소</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>매물종류</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.property_type ?? '-'}</td>
                   </tr>
                   {/* 2행: 거래유형 | 금액 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>거래유형</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.transaction_type ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>금액</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>거래유형</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.transaction_type ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>금액</td>
                     <td style={{ padding: '12px 16px', fontSize: '16px', color: '#e2a06e', fontWeight: 700 }}>
                       {buildPriceStr(property)}
                     </td>
                   </tr>
                   {/* 3행: 권리금 | 관리비 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>권리금</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>권리금</td>
                     <td style={{ padding: '12px 16px', fontSize: '16px', color: property.premium ? '#333' : '#E53935', fontWeight: 700 }}>{property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>관리비</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>관리비</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음'}</td>
                   </tr>
                   {/* 4행: 면적 | 층수 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>면적</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>면적</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           {property.supply_area && (
@@ -606,36 +627,36 @@ export default function PropertyDetailPage() {
                         </button>
                       </div>
                     </td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>층수</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>층수</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>
                       {[property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-'}
                     </td>
                   </tr>
                   {/* 5행: 방향 | 입주가능일 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>방향</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.direction ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>입주가능일</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.available_date ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>방향</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.direction ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>입주가능일</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.available_date ?? '-'}</td>
                   </tr>
                   {/* 6행: 주차 | 엘리베이터 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>주차</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>엘리베이터</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>주차</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>엘리베이터</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-'}</td>
                   </tr>
                   {/* 7행: 용도 | 사용승인일 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>용도</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.usage_type ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>사용승인일</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.approval_date ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>용도</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.usage_type ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>사용승인일</td>
+                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.approval_date ?? '-'}</td>
                   </tr>
                   {/* 8행: 테마종류 (전체) */}
                   <tr>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '16px', color: '#666', fontWeight: 500, whiteSpace: 'nowrap' }}>테마종류</td>
-                    <td colSpan={3} style={{ padding: '12px 16px', fontSize: '16px', color: '#333' }}>{property.theme_types ?? property.theme_type ?? '-'}</td>
+                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>테마종류</td>
+                    <td colSpan={3} style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.theme_types ?? property.theme_type ?? '-'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -643,7 +664,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 📝 매물 설명 */}
-          <div id="section-desc" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-desc" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="📝" title="매물 설명" open={openDesc} onToggle={() => setOpenDesc(!openDesc)} />
             {openDesc && (
               <div>
@@ -668,7 +689,7 @@ export default function PropertyDetailPage() {
           )}
 
           {/* 📍 위치 */}
-          <div id="section-location" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-location" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="📍" title="위치" open={openLocation} onToggle={() => setOpenLocation(!openLocation)} />
             {openLocation && (
               <div>
@@ -685,7 +706,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 🚇 인근 지하철 */}
-          <div id="section-transport" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-transport" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🚇" title="인근 지하철 (주변 2km 이내)" open={openSubway} onToggle={() => setOpenSubway(!openSubway)} />
             {openSubway && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -705,10 +726,10 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 🏘 비슷한 매물 */}
-          <div id="section-similar" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-similar" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏢" title="비슷한 매물" open={true} onToggle={() => {}} />
             {similarProperties.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div className="detail-similar" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 {similarProperties.map((p: any) => {
                   const pyeong = p.exclusive_area ? toPyeong(parseFloat(p.exclusive_area)) : null;
                   return (
@@ -772,7 +793,7 @@ export default function PropertyDetailPage() {
         </div>
 
         {/* ── 우측 패널 ── */}
-        <aside style={{ width: '360px', flexShrink: 0, position: 'sticky', top: '190px', alignSelf: 'flex-start', maxHeight: 'calc(100vh - 190px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <aside className="detail-aside" style={{ width: '360px', flexShrink: 0, position: 'sticky', top: '190px', alignSelf: 'flex-start', maxHeight: 'calc(100vh - 190px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* 매물 정보 카드 */}
           <div style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>

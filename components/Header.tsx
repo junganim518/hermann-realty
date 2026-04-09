@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchDrop, setSearchDrop] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
 
@@ -104,17 +106,46 @@ export default function Header() {
         className="h-nav-desktop"
         style={{ background: '#fff', borderBottom: '1px solid #ddd', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '56px' }}
       >
-        {navItems.map((item) => (
-          <a
-            key={item.label}
-            href={item.href}
-            style={{ fontSize: '18px', fontWeight: 500, color: '#333', textDecoration: 'none', whiteSpace: 'nowrap' }}
-            onMouseEnter={e => (e.target as HTMLElement).style.color = '#e2a06e'}
-            onMouseLeave={e => (e.target as HTMLElement).style.color = '#333'}
-          >
-            {item.label}
-          </a>
-        ))}
+        {navItems.map((item) =>
+          item.label === '매물검색' ? (
+            <div
+              key={item.label}
+              style={{ position: 'relative', paddingBottom: '10px', marginBottom: '-10px' }}
+              onMouseEnter={() => setSearchDrop(true)}
+              onMouseLeave={() => setSearchDrop(false)}
+            >
+              <span
+                style={{ fontSize: '18px', fontWeight: 500, color: searchDrop ? '#e2a06e' : '#333', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'color 0.2s' }}
+              >
+                매물검색 ▾
+              </span>
+              {searchDrop && (
+                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', paddingTop: '4px', zIndex: 100 }}>
+                  <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: '160px' }}>
+                    <a href="/map" style={{ display: 'block', padding: '12px 20px', fontSize: '15px', color: '#333', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}
+                      onMouseEnter={e => { (e.target as HTMLElement).style.background = '#fff8f2'; (e.target as HTMLElement).style.color = '#e2a06e'; }}
+                      onMouseLeave={e => { (e.target as HTMLElement).style.background = '#fff'; (e.target as HTMLElement).style.color = '#333'; }}
+                    >지도검색</a>
+                    <a href="/properties" style={{ display: 'block', padding: '12px 20px', fontSize: '15px', color: '#333', textDecoration: 'none' }}
+                      onMouseEnter={e => { (e.target as HTMLElement).style.background = '#fff8f2'; (e.target as HTMLElement).style.color = '#e2a06e'; }}
+                      onMouseLeave={e => { (e.target as HTMLElement).style.background = '#fff'; (e.target as HTMLElement).style.color = '#333'; }}
+                    >전체매물검색</a>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <a
+              key={item.label}
+              href={item.href}
+              style={{ fontSize: '18px', fontWeight: 500, color: '#333', textDecoration: 'none', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => (e.target as HTMLElement).style.color = '#e2a06e'}
+              onMouseLeave={e => (e.target as HTMLElement).style.color = '#333'}
+            >
+              {item.label}
+            </a>
+          )
+        )}
       </nav>
 
       {/* ── 모바일 드로어 메뉴 ── */}
@@ -139,16 +170,34 @@ export default function Header() {
             </div>
 
             {/* 메뉴 항목 */}
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                style={{ display: 'block', padding: '16px 20px', fontSize: '16px', fontWeight: 500, color: '#ccc', textDecoration: 'none', borderBottom: '1px solid #222' }}
-              >
-                {item.label}
-              </a>
-            ))}
+            {navItems.map((item) =>
+              item.label === '매물검색' ? (
+                <div key={item.label}>
+                  <button
+                    onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '16px 20px', fontSize: '16px', fontWeight: 500, color: '#ccc', background: 'none', border: 'none', borderBottom: '1px solid #222', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    매물검색
+                    <span style={{ fontSize: '12px', color: '#888' }}>{mobileSearchOpen ? '∧' : '∨'}</span>
+                  </button>
+                  {mobileSearchOpen && (
+                    <div style={{ background: '#1a1a1a' }}>
+                      <a href="/map" onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '12px 20px 12px 36px', fontSize: '15px', color: '#e2a06e', textDecoration: 'none', borderBottom: '1px solid #222' }}>지도검색</a>
+                      <a href="/properties" onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '12px 20px 12px 36px', fontSize: '15px', color: '#e2a06e', textDecoration: 'none', borderBottom: '1px solid #222' }}>전체매물검색</a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  style={{ display: 'block', padding: '16px 20px', fontSize: '16px', fontWeight: 500, color: '#ccc', textDecoration: 'none', borderBottom: '1px solid #222' }}
+                >
+                  {item.label}
+                </a>
+              )
+            )}
 
             {/* 전화번호 */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #222' }}>
