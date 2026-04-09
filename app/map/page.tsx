@@ -325,6 +325,7 @@ export default function MapPage() {
           .map-filter-bar .map-count { display: none !important; }
           .map-panel { display: none !important; }
           .map-drawer-toggle { display: flex !important; }
+          .map-area { height: 50vh !important; flex: none !important; }
           .map-card-text { padding: 12px 14px !important; }
           .map-card-text .map-card-pnum { font-size: 11px !important; }
           .map-card-text .map-card-title { font-size: 14px !important; }
