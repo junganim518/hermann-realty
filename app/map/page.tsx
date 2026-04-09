@@ -539,7 +539,7 @@ export default function MapPage() {
             onClick={e => e.stopPropagation()}
             style={{
               position: 'absolute', bottom: 0, left: 0, right: 0,
-              height: '70vh', background: '#fff',
+              height: '60vh', maxHeight: '60vh', background: '#fff',
               borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
               boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
               display: 'flex', flexDirection: 'column',
