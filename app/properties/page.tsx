@@ -186,7 +186,7 @@ export default function PropertiesPage() {
   };
 
   return (
-    <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
+    <main style={{ background: '#f5f5f5', minHeight: '100vh', colorScheme: 'light' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         /* ── 기본 (PC 1200px+) ── */
@@ -370,9 +370,9 @@ export default function PropertiesPage() {
                     className="border border-gray-200 overflow-hidden"
                     style={{ backgroundColor: '#fff', color: '#1a1a1a' }}
                   >
-                    <div className="prop-card-header bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 500 }}>{p.property_number}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600 }} className="truncate ml-2">{(p.title ?? '').replace(/헤르만\s*/g, '')}</span>
+                    <div className="prop-card-header flex justify-between items-center" style={{ padding: '8px 12px', background: '#e2a06e', color: '#fff' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{p.property_number}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginLeft: '8px' }}>{(p.title ?? '').replace(/헤르만\s*/g, '')}</span>
                     </div>
                     <div className="prop-card-img relative" style={{ height: '260px' }}>
                       {p.image ? (

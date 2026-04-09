@@ -2,11 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+*, *::before, *::after {
+  color-scheme: light only;
+}
+
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 255, 255, 255;
-  color-scheme: light;
+  color-scheme: light only;
+}
+
+html {
+  color-scheme: light only;
 }
 
 body {
