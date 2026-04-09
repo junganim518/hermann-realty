@@ -83,6 +83,7 @@ export default function MapPage() {
   const [headerH, setHeaderH]           = useState(144);
   const [highlightId, setHighlightId]   = useState<string | null>(null);
   const [visibleIds, setVisibleIds]     = useState<Set<string> | null>(null);
+  const [drawerOpen, setDrawerOpen]     = useState(false);
 
   const [searchInput, setSearchInput]   = useState('');
   const [search, setSearch]             = useState('');
@@ -105,12 +106,22 @@ export default function MapPage() {
       if (cancelled || !mapContainerRef.current) return;
       if (mapObjRef.current) { setMapReady(true); return; }
 
+      const isMobile = window.innerWidth < 768;
+      const center = new window.kakao.maps.LatLng(37.5040479677868, 126.77522691726);
       const map = new window.kakao.maps.Map(mapContainerRef.current, {
-        center: new window.kakao.maps.LatLng(37.5040479677868, 126.77522691726),
-        level: 7,
+        center,
+        level: isMobile ? 8 : 7,
         minLevel: 4,
       });
       mapObjRef.current = map;
+
+      // 크기 재계산 + 중심 재설정 (여러 타이밍에 보장)
+      const recenter = () => {
+        map.relayout();
+        map.setCenter(center);
+      };
+      setTimeout(recenter, 100);
+      setTimeout(recenter, 500);
 
       // 주소 레이어(지번/도로명) 숨기기
       map.removeOverlayMapTypeId(window.kakao.maps.MapTypeId.USE_DISTRICT);
@@ -276,8 +287,36 @@ export default function MapPage() {
   return (
     <div style={{ height: `calc(100vh - ${headerH}px)`, display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden' }}>
 
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 1199px) {
+          .map-panel { width: 300px !important; }
+          .map-filter-bar { padding: 10px 16px !important; }
+          .map-filter-bar select { height: 36px !important; font-size: 13px !important; padding: 0 6px !important; }
+          .map-filter-bar input { width: 200px !important; }
+          .map-filter-bar button { height: 36px !important; font-size: 13px !important; }
+          .map-filter-bar .map-count { font-size: 13px !important; }
+        }
+        @media (max-width: 767px) {
+          .map-filter-bar {
+            padding: 8px 10px !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .map-filter-bar .map-search { width: 100% !important; }
+          .map-filter-bar .map-search input { flex: 1 !important; width: auto !important; height: 36px !important; font-size: 13px !important; }
+          .map-filter-bar .map-search button { height: 36px !important; font-size: 13px !important; }
+          .map-filter-bar select { height: 34px !important; font-size: 12px !important; padding: 0 6px !important; flex: 1 1 calc(50% - 3px) !important; min-width: 0 !important; }
+          .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 10px !important; }
+          .map-filter-bar .map-count { display: none !important; }
+          .map-panel { display: none !important; }
+          .map-drawer-toggle { display: flex !important; }
+        }
+      ` }} />
+
       {/* ════════════ 필터 바 ════════════ */}
-      <div style={{
+      <div className="map-filter-bar" style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: '#fff', borderBottom: '1px solid #e0e0e0',
         padding: '14px 24px', display: 'flex', alignItems: 'center',
@@ -285,7 +324,7 @@ export default function MapPage() {
         boxShadow: '0 2px 6px rgba(0,0,0,0.07)',
       }}>
         {/* 검색 */}
-        <div style={{ display: 'flex' }}>
+        <div className="map-search" style={{ display: 'flex' }}>
           <input
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
@@ -329,13 +368,14 @@ export default function MapPage() {
 
         {/* 초기화 */}
         <button
+          className="map-reset"
           onClick={resetAll}
           style={{ height: '40px', padding: '0 14px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '15px', color: '#666', background: '#fff', cursor: 'pointer' }}
         >
           초기화
         </button>
 
-        <span style={{ fontSize: '15px', color: '#555', marginLeft: 'auto' }}>
+        <span className="map-count" style={{ fontSize: '15px', color: '#555', marginLeft: 'auto', flexShrink: 0 }}>
           매물 <strong style={{ color: '#e2a06e' }}>{filtered.length}</strong>개
         </span>
       </div>
@@ -344,8 +384,24 @@ export default function MapPage() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* ── 좌측 지도 */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div className="map-area" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+
+          {/* 모바일 매물목록 토글 버튼 */}
+          <button
+            className="map-drawer-toggle"
+            onClick={() => setDrawerOpen(true)}
+            style={{
+              display: 'none', position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+              zIndex: 50, padding: '10px 24px', background: '#e2a06e', color: '#fff',
+              fontSize: '14px', fontWeight: 700, border: 'none', borderRadius: '24px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.25)', cursor: 'pointer',
+              alignItems: 'center', gap: '6px',
+            }}
+          >
+            매물 목록 보기 <strong>{displayList.length}</strong>개
+          </button>
+
           {!mapReady && (
             <div style={{
               position: 'absolute', inset: 0, display: 'flex',
@@ -358,7 +414,7 @@ export default function MapPage() {
         </div>
 
         {/* ── 우측 매물 목록 */}
-        <div style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+        <div className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
 
           {/* 헤더 */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -453,6 +509,57 @@ export default function MapPage() {
           </div>
         </div>
       </div>
+
+      {/* ════════════ 모바일 드로어 ════════════ */}
+      {drawerOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200 }} onClick={() => setDrawerOpen(false)}>
+          {/* 배경 오버레이 */}
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
+          {/* 드로어 시트 */}
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              height: '70vh', background: '#fff',
+              borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
+              boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+              display: 'flex', flexDirection: 'column',
+            }}
+          >
+            {/* 드로어 핸들 + 헤더 */}
+            <div style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0 }}>
+              <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 10px' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
+                  매물 목록&nbsp;<span style={{ color: '#e2a06e' }}>{displayList.length}</span>개
+                </span>
+                <button onClick={() => setDrawerOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#999', cursor: 'pointer' }}>×</button>
+              </div>
+            </div>
+            {/* 카드 리스트 */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {displayList.map(p => {
+                const thumb = p.property_images?.[0]?.image_url ?? null;
+                const title = String(p.title ?? '').replace(/헤르만\s*/g, '');
+                const price = buildPriceStr(p);
+                return (
+                  <a key={p.property_number} href={`/item/view/${p.property_number}`} style={{ display: 'flex', gap: '12px', padding: '14px 20px', textDecoration: 'none', color: 'inherit', borderBottom: '1px solid #f0f0f0' }}>
+                    <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0' }}>
+                      {thumb ? <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#bbb' }}>준비중</div>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
+                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 4px' }}>{formatAddress(p.address ?? '')}</p>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

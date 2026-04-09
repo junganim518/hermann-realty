@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer style={{ background: '#111', color: '#fff' }}>
 
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .footer-inner { max-width: 900px; margin: 0 auto; padding: 48px 32px; }
         .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 32px; }
         .footer-right { text-align: right; }
@@ -21,7 +21,7 @@ export default function Footer() {
           .footer-links { gap: 12px; }
           .footer-links a { font-size: 13px !important; }
         }
-      `}</style>
+      ` }} />
 
       <div className="footer-inner">
         <div className="footer-grid">

@@ -35,7 +35,7 @@ export default function Header() {
   return (
     <header style={{ width: '100%', position: 'sticky', top: 0, zIndex: 1000 }}>
 
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 768px) {
           .h-phone { display: none !important; }
           .h-auth-desktop { display: none !important; }
@@ -49,7 +49,7 @@ export default function Header() {
         @media (min-width: 769px) {
           .h-hamburger { display: none !important; }
         }
-      `}</style>
+      ` }} />
 
       {/* ── 로고 바 ── */}
       <div

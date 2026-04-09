@@ -76,6 +76,8 @@ export default function Home() {
 
   const changeSlide = (next: number) => setHeroIndex(next);
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   useEffect(() => {
     const header = document.querySelector('header');
     if (header) setHeaderHeight(header.offsetHeight);
@@ -242,8 +244,41 @@ export default function Home() {
   return (
     <main className="w-full text-[#1a1a1a] leading-7">
 
-      <style>{`
-        @media (max-width: 768px) {
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* ── 기본: 그리드 ── */
+        .grid-type  { display: grid; grid-template-columns: repeat(6, 1fr); }
+        .grid-theme { display: grid; grid-template-columns: repeat(4, 1fr); }
+        .grid-recent { display: grid; grid-template-columns: repeat(4, 1fr); }
+        .sidebar-left  { display: block; }
+        .sidebar-right { display: block; }
+
+        /* ── PC (1200px 이상): 기본값 사용 ── */
+
+        /* ── 태블릿 (768px ~ 1199px) ── */
+        @media (max-width: 1199px) {
+          .sidebar-left { display: none !important; }
+          .grid-type  { grid-template-columns: repeat(3, 1fr) !important; }
+          .grid-theme { grid-template-columns: repeat(3, 1fr) !important; }
+          .grid-recent { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
+          .card-img { height: 200px !important; }
+        }
+
+        /* ── 모바일 (768px 미만) ── */
+        @media (max-width: 767px) {
+          .sidebar-left  { display: none !important; }
+          .sidebar-right { display: none !important; }
+          .grid-type  { grid-template-columns: repeat(2, 1fr) !important; }
+          .grid-theme { grid-template-columns: repeat(2, 1fr) !important; }
+          .grid-recent { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .main-layout { width: 100% !important; margin: 0 !important; }
+          .center-content { padding-left: 0 !important; padding-right: 0 !important; }
+          .section-title { font-size: 20px !important; margin-bottom: 16px !important; }
+          .section-pad { padding: 8px !important; }
+          .type-card { height: 140px !important; }
+          .type-card h3 { font-size: 18px !important; }
+          .theme-card { height: 180px !important; }
+          .theme-card h3 { font-size: 18px !important; }
+          .card-img { height: 120px !important; }
           .card-header { padding: 5px 8px !important; }
           .card-header span { font-size: 11px !important; }
           .card-body { padding: 6px 8px !important; }
@@ -251,37 +286,29 @@ export default function Home() {
           .card-body .card-meta { font-size: 11px !important; }
           .card-body .card-price { font-size: 13px !important; }
           .card-body .card-badge { font-size: 9px !important; padding: 1px 5px !important; }
-          .section-title { font-size: 20px !important; margin-bottom: 16px !important; }
-          .section-pad { padding: 8px !important; }
-          .type-card { height: 140px !important; }
-          .type-card h3 { font-size: 18px !important; }
-          .theme-card { height: 180px !important; }
-          .theme-card h3 { font-size: 18px !important; }
           .hero-sub { font-size: 14px !important; }
           .hero-title { font-size: 28px !important; }
           .hero-desc { font-size: 14px !important; }
           .hero-body { font-size: 11px !important; }
           .hero-text { padding-bottom: 100px !important; }
-          .hero-btns { bottom: 24px !important; }
+          .hero-btns { bottom: 80px !important; }
           .hero-btns a, .hero-btns button { padding: 8px 0 !important; font-size: 13px !important; width: 130px !important; }
-          .main-layout { width: 100% !important; margin: 0 !important; }
-          .center-content { padding-left: 0 !important; padding-right: 0 !important; }
           .search-section { padding-left: 8px !important; padding-right: 8px !important; }
           .search-input { font-size: 14px !important; }
           .search-btn { font-size: 14px !important; padding: 0 12px !important; }
         }
-      `}</style>
+      ` }} />
 
       {/* 히어로 배너 */}
       <section className="relative w-full min-h-[400px] sm:min-h-[650px] overflow-hidden">
 
-        <style>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0); }
           }
           .hero-text { animation: fadeIn 0.6s ease forwards; }
-        `}</style>
+        ` }} />
 
         {/* 레이어 1: 배경 이미지 슬라이드 */}
         <div
@@ -326,7 +353,7 @@ export default function Home() {
         </div>
 
         {/* 레이어 3: 버튼 (슬라이드와 독립적으로 항상 표시) */}
-        <div className="hero-btns flex flex-row gap-2 sm:gap-4 justify-center" style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+        <div className="hero-btns flex flex-row gap-2 sm:gap-4 justify-center items-center" style={{ position: 'absolute', bottom: '80px', left: 0, right: 0, zIndex: 3 }}>
           <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg font-semibold transition" style={{ textDecoration: 'none', padding: '10px 0', fontSize: '15px', width: '160px', textAlign: 'center', display: 'inline-block' }}>
             매물 검색하기
           </a>
@@ -430,7 +457,7 @@ export default function Home() {
 
         {/* 좌측 사이드바 220px - lg 이상에서만 표시 */}
         <aside
-          className="hidden lg:block shrink-0 border border-gray-200 bg-white"
+          className="sidebar-left shrink-0 border border-gray-200 bg-white"
           style={{ minWidth: '220px', maxWidth: '220px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 
@@ -483,7 +510,7 @@ export default function Home() {
           {/* 매물 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>매물종류</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2">
+            <div className="grid-type gap-2">
               {propertyTypes.map((type) => (
                 <a
                   key={type.id}
@@ -516,7 +543,7 @@ export default function Home() {
           {/* 테마 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#f9f9f9' }}>
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>테마별 매물 검색</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid-theme gap-3">
               {themeTypes.map((theme, index) => (
                 <a
                   key={index}
@@ -576,7 +603,7 @@ export default function Home() {
             </div>
 
             {/* 매물 그리드 */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
+            <div className="grid-recent gap-2">
               {recentProperties.map((property) => (
                 <Link
                   key={property.id}
@@ -596,7 +623,7 @@ export default function Home() {
                     <span style={{ fontSize: '13px', fontWeight: 500 }}>{property.id}</span>
                     <span style={{ fontSize: '13px', fontWeight: 600 }} className="truncate ml-2">{(property.title ?? '').replace('헤르만 ', '')}</span>
                   </div>
-                  <div className="relative h-[120px] sm:h-[180px] md:h-[260px]">
+                  <div className="relative card-img" style={{ height: '260px' }}>
                     <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
                     <button className="absolute top-2 right-2 text-white text-xl hover:text-red-500 transition-colors" onClick={e => e.preventDefault()}>
                       ♡
@@ -651,7 +678,7 @@ export default function Home() {
 
         {/* 우측 패널 260px - xl 이상에서만 표시 */}
         <aside
-          className="hidden xl:block shrink-0 border border-gray-200 bg-white"
+          className="sidebar-right shrink-0 border border-gray-200 bg-white"
           style={{ minWidth: '260px', maxWidth: '260px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 

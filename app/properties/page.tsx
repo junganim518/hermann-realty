@@ -116,8 +116,8 @@ export default function PropertiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    if (typeParam) setFilterType(typeParam);
-    if (themeParam) setFilterTheme(themeParam);
+    setFilterType(typeParam || '전체');
+    setFilterTheme(themeParam || '전체');
     setCurrentPage(1);
   }, [typeParam, themeParam]);
 
@@ -172,15 +172,32 @@ export default function PropertiesPage() {
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
-      <style>{`
-        @media (max-width: 768px) {
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* ── 기본 (PC 1200px+) ── */
+        .prop-sidebar-left  { display: block; }
+        .prop-sidebar-right { display: block; }
+        .prop-grid { grid-template-columns: repeat(4, 1fr); }
+
+        /* ── 태블릿 (768px ~ 1199px) ── */
+        @media (max-width: 1199px) {
+          .prop-sidebar-left { min-width: 160px !important; max-width: 160px !important; }
+          .prop-sidebar-left a { font-size: 14px !important; padding: 8px 12px !important; }
+          .prop-sidebar-right { display: none !important; }
+          .prop-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          .prop-card-img { height: 200px !important; }
+        }
+
+        /* ── 모바일 (768px 미만) ── */
+        @media (max-width: 767px) {
+          .prop-sidebar-left  { display: none !important; }
+          .prop-sidebar-right { display: none !important; }
           .prop-layout { width: 100% !important; margin: 0 !important; }
           .prop-center { padding: 0 8px !important; }
           .prop-title h1 { font-size: 22px !important; }
           .prop-filter { display: grid !important; grid-template-columns: 1fr 1fr 1fr; gap: 6px !important; justify-content: stretch !important; }
           .prop-filter select { width: 100% !important; height: 36px !important; font-size: 12px !important; padding: 0 4px !important; }
           .prop-filter button { grid-column: 1 / -1; height: 36px !important; font-size: 13px !important; }
-          .prop-grid { gap: 8px !important; }
+          .prop-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
           .prop-card-header { padding: 5px 8px !important; }
           .prop-card-header span { font-size: 11px !important; }
           .prop-card-img { height: 120px !important; }
@@ -191,14 +208,14 @@ export default function PropertiesPage() {
           .prop-card-body .prop-badge { font-size: 9px !important; padding: 1px 5px !important; }
           .prop-sold { font-size: 16px !important; padding: 2px 10px !important; }
         }
-      `}</style>
+      ` }} />
 
       {/* 3열 레이아웃 */}
       <div className="prop-layout flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
 
         {/* ── 좌측 사이드바 ── */}
         <aside
-          className="hidden lg:block shrink-0 border border-gray-200 bg-white"
+          className="prop-sidebar-left shrink-0 border border-gray-200 bg-white"
           style={{ minWidth: '220px', maxWidth: '220px', position: 'sticky', top: headerHeight, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
           {/* 매물 종류 */}
@@ -212,10 +229,10 @@ export default function PropertiesPage() {
                   <a
                     href={`/properties?type=${encodeURIComponent(type.id)}`}
                     className="flex items-center justify-between border-b border-gray-100 transition-colors"
-                    style={{ fontSize: '16px', padding: '9px 16px', color: typeParam === type.id ? '#e2a06e' : '#333', fontWeight: typeParam === type.id ? 700 : 400, background: typeParam === type.id ? '#fff8f2' : 'transparent' }}
+                    style={{ fontSize: '16px', padding: '9px 16px', color: filterType === type.id ? '#e2a06e' : '#333', fontWeight: filterType === type.id ? 700 : 400, background: filterType === type.id ? '#fff8f2' : 'transparent' }}
                   >
                     <span>{type.name}</span>
-                    <span style={{ fontSize: '11px', color: typeParam === type.id ? '#e2a06e' : '#ccc' }}>›</span>
+                    <span style={{ fontSize: '11px', color: filterType === type.id ? '#e2a06e' : '#ccc' }}>›</span>
                   </a>
                 </li>
               ))}
@@ -233,10 +250,10 @@ export default function PropertiesPage() {
                   <a
                     href={`/properties?theme=${encodeURIComponent(theme.id)}`}
                     className="flex items-center justify-between border-b border-gray-100 last:border-b-0 transition-colors"
-                    style={{ fontSize: '16px', padding: '9px 16px', color: themeParam === theme.id ? '#e2a06e' : '#333', fontWeight: themeParam === theme.id ? 700 : 400, background: themeParam === theme.id ? '#fff8f2' : 'transparent' }}
+                    style={{ fontSize: '16px', padding: '9px 16px', color: filterTheme === theme.id ? '#e2a06e' : '#333', fontWeight: filterTheme === theme.id ? 700 : 400, background: filterTheme === theme.id ? '#fff8f2' : 'transparent' }}
                   >
                     <span>{theme.name}</span>
-                    <span style={{ fontSize: '11px', color: themeParam === theme.id ? '#e2a06e' : '#ccc' }}>›</span>
+                    <span style={{ fontSize: '11px', color: filterTheme === theme.id ? '#e2a06e' : '#ccc' }}>›</span>
                   </a>
                 </li>
               ))}
@@ -299,7 +316,7 @@ export default function PropertiesPage() {
             </div>
           ) : (
             <>
-              <div className="prop-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="prop-grid" style={{ display: 'grid', gap: '16px' }}>
                 {displayed.map((p: any) => (
                   <Link
                     key={p.property_number}
@@ -362,49 +379,52 @@ export default function PropertiesPage() {
               </div>
 
               {/* 페이지네이션 */}
-              {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', margin: '24px 0 40px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={safePage <= 1}
-                    style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer' }}
-                  >
-                    ‹ 이전
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
-                    .reduce<number[]>((acc, p) => {
-                      if (acc.length > 0 && p - acc[acc.length - 1] > 1) acc.push(-1);
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((p, i) =>
-                      p === -1 ? (
-                        <span key={`dot-${i}`} style={{ padding: '8px 4px', color: '#999' }}>…</span>
-                      ) : (
-                        <button
-                          key={p}
-                          onClick={() => setCurrentPage(p)}
-                          style={{
-                            width: '36px', height: '36px', fontSize: '14px', fontWeight: p === safePage ? 700 : 400,
-                            border: p === safePage ? '1px solid #e2a06e' : '1px solid #ddd',
-                            borderRadius: '4px', cursor: 'pointer',
-                            background: p === safePage ? '#e2a06e' : '#fff',
-                            color: p === safePage ? '#fff' : '#333',
-                          }}
-                        >
-                          {p}
-                        </button>
+              {/* 페이지네이션 */}
+              {filtered.length > 0 && (
+                <div style={{ margin: '24px 0 40px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={safePage <= 1}
+                      style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer' }}
+                    >
+                      ‹ 이전
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                      .reduce<number[]>((acc, p) => {
+                        if (acc.length > 0 && p - acc[acc.length - 1] > 1) acc.push(-1);
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, i) =>
+                        p === -1 ? (
+                          <span key={`dot-${i}`} style={{ padding: '8px 4px', color: '#999' }}>…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            style={{
+                              width: '36px', height: '36px', fontSize: '14px', fontWeight: p === safePage ? 700 : 400,
+                              border: p === safePage ? '1px solid #e2a06e' : '1px solid #ddd',
+                              borderRadius: '4px', cursor: 'pointer',
+                              background: p === safePage ? '#e2a06e' : '#fff',
+                              color: p === safePage ? '#fff' : '#333',
+                            }}
+                          >
+                            {p}
+                          </button>
+                        )
                       )
-                    )
-                  }
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={safePage >= totalPages}
-                    style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer' }}
-                  >
-                    다음 ›
-                  </button>
+                    }
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safePage >= totalPages}
+                      style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer' }}
+                    >
+                      다음 ›
+                    </button>
+                  </div>
                 </div>
               )}
             </>
@@ -413,7 +433,7 @@ export default function PropertiesPage() {
 
         {/* ── 우측 패널 ── */}
         <aside
-          className="hidden xl:block shrink-0 border border-gray-200 bg-white"
+          className="prop-sidebar-right shrink-0 border border-gray-200 bg-white"
           style={{ minWidth: '260px', maxWidth: '260px', position: 'sticky', top: headerHeight, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
           <div className="bg-[#e2a06e] text-white" style={{ padding: '8px 12px' }}>
@@ -421,20 +441,30 @@ export default function PropertiesPage() {
           </div>
           <div style={{ padding: '16px' }}>
             <p style={{ fontSize: '26px', fontWeight: 700, color: '#e2a06e', marginBottom: '4px' }}>010-8680-8151</p>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px', lineHeight: 1.6 }}>평일 10:00 - 19:00<br />토요일 10:00 - 19:00</p>
-            <p style={{ fontSize: '16px', fontWeight: 600, color: '#333', marginBottom: '8px' }}>상담 신청</p>
-            <form className="space-y-2">
-              <input type="text" placeholder="이름" className="w-full border border-gray-300 rounded focus:outline-none focus:border-[#e2a06e]" style={{ fontSize: '15px', padding: '10px 12px' }} />
-              <input type="tel" placeholder="연락처" className="w-full border border-gray-300 rounded focus:outline-none focus:border-[#e2a06e]" style={{ fontSize: '15px', padding: '10px 12px' }} />
-              <textarea placeholder="문의 내용" rows={4} className="w-full border border-gray-300 rounded focus:outline-none focus:border-[#e2a06e] resize-none" style={{ fontSize: '15px', padding: '10px 12px' }} />
-              <div className="flex items-start gap-2">
-                <input type="checkbox" id="privacy-prop" className="w-4 h-4 mt-0.5 shrink-0" />
-                <label htmlFor="privacy-prop" style={{ fontSize: '12px', color: '#666', lineHeight: '1.5' }}>개인정보 수집 및 이용에 동의합니다.</label>
-              </div>
-              <button type="submit" className="w-full bg-[#e2a06e] hover:bg-[#A06828] text-white rounded font-semibold transition" style={{ fontSize: '18px', padding: '12px' }}>
-                상담 신청하기
-              </button>
-            </form>
+            <p style={{ fontSize: '12px', color: '#888', marginBottom: '16px', lineHeight: 1.6 }}>평일 10:00 - 19:00<br />토요일 10:00 - 19:00</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <a href="tel:010-8680-8151" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#e2a06e', color: '#fff', fontSize: '15px', fontWeight: 700, borderRadius: '8px', textDecoration: 'none', border: 'none', transition: 'background 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#c4884e')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#e2a06e')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                전화 문의하기
+              </a>
+              <a href="sms:010-8680-8151" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#fff', color: '#e2a06e', fontSize: '15px', fontWeight: 700, borderRadius: '8px', border: '1px solid #e2a06e', textDecoration: 'none', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#e2a06e'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#e2a06e'; }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                문자 문의하기
+              </a>
+              <a href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#FEE500', color: '#3C1E1E', fontSize: '15px', fontWeight: 700, borderRadius: '8px', border: 'none', textDecoration: 'none', transition: 'opacity 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.48 3 2 6.58 2 10.94c0 2.8 1.86 5.27 4.68 6.67-.15.56-.97 3.6-.99 3.83 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.28-2.83.55.08 1.11.12 1.7.12 5.52 0 10-3.58 10-7.94S17.52 3 12 3z"/></svg>
+                카카오톡 문의
+              </a>
+            </div>
           </div>
         </aside>
 

@@ -456,26 +456,47 @@ export default function PropertyDetailPage() {
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .detail-tab-inner { padding: 0 12px !important; }
-          .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* ── 태블릿 (768px ~ 1199px) ── */
+        @media (max-width: 1199px) {
+          .detail-tab-inner { padding: 0 40px !important; }
+          .detail-tab-inner .detail-tab-btns button { font-size: 14px !important; padding: 10px 12px !important; }
           .detail-tab-inner .detail-tab-utils { display: none !important; }
-          .detail-body { padding: 12px 8px 0 !important; flex-direction: column !important; gap: 12px !important; }
+          .detail-body { padding: 16px 24px 0 !important; gap: 20px !important; }
+          .detail-aside { width: 300px !important; }
+          .detail-carousel-img { height: 450px !important; }
+          .detail-carousel-thumb { height: 90px !important; }
+        }
+
+        /* ── 모바일 (768px 미만) ── */
+        @media (max-width: 767px) {
+          .tab-bar { top: 64px !important; }
+          .detail-tab-inner { padding: 0 8px !important; }
+          .detail-tab-inner .detail-tab-btns { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+          .detail-tab-inner .detail-tab-btns::-webkit-scrollbar { display: none; }
+          .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
+          .detail-body { padding: 8px 4px 0 !important; flex-direction: column !important; gap: 10px !important; }
           .detail-main { order: 2; }
-          .detail-aside { width: 100% !important; position: static !important; max-height: none !important; order: 1; }
-          .detail-carousel-img { height: 260px !important; }
-          .detail-carousel-thumb { height: 60px !important; }
-          .detail-info-table td { display: block !important; width: 100% !important; padding: 6px 12px !important; font-size: 14px !important; }
-          .detail-info-table tr { display: flex; flex-wrap: wrap; border-bottom: 1px solid #f0f0f0; }
-          .detail-info-table td[class="detail-td-label"] { background: #f8f8f8; font-weight: 600; }
+          .detail-aside { width: 100% !important; position: static !important; max-height: none !important; overflow: visible !important; order: 1; }
+          .detail-carousel-img { height: 240px !important; }
+          .detail-carousel-thumb { height: 50px !important; }
+          .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
+          .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
+          .detail-info-table tr { display: contents !important; }
+          .detail-info-table td { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px 12px !important; border-bottom: 1px solid #f0f0f0 !important; box-sizing: border-box !important; }
+          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; font-size: 13px !important; color: #888 !important; }
+          .detail-info-table td:nth-child(even) { font-size: 14px !important; font-weight: 700 !important; }
           .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
-          .detail-section { padding: 12px !important; }
+          .detail-section { padding: 10px !important; }
+          .detail-map-container { height: 250px !important; }
+          .detail-subway-item { font-size: 13px !important; }
+          .detail-subway-item span { font-size: 11px !important; }
           .detail-watermark span:first-child { font-size: 18px !important; letter-spacing: 4px !important; }
           .detail-watermark span:last-child { font-size: 10px !important; }
           .detail-pnum { font-size: 12px !important; padding: 2px 6px !important; }
+          .detail-sold-overlay span { font-size: 32px !important; padding: 8px 20px !important; }
         }
-      `}</style>
+      ` }} />
 
       {/* ── 상단 탭 바 ── */}
       <div className="tab-bar" style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'sticky', top: headerHeight, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
@@ -568,10 +589,10 @@ export default function PropertyDetailPage() {
             )}
             {/* 거래완료 오버레이 (이미지 유무 상관없이 컨테이너 위에 표시) */}
             {property.is_sold && (
-              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                <div style={{ border: '4px solid #e04a4a', color: '#e04a4a', fontSize: '48px', fontWeight: 900, padding: '12px 32px', transform: 'rotate(-15deg)', letterSpacing: '4px' }}>
+              <div className="detail-sold-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                <span style={{ border: '4px solid #e04a4a', color: '#e04a4a', fontSize: '48px', fontWeight: 900, padding: '12px 32px', transform: 'rotate(-15deg)', letterSpacing: '4px' }}>
                   거래완료
-                </div>
+                </span>
               </div>
             )}
           </div>
@@ -693,7 +714,7 @@ export default function PropertyDetailPage() {
             <SectionHeader icon="📍" title="위치" open={openLocation} onToggle={() => setOpenLocation(!openLocation)} />
             {openLocation && (
               <div>
-                <div style={{ position: 'relative', width: '100%', height: '400px', marginBottom: '16px', borderRadius: '4px', overflow: 'hidden' }}>
+                <div className="detail-map-container" style={{ position: 'relative', width: '100%', height: '400px', marginBottom: '16px', borderRadius: '4px', overflow: 'hidden' }}>
                   <div ref={locationMapRef} style={{ width: '100%', height: '100%' }} />
                   {!locationMapObjRef.current && (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e8e8e8', fontSize: '15px', color: '#888' }}>
@@ -711,7 +732,7 @@ export default function PropertyDetailPage() {
             {openSubway && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {nearbySubway.length > 0 ? nearbySubway.map((s: any, i: number) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div key={i} className="detail-subway-item" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#00A84D', color: '#fff', fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>지하철</span>
                     <span style={{ fontSize: '15px', fontWeight: 500, color: '#222' }}>{s.name}</span>
                     <span style={{ fontSize: '15px', color: '#e2a06e', fontWeight: 600 }}>{formatDist(s.dist)}</span>
