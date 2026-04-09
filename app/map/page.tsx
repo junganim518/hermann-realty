@@ -84,6 +84,8 @@ export default function MapPage() {
   const [highlightId, setHighlightId]   = useState<string | null>(null);
   const [visibleIds, setVisibleIds]     = useState<Set<string> | null>(null);
   const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [drawerDragY, setDrawerDragY]   = useState(0);
+  const drawerStartY = useRef(0);
 
   const [searchInput, setSearchInput]   = useState('');
   const [search, setSearch]             = useState('');
@@ -531,11 +533,24 @@ export default function MapPage() {
               borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
               boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
               display: 'flex', flexDirection: 'column',
+              transform: `translateY(${drawerDragY}px)`,
+              transition: drawerDragY === 0 ? 'transform 0.3s ease' : 'none',
             }}
           >
             {/* 드로어 핸들 + 헤더 */}
-            <div style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0 }}>
-              <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 10px' }} />
+            <div
+              style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'none' }}
+              onTouchStart={e => { drawerStartY.current = e.touches[0].clientY; setDrawerDragY(0); }}
+              onTouchMove={e => {
+                const diff = e.touches[0].clientY - drawerStartY.current;
+                setDrawerDragY(diff > 0 ? diff : 0);
+              }}
+              onTouchEnd={() => {
+                if (drawerDragY > 100) { setDrawerOpen(false); }
+                setDrawerDragY(0);
+              }}
+            >
+              <div onClick={() => setDrawerOpen(false)} style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 10px', cursor: 'pointer' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
                   매물 목록&nbsp;<span style={{ color: '#e2a06e' }}>{displayList.length}</span>개
