@@ -367,7 +367,8 @@ export default function PropertiesPage() {
                       (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
                       (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                     }}
-                    className="border border-gray-200 overflow-hidden bg-white"
+                    className="border border-gray-200 overflow-hidden"
+                    style={{ backgroundColor: '#fff', color: '#1a1a1a' }}
                   >
                     <div className="prop-card-header bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 500 }}>{p.property_number}</span>
@@ -408,7 +409,7 @@ export default function PropertiesPage() {
                             </span>
                           );
                         })()}
-                        <span className="prop-price" style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(p)}</span>
+                        <span className="prop-price" style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                       </div>
                     </div>
                   </Link>
