@@ -234,11 +234,20 @@ export default function Home() {
           .card-body .card-price { font-size: 13px !important; }
           .card-body .card-badge { font-size: 9px !important; padding: 1px 5px !important; }
           .section-title { font-size: 20px !important; margin-bottom: 16px !important; }
-          .section-pad { padding: 10px !important; }
+          .section-pad { padding: 8px !important; }
           .type-card { height: 140px !important; }
           .type-card h3 { font-size: 18px !important; }
           .theme-card { height: 180px !important; }
           .theme-card h3 { font-size: 18px !important; }
+          .hero-sub { font-size: 14px !important; }
+          .hero-title { font-size: 32px !important; }
+          .hero-desc { font-size: 15px !important; }
+          .hero-body { font-size: 12px !important; }
+          .main-layout { width: 100% !important; margin: 0 !important; }
+          .center-content { padding-left: 0 !important; padding-right: 0 !important; }
+          .search-section { padding-left: 8px !important; padding-right: 8px !important; }
+          .search-input { font-size: 14px !important; }
+          .search-btn { font-size: 14px !important; padding: 0 12px !important; }
         }
       `}</style>
 
@@ -281,23 +290,23 @@ export default function Home() {
           className="hero-text absolute inset-0 flex flex-col items-center justify-center text-center text-white px-8"
           style={{ zIndex: 2, gap: '24px' }}
         >
-          <p className="text-[20px] font-semibold text-[#e2a06e] tracking-[0.05em] m-0 p-0">
+          <p className="hero-sub text-[20px] font-semibold text-[#e2a06e] tracking-[0.05em] m-0 p-0">
             {heroSlides[heroIndex].sub}
           </p>
-          <h1 className="text-[40px] md:text-[56px] lg:text-[64px] font-extrabold text-white m-0 p-0">
+          <h1 className="hero-title text-[40px] md:text-[56px] lg:text-[64px] font-extrabold text-white m-0 p-0">
             {heroSlides[heroIndex].title}
           </h1>
-          <p className="text-[18px] md:text-[22px] font-light text-[rgba(255,255,255,0.9)] tracking-[0.05em] m-0 p-0">
+          <p className="hero-desc text-[18px] md:text-[22px] font-light text-[rgba(255,255,255,0.9)] tracking-[0.05em] m-0 p-0">
             {heroSlides[heroIndex].desc}
           </p>
-          <p className="text-[15px] text-[rgba(255,255,255,0.75)] leading-relaxed m-0 p-0 whitespace-pre-line">
+          <p className="hero-body text-[15px] text-[rgba(255,255,255,0.75)] leading-relaxed m-0 p-0 whitespace-pre-line">
             {heroSlides[heroIndex].body}
           </p>
-          <div className="flex gap-4 justify-center mt-2">
-            <button className="bg-[#e2a06e] hover:bg-[#A06828] text-white px-8 py-[14px] rounded-lg text-[16px] font-semibold transition">
+          <div className="flex flex-row gap-2 sm:gap-4 justify-center mt-2">
+            <button className="bg-[#e2a06e] hover:bg-[#A06828] text-white px-3 py-2 sm:px-8 sm:py-[14px] rounded-lg text-[13px] sm:text-[16px] font-semibold transition">
               매물 검색하기
             </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-[#e2a06e] px-8 py-[14px] rounded-lg text-[16px] font-semibold transition">
+            <button className="border-2 border-white text-white hover:bg-white hover:text-[#e2a06e] px-3 py-2 sm:px-8 sm:py-[14px] rounded-lg text-[13px] sm:text-[16px] font-semibold transition">
               상담 신청하기
             </button>
           </div>
@@ -332,7 +341,7 @@ export default function Home() {
       </section>
 
       {/* 검색바 섹션 */}
-      <section className="bg-white py-6 px-4 md:px-6">
+      <section className="search-section bg-white py-6 px-4 md:px-6">
         <div
           className="w-full max-w-full sm:max-w-md lg:max-w-lg mx-auto flex items-center"
           style={{
@@ -348,11 +357,12 @@ export default function Home() {
           </div>
           <input
             type="text"
-            placeholder="원하는 지역명, 지하철역, 키워드를 입력해주세요"
-            className="flex-1 px-3 py-4 text-[16px] text-gray-700 placeholder-gray-400 outline-none border-none bg-white"
+            placeholder="지역명, 지하철역, 키워드 검색"
+            className="search-input flex-1 px-3 py-4 text-[16px] text-gray-700 placeholder-gray-400 outline-none border-none bg-white"
+            style={{ minWidth: 0 }}
           />
           <button
-            className="px-8 py-4 text-white text-[18px] font-semibold whitespace-nowrap transition hover:opacity-90"
+            className="search-btn px-8 py-4 text-white text-[18px] font-semibold whitespace-nowrap transition hover:opacity-90"
             style={{ backgroundColor: '#e2a06e' }}
           >
             매물검색
@@ -361,7 +371,7 @@ export default function Home() {
       </section>
 
       {/* 3열 레이아웃: 좌측 사이드바 + 중앙 콘텐츠 + 우측 패널 */}
-      <div className="flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
+      <div className="main-layout flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
 
         {/* 좌측 사이드바 220px - lg 이상에서만 표시 */}
         <aside
@@ -413,7 +423,7 @@ export default function Home() {
         </aside>
 
         {/* 중앙 콘텐츠 flex-1 */}
-        <div className="flex-1 min-w-0 px-4">
+        <div className="center-content flex-1 min-w-0 px-4">
 
           {/* 매물 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>

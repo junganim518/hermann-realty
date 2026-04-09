@@ -97,7 +97,7 @@ const matchRent = (rent: any, range: string) => {
   return true;
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 export default function PropertiesPage() {
   const searchParams = useSearchParams();
@@ -108,12 +108,20 @@ export default function PropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(200);
   const [filterTx, setFilterTx] = useState('전체');
+  const [filterType, setFilterType] = useState(typeParam || '전체');
+  const [filterTheme, setFilterTheme] = useState(themeParam || '전체');
   const [filterArea, setFilterArea] = useState('전체');
   const [filterDeposit, setFilterDeposit] = useState('전체');
   const [filterRent, setFilterRent] = useState('전체');
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const title = themeParam ? themeParam : typeParam ? `${typeParam} 매물` : '전체 매물';
+  useEffect(() => {
+    if (typeParam) setFilterType(typeParam);
+    if (themeParam) setFilterTheme(themeParam);
+    setCurrentPage(1);
+  }, [typeParam, themeParam]);
+
+  const title = filterTheme !== '전체' ? filterTheme : filterType !== '전체' ? `${filterType} 매물` : '전체 매물';
 
   useEffect(() => {
     const h = document.querySelector('header') as HTMLElement;
@@ -123,10 +131,7 @@ export default function PropertiesPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
-      if (typeParam) query = query.eq('property_type', typeParam);
-      if (themeParam) query = query.ilike('theme_type', `%${themeParam}%`);
-      const { data } = await query;
+      const { data } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
 
       const withImages = await Promise.all(
         (data ?? []).map(async (p: any) => {
@@ -141,20 +146,22 @@ export default function PropertiesPage() {
       );
       setAllProperties(withImages);
       setLoading(false);
-      setVisibleCount(PAGE_SIZE);
     })();
-  }, [typeParam, themeParam]);
+  }, []);
 
   const filtered = allProperties.filter(p => {
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
+    if (filterType !== '전체' && p.property_type !== filterType) return false;
+    if (filterTheme !== '전체' && !(p.theme_type ?? '').split(',').includes(filterTheme)) return false;
     if (!matchArea(p.exclusive_area, filterArea)) return false;
     if (!matchDeposit(p.deposit, filterDeposit)) return false;
     if (!matchRent(p.monthly_rent, filterRent)) return false;
     return true;
   });
 
-  const displayed = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const displayed = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const selectSt: React.CSSProperties = {
     height: '40px', border: '1px solid #ddd', borderRadius: '4px',
@@ -165,8 +172,29 @@ export default function PropertiesPage() {
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
+      <style>{`
+        @media (max-width: 768px) {
+          .prop-layout { width: 100% !important; margin: 0 !important; }
+          .prop-center { padding: 0 8px !important; }
+          .prop-title h1 { font-size: 22px !important; }
+          .prop-filter { display: grid !important; grid-template-columns: 1fr 1fr 1fr; gap: 6px !important; justify-content: stretch !important; }
+          .prop-filter select { width: 100% !important; height: 36px !important; font-size: 12px !important; padding: 0 4px !important; }
+          .prop-filter button { grid-column: 1 / -1; height: 36px !important; font-size: 13px !important; }
+          .prop-grid { gap: 8px !important; }
+          .prop-card-header { padding: 5px 8px !important; }
+          .prop-card-header span { font-size: 11px !important; }
+          .prop-card-img { height: 120px !important; }
+          .prop-card-body { padding: 6px 8px !important; }
+          .prop-card-body .prop-addr { font-size: 11px !important; }
+          .prop-card-body .prop-meta { font-size: 11px !important; }
+          .prop-card-body .prop-price { font-size: 13px !important; }
+          .prop-card-body .prop-badge { font-size: 9px !important; padding: 1px 5px !important; }
+          .prop-sold { font-size: 16px !important; padding: 2px 10px !important; }
+        }
+      `}</style>
+
       {/* 3열 레이아웃 */}
-      <div className="flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
+      <div className="prop-layout flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
 
         {/* ── 좌측 사이드바 ── */}
         <aside
@@ -217,10 +245,10 @@ export default function PropertiesPage() {
         </aside>
 
         {/* ── 중앙 콘텐츠 ── */}
-        <div className="flex-1 min-w-0 px-4">
+        <div className="prop-center flex-1 min-w-0 px-4">
 
           {/* 타이틀 */}
-          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <div className="prop-title" style={{ marginBottom: '20px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a1a' }}>{title}</h1>
             <p style={{ fontSize: '14px', color: '#888', marginTop: '4px' }}>
               총 <strong style={{ color: '#e2a06e' }}>{filtered.length}</strong>개 매물
@@ -228,22 +256,30 @@ export default function PropertiesPage() {
           </div>
 
           {/* 필터 바 */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setVisibleCount(PAGE_SIZE); }} style={selectSt}>
+          <div className="prop-filter" style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <select value={filterType} onChange={e => { setFilterType(e.target.value); setCurrentPage(1); }} style={selectSt}>
+              <option value="전체">매물종류 전체</option>
+              {PROP_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); setCurrentPage(1); }} style={selectSt}>
+              <option value="전체">테마 전체</option>
+              {THEME_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setCurrentPage(1); }} style={selectSt}>
               {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
             </select>
-            <select value={filterArea} onChange={e => { setFilterArea(e.target.value); setVisibleCount(PAGE_SIZE); }} style={selectSt}>
+            <select value={filterArea} onChange={e => { setFilterArea(e.target.value); setCurrentPage(1); }} style={selectSt}>
               {AREA_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '면적 전체' : t}</option>)}
             </select>
-            <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); setVisibleCount(PAGE_SIZE); }} style={selectSt}>
+            <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); setCurrentPage(1); }} style={selectSt}>
               {DEPOSIT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '보증금 전체' : t}</option>)}
             </select>
-            <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setVisibleCount(PAGE_SIZE); }} style={selectSt}>
+            <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setCurrentPage(1); }} style={selectSt}>
               {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
             </select>
-            {(filterTx !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체') && (
+            {(filterTx !== '전체' || filterType !== '전체' || filterTheme !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체') && (
               <button
-                onClick={() => { setFilterTx('전체'); setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setVisibleCount(PAGE_SIZE); }}
+                onClick={() => { setFilterTx('전체'); setFilterType('전체'); setFilterTheme('전체'); setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setCurrentPage(1); }}
                 style={{ height: '40px', padding: '0 14px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', color: '#666', background: '#fff', cursor: 'pointer' }}
               >
                 초기화
@@ -263,7 +299,7 @@ export default function PropertiesPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="prop-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {displayed.map((p: any) => (
                   <Link
                     key={p.property_number}
@@ -279,11 +315,11 @@ export default function PropertiesPage() {
                     }}
                     className="border border-gray-200 overflow-hidden bg-white"
                   >
-                    <div className="bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
+                    <div className="prop-card-header bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 500 }}>{p.property_number}</span>
                       <span style={{ fontSize: '13px', fontWeight: 600 }} className="truncate ml-2">{(p.title ?? '').replace(/헤르만\s*/g, '')}</span>
                     </div>
-                    <div className="relative" style={{ height: '260px' }}>
+                    <div className="prop-card-img relative" style={{ height: '260px' }}>
                       {p.image ? (
                         <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
                       ) : (
@@ -291,16 +327,16 @@ export default function PropertiesPage() {
                       )}
                       {p.is_sold && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ color: '#fff', fontSize: '24px', fontWeight: 800, letterSpacing: '3px', border: '2px solid #fff', padding: '4px 16px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
+                          <span className="prop-sold" style={{ color: '#fff', fontSize: '24px', fontWeight: 800, letterSpacing: '3px', border: '2px solid #fff', padding: '4px 16px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
                         </div>
                       )}
                     </div>
-                    <div className="p-3">
-                      <div className="mb-2">
-                        <p style={{ fontSize: '13px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="prop-card-body p-3">
+                      <div className="mb-1 md:mb-2">
+                        <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {formatAddress(p.address ?? '')}
                         </p>
-                        <p style={{ fontSize: '13px', color: '#666' }}>
+                        <p className="prop-meta" style={{ fontSize: '13px', color: '#666' }}>
                           {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
                         </p>
                       </div>
@@ -313,26 +349,61 @@ export default function PropertiesPage() {
                           };
                           const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                           return (
-                            <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                            <span className="prop-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
                               {p.transaction_type}
                             </span>
                           );
                         })()}
-                        <span style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(p)}</span>
+                        <span className="prop-price" style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(p)}</span>
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
 
-              {hasMore && (
-                <div style={{ textAlign: 'center', margin: '24px 0 40px' }}>
+              {/* 페이지네이션 */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', margin: '24px 0 40px', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-                    className="border border-[#e2a06e] text-[#e2a06e] hover:bg-[#e2a06e] hover:text-white rounded-lg font-semibold transition"
-                    style={{ fontSize: '15px', padding: '10px 32px' }}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                    style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer' }}
                   >
-                    매물 더보기 ({filtered.length - visibleCount}개 남음)
+                    ‹ 이전
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                    .reduce<number[]>((acc, p) => {
+                      if (acc.length > 0 && p - acc[acc.length - 1] > 1) acc.push(-1);
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      p === -1 ? (
+                        <span key={`dot-${i}`} style={{ padding: '8px 4px', color: '#999' }}>…</span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          style={{
+                            width: '36px', height: '36px', fontSize: '14px', fontWeight: p === safePage ? 700 : 400,
+                            border: p === safePage ? '1px solid #e2a06e' : '1px solid #ddd',
+                            borderRadius: '4px', cursor: 'pointer',
+                            background: p === safePage ? '#e2a06e' : '#fff',
+                            color: p === safePage ? '#fff' : '#333',
+                          }}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )
+                  }
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                    style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer' }}
+                  >
+                    다음 ›
                   </button>
                 </div>
               )}
