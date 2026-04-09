@@ -116,7 +116,7 @@ export default function MapPage() {
 
     const createMap = () => {
       if (cancelled || !mapContainerRef.current) return;
-      if (mapObjRef.current) { setMapReady(true); return; }
+      if (mapObjRef.current) { setMapReady(true); console.log('지도 컨테이너 크기:', mapContainerRef.current?.offsetWidth, mapContainerRef.current?.offsetHeight); return; }
 
       const isMobile = window.innerWidth < 768;
       const center = new window.kakao.maps.LatLng(37.5040479677868, 126.77522691726);
@@ -155,7 +155,7 @@ export default function MapPage() {
         }],
       });
 
-      if (!cancelled) setMapReady(true);
+      if (!cancelled) { setMapReady(true); console.log('지도 컨테이너 크기:', mapContainerRef.current?.offsetWidth, mapContainerRef.current?.offsetHeight); }
     };
 
     // 이미 SDK가 로드된 경우 (페이지 재방문 등)
@@ -222,6 +222,11 @@ export default function MapPage() {
   // ── 마커 + 원 업데이트
   useEffect(() => {
     if (!mapReady || !mapObjRef.current) return;
+
+    // 지도 크기 재계산
+    setTimeout(() => {
+      mapObjRef.current?.relayout();
+    }, 100);
 
     // 기존 제거
     markersRef.current.forEach(m => m.setMap(null));
@@ -324,8 +329,8 @@ export default function MapPage() {
           .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
           .map-filter-bar .map-count { display: none !important; }
           .map-panel { display: none !important; }
+          .map-area { width: 100% !important; }
           .map-drawer-toggle { display: flex !important; }
-          .map-area { height: 50vh !important; flex: none !important; }
           .map-card-text { padding: 12px 14px !important; }
           .map-card-text .map-card-pnum { font-size: 11px !important; }
           .map-card-text .map-card-title { font-size: 14px !important; }
@@ -400,10 +405,10 @@ export default function MapPage() {
       </div>
 
       {/* ════════════ 2열 본문 ════════════ */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div className="map-body" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* ── 좌측 지도 */}
-        <div className="map-area" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <div className="map-area" style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
           <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
           {/* 모바일 매물목록 토글 버튼 */}
