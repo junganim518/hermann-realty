@@ -358,7 +358,7 @@ export default function PropertiesPage() {
                   <Link
                     key={p.property_number}
                     href={`/item/view/${p.property_number}`}
-                    style={{ textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.2s ease', cursor: 'pointer' }}
+                    style={{ textDecoration: 'none', display: 'block', transition: 'all 0.2s ease', cursor: 'pointer', backgroundColor: '#fff', color: '#1a1a1a' }}
                     onMouseEnter={e => {
                       (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
                       (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
@@ -368,7 +368,6 @@ export default function PropertiesPage() {
                       (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                     }}
                     className="border border-gray-200 overflow-hidden"
-                    style={{ backgroundColor: '#fff', color: '#1a1a1a' }}
                   >
                     <div className="prop-card-header flex justify-between items-center" style={{ padding: '8px 12px', background: '#e2a06e', color: '#fff' }}>
                       <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{p.property_number}</span>

@@ -21,7 +21,7 @@ body {
 
 @media (prefers-color-scheme: dark) {
   html, body, *, *::before, *::after {
-    color-scheme: light only !important;
+    color-scheme: light !important;
   }
   body {
     color: #1a1a1a !important;
