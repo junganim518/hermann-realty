@@ -40,6 +40,7 @@ export default function Home() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(8);
   const contactRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = () => {
@@ -387,7 +388,7 @@ export default function Home() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     문자 문의
                   </a>
-                  <a href="#" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none' }}
+                  <a href="https://open.kakao.com/o/s3lwiwsh" target="_blank" rel="noopener noreferrer" onClick={() => setContactOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', fontSize: '14px', fontWeight: 600, color: '#333', textDecoration: 'none' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#FEF9E7'; e.currentTarget.style.color = '#3C1E1E'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#333'; }}
                   >
@@ -592,7 +593,7 @@ export default function Home() {
                 {['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => { setActiveTab(tab); setVisibleCount(8); }}
                     style={{
                       fontSize: '14px', padding: '0',
                       height: '44px', width: 'calc(33.33% - 4px)',
@@ -613,7 +614,7 @@ export default function Home() {
 
             {/* 매물 그리드 */}
             <div className="grid-recent gap-2">
-              {recentProperties.map((property) => (
+              {recentProperties.slice(0, visibleCount).map((property) => (
                 <Link
                   key={property.id}
                   href={`/item/view/${property.id}`}
@@ -676,11 +677,17 @@ export default function Home() {
             </div>
 
             {/* 더보기 버튼 */}
-            <div className="text-center mt-6">
-              <button className="border border-[#e2a06e] text-[#e2a06e] hover:bg-[#e2a06e] hover:text-white rounded-lg font-semibold transition" style={{ fontSize: '15px', padding: '8px 24px' }}>
-                매물 더보기 ∨
-              </button>
-            </div>
+            {visibleCount < recentProperties.length && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 8)}
+                  className="border border-[#e2a06e] text-[#e2a06e] hover:bg-[#e2a06e] hover:text-white rounded-lg font-semibold transition"
+                  style={{ fontSize: '15px', padding: '8px 24px' }}
+                >
+                  매물 더보기 ∨
+                </button>
+              </div>
+            )}
           </section>
 
         </div>
@@ -723,7 +730,9 @@ export default function Home() {
               </a>
               {/* 카카오톡 문의 */}
               <a
-                href="#"
+                href="https://open.kakao.com/o/s3lwiwsh"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '12px 16px', background: '#FEE500', color: '#3C1E1E', fontSize: '15px', fontWeight: 700, borderRadius: '8px', border: 'none', textDecoration: 'none', transition: 'opacity 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
