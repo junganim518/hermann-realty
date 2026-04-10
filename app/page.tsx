@@ -145,7 +145,7 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchCounts() {
-      const types  = ['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'];
+      const types  = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
       const themes = ['추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
 
       const tc: Record<string, number> = {};
@@ -177,10 +177,10 @@ export default function Home() {
   const propertyTypes = [
     { id: '상가', name: '상가', eng: 'STORE', icon: '🏪', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
     { id: '사무실', name: '사무실', eng: 'OFFICE', icon: '🏢', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
-    { id: '원룸·투룸', name: '원룸·투룸', eng: '1·2 ROOM', icon: '🏠', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80' },
-    { id: '쓰리룸이상', name: '쓰리룸이상', eng: '3ROOM+', icon: '🏘', image: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&q=80' },
+    { id: '오피스텔', name: '오피스텔', eng: 'OFFICETEL', icon: '🏠', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80' },
     { id: '아파트', name: '아파트', eng: 'APT', icon: '🏙', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&q=80' },
-    { id: '건물매매', name: '건물매매', eng: 'BUILDING', icon: '🏗', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
+    { id: '건물', name: '건물', eng: 'BUILDING', icon: '🏗', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
+    { id: '기타', name: '기타', eng: 'ETC', icon: '🏘', image: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&q=80' },
   ];
 
   const themeTypes = [
@@ -223,10 +223,10 @@ export default function Home() {
     },
     {
       id: 'ST-2024-003',
-      title: '신촌역 원룸·투룸 풀옵션',
+      title: '신촌역 오피스텔 풀옵션',
       location: '서대문구 창천동',
       area: '23㎡',
-      type: '원룸·투룸',
+      type: '오피스텔',
       floor: '3층',
       deposit: 1000,
       monthly_rent: 60,
@@ -236,10 +236,10 @@ export default function Home() {
     },
     {
       id: 'TH-2024-005',
-      title: '분당 쓰리룸 이상 넓은 집',
+      title: '분당 아파트 넓은 집',
       location: '성남시 분당구',
       area: '120㎡',
-      type: '쓰리룸이상',
+      type: '아파트',
       floor: '7층',
       deposit: 85000,
       transaction_type: '매매',
@@ -590,7 +590,7 @@ export default function Home() {
             {/* 탭 */}
             <div style={{ marginBottom: '16px' }}>
               <div className="tab-grid" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }}>
-                {['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'].map((tab) => (
+                {['상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => { setActiveTab(tab); setVisibleCount(8); }}

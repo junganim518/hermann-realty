@@ -9,7 +9,7 @@ declare global {
 }
 
 const TX_TYPES   = ['월세', '전세', '매매'];
-const PROP_TYPES = ['상가', '사무실', '원룸·투룸', '쓰리룸이상', '아파트', '건물매매'];
+const PROP_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const THEME_TYPES = ['추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
 const DIRECTIONS = ['동', '서', '남', '북', '남동', '남서', '북동', '북서'];
 
@@ -64,6 +64,11 @@ export default function EditPropertyPage() {
     is_sold: false,
     description: '',
     admin_memo: '',
+    landlord_name: '',
+    landlord_phone: '',
+    tenant_name: '',
+    tenant_phone: '',
+    extra_contacts: [] as { name: string; phone: string; role: string }[],
   });
 
   // 기존 이미지 (DB에 저장된)
@@ -124,6 +129,11 @@ export default function EditPropertyPage() {
         is_sold: data.is_sold ?? false,
         description: data.description ?? '',
         admin_memo: data.admin_memo ?? '',
+        landlord_name: data.landlord_name ?? '',
+        landlord_phone: data.landlord_phone ?? '',
+        tenant_name: data.tenant_name ?? '',
+        tenant_phone: data.tenant_phone ?? '',
+        extra_contacts: Array.isArray(data.extra_contacts) ? data.extra_contacts : [],
       });
 
       // 기존 이미지 조회
@@ -251,6 +261,11 @@ export default function EditPropertyPage() {
         is_sold: form.is_sold,
         description: form.description || null,
         admin_memo: form.admin_memo || null,
+        landlord_name: form.landlord_name || null,
+        landlord_phone: form.landlord_phone || null,
+        tenant_name: form.tenant_name || null,
+        tenant_phone: form.tenant_phone || null,
+        extra_contacts: form.extra_contacts.length > 0 ? form.extra_contacts : null,
       };
 
       console.log('[수정] UPDATE 데이터:', row);
@@ -481,6 +496,71 @@ export default function EditPropertyPage() {
         <div className="admin-section" style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
           <h2 style={{ ...sectionTitle, borderBottom: '2px solid #d4a017' }}>🔒 관리자 메모</h2>
           <textarea value={form.admin_memo} onChange={e => set('admin_memo', e.target.value)} placeholder="관리자 전용 메모" style={{ width: '100%', minHeight: '120px', border: '1px solid #e0d8a8', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit', background: '#fffef8' }} />
+        </div>
+
+        {/* ════════════ 연락처 (관리자 전용) ════════════ */}
+        <div className="admin-section" style={{ ...sectionSt, background: '#f0f6ff', border: '1px solid #c6dcf3' }}>
+          <h2 style={{ ...sectionTitle, borderBottom: '2px solid #4a7cdc' }}>🔒 연락처 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(관리자 전용)</span></h2>
+
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div>
+              <label style={labelSt}>임대인 이름</label>
+              <input value={form.landlord_name} onChange={e => set('landlord_name', e.target.value)} placeholder="예: 홍길동" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>임대인 전화번호</label>
+              <input value={form.landlord_phone} onChange={e => set('landlord_phone', e.target.value)} placeholder="예: 010-1234-5678" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>임차인 이름</label>
+              <input value={form.tenant_name} onChange={e => set('tenant_name', e.target.value)} placeholder="예: 김철수" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>임차인 전화번호</label>
+              <input value={form.tenant_phone} onChange={e => set('tenant_phone', e.target.value)} placeholder="예: 010-9876-5432" style={inputSt} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ ...labelSt, marginBottom: 0 }}>추가 연락처 ({form.extra_contacts.length}/5)</label>
+              {form.extra_contacts.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => set('extra_contacts', [...form.extra_contacts, { name: '', phone: '', role: '' }])}
+                  style={{ padding: '6px 12px', fontSize: '13px', background: '#4a7cdc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  + 연락처 추가
+                </button>
+              )}
+            </div>
+            {form.extra_contacts.map((c, i) => (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                <input
+                  value={c.name}
+                  onChange={e => { const arr = [...form.extra_contacts]; arr[i] = { ...arr[i], name: e.target.value }; set('extra_contacts', arr); }}
+                  placeholder="이름" style={inputSt}
+                />
+                <input
+                  value={c.role}
+                  onChange={e => { const arr = [...form.extra_contacts]; arr[i] = { ...arr[i], role: e.target.value }; set('extra_contacts', arr); }}
+                  placeholder="관계" style={inputSt}
+                />
+                <input
+                  value={c.phone}
+                  onChange={e => { const arr = [...form.extra_contacts]; arr[i] = { ...arr[i], phone: e.target.value }; set('extra_contacts', arr); }}
+                  placeholder="전화번호" style={inputSt}
+                />
+                <button
+                  type="button"
+                  onClick={() => set('extra_contacts', form.extra_contacts.filter((_, idx) => idx !== i))}
+                  style={{ width: '36px', height: '40px', background: '#fff', color: '#e05050', border: '1px solid #e05050', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ════════════ 이미지 ════════════ */}

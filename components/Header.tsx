@@ -26,10 +26,10 @@ export default function Header() {
 
   const navItems = [
     { label: '매물검색', href: '/map' },
-    { label: '매물 의뢰하기', href: '#' },
-    { label: '부동산 소식', href: '#' },
-    { label: '공지사항', href: '#' },
-    { label: '회사소개', href: '#' },
+    { label: '매물 의뢰하기', href: '/inquiry' },
+    { label: '부동산 소식', href: '/news' },
+    { label: 'AI 상권분석', href: '/analysis' },
+    { label: '회사소개', href: '/about' },
   ];
 
   return (
@@ -81,6 +81,7 @@ export default function Header() {
           {user ? (
             <>
               <a href="/admin/properties/new" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none' }}>매물 등록</a>
+              <a href="/admin/inquiries" style={{ background: '#fff', color: '#e2a06e', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none', border: '1px solid #e2a06e' }}>의뢰 목록</a>
               <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
             </>
           ) : (
@@ -213,6 +214,7 @@ export default function Header() {
               {user ? (
                 <>
                   <a href="/admin/properties/new" onClick={() => setMenuOpen(false)} style={{ display: 'block', background: '#e2a06e', color: '#fff', fontSize: '15px', fontWeight: 600, padding: '10px 0', borderRadius: '6px', textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
+                  <a href="/admin/inquiries" onClick={() => setMenuOpen(false)} style={{ display: 'block', background: '#fff', color: '#e2a06e', fontSize: '15px', fontWeight: 600, padding: '10px 0', borderRadius: '6px', textDecoration: 'none', textAlign: 'center', border: '1px solid #e2a06e' }}>의뢰 목록</a>
                   <button onClick={() => { handleLogout(); setMenuOpen(false); }} style={{ color: '#999', fontSize: '15px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>로그아웃</button>
                 </>
               ) : (

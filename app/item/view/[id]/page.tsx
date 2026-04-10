@@ -139,6 +139,11 @@ interface Property {
   theme_types?: string;
   description?: string;
   admin_memo?: string;
+  landlord_name?: string;
+  landlord_phone?: string;
+  tenant_name?: string;
+  tenant_phone?: string;
+  extra_contacts?: { name: string; phone: string; role: string }[];
   is_sold?: boolean;
   latitude?: number | string;
   longitude?: number | string;
@@ -706,6 +711,53 @@ export default function PropertyDetailPage() {
               <p style={{ whiteSpace: 'pre-line', lineHeight: '1.8', fontSize: '14px', color: '#666', background: '#fffef5', padding: '12px', borderRadius: '4px', border: '1px solid #f0e6b8' }}>
                 {property.admin_memo}
               </p>
+            </div>
+          )}
+
+          {/* 🔒 연락처 (관리자 전용) */}
+          {isAdmin && (property?.landlord_name || property?.landlord_phone || property?.tenant_name || property?.tenant_phone || (property?.extra_contacts && property.extra_contacts.length > 0)) && (
+            <div style={{ background: '#f0f6ff', border: '1px solid #c6dcf3', padding: '16px', borderRadius: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                <span style={{ fontSize: '16px' }}>🔒</span>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#2c4f8c' }}>연락처</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {(property.landlord_name || property.landlord_phone) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', borderRadius: '4px', border: '1px solid #dce7f5' }}>
+                    <span style={{ fontSize: '12px', color: '#fff', background: '#4a7cdc', padding: '3px 10px', borderRadius: '3px', fontWeight: 700, flexShrink: 0 }}>임대인</span>
+                    {property.landlord_name && <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a' }}>{property.landlord_name}</span>}
+                    {property.landlord_phone && (
+                      <a href={`tel:${property.landlord_phone}`} style={{ marginLeft: 'auto', fontSize: '14px', fontWeight: 700, color: '#4a7cdc', textDecoration: 'none' }}>
+                        📞 {property.landlord_phone}
+                      </a>
+                    )}
+                  </div>
+                )}
+                {(property.tenant_name || property.tenant_phone) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', borderRadius: '4px', border: '1px solid #dce7f5' }}>
+                    <span style={{ fontSize: '12px', color: '#fff', background: '#888', padding: '3px 10px', borderRadius: '3px', fontWeight: 700, flexShrink: 0 }}>임차인</span>
+                    {property.tenant_name && <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a' }}>{property.tenant_name}</span>}
+                    {property.tenant_phone && (
+                      <a href={`tel:${property.tenant_phone}`} style={{ marginLeft: 'auto', fontSize: '14px', fontWeight: 700, color: '#4a7cdc', textDecoration: 'none' }}>
+                        📞 {property.tenant_phone}
+                      </a>
+                    )}
+                  </div>
+                )}
+                {property.extra_contacts?.map((c, i) => (
+                  (c.name || c.phone) && (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', borderRadius: '4px', border: '1px solid #dce7f5' }}>
+                      <span style={{ fontSize: '12px', color: '#fff', background: '#7a9bd9', padding: '3px 10px', borderRadius: '3px', fontWeight: 700, flexShrink: 0 }}>{c.role || '기타'}</span>
+                      {c.name && <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a' }}>{c.name}</span>}
+                      {c.phone && (
+                        <a href={`tel:${c.phone}`} style={{ marginLeft: 'auto', fontSize: '14px', fontWeight: 700, color: '#4a7cdc', textDecoration: 'none' }}>
+                          📞 {c.phone}
+                        </a>
+                      )}
+                    </div>
+                  )
+                ))}
+              </div>
             </div>
           )}
 
