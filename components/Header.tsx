@@ -28,7 +28,6 @@ export default function Header() {
     { label: '매물검색', href: '/map' },
     { label: '매물 의뢰하기', href: '/inquiry' },
     { label: '부동산 소식', href: '/news' },
-    { label: 'AI 상권분석', href: '/analysis' },
     { label: '회사소개', href: '/about' },
   ];
 
