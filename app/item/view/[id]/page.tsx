@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 declare global {
@@ -153,6 +153,7 @@ interface Property {
 
 export default function PropertyDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
 
   const [property, setProperty] = useState<Property | null>(null);
@@ -163,8 +164,7 @@ export default function PropertyDetailPage() {
   const [currentImage, setCurrentImage] = useState(0);
   const [activeTab, setActiveTab] = useState('section-info');
   const [headerHeight, setHeaderHeight] = useState(0);
-
-  const [isPyeong, setIsPyeong] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -174,6 +174,13 @@ export default function PropertyDetailPage() {
   useEffect(() => {
     const header = document.querySelector('header') as HTMLElement;
     if (header) setHeaderHeight(header.offsetHeight);
+  }, []);
+
+  // 스크롤 감지 → 위로이동 버튼
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // ── 스크롤 시 탭 활성화 자동 변경
@@ -500,6 +507,13 @@ export default function PropertyDetailPage() {
           .detail-watermark span:last-child { font-size: 10px !important; }
           .detail-pnum { font-size: 12px !important; padding: 2px 6px !important; }
           .detail-sold-overlay span { font-size: 32px !important; padding: 8px 20px !important; }
+          .detail-mobile-fab { display: flex !important; }
+          .detail-pc-back { display: none !important; }
+        }
+        .detail-mobile-fab { display: none !important; }
+        @media (max-width: 767px) {
+          .detail-mobile-fab { display: flex !important; }
+          .detail-pc-scroll-top { display: none !important; }
         }
       ` }} />
 
@@ -536,10 +550,13 @@ export default function PropertyDetailPage() {
               </button>
             ))}
           </div>
-          <div className="detail-tab-utils" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {['평으로변환', '∧ 위로이동', '〈 이전', '다음 〉'].map((label, i) => (
-              <button key={i} style={{ fontSize: '16px', color: '#666', background: 'none', border: '1px solid #ddd', borderRadius: '3px', padding: '5px 8px', cursor: 'pointer' }}>{label}</button>
-            ))}
+          <div className="detail-tab-utils detail-pc-back" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={() => router.back()}
+              style={{ fontSize: '14px', color: '#fff', background: 'rgba(100,100,100,0.5)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              ← 목록으로
+            </button>
           </div>
         </div>
       </div>
@@ -635,22 +652,14 @@ export default function PropertyDetailPage() {
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>면적</td>
                     <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          {property.supply_area && (
-                            <span>{isPyeong ? `공급 ${toPyeong(parseFloat(property.supply_area))}평` : `공급 ${property.supply_area}㎡`}</span>
-                          )}
-                          {property.exclusive_area && (
-                            <span>{isPyeong ? `전용 ${toPyeong(parseFloat(property.exclusive_area))}평` : `전용 ${property.exclusive_area}㎡`}</span>
-                          )}
-                          {!property.supply_area && !property.exclusive_area && '-'}
-                        </div>
-                        <button
-                          onClick={() => setIsPyeong(!isPyeong)}
-                          style={{ border: '1px solid #e2a06e', color: '#e2a06e', fontSize: '12px', padding: '2px 8px', borderRadius: '4px', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '8px' }}
-                        >
-                          {isPyeong ? '㎡로 보기' : '평으로 보기'}
-                        </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {property.supply_area && (
+                          <span>공급 {property.supply_area}㎡ ({toPyeong(parseFloat(property.supply_area))}평)</span>
+                        )}
+                        {property.exclusive_area && (
+                          <span>전용 {property.exclusive_area}㎡ ({toPyeong(parseFloat(property.exclusive_area))}평)</span>
+                        )}
+                        {!property.supply_area && !property.exclusive_area && '-'}
                       </div>
                     </td>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>층수</td>
@@ -969,6 +978,70 @@ export default function PropertyDetailPage() {
         </aside>
 
       </div>
+
+      {/* 모바일 우측 하단 FAB (뒤로가기 + 위로이동) */}
+      <div
+        className="detail-mobile-fab"
+        style={{
+          display: 'none',
+          position: 'fixed', bottom: '70px', right: '16px',
+          flexDirection: 'column', gap: '8px',
+          zIndex: 999,
+        }}
+      >
+        {showScrollTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{
+              width: '48px', height: '48px', borderRadius: '50%',
+              background: 'rgba(100,100,100,0.7)', color: '#fff',
+              border: 'none', fontSize: '18px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            ↑
+          </button>
+        )}
+        <button
+          onClick={() => router.back()}
+          style={{
+            width: '48px', height: '48px', borderRadius: '50%',
+            background: 'rgba(100,100,100,0.7)', color: '#fff',
+            border: 'none', fontSize: '18px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ←
+        </button>
+      </div>
+
+      {/* PC용 위로이동 */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{
+            position: 'fixed',
+            bottom: '40px',
+            right: '40px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: 'rgba(100,100,100,0.5)',
+            color: '#fff',
+            border: 'none',
+            fontSize: '20px',
+            cursor: 'pointer',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          className="detail-pc-scroll-top"
+        >
+          ↑
+        </button>
+      )}
+
     </main>
   );
 }

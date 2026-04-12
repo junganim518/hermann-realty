@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -101,28 +101,51 @@ const PAGE_SIZE = 10;
 
 export default function PropertiesPage() {
   const searchParams = useSearchParams();
-  const typeParam = searchParams.get('type') ?? '';
-  const themeParam = searchParams.get('theme') ?? '';
-  const searchParam = searchParams.get('search') ?? '';
+  const router = useRouter();
+
+  const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
 
   const [allProperties, setAllProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(200);
-  const [filterTx, setFilterTx] = useState('전체');
-  const [filterType, setFilterType] = useState(typeParam || '전체');
-  const [filterTheme, setFilterTheme] = useState(themeParam || '전체');
-  const [filterArea, setFilterArea] = useState('전체');
-  const [filterDeposit, setFilterDeposit] = useState('전체');
-  const [filterRent, setFilterRent] = useState('전체');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchInput, setSearchInput] = useState(searchParam);
+  const [filterTx, setFilterTx] = useState(readParam('tx', '전체'));
+  const [filterType, setFilterType] = useState(readParam('type', '전체'));
+  const [filterTheme, setFilterTheme] = useState(readParam('theme', '전체'));
+  const [filterArea, setFilterArea] = useState(readParam('area', '전체'));
+  const [filterDeposit, setFilterDeposit] = useState(readParam('deposit', '전체'));
+  const [filterRent, setFilterRent] = useState(readParam('rent', '전체'));
+  const [currentPage, setCurrentPage] = useState(parseInt(readParam('page', '1'), 10));
+  const [searchInput, setSearchInput] = useState(readParam('search', ''));
 
+  const searchParam = readParam('search', '');
+
+  const syncURL = useCallback((overrides: Record<string, string> = {}) => {
+    const vals: Record<string, string> = {
+      tx: filterTx, type: filterType, theme: filterTheme,
+      area: filterArea, deposit: filterDeposit, rent: filterRent,
+      page: String(currentPage), search: searchInput,
+      ...overrides,
+    };
+    const params = new URLSearchParams();
+    Object.entries(vals).forEach(([k, v]) => {
+      if (v && v !== '전체' && v !== '1' && v !== '') params.set(k, v);
+    });
+    const qs = params.toString();
+    router.replace(`/properties${qs ? '?' + qs : ''}`, { scroll: false });
+  }, [filterTx, filterType, filterTheme, filterArea, filterDeposit, filterRent, currentPage, searchInput, router]);
+
+  // URL searchParams 변경 시 state 동기화 (뒤로가기 대응)
   useEffect(() => {
-    setFilterType(typeParam || '전체');
-    setFilterTheme(themeParam || '전체');
-    setSearchInput(searchParam);
-    setCurrentPage(1);
-  }, [typeParam, themeParam, searchParam]);
+    setFilterTx(readParam('tx', '전체'));
+    setFilterType(readParam('type', '전체'));
+    setFilterTheme(readParam('theme', '전체'));
+    setFilterArea(readParam('area', '전체'));
+    setFilterDeposit(readParam('deposit', '전체'));
+    setFilterRent(readParam('rent', '전체'));
+    setCurrentPage(parseInt(readParam('page', '1'), 10));
+    setSearchInput(readParam('search', ''));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const title = searchParam ? `"${searchParam}" 검색 결과` : filterTheme !== '전체' ? filterTheme : filterType !== '전체' ? `${filterType} 매물` : '전체 매물';
 
@@ -167,12 +190,7 @@ export default function PropertiesPage() {
   });
 
   const handleSearch = () => {
-    const q = searchInput.trim();
-    const params = new URLSearchParams();
-    if (q) params.set('search', q);
-    if (filterType !== '전체') params.set('type', filterType);
-    if (filterTheme !== '전체') params.set('theme', filterTheme);
-    window.location.href = `/properties${params.toString() ? '?' + params.toString() : ''}`;
+    syncURL({ search: searchInput.trim(), page: '1' });
   };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -311,29 +329,29 @@ export default function PropertiesPage() {
 
           {/* 필터 바 */}
           <div className="prop-filter" style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <select value={filterType} onChange={e => { setFilterType(e.target.value); setCurrentPage(1); }} style={selectSt}>
+            <select value={filterType} onChange={e => { setFilterType(e.target.value); setCurrentPage(1); syncURL({ type: e.target.value, page: '1' }); }} style={selectSt}>
               <option value="전체">매물종류 전체</option>
               {PROP_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); setCurrentPage(1); }} style={selectSt}>
+            <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); setCurrentPage(1); syncURL({ theme: e.target.value, page: '1' }); }} style={selectSt}>
               <option value="전체">테마 전체</option>
               {THEME_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setCurrentPage(1); }} style={selectSt}>
+            <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setCurrentPage(1); syncURL({ tx: e.target.value, page: '1' }); }} style={selectSt}>
               {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
             </select>
-            <select value={filterArea} onChange={e => { setFilterArea(e.target.value); setCurrentPage(1); }} style={selectSt}>
+            <select value={filterArea} onChange={e => { setFilterArea(e.target.value); setCurrentPage(1); syncURL({ area: e.target.value, page: '1' }); }} style={selectSt}>
               {AREA_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '면적 전체' : t}</option>)}
             </select>
-            <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); setCurrentPage(1); }} style={selectSt}>
+            <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); setCurrentPage(1); syncURL({ deposit: e.target.value, page: '1' }); }} style={selectSt}>
               {DEPOSIT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '보증금 전체' : t}</option>)}
             </select>
-            <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setCurrentPage(1); }} style={selectSt}>
+            <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setCurrentPage(1); syncURL({ rent: e.target.value, page: '1' }); }} style={selectSt}>
               {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
             </select>
             {(filterTx !== '전체' || filterType !== '전체' || filterTheme !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체') && (
               <button
-                onClick={() => { setFilterTx('전체'); setFilterType('전체'); setFilterTheme('전체'); setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setCurrentPage(1); }}
+                onClick={() => { setFilterTx('전체'); setFilterType('전체'); setFilterTheme('전체'); setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setCurrentPage(1); syncURL({ tx: '전체', type: '전체', theme: '전체', area: '전체', deposit: '전체', rent: '전체', page: '1' }); }}
                 style={{ height: '40px', padding: '0 14px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', color: '#666', background: '#fff', cursor: 'pointer' }}
               >
                 초기화
@@ -421,7 +439,7 @@ export default function PropertiesPage() {
                 <div style={{ margin: '24px 0 40px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                     <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      onClick={() => { const np = Math.max(1, safePage - 1); setCurrentPage(np); syncURL({ page: String(np) }); }}
                       disabled={safePage <= 1}
                       style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer' }}
                     >
@@ -440,7 +458,7 @@ export default function PropertiesPage() {
                         ) : (
                           <button
                             key={p}
-                            onClick={() => setCurrentPage(p)}
+                            onClick={() => { setCurrentPage(p); syncURL({ page: String(p) }); }}
                             style={{
                               width: '36px', height: '36px', fontSize: '14px', fontWeight: p === safePage ? 700 : 400,
                               border: p === safePage ? '1px solid #e2a06e' : '1px solid #ddd',
@@ -455,7 +473,7 @@ export default function PropertiesPage() {
                       )
                     }
                     <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => { const np = Math.min(totalPages, safePage + 1); setCurrentPage(np); syncURL({ page: String(np) }); }}
                       disabled={safePage >= totalPages}
                       style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer' }}
                     >

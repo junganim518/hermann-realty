@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
@@ -68,6 +69,10 @@ const THEME_TYPES = ['전체', '추천매물', '사옥형및통임대', '대형�
 
 // ── 컴포넌트 ─────────────────────────────────────────────────
 export default function MapPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
+
   // refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapObjRef       = useRef<any>(null);
@@ -97,12 +102,36 @@ export default function MapPage() {
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
-  const [searchInput, setSearchInput]   = useState('');
-  const [search, setSearch]             = useState('');
-  const [filterTx, setFilterTx]         = useState('전체');
-  const [filterType, setFilterType]     = useState('');
-  const [filterArea, setFilterArea]     = useState('전체');
-  const [filterTheme, setFilterTheme]   = useState('전체');
+  const [searchInput, setSearchInput]   = useState(readParam('search', ''));
+  const [search, setSearch]             = useState(readParam('search', ''));
+  const [filterTx, setFilterTx]         = useState(readParam('tx', '전체'));
+  const [filterType, setFilterType]     = useState(readParam('type', ''));
+  const [filterArea, setFilterArea]     = useState(readParam('area', '전체'));
+  const [filterTheme, setFilterTheme]   = useState(readParam('theme', '전체'));
+
+  const syncURL = useCallback((overrides: Record<string, string> = {}) => {
+    const vals: Record<string, string> = {
+      search, tx: filterTx, type: filterType, area: filterArea, theme: filterTheme,
+      ...overrides,
+    };
+    const params = new URLSearchParams();
+    Object.entries(vals).forEach(([k, v]) => {
+      if (v && v !== '전체' && v !== '') params.set(k, v);
+    });
+    const qs = params.toString();
+    router.replace(`/map${qs ? '?' + qs : ''}`, { scroll: false });
+  }, [search, filterTx, filterType, filterArea, filterTheme, router]);
+
+  // 뒤로가기 시 URL → state 동기화
+  useEffect(() => {
+    setSearchInput(readParam('search', ''));
+    setSearch(readParam('search', ''));
+    setFilterTx(readParam('tx', '전체'));
+    setFilterType(readParam('type', ''));
+    setFilterArea(readParam('area', '전체'));
+    setFilterTheme(readParam('theme', '전체'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // ── 헤더 높이 측정
   useEffect(() => {
@@ -285,12 +314,13 @@ export default function MapPage() {
     : filtered;
 
   // ── 핸들러
-  const runSearch = () => setSearch(searchInput);
+  const runSearch = () => { setSearch(searchInput); syncURL({ search: searchInput }); };
   const resetAll  = () => {
     setSearchInput(''); setSearch('');
     setFilterTx('전체'); setFilterType('');
     setFilterArea('전체'); setFilterTheme('전체');
     setVisibleIds(null);
+    syncURL({ search: '', tx: '전체', type: '', area: '전체', theme: '전체' });
   };
 
   // ── 스타일 상수
@@ -371,23 +401,23 @@ export default function MapPage() {
         </div>
 
         {/* 거래유형 */}
-        <select value={filterTx} onChange={e => setFilterTx(e.target.value)} style={selectSt}>
+        <select value={filterTx} onChange={e => { setFilterTx(e.target.value); syncURL({ tx: e.target.value }); }} style={selectSt}>
           {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
         </select>
 
         {/* 매물종류 */}
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={selectSt}>
+        <select value={filterType} onChange={e => { setFilterType(e.target.value); syncURL({ type: e.target.value }); }} style={selectSt}>
           <option value="">매물종류 전체</option>
           {PROP_TYPES.filter(t => t).map(t => <option key={t}>{t}</option>)}
         </select>
 
         {/* 면적 */}
-        <select value={filterArea} onChange={e => setFilterArea(e.target.value)} style={selectSt}>
+        <select value={filterArea} onChange={e => { setFilterArea(e.target.value); syncURL({ area: e.target.value }); }} style={selectSt}>
           {AREA_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '면적 전체' : t}</option>)}
         </select>
 
         {/* 테마 */}
-        <select value={filterTheme} onChange={e => setFilterTheme(e.target.value)} style={selectSt}>
+        <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); syncURL({ theme: e.target.value }); }} style={selectSt}>
           {THEME_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '테마 전체' : t}</option>)}
         </select>
 

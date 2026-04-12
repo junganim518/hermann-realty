@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -14,6 +16,16 @@ export default function Header() {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
   const handleLogout = async () => {
@@ -79,15 +91,44 @@ export default function Header() {
           <div className="h-logo-sub" style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#999' }}>REAL ESTATE & INVESTMENTS</div>
         </a>
 
-        {/* 우: 아이콘 (모바일) */}
-        <div className="h-mobile-login" style={{ display: 'none', alignItems: 'center', gap: '12px' }}>
-          {user ? (
-            <>
-              <a href="/admin/properties/new" style={{ fontSize: '20px', color: '#e2a06e', textDecoration: 'none', lineHeight: 1 }}>📋</a>
-              <a href="/admin/inquiries" style={{ fontSize: '20px', color: '#e2a06e', textDecoration: 'none', lineHeight: 1 }}>📝</a>
-            </>
-          ) : (
-            <a href={`/login?redirect=${encodeURIComponent(pathname)}`} style={{ fontSize: '20px', color: '#e2a06e', textDecoration: 'none', lineHeight: 1 }}>👤</a>
+        {/* 우: 유저 메뉴 (모바일) */}
+        <div ref={userMenuRef} className="h-mobile-login" style={{ display: 'none', alignItems: 'center', position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', color: '#e2a06e', lineHeight: 1, padding: '4px' }}
+          >
+            👤
+          </button>
+          {isUserMenuOpen && (
+            <div style={{
+              position: 'absolute', top: '50px', right: 0,
+              background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px',
+              minWidth: '160px', overflow: 'hidden', zIndex: 100,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            }}>
+              {user ? (
+                <>
+                  <a href="/admin/properties/new" onClick={() => setIsUserMenuOpen(false)}
+                    style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#fff', textDecoration: 'none', borderBottom: '1px solid #333' }}>
+                    매물등록
+                  </a>
+                  <a href="/admin/inquiries" onClick={() => setIsUserMenuOpen(false)}
+                    style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#fff', textDecoration: 'none', borderBottom: '1px solid #333' }}>
+                    의뢰 확인
+                  </a>
+                  <button type="button" onClick={() => { handleLogout(); setIsUserMenuOpen(false); }}
+                    style={{ display: 'block', width: '100%', padding: '12px 20px', fontSize: '14px', color: '#ef5350', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <a href={`/login?redirect=${encodeURIComponent(pathname)}`} onClick={() => setIsUserMenuOpen(false)}
+                  style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#fff', textDecoration: 'none' }}>
+                  로그인
+                </a>
+              )}
+            </div>
           )}
         </div>
 
