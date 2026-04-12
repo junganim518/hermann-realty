@@ -41,6 +41,8 @@ export default function Home() {
   const [contactOpen, setContactOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(8);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [recentProperties, setRecentProperties] = useState<any[]>([]);
   const contactRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = () => {
@@ -86,6 +88,11 @@ export default function Home() {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setIsAdmin(!!data.user));
+  }, []);
+
+
+  useEffect(() => {
     const header = document.querySelector('header');
     if (header) setHeaderHeight(header.offsetHeight);
   }, []);
@@ -127,7 +134,11 @@ export default function Home() {
               monthly_rent: p.monthly_rent,
               sale_price: p.sale_price,
               transaction_type: p.transaction_type,
-              image: imgs?.[0]?.image_url ?? 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
+              premium: p.premium ?? null,
+              maintenance_fee: p.maintenance_fee ?? null,
+              is_sold: p.is_sold ?? false,
+              property_number: p.property_number ?? p.id,
+              image: imgs?.[0]?.image_url ?? null,
               badges: p.badges ?? [],
             };
           })
@@ -194,60 +205,6 @@ export default function Home() {
     { id: '2층이상상가', name: '2층 이상 상가', desc: '2층 이상에 위치한 상가', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
   ];
 
-  const [recentProperties, setRecentProperties] = useState<any[]>([
-    {
-      id: 'SG-2024-001',
-      title: '강남역 1층 코너상가',
-      location: '강남구 역삼동',
-      area: '165㎡',
-      type: '상가',
-      floor: '1층',
-      deposit: 5000,
-      monthly_rent: 500,
-      transaction_type: '월세',
-      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
-      badges: ['역세권', '코너상가']
-    },
-    {
-      id: 'OF-2024-002',
-      title: '선릉역 도보 3분 사무실',
-      location: '강남구 삼성동',
-      area: '120㎡',
-      type: '사무실',
-      floor: '5층',
-      deposit: 25000,
-      monthly_rent: 250,
-      transaction_type: '전세',
-      image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400',
-      badges: ['역세권', '엘리베이터']
-    },
-    {
-      id: 'ST-2024-003',
-      title: '신촌역 오피스텔 풀옵션',
-      location: '서대문구 창천동',
-      area: '23㎡',
-      type: '오피스텔',
-      floor: '3층',
-      deposit: 1000,
-      monthly_rent: 60,
-      transaction_type: '월세',
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
-      badges: ['풀옵션', '신축']
-    },
-    {
-      id: 'TH-2024-005',
-      title: '분당 아파트 넓은 집',
-      location: '성남시 분당구',
-      area: '120㎡',
-      type: '아파트',
-      floor: '7층',
-      deposit: 85000,
-      transaction_type: '매매',
-      image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
-      badges: ['넓은 평수', '가족주택']
-    },
-  ]);
-
   return (
     <main className="w-full text-[#1a1a1a] leading-7">
 
@@ -258,6 +215,14 @@ export default function Home() {
         .grid-recent { display: grid; grid-template-columns: repeat(4, 1fr); }
         .sidebar-left  { display: block; }
         .sidebar-right { display: block; }
+        .main-card-mobile { display: block; }
+        .main-card-content-row { display: block; }
+        .card-header-text { font-size: 13px; }
+        .card-addr-text { font-size: 13px; }
+        .card-meta-text { font-size: 13px; }
+        .card-badge-text { font-size: 11px; }
+        .card-price-text { font-size: 14px; }
+        .card-sub-text { font-size: 14px; }
 
         /* ── PC (1200px 이상): 기본값 사용 ── */
 
@@ -266,7 +231,7 @@ export default function Home() {
           .sidebar-left { display: none !important; }
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; }
           .grid-theme { grid-template-columns: repeat(3, 1fr) !important; }
-          .grid-recent { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
+          .grid-recent { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
           .card-img { height: 200px !important; }
           .center-content { padding-bottom: 80px !important; }
           .sidebar-right {
@@ -292,6 +257,12 @@ export default function Home() {
           .sidebar-right > div > p:nth-child(2) { display: none !important; }
           .sidebar-right > div > div { flex-direction: row !important; gap: 8px !important; }
           .sidebar-right > div > div a { padding: 10px 12px !important; font-size: 13px !important; }
+          .card-header-text { font-size: 14px !important; }
+          .card-addr-text { font-size: 14px !important; }
+          .card-meta-text { font-size: 14px !important; }
+          .card-badge-text { font-size: 12px !important; }
+          .card-price-text { font-size: 15px !important; }
+          .card-sub-text { font-size: 14px !important; }
         }
 
         /* ── 모바일 (768px 미만) ── */
@@ -300,8 +271,16 @@ export default function Home() {
           .sidebar-right { display: none !important; }
           .grid-type  { grid-template-columns: repeat(2, 1fr) !important; }
           .grid-theme { grid-template-columns: repeat(2, 1fr) !important; }
-          .grid-recent { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
-          .main-layout { width: 100% !important; margin: 0 !important; }
+          .grid-recent { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .main-card-mobile { display: flex !important; flex-direction: column !important; }
+          .main-card-mobile .main-card-header { display: flex !important; padding: 6px 10px !important; }
+          .main-card-mobile .main-card-header span { font-size: 11px !important; }
+          .main-card-mobile .main-card-content-row { display: flex !important; flex-direction: row !important; }
+          .main-card-mobile .main-card-img-wrap { width: 120px !important; min-width: 120px !important; height: 120px !important; flex-shrink: 0 !important; overflow: hidden !important; }
+          .main-card-mobile .main-card-img { height: 120px !important; }
+          .main-card-mobile .main-card-body { flex: 1 !important; padding: 8px 10px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
+          .price-nowrap { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+          .main-layout { width: 100% !important; margin: 0 !important; padding: 0 !important; }
           .center-content { padding-left: 0 !important; padding-right: 0 !important; }
           .section-title { font-size: 20px !important; margin-bottom: 16px !important; }
           .section-pad { padding: 8px !important; }
@@ -651,49 +630,56 @@ export default function Home() {
                     (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
                     (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                   }}
-                  className="border border-gray-200 overflow-hidden"
+                  className="main-card-mobile border border-gray-200 overflow-hidden bg-white"
                 >
-                  <div className="card-header bg-[#e2a06e] text-white flex justify-between items-center" style={{ padding: '8px 12px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 500 }}>{property.id}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }} className="truncate ml-2">{(property.title ?? '').replace('헤르만 ', '')}</span>
+                  <div className="main-card-header flex justify-between items-center" style={{ padding: '8px 12px', background: '#e2a06e', color: '#fff' }}>
+                    <span className="card-header-text" style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{property.property_number ?? property.id}</span>
+                    <span className="card-header-text" style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginLeft: '8px' }}>{(property.title ?? '').replace(/헤르만\s*/g, '')}</span>
                   </div>
-                  <div className="relative card-img" style={{ height: '260px' }}>
-                    <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
-                    <button className="absolute top-2 right-2 text-white text-xl hover:text-red-500 transition-colors" onClick={e => e.preventDefault()}>
-                      ♡
-                    </button>
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      {(property.badges ?? []).map((badge: string, index: number) => (
-                        <span key={index} className="bg-[#e2a06e] text-white rounded" style={{ fontSize: '11px', padding: '2px 6px' }}>
-                          {badge}
-                        </span>
-                      ))}
+                  <div className="main-card-content-row">
+                    <div className="main-card-img-wrap">
+                      <div className="main-card-img relative" style={{ height: '260px' }}>
+                        {property.image ? (
+                          <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">준비중</div>
+                        )}
+                        {property.is_sold && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ color: '#fff', fontSize: '16px', fontWeight: 800, border: '2px solid #fff', padding: '2px 10px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="card-body p-3">
-                    <div className="mb-1 md:mb-2">
-                      <p className="card-addr" style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
-                        {formatAddress(property.location ?? '')}
+                    <div className="main-card-body p-3">
+                      <p className="card-addr-text" style={{ fontSize: '13px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatAddress(property.location ?? '')}</p>
+                      <p className="card-meta-text" style={{ fontSize: '13px', color: '#666' }}>
+                        {[property.type, property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : null, property.floor ? `${/^\d+$/.test(String(property.floor)) ? property.floor + '층' : property.floor}` : null].filter(Boolean).join(' · ')}
                       </p>
-                      <p className="card-meta" style={{ fontSize: '13px', color: '#666' }}>
-                        {property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : property.area ? `전용 ${property.area}㎡` : ''}{property.type ? ` · ${property.type}` : ''}{property.floor ? ` · ${/^\d+$/.test(String(property.floor)) ? `${property.floor}층` : property.floor}` : ''}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      {property.transaction_type && (() => {
-                        const colors: Record<string, { bg: string; border: string; text: string }> = {
-                          '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
-                          '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
-                          '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
-                        };
-                        const c = colors[property.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
-                        return (
-                          <span className="card-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
-                            {property.transaction_type}
-                          </span>
-                        );
-                      })()}
-                      <span className="card-price" style={{ fontSize: '18px', fontWeight: 700 }}>{buildPriceStr(property)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                        {property.transaction_type && (() => {
+                          const colors: Record<string, { bg: string; border: string; text: string }> = {
+                            '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                            '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                            '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
+                          };
+                          const c = colors[property.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                          return <span className="card-badge-text" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>{property.transaction_type}</span>;
+                        })()}
+                        <span className="price-nowrap card-price-text" style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(property)}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                        {property.premium ? (
+                          <span className="card-sub-text" style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(property.premium) : '협의'}</span>
+                        ) : (
+                          <span className="card-sub-text" style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>무권리</span>
+                        )}
+                        {property.maintenance_fee && property.maintenance_fee !== 0 ? (
+                          <span className="card-sub-text" style={{ fontSize: '13px', color: '#888' }}>관리비 {formatPrice(property.maintenance_fee)}</span>
+                        ) : (
+                          <span className="card-sub-text" style={{ fontSize: '13px', color: '#888' }}>관리비 -</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -769,8 +755,6 @@ export default function Home() {
         </aside>
 
       </div>
-
-      
 
     </main>
   );

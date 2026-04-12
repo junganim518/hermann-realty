@@ -97,7 +97,7 @@ const matchRent = (rent: any, range: string) => {
   return true;
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 export default function PropertiesPage() {
   const searchParams = useSearchParams();
@@ -107,6 +107,7 @@ export default function PropertiesPage() {
 
   const [allProperties, setAllProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(200);
   const [filterTx, setFilterTx] = useState(readParam('tx', '전체'));
   const [filterType, setFilterType] = useState(readParam('type', '전체'));
@@ -148,6 +149,12 @@ export default function PropertiesPage() {
   }, [searchParams]);
 
   const title = searchParam ? `"${searchParam}" 검색 결과` : filterTheme !== '전체' ? filterTheme : filterType !== '전체' ? `${filterType} 매물` : '전체 매물';
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAdmin(!!data.user);
+    });
+  }, []);
 
   useEffect(() => {
     const h = document.querySelector('header') as HTMLElement;
@@ -211,13 +218,15 @@ export default function PropertiesPage() {
         .prop-sidebar-left  { display: block; }
         .prop-sidebar-right { display: block; }
         .prop-grid { grid-template-columns: repeat(4, 1fr); }
+        .prop-card-mobile { display: block; }
+        .prop-card-content-row { display: block; }
 
         /* ── 태블릿 (768px ~ 1199px) ── */
         @media (max-width: 1199px) {
           .prop-sidebar-left { min-width: 160px !important; max-width: 160px !important; }
           .prop-sidebar-left a { font-size: 14px !important; padding: 8px 12px !important; }
           .prop-sidebar-right { display: none !important; }
-          .prop-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          .prop-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .prop-card-img { height: 200px !important; }
         }
 
@@ -231,7 +240,17 @@ export default function PropertiesPage() {
           .prop-filter { display: grid !important; grid-template-columns: 1fr 1fr 1fr; gap: 6px !important; justify-content: stretch !important; }
           .prop-filter select { width: 100% !important; height: 36px !important; font-size: 12px !important; padding: 0 4px !important; }
           .prop-filter button { grid-column: 1 / -1; height: 36px !important; font-size: 13px !important; }
-          .prop-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .prop-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .prop-card-mobile { display: flex !important; flex-direction: column !important; }
+          .prop-card-mobile .prop-card-header { display: flex !important; padding: 6px 10px !important; }
+          .prop-card-mobile .prop-card-content-row { display: flex !important; flex-direction: row !important; }
+          .prop-card-mobile .prop-card-img-wrap { width: 120px !important; min-width: 120px !important; height: 120px !important; flex-shrink: 0 !important; }
+          .prop-card-mobile .prop-card-img { width: 100% !important; height: 120px !important; }
+          .prop-card-mobile .prop-card-body { flex: 1 !important; padding: 8px 10px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
+          .prop-card-mobile .prop-card-body .prop-addr { font-size: 12px !important; }
+          .prop-card-mobile .prop-card-body .prop-meta { font-size: 12px !important; }
+          .prop-card-mobile .prop-card-body .prop-price { font-size: 14px !important; font-weight: 700 !important; }
+          .prop-card-mobile .prop-badge { font-size: 10px !important; }
           .prop-card-header { padding: 5px 8px !important; }
           .prop-card-header span { font-size: 11px !important; }
           .prop-card-img { height: 120px !important; }
@@ -385,48 +404,66 @@ export default function PropertiesPage() {
                       (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
                       (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                     }}
-                    className="border border-gray-200 overflow-hidden"
+                    className="prop-card-mobile border border-gray-200 overflow-hidden"
                   >
                     <div className="prop-card-header flex justify-between items-center" style={{ padding: '8px 12px', background: '#e2a06e', color: '#fff' }}>
                       <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{p.property_number}</span>
                       <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginLeft: '8px' }}>{(p.title ?? '').replace(/헤르만\s*/g, '')}</span>
                     </div>
-                    <div className="prop-card-img relative" style={{ height: '260px' }}>
-                      {p.image ? (
-                        <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">준비중</div>
-                      )}
-                      {p.is_sold && (
-                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span className="prop-sold" style={{ color: '#fff', fontSize: '24px', fontWeight: 800, letterSpacing: '3px', border: '2px solid #fff', padding: '4px 16px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
+                    <div className="prop-card-content-row">
+                      <div className="prop-card-img-wrap">
+                        <div className="prop-card-img relative" style={{ height: '260px' }}>
+                          {p.image ? (
+                            <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">준비중</div>
+                          )}
+                          {p.is_sold && (
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span className="prop-sold" style={{ color: '#fff', fontSize: '24px', fontWeight: 800, letterSpacing: '3px', border: '2px solid #fff', padding: '4px 16px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="prop-card-body p-3">
-                      <div className="mb-1 md:mb-2">
-                        <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {formatAddress(p.address ?? '')}
-                        </p>
-                        <p className="prop-meta" style={{ fontSize: '13px', color: '#666' }}>
-                          {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
-                        </p>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {p.transaction_type && (() => {
-                          const colors: Record<string, { bg: string; border: string; text: string }> = {
-                            '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
-                            '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
-                            '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
-                          };
-                          const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
-                          return (
-                            <span className="prop-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
-                              {p.transaction_type}
-                            </span>
-                          );
-                        })()}
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
+                      <div className="prop-card-body p-3">
+                        <div className="mb-1 md:mb-2">
+                          <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {formatAddress(p.address ?? '')}
+                          </p>
+                          <p className="prop-meta" style={{ fontSize: '13px', color: '#666' }}>
+                            {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
+                          </p>
+                        </div>
+                        <div style={{ paddingLeft: 0, marginLeft: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {p.transaction_type && (() => {
+                              const colors: Record<string, { bg: string; border: string; text: string }> = {
+                                '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                                '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                                '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
+                              };
+                              const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                              return (
+                                <span className="prop-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                                  {p.transaction_type}
+                                </span>
+                              );
+                            })()}
+                            <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          {p.premium ? (
+                            <span style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
+                          ) : (
+                            <span style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>무권리</span>
+                          )}
+                          {p.maintenance_fee && p.maintenance_fee !== 0 ? (
+                            <span style={{ fontSize: '13px', color: '#888' }}>관리비 {formatPrice(p.maintenance_fee)}</span>
+                          ) : (
+                            <span style={{ fontSize: '13px', color: '#888' }}>관리비 -</span>
+                          )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -439,7 +476,7 @@ export default function PropertiesPage() {
                 <div style={{ margin: '24px 0 40px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                     <button
-                      onClick={() => { const np = Math.max(1, safePage - 1); setCurrentPage(np); syncURL({ page: String(np) }); }}
+                      onClick={() => { const np = Math.max(1, safePage - 1); setCurrentPage(np); syncURL({ page: String(np) }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       disabled={safePage <= 1}
                       style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer' }}
                     >
@@ -458,7 +495,7 @@ export default function PropertiesPage() {
                         ) : (
                           <button
                             key={p}
-                            onClick={() => { setCurrentPage(p); syncURL({ page: String(p) }); }}
+                            onClick={() => { setCurrentPage(p); syncURL({ page: String(p) }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                             style={{
                               width: '36px', height: '36px', fontSize: '14px', fontWeight: p === safePage ? 700 : 400,
                               border: p === safePage ? '1px solid #e2a06e' : '1px solid #ddd',
@@ -473,7 +510,7 @@ export default function PropertiesPage() {
                       )
                     }
                     <button
-                      onClick={() => { const np = Math.min(totalPages, safePage + 1); setCurrentPage(np); syncURL({ page: String(np) }); }}
+                      onClick={() => { const np = Math.min(totalPages, safePage + 1); setCurrentPage(np); syncURL({ page: String(np) }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       disabled={safePage >= totalPages}
                       style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer' }}
                     >
