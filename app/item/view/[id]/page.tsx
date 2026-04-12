@@ -633,6 +633,10 @@ export default function PropertyDetailPage() {
               <>
                 <div className="detail-carousel-img" style={{ position: 'relative', height: '600px' }}>
                   <img src={images[currentImage]} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45 }}>
+                    <span style={{ color: '#e2a06e', fontSize: '18px', fontWeight: 300, letterSpacing: '6px', fontFamily: 'Georgia, "Times New Roman", serif' }}>HERMANN REALTY</span>
+                    <span style={{ color: '#e2a06e', fontSize: '10px', fontWeight: 400, letterSpacing: '3px', marginTop: '4px' }}>헤르만부동산</span>
+                  </div>
                   {/* 좌측 상단: 매물번호 */}
                   <div className="detail-pnum" style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', zIndex: 2 }}>
                     매물번호 {property.property_number ?? id}
@@ -664,9 +668,9 @@ export default function PropertyDetailPage() {
                 )}
               </>
             ) : (
-              <div style={{ height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#aaa', gap: '8px', background: '#f8f8f8' }}>
-                <span style={{ fontSize: '48px' }}>🏠</span>
-                <p style={{ fontSize: '15px', fontWeight: 600, color: '#999' }}>이미지 준비중</p>
+              <div style={{ width: '100%', height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0' }}>
+                <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 20px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 12px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
               </div>
             )}
             {/* 거래완료 오버레이 (이미지 유무 상관없이 컨테이너 위에 표시) */}
@@ -889,11 +893,21 @@ export default function PropertyDetailPage() {
                       }}
                     >
                       {/* 썸네일 4:3 */}
-                      <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#f0f0f0' }}>
-                        {p.image
-                          ? <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#bbb' }}>준비중</div>
-                        }
+                      <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
+                        {p.image ? (
+                          <>
+                            <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45 }}>
+                              <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                              <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0' }}>
+                            <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                            <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                          </div>
+                        )}
                       </div>
                       <div style={{ padding: '10px' }}>
                         <p style={{ fontSize: '11px', color: '#bbb', marginBottom: '2px' }}>{p.property_number}</p>

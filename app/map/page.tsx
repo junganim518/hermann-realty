@@ -80,6 +80,7 @@ export default function MapPage() {
   const markersRef      = useRef<any[]>([]);
   const listRef         = useRef<HTMLDivElement>(null);
   const cardRefs        = useRef<Record<string, HTMLDivElement | null>>({});
+  const drawerPanelRef = useRef<HTMLDivElement>(null);
 
   // state
   const [properties, setProperties]     = useState<any[]>([]);
@@ -91,6 +92,44 @@ export default function MapPage() {
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [drawerDragY, setDrawerDragY]   = useState(0);
   const drawerStartY = useRef(0);
+
+  // 태블릿 드로어 초기 높이 설정
+  useEffect(() => {
+    const isTablet = window.innerWidth >= 768 && window.innerWidth <= 1199;
+    if (!isTablet || !drawerPanelRef.current) return;
+    const initialHeight = window.innerHeight - window.innerHeight * 0.5;
+    drawerPanelRef.current.style.height = initialHeight + 'px';
+  }, []);
+
+  // 태블릿 드로어 드래그 핸들러
+  const handleDrawerDragStart = (clientY: number) => {
+    const drawer = drawerPanelRef.current;
+    if (!drawer) return;
+    const startY = clientY;
+    const startHeight = drawer.offsetHeight;
+    drawer.style.transition = 'none';
+
+    const onMove = (e: TouchEvent | MouseEvent) => {
+      e.preventDefault();
+      const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
+      const diff = startY - currentY;
+      const newHeight = Math.min(window.innerHeight * 0.9, Math.max(window.innerHeight * 0.1, startHeight + diff));
+      drawer.style.height = newHeight + 'px';
+    };
+
+    const onEnd = () => {
+      drawer.style.transition = 'height 0.3s ease';
+      window.removeEventListener('touchmove', onMove as any);
+      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('mousemove', onMove as any);
+      window.removeEventListener('mouseup', onEnd);
+    };
+
+    window.addEventListener('touchmove', onMove as any, { passive: false });
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('mousemove', onMove as any);
+    window.addEventListener('mouseup', onEnd);
+  };
 
   // 드로어 열릴 때 body 스크롤 막기
   useEffect(() => {
@@ -163,6 +202,9 @@ export default function MapPage() {
       };
       setTimeout(recenter, 100);
       setTimeout(recenter, 500);
+      // 태블릿 레이아웃 변경 후 추가 recenter
+      const isTablet = window.innerWidth >= 768 && window.innerWidth <= 1199;
+      if (isTablet) setTimeout(recenter, 1000);
 
       // 주소 레이어(지번/도로명) 숨기기
       map.removeOverlayMapTypeId(window.kakao.maps.MapTypeId.USE_DISTRICT);
@@ -335,8 +377,26 @@ export default function MapPage() {
     <div className="map-container" style={{ height: `calc(100vh - ${headerH}px)`, display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .map-container { height: 50vh !important; }
+          .map-panel {
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            top: auto !important;
+            width: 100% !important;
+            border-radius: 16px 16px 0 0 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
+            background: #fff !important;
+            z-index: 300 !important;
+            overflow: hidden !important;
+            border-left: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .map-tablet-handle { display: flex !important; }
         @media (max-width: 1199px) {
-          .map-panel { width: 300px !important; }
           .map-filter-bar { padding: 10px 16px !important; }
           .map-filter-bar select { height: 36px !important; font-size: 13px !important; padding: 0 6px !important; }
           .map-filter-bar input { width: 200px !important; }
@@ -469,7 +529,17 @@ export default function MapPage() {
         </div>
 
         {/* ── 우측 매물 목록 */}
-        <div className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+        <div ref={drawerPanelRef} className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+
+          {/* 태블릿 드래그 핸들바 */}
+          <div
+            className="map-tablet-handle"
+            style={{ display: 'none', flexShrink: 0, padding: '8px 0', cursor: 'grab', background: '#fff', borderRadius: '16px 16px 0 0' }}
+            onTouchStart={e => handleDrawerDragStart(e.touches[0].clientY)}
+            onMouseDown={e => handleDrawerDragStart(e.clientY)}
+          >
+            <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
+          </div>
 
           {/* 헤더 */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

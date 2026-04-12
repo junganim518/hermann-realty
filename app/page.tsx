@@ -640,9 +640,18 @@ export default function Home() {
                     <div className="main-card-img-wrap">
                       <div className="main-card-img relative" style={{ height: '260px' }}>
                         {property.image ? (
-                          <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
+                          <>
+                            <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                              <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.45, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                              <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.45, whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                            </div>
+                          </>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">준비중</div>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0' }}>
+                            <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                            <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                          </div>
                         )}
                         {property.is_sold && (
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
