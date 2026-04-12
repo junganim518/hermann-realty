@@ -262,12 +262,36 @@ export default function Home() {
         /* ── PC (1200px 이상): 기본값 사용 ── */
 
         /* ── 태블릿 (768px ~ 1199px) ── */
-        @media (max-width: 1199px) {
+        @media (min-width: 768px) and (max-width: 1199px) {
           .sidebar-left { display: none !important; }
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; }
           .grid-theme { grid-template-columns: repeat(3, 1fr) !important; }
           .grid-recent { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
           .card-img { height: 200px !important; }
+          .center-content { padding-bottom: 80px !important; }
+          .sidebar-right {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            top: auto !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: visible !important;
+            z-index: 200;
+            border-top: 2px solid #e2a06e !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: none !important;
+          }
+          .sidebar-right .bg-\\[\\#e2a06e\\] { display: none !important; }
+          .sidebar-right > div { padding: 10px 16px !important; }
+          .sidebar-right > div > p:first-child { display: none !important; }
+          .sidebar-right > div > p:nth-child(2) { display: none !important; }
+          .sidebar-right > div > div { flex-direction: row !important; gap: 8px !important; }
+          .sidebar-right > div > div a { padding: 10px 12px !important; font-size: 13px !important; }
         }
 
         /* ── 모바일 (768px 미만) ── */

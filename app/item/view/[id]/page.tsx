@@ -165,6 +165,7 @@ export default function PropertyDetailPage() {
   const [activeTab, setActiveTab] = useState('section-info');
   const [headerHeight, setHeaderHeight] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -481,12 +482,34 @@ export default function PropertyDetailPage() {
           .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
           .detail-map-container { height: 300px !important; }
           .detail-section { padding: 12px !important; }
-          .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
-          .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
-          .detail-info-table tr { display: contents !important; }
-          .detail-info-table td { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px 12px !important; border-bottom: 1px solid #f0f0f0 !important; box-sizing: border-box !important; }
-          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; font-size: 13px !important; color: #888 !important; }
-          .detail-info-table td:nth-child(even) { font-size: 14px !important; font-weight: 700 !important; }
+          .detail-info-table { border-collapse: collapse !important; width: 100% !important; table-layout: fixed !important; }
+          .detail-info-table tbody { display: table-row-group !important; flex-direction: unset !important; }
+          .detail-info-table tr { display: table-row !important; }
+          .detail-info-table td { display: table-cell !important; justify-content: unset !important; width: auto !important; padding: 10px 12px !important; border-bottom: 1px solid #f0f0f0 !important; font-size: 13px !important; }
+          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; color: #888 !important; font-weight: 500 !important; width: 90px !important; white-space: nowrap !important; }
+          .detail-info-table td:nth-child(even) { font-weight: 700 !important; color: #333 !important; }
+          .detail-body { padding-bottom: 180px !important; }
+          .detail-aside { width: 100% !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
+        }
+
+        /* ── 모바일+태블릿 공통 ── */
+        @media (max-width: 1199px) {
+          .detail-aside-actions { display: none !important; }
+          .detail-aside-agent { display: none !important; }
+        }
+
+        /* ── 태블릿 aside 레이아웃 ── */
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .detail-aside > div:first-child { display: grid !important; grid-template-columns: 1fr auto !important; gap: 16px !important; align-items: center !important; padding: 12px 16px !important; }
+          .detail-aside-info { display: flex !important; flex-direction: column !important; gap: 6px !important; }
+          .detail-aside-info .aside-pnum { display: inline-block !important; width: fit-content !important; font-size: 11px !important; padding: 2px 6px !important; background: #f0f0f0 !important; color: #888 !important; border-radius: 3px !important; margin-bottom: 4px !important; }
+          .detail-aside-info .aside-price-row { display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important; margin-bottom: 0 !important; }
+          .detail-aside-info .aside-price-row .aside-price { font-size: 18px !important; font-weight: 700 !important; color: #e2a06e !important; margin: 0 !important; }
+          .detail-aside-info .aside-price-row .aside-sub { font-size: 14px !important; color: #666 !important; margin: 0 !important; }
+          .detail-aside-info .aside-price-row .aside-sub span { font-size: 14px !important; font-weight: 500 !important; }
+          .detail-aside-info .aside-addr-row { display: flex !important; align-items: center !important; gap: 6px !important; flex-wrap: wrap !important; margin-bottom: 0 !important; }
+          .detail-aside-info .aside-addr-row p { font-size: 12px !important; color: #777 !important; margin: 0 !important; }
+          .detail-aside > div:first-child > button { width: 130px !important; min-height: 80px !important; height: 100% !important; font-size: 15px !important; border-radius: 8px !important; margin: 0 !important; flex-shrink: 0 !important; }
         }
 
         /* ── 모바일 (768px 미만) ── */
@@ -496,9 +519,9 @@ export default function PropertyDetailPage() {
           .detail-tab-inner .detail-tab-btns { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
           .detail-tab-inner .detail-tab-btns::-webkit-scrollbar { display: none; }
           .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
-          .detail-body { padding: 8px 4px 0 !important; flex-direction: column !important; gap: 10px !important; }
+          .detail-body { padding: 8px 4px 0 !important; flex-direction: column !important; gap: 10px !important; padding-bottom: 200px !important; }
           .detail-main { order: 2; }
-          .detail-aside { width: 100% !important; position: static !important; max-height: none !important; overflow: visible !important; order: 1; }
+          .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
           .detail-carousel-thumb { height: 50px !important; }
           .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
@@ -518,11 +541,39 @@ export default function PropertyDetailPage() {
           .detail-sold-overlay span { font-size: 32px !important; padding: 8px 20px !important; }
           .detail-mobile-fab { display: flex !important; }
           .detail-pc-back { display: none !important; }
+          .detail-aside > div:first-child { display: grid !important; grid-template-columns: 1fr auto !important; gap: 12px !important; align-items: center !important; padding: 6px 12px !important; }
+          .detail-aside-info { display: flex !important; flex-direction: column !important; gap: 3px !important; }
+          .detail-aside-info .aside-pnum { display: inline-block !important; width: fit-content !important; font-size: 11px !important; padding: 2px 6px !important; background: #f0f0f0 !important; color: #888 !important; border-radius: 3px !important; }
+          .detail-aside-info .aside-price-row { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; }
+          .detail-aside-info .aside-price { font-size: 15px !important; font-weight: 700 !important; color: #e2a06e !important; margin: 0 !important; }
+          .detail-aside-info .aside-sub { font-size: 10px !important; color: #888 !important; margin: 0 !important; }
+          .detail-aside-info .aside-addr-row { display: flex !important; align-items: center !important; gap: 4px !important; flex-wrap: wrap !important; }
+          .detail-aside-info .aside-addr-row p { font-size: 11px !important; color: #777 !important; margin: 0 !important; }
+          .detail-aside > div:first-child > button { width: 100px !important; min-height: 56px !important; font-size: 13px !important; border-radius: 8px !important; margin: 0 !important; flex-shrink: 0 !important; }
         }
         .detail-mobile-fab { display: none !important; }
+        .detail-pc-back-btn { display: none !important; }
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .detail-pc-scroll-top { bottom: 50% !important; right: 16px !important; }
+          .detail-pc-back-btn { display: flex !important; position: fixed !important; bottom: calc(50% - 60px) !important; right: 16px !important; }
+        }
         @media (max-width: 767px) {
           .detail-mobile-fab { display: flex !important; }
           .detail-pc-scroll-top { display: none !important; }
+          .detail-pc-back-btn { display: none !important; }
+        }
+        @media (min-width: 1200px) {
+          .detail-aside-card { padding: 24px !important; }
+          .detail-aside-card > p { margin-bottom: 14px !important; line-height: 1.8 !important; }
+          .detail-aside-card > div { margin-bottom: 14px !important; }
+          .detail-aside-card .aside-price { font-size: 22px !important; }
+          .detail-aside-card .aside-sub-premium { font-size: 22px !important; color: #e04a4a !important; font-weight: 700 !important; }
+          .detail-aside-card .aside-sub-maintenance { font-size: 15px !important; color: #666 !important; }
+          .detail-aside-card .aside-sub-divider { font-size: 15px !important; }
+          .detail-aside-card button { height: 48px !important; margin-bottom: 10px !important; }
+          .detail-aside-actions { gap: 4px !important; }
+          .detail-aside-actions button { font-size: 11px !important; padding: 7px 2px !important; word-break: keep-all !important; overflow: visible !important; white-space: nowrap !important; }
+          .detail-aside-agent { padding: 20px !important; }
         }
       ` }} />
 
@@ -887,36 +938,43 @@ export default function PropertyDetailPage() {
         <aside className="detail-aside" style={{ width: '360px', flexShrink: 0, position: 'sticky', top: '190px', alignSelf: 'flex-start', maxHeight: 'calc(100vh - 190px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* 매물 정보 카드 */}
-          <div style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>
-            <div style={{ background: '#f0f0f0', fontSize: '12px', color: '#555', padding: '4px 8px', display: 'inline-block', borderRadius: '3px', marginBottom: '10px' }}>
-              매물번호 {property.property_number ?? id}
+          <div className="detail-aside-card" style={{ background: '#fff', border: '1px solid #ddd', padding: '6px 12px' }}>
+            <div className="detail-aside-info">
+              <p className="aside-pnum" style={{ background: '#f0f0f0', fontSize: '12px', color: '#555', padding: '4px 8px', display: 'inline-block', borderRadius: '3px', marginBottom: '2px' }}>
+                매물번호 {property.property_number ?? id}
+              </p>
+              <div className="aside-price-row" style={{ marginBottom: '4px' }}>
+                <p className="aside-price" style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e', lineHeight: 1.5, marginBottom: '4px' }}>
+                  {buildPriceStr(property)}
+                </p>
+                <div className="aside-sub" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="aside-sub-premium" style={{ fontSize: '13px', fontWeight: 700, color: '#e05050' }}>
+                    {property.premium ? (isAdmin ? `권리금 ${formatPrice(property.premium)}` : '권리금 협의') : '무권리'}
+                  </span>
+                  {property.maintenance_fee && (
+                    <>
+                      <span className="aside-sub-divider" style={{ color: '#ddd', fontSize: '13px' }}>|</span>
+                      <span className="aside-sub-maintenance" style={{ fontSize: '13px', color: '#999' }}>관리비 {formatPrice(property.maintenance_fee)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="aside-addr-row" style={{ marginBottom: 0, paddingBottom: 0 }}>
+                <p style={{ fontSize: '16px', color: '#444', marginBottom: '4px' }}>📍 {property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</p>
+                <p style={{ fontSize: '16px', color: '#666' }}>
+                  {[property.property_type, property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`, property.current_floor && formatFloor(property.current_floor)].filter(Boolean).join(' · ')}
+                </p>
+              </div>
             </div>
-            <p style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e', lineHeight: 1.5, marginBottom: '4px' }}>
-              {buildPriceStr(property)}
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '22px', fontWeight: 700, color: '#e04a4a' }}>
-                {property.premium ? (isAdmin ? `권리금 ${formatPrice(property.premium)}` : '권리금 협의') : '무권리'}
-              </span>
-              {property.maintenance_fee && (
-                <>
-                  <span style={{ color: '#ddd' }}>|</span>
-                  <span style={{ fontSize: '15px', color: '#666' }}>관리비 {formatPrice(property.maintenance_fee)}</span>
-                </>
-              )}
-            </div>
-            <p style={{ fontSize: '16px', color: '#444', marginBottom: '4px' }}>📍 {property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</p>
-            <p style={{ fontSize: '16px', color: '#666', marginBottom: '14px' }}>
-              {[property.property_type, property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`, property.current_floor && formatFloor(property.current_floor)].filter(Boolean).join(' · ')}
-            </p>
             <button
-              style={{ width: '100%', height: '48px', background: '#e2a06e', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: '10px', transition: 'background 0.2s' }}
+              onClick={() => setShowInquiryModal(true)}
+              style={{ width: '100%', height: '52px', background: '#e2a06e', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: 0, transition: 'background 0.2s' }}
               onMouseEnter={e => (e.currentTarget.style.background = '#A06828')}
               onMouseLeave={e => (e.currentTarget.style.background = '#e2a06e')}
             >
               매물 문의하기
             </button>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="detail-aside-actions" style={{ display: 'flex', gap: '6px' }}>
               {[{ icon: '♡', label: '찜하기' }, { icon: '🖨', label: '인쇄' }, { icon: '📤', label: '공유' }, { icon: '🔗', label: '링크복사' }].map((btn, i) => (
                 <button key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '7px 4px', background: '#fff', cursor: 'pointer', fontSize: '13px', color: '#555' }}>
                   <span style={{ fontSize: '15px' }}>{btn.icon}</span>
@@ -927,7 +985,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 공인중개사 카드 */}
-          <div style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>
+          <div className="detail-aside-agent" style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👤</div>
               <div>
@@ -993,7 +1051,7 @@ export default function PropertyDetailPage() {
         className="detail-mobile-fab"
         style={{
           display: 'none',
-          position: 'fixed', bottom: '70px', right: '16px',
+          position: 'fixed', bottom: 'calc(50% - 60px)', right: '16px',
           flexDirection: 'column', gap: '8px',
           zIndex: 999,
         }}
@@ -1030,7 +1088,7 @@ export default function PropertyDetailPage() {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           style={{
             position: 'fixed',
-            bottom: '40px',
+            bottom: '50%',
             right: '40px',
             width: '48px',
             height: '48px',
@@ -1049,6 +1107,87 @@ export default function PropertyDetailPage() {
         >
           ↑
         </button>
+      )}
+
+      {/* 태블릿용 뒤로가기 */}
+      <button
+        className="detail-pc-back-btn"
+        onClick={() => router.back()}
+        style={{
+          display: 'none',
+          position: 'fixed',
+          bottom: 'calc(50% - 60px)',
+          right: '40px',
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          background: 'rgba(100,100,100,0.5)',
+          color: '#fff',
+          border: 'none',
+          fontSize: '18px',
+          cursor: 'pointer',
+          zIndex: 999,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        ←
+      </button>
+
+      {/* 매물 문의 모달 */}
+      {showInquiryModal && (
+        <div
+          onClick={() => setShowInquiryModal(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: '16px',
+              padding: '28px 24px', width: '100%', maxWidth: '360px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>매물 문의하기</h3>
+              <button onClick={() => setShowInquiryModal(false)} style={{ background: 'none', border: 'none', fontSize: '22px', color: '#aaa', cursor: 'pointer' }}>×</button>
+            </div>
+            <p style={{ fontSize: '13px', color: '#999', marginBottom: '20px' }}>원하시는 방법으로 문의해 주세요</p>
+
+            <div style={{ background: '#f8f8f8', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'center' }}>
+              <p style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>대표 공인중개사 황정아</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e' }}>010-8680-8151</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <a
+                href="tel:010-8680-8151"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#e2a06e', color: '#fff', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none' }}
+              >
+                📞 전화 문의하기
+              </a>
+              <a
+                href="sms:010-8680-8151"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#fff', color: '#e2a06e', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none', border: '1.5px solid #e2a06e' }}
+              >
+                💬 문자 문의하기
+              </a>
+              <a
+                href="https://open.kakao.com/o/s3lwiwsh"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#FEE500', color: '#3C1E1E', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none' }}
+              >
+                💛 카카오톡 문의
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
     </main>
