@@ -470,14 +470,23 @@ export default function PropertyDetailPage() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         /* ── 태블릿 (768px ~ 1199px) ── */
-        @media (max-width: 1199px) {
-          .detail-tab-inner { padding: 0 40px !important; }
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .detail-tab-inner { padding: 0 24px !important; }
           .detail-tab-inner .detail-tab-btns button { font-size: 14px !important; padding: 10px 12px !important; }
           .detail-tab-inner .detail-tab-utils { display: none !important; }
-          .detail-body { padding: 16px 24px 0 !important; gap: 20px !important; }
-          .detail-aside { width: 300px !important; }
-          .detail-carousel-img { height: 450px !important; }
-          .detail-carousel-thumb { height: 90px !important; }
+          .detail-body { padding: 16px 24px 0 !important; gap: 16px !important; }
+          .detail-aside { width: 280px !important; }
+          .detail-carousel-img { height: 380px !important; }
+          .detail-carousel-thumb { height: 70px !important; }
+          .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
+          .detail-map-container { height: 300px !important; }
+          .detail-section { padding: 12px !important; }
+          .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
+          .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
+          .detail-info-table tr { display: contents !important; }
+          .detail-info-table td { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px 12px !important; border-bottom: 1px solid #f0f0f0 !important; box-sizing: border-box !important; }
+          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; font-size: 13px !important; color: #888 !important; }
+          .detail-info-table td:nth-child(even) { font-size: 14px !important; font-weight: 700 !important; }
         }
 
         /* ── 모바일 (768px 미만) ── */

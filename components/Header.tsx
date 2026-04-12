@@ -59,7 +59,20 @@ export default function Header() {
           .h-bottom-tab { display: flex !important; }
           body { padding-bottom: 60px !important; }
         }
-        @media (min-width: 768px) {
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .h-hamburger { display: none !important; }
+          .h-bottom-tab { display: none !important; }
+          .h-auth-desktop { display: none !important; }
+          .h-mobile-login { display: flex !important; }
+          .h-phone { display: flex !important; }
+          .h-logo-bar { padding: 0 20px !important; height: 76px !important; }
+          .h-logo-text { font-size: 26px !important; }
+          .h-logo-img { width: 42px !important; height: 42px !important; }
+          .h-nav-desktop { gap: 24px !important; height: 48px !important; }
+          .h-nav-desktop a { font-size: 15px !important; }
+          .h-logo-center { position: absolute !important; left: 50% !important; transform: translateX(-50%) !important; }
+        }
+        @media (min-width: 1200px) {
           .h-hamburger { display: none !important; }
           .h-bottom-tab { display: none !important; }
           .h-mobile-login { display: none !important; }
@@ -71,7 +84,7 @@ export default function Header() {
         className="h-logo-bar"
         style={{
           background: '#111', height: '90px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' as const,
           padding: '0 clamp(16px, calc(50% - 560px), 500px)',
           borderBottom: '1px solid #333',
         }}
@@ -83,7 +96,7 @@ export default function Header() {
         </div>
 
         {/* 중앙: 로고 */}
-        <a href="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+        <a className="h-logo-center" href="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img className="h-logo-img" src="/logo.png" alt="로고" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
             <span className="h-logo-text" style={{ fontSize: '32px', fontWeight: 700, color: '#e2a06e' }}>헤르만부동산</span>
