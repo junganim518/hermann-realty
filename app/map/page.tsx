@@ -80,7 +80,6 @@ export default function MapPage() {
   const markersRef      = useRef<any[]>([]);
   const listRef         = useRef<HTMLDivElement>(null);
   const cardRefs        = useRef<Record<string, HTMLDivElement | null>>({});
-  const drawerPanelRef = useRef<HTMLDivElement>(null);
 
   // state
   const [properties, setProperties]     = useState<any[]>([]);
@@ -93,43 +92,6 @@ export default function MapPage() {
   const [drawerDragY, setDrawerDragY]   = useState(0);
   const drawerStartY = useRef(0);
 
-  // 태블릿 드로어 초기 높이 설정
-  useEffect(() => {
-    const isTablet = window.innerWidth >= 768 && window.innerWidth <= 1199;
-    if (!isTablet || !drawerPanelRef.current) return;
-    const initialHeight = window.innerHeight - window.innerHeight * 0.5;
-    drawerPanelRef.current.style.height = initialHeight + 'px';
-  }, []);
-
-  // 태블릿 드로어 드래그 핸들러
-  const handleDrawerDragStart = (clientY: number) => {
-    const drawer = drawerPanelRef.current;
-    if (!drawer) return;
-    const startY = clientY;
-    const startHeight = drawer.offsetHeight;
-    drawer.style.transition = 'none';
-
-    const onMove = (e: TouchEvent | MouseEvent) => {
-      e.preventDefault();
-      const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
-      const diff = startY - currentY;
-      const newHeight = Math.min(window.innerHeight * 0.9, Math.max(window.innerHeight * 0.1, startHeight + diff));
-      drawer.style.height = newHeight + 'px';
-    };
-
-    const onEnd = () => {
-      drawer.style.transition = 'height 0.3s ease';
-      window.removeEventListener('touchmove', onMove as any);
-      window.removeEventListener('touchend', onEnd);
-      window.removeEventListener('mousemove', onMove as any);
-      window.removeEventListener('mouseup', onEnd);
-    };
-
-    window.addEventListener('touchmove', onMove as any, { passive: false });
-    window.addEventListener('touchend', onEnd);
-    window.addEventListener('mousemove', onMove as any);
-    window.addEventListener('mouseup', onEnd);
-  };
 
   // 드로어 열릴 때 body 스크롤 막기
   useEffect(() => {
@@ -378,24 +340,25 @@ export default function MapPage() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (min-width: 768px) and (max-width: 1199px) {
-          .map-container { height: 50vh !important; }
+          .map-container { height: 100vh !important; }
+          .map-body { flex-direction: column !important; }
           .map-panel {
-            position: fixed !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            top: auto !important;
+            position: static !important;
             width: 100% !important;
-            border-radius: 16px 16px 0 0 !important;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
-            background: #fff !important;
-            z-index: 300 !important;
-            overflow: hidden !important;
+            height: 45vh !important;
+            overflow-y: auto !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border-top: 2px solid #e2a06e !important;
             border-left: none !important;
-            display: flex !important;
-            flex-direction: column !important;
           }
-          .map-tablet-handle { display: flex !important; }
+          .map-area { height: 55vh !important; flex-shrink: 0 !important; }
+          .map-panel .map-list-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+            padding: 12px !important;
+          }
         @media (max-width: 1199px) {
           .map-filter-bar { padding: 10px 16px !important; }
           .map-filter-bar select { height: 36px !important; font-size: 13px !important; padding: 0 6px !important; }
@@ -529,17 +492,7 @@ export default function MapPage() {
         </div>
 
         {/* ── 우측 매물 목록 */}
-        <div ref={drawerPanelRef} className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
-
-          {/* 태블릿 드래그 핸들바 */}
-          <div
-            className="map-tablet-handle"
-            style={{ display: 'none', flexShrink: 0, padding: '8px 0', cursor: 'grab', background: '#fff', borderRadius: '16px 16px 0 0' }}
-            onTouchStart={e => handleDrawerDragStart(e.touches[0].clientY)}
-            onMouseDown={e => handleDrawerDragStart(e.clientY)}
-          >
-            <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
-          </div>
+        <div className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
 
           {/* 헤더 */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -557,7 +510,7 @@ export default function MapPage() {
           </div>
 
           {/* 카드 리스트 */}
-          <div ref={listRef} style={{ flex: 1, overflowY: 'auto' }}>
+          <div ref={listRef} className="map-list-grid" style={{ flex: 1, overflowY: 'auto' }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#888', flexDirection: 'column', gap: '8px' }}>
                 <span style={{ fontSize: '24px' }}>⏳</span>
@@ -593,10 +546,20 @@ export default function MapPage() {
                     >
                       {/* 썸네일 */}
                       <div style={{ width: '100px', height: '100px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
-                        {thumb
-                          ? <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#bbb' }}>준비중</div>
-                        }
+                        {thumb ? (
+                          <>
+                            <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
+                              <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                              <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
+                            <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap', opacity: 0.7 }}>HERMANN REALTY</span>
+                            <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap', opacity: 0.5 }}>헤르만부동산</span>
+                          </div>
+                        )}
                         {p.is_sold && (
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <span style={{ color: '#fff', fontSize: '12px', fontWeight: 800, letterSpacing: '1px', border: '1px solid #fff', padding: '2px 6px', borderRadius: '3px' }}>거래완료</span>
@@ -690,8 +653,21 @@ export default function MapPage() {
                 ].filter(Boolean).join(' · ');
                 return (
                   <a key={p.property_number} href={`/item/view/${p.property_number}`} style={{ display: 'flex', gap: '12px', padding: '14px 20px', textDecoration: 'none', color: 'inherit', borderBottom: '1px solid #f0f0f0' }}>
-                    <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0' }}>
-                      {thumb ? <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#bbb' }}>준비중</div>}
+                    <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
+                      {thumb ? (
+                        <>
+                          <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
+                            <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                            <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
+                          <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap', opacity: 0.7 }}>HERMANN REALTY</span>
+                          <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap', opacity: 0.5 }}>헤르만부동산</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
