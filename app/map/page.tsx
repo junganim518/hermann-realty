@@ -20,6 +20,12 @@ const formatAddress = (addr: string) => {
   return normalized;
 };
 
+const extractBunji = (address: string) => {
+  if (!address) return '';
+  const match = address.match(/(\d+(?:-\d+)?)\s*(?:번지)?(?:\s|$)/);
+  return match ? match[1] : '';
+};
+
 const formatPrice = (v: number) => {
   if (!v) return '-';
   const uk  = Math.floor(v / 10000);
@@ -107,8 +113,10 @@ export default function MapPage() {
   const cardRefs        = useRef<Record<string, HTMLDivElement | null>>({});
   const drawerRef       = useRef<HTMLDivElement>(null);
   const handleBarRef    = useRef<HTMLDivElement>(null);
+  const filterScrollRef = useRef<HTMLDivElement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(true);
   const [snapIndex, setSnapIndex] = useState(0);
 
   // state
@@ -132,6 +140,19 @@ export default function MapPage() {
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // 필터 바 가로 스크롤 힌트
+  useEffect(() => {
+    const el = filterScrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const isEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
+      setShowScrollHint(!isEnd);
+    };
+    onScroll();
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
   // isMobile 변경 시 지도 relayout + 중심 재설정
@@ -567,8 +588,26 @@ export default function MapPage() {
       </div>
 
       {/* ════════════ 필터 바 (하단) ════════════ */}
-      <div className="map-filter-bar" style={{
-        position: 'sticky', top: 62, zIndex: 100,
+      <div style={{ position: 'sticky', top: 62, zIndex: 100 }}>
+      {isMobile && showScrollHint && (
+        <div style={{
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: '48px',
+          background: 'linear-gradient(to right, transparent, #fff)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          paddingRight: '6px',
+          pointerEvents: 'none',
+          zIndex: 10,
+        }}>
+          <span style={{ fontSize: '16px', color: '#aaa' }}>›</span>
+        </div>
+      )}
+      <div ref={filterScrollRef} className="map-filter-bar" style={{
         background: '#fff', borderBottom: '1px solid #e0e0e0',
         padding: '10px 16px', display: 'flex', alignItems: 'center',
         gap: '8px', flexWrap: 'wrap', flexShrink: 0,
@@ -617,6 +656,7 @@ export default function MapPage() {
         <span className="map-count" style={{ fontSize: '15px', color: '#555', marginLeft: 'auto', flexShrink: 0 }}>
           매물 <strong style={{ color: '#e2a06e' }}>{filtered.length}</strong>개
         </span>
+      </div>
       </div>
 
       {/* ════════════ 2열 본문 ════════════ */}
@@ -759,7 +799,7 @@ export default function MapPage() {
                         <div style={{ marginBottom: isMobile ? '2px' : '4px' }}>
                           <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: isMobile ? '2px' : '4px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: isMobile ? '2px' : '4px', flexWrap: 'wrap', alignItems: 'baseline' }}>
                           {p.premium ? (
                             <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
                           ) : (
@@ -771,7 +811,14 @@ export default function MapPage() {
                             <span style={{ fontSize: '11px', color: '#888' }}>관리비 -</span>
                           )}
                         </div>
-                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</p>
+                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {addr}
+                          {isAdmin && (extractBunji(p.address) || p.dong || p.unit_number) && (
+                            <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
+                              {[extractBunji(p.address), p.dong ? `${p.dong}동` : null, p.unit_number ? `${p.unit_number}호` : null].filter(Boolean).join(' ')}
+                            </span>
+                          )}
+                        </p>
                         {detail && <p className="map-card-detail" style={{ fontSize: '13px', color: '#888', margin: 0 }}>{detail}</p>}
                       </div>
                     </Link>
@@ -872,7 +919,7 @@ export default function MapPage() {
                       <div style={{ marginBottom: '4px' }}>
                         <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: '4px', flexWrap: 'wrap', alignItems: 'baseline' }}>
                         {p.premium ? (
                           <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
                         ) : (
@@ -884,7 +931,14 @@ export default function MapPage() {
                           <span style={{ fontSize: '11px', color: '#888' }}>관리비 -</span>
                         )}
                       </div>
-                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatAddress(p.address ?? '')}</p>
+                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {formatAddress(p.address ?? '')}
+                        {isAdmin && (extractBunji(p.address) || p.dong || p.unit_number) && (
+                          <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
+                            {[extractBunji(p.address), p.dong ? `${p.dong}동` : null, p.unit_number ? `${p.unit_number}호` : null].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                      </p>
                       {detailStr && <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{detailStr}</p>}
                     </div>
                   </a>

@@ -77,6 +77,12 @@ const formatAddressLong = (address: string) => {
   return [line1, line2].filter(Boolean).join(' ');
 };
 
+const extractBunji = (address: string) => {
+  if (!address) return '';
+  const match = address.match(/(\d+(?:-\d+)?)\s*(?:번지)?(?:\s|$)/);
+  return match ? match[1] : '';
+};
+
 /* ── 금액 포맷 함수 ── */
 const formatPrice = (v: number) => {
   if (!v) return '-';
@@ -118,6 +124,7 @@ interface Property {
   property_number?: string;
   title?: string;
   address?: string;
+  dong?: string;
   unit_number?: string;
   transaction_type?: string;
   property_type?: string;
@@ -467,9 +474,11 @@ export default function PropertyDetailPage() {
   }
 
   return (
-    <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
+    <main style={{ background: '#f5f5f5', minHeight: '100vh', overflowX: 'hidden' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        .detail-carousel-thumbs::-webkit-scrollbar { display: none; }
+
         /* ── 태블릿 (768px ~ 1199px) ── */
         @media (min-width: 768px) and (max-width: 1199px) {
           .detail-tab-inner { padding: 0 24px !important; }
@@ -478,7 +487,6 @@ export default function PropertyDetailPage() {
           .detail-body { padding: 16px 24px 0 !important; gap: 16px !important; }
           .detail-aside { width: 280px !important; }
           .detail-carousel-img { height: 380px !important; }
-          .detail-carousel-thumb { height: 70px !important; }
           .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
           .detail-map-container { height: 300px !important; }
           .detail-section { padding: 12px !important; }
@@ -514,16 +522,15 @@ export default function PropertyDetailPage() {
 
         /* ── 모바일 (768px 미만) ── */
         @media (max-width: 767px) {
-          .tab-bar { top: 64px !important; }
+          .tab-bar { position: sticky !important; top: 0 !important; z-index: 100 !important; }
           .detail-tab-inner { padding: 0 8px !important; }
           .detail-tab-inner .detail-tab-btns { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
           .detail-tab-inner .detail-tab-btns::-webkit-scrollbar { display: none; }
           .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
-          .detail-body { padding: 8px 4px 0 !important; flex-direction: column !important; gap: 10px !important; padding-bottom: 200px !important; }
-          .detail-main { order: 2; }
+          .detail-body { padding: 0 4px 200px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
+          .detail-main { order: 2; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
-          .detail-carousel-thumb { height: 50px !important; }
           .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
           .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
           .detail-info-table tr { display: contents !important; }
@@ -654,10 +661,10 @@ export default function PropertyDetailPage() {
                   </div>
                 </div>
                 {thumbnails.length > 1 && (
-                  <div style={{ display: 'flex', gap: '6px', padding: '10px' }}>
+                  <div className="detail-carousel-thumbs" style={{ display: 'flex', gap: '6px', padding: '10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexWrap: 'nowrap', scrollbarWidth: 'none' }}>
                     {thumbnails.map((thumb, i) => (
-                      <div key={i} onClick={() => setCurrentImage(i)} className="detail-carousel-thumb" style={{ flex: 1, height: '120px', cursor: 'pointer', overflow: 'hidden', border: currentImage === i ? '2px solid #e2a06e' : '2px solid #e0e0e0', transition: 'border 0.2s' }}>
-                        <img src={thumb} alt={`썸네일${i + 1}`} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
+                      <div key={i} onClick={() => setCurrentImage(i)} className="detail-carousel-thumb" style={{ flexShrink: 0, width: '80px', minWidth: '80px', height: '80px', cursor: 'pointer', overflow: 'hidden', border: currentImage === i ? '2px solid #e2a06e' : '2px solid #e0e0e0', transition: 'border 0.2s' }}>
+                        <img src={thumb} alt={`썸네일${i + 1}`} style={{ width: '100%', height: '80px', objectFit: 'cover' }} />
                       </div>
                     ))}
                   </div>
@@ -688,7 +695,18 @@ export default function PropertyDetailPage() {
                   {/* 1행: 주소 | 매물종류 */}
                   <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>주소</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#333', fontWeight: 700 }}>
+                      {property.address ? (
+                        <>
+                          {formatAddressLong(property.address ?? '')}
+                          {isAdmin && (extractBunji(property.address ?? '') || property.dong || property.unit_number) && (
+                            <span style={{ color: '#e2a06e', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
+                              {[extractBunji(property.address ?? ''), property.dong ? `${property.dong}동` : null, property.unit_number ? `${property.unit_number}호` : null].filter(Boolean).join(' ')}
+                            </span>
+                          )}
+                        </>
+                      ) : '-'}
+                    </td>
                     <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>매물종류</td>
                     <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.property_type ?? '-'}</td>
                   </tr>
@@ -981,7 +999,18 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
               <div className="aside-addr-row" style={{ marginBottom: 0, paddingBottom: 0 }}>
-                <p style={{ fontSize: '16px', color: '#444', marginBottom: '4px' }}>📍 {property.address ? (isAdmin ? [property.address, formatUnit(property.unit_number)].filter(Boolean).join(' ') : formatAddressLong(property.address)) : '-'}</p>
+                <p style={{ fontSize: '13px', color: '#444', marginBottom: '4px' }}>
+                  📍 {property.address ? (
+                    <>
+                      {formatAddressLong(property.address ?? '')}
+                      {isAdmin && (extractBunji(property.address ?? '') || property.dong || property.unit_number) && (
+                        <span style={{ color: '#e2a06e', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
+                          {[extractBunji(property.address ?? ''), property.dong ? `${property.dong}동` : null, property.unit_number ? `${property.unit_number}호` : null].filter(Boolean).join(' ')}
+                        </span>
+                      )}
+                    </>
+                  ) : '-'}
+                </p>
                 <p style={{ fontSize: '16px', color: '#666' }}>
                   {[property.property_type, property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`, property.current_floor && formatFloor(property.current_floor)].filter(Boolean).join(' · ')}
                 </p>

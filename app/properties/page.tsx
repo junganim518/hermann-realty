@@ -23,6 +23,12 @@ const formatAddress = (addr: string) => {
   return [line1, line2].filter(Boolean).join(' ');
 };
 
+const extractBunji = (address: string) => {
+  if (!address) return '';
+  const match = address.match(/(\d+(?:-\d+)?)\s*(?:번지)?(?:\s|$)/);
+  return match ? match[1] : '';
+};
+
 const formatPrice = (v: number) => {
   if (!v) return '-';
   const uk = Math.floor(v / 10000);
@@ -473,6 +479,11 @@ export default function PropertiesPage() {
                         </div>
                         <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {formatAddress(p.address ?? '')}
+                          {isAdmin && (extractBunji(p.address) || p.dong || p.unit_number) && (
+                            <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
+                              {[extractBunji(p.address), p.dong ? `${p.dong}동` : null, p.unit_number ? `${p.unit_number}호` : null].filter(Boolean).join(' ')}
+                            </span>
+                          )}
                         </p>
                         <p className="prop-meta" style={{ fontSize: '13px', color: '#666', marginBottom: isMobile ? '0' : '4px' }}>
                           {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}

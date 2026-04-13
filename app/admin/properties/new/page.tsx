@@ -8,6 +8,54 @@ declare global {
   interface Window { daum: any; }
 }
 
+// ── 이미지 압축 ─────────────────────────────────────────────
+const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          const compressed = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+          URL.revokeObjectURL(url);
+          resolve(compressed);
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+};
+
+// ── R2 업로드 ────────────────────────────────────────────────
+const uploadImageToR2 = async (file: File): Promise<string> => {
+  const compressed = await compressImage(file);
+  const formData = new FormData();
+  formData.append('file', compressed);
+  formData.append('folder', 'properties');
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.url;
+};
+
 // ── 상수 ─────────────────────────────────────────────────────
 const TX_TYPES   = ['월세', '전세', '매매'];
 const PROP_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
@@ -49,6 +97,7 @@ export default function NewPropertyPage() {
     exclusive_area: '',
     current_floor: '',
     total_floor: '',
+    dong: '',
     unit_number: '',
     usage_type: '',
     direction: '',
@@ -260,6 +309,7 @@ export default function NewPropertyPage() {
         exclusive_area: form.exclusive_area || null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
+        dong: form.dong || null,
         unit_number: form.unit_number || null,
         direction: form.direction || null,
         parking: form.parking,
@@ -297,28 +347,18 @@ export default function NewPropertyPage() {
       const pNum = inserted.property_number;
       console.log('[1] 성공 — uuid:', propertyId, 'property_number:', pNum);
 
-      // 2) 이미지 업로드 + property_images INSERT
+      // 2) 이미지 R2 업로드 + property_images INSERT
       console.log(`[2] 이미지 업로드 시작 (${images.length}장)`);
       for (let i = 0; i < images.length; i++) {
         const img = images[i];
-        const ext = img.file.name.split('.').pop() ?? 'jpg';
-        const fileName = `${i}_${Date.now()}.${ext}`;
-        const storagePath = `${pNum}/${fileName}`;
-
-        // Storage 업로드
-        console.log(`[2-${i + 1}] Storage 업로드 경로:`, storagePath);
-        const { data: upData, error: upErr } = await supabase.storage
-          .from('property-images')
-          .upload(storagePath, img.file, { cacheControl: '3600', upsert: false });
-        console.log(`[2-${i + 1}] Storage 결과:`, { upData, upErr });
-        if (upErr) { console.error(`[2-${i + 1}] Storage 업로드 실패:`, upErr); continue; }
-
-        // Public URL
-        const { data: urlData } = supabase.storage
-          .from('property-images')
-          .getPublicUrl(storagePath);
-        const publicUrl = urlData.publicUrl;
-        console.log(`[3-${i + 1}] Public URL:`, publicUrl);
+        let publicUrl: string;
+        try {
+          publicUrl = await uploadImageToR2(img.file);
+          console.log(`[2-${i + 1}] R2 업로드 성공:`, publicUrl);
+        } catch (err) {
+          console.error(`[2-${i + 1}] R2 업로드 실패:`, err);
+          continue;
+        }
 
         // property_images INSERT
         const insertPayload = {
@@ -489,6 +529,10 @@ export default function NewPropertyPage() {
             <div>
               <label style={labelSt}>전체층</label>
               <input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} placeholder="예: 15" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>동</label>
+              <input value={form.dong} onChange={e => set('dong', e.target.value)} placeholder="예: 101" style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>호수</label>

@@ -8,6 +8,69 @@ declare global {
   interface Window { daum: any; }
 }
 
+// ── 이미지 압축 ─────────────────────────────────────────────
+const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          const compressed = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+          URL.revokeObjectURL(url);
+          resolve(compressed);
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+};
+
+// ── R2 업로드 ────────────────────────────────────────────────
+const uploadImageToR2 = async (file: File): Promise<string> => {
+  const compressed = await compressImage(file);
+  const formData = new FormData();
+  formData.append('file', compressed);
+  formData.append('folder', 'properties');
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.url;
+};
+
+// ── R2 이미지 삭제 ───────────────────────────────────────────
+const deleteImageFromR2 = async (imageUrl: string): Promise<void> => {
+  try {
+    const urlObj = new URL(imageUrl);
+    const path = urlObj.pathname.replace(/^\//, '');
+    await fetch('/api/delete-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+  } catch (err) {
+    console.error('R2 삭제 실패:', err);
+  }
+};
+
 const TX_TYPES   = ['월세', '전세', '매매'];
 const PROP_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const THEME_TYPES = ['추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
@@ -49,6 +112,7 @@ export default function EditPropertyPage() {
     exclusive_area: '',
     current_floor: '',
     total_floor: '',
+    dong: '',
     unit_number: '',
     usage_type: '',
     direction: '',
@@ -113,6 +177,7 @@ export default function EditPropertyPage() {
         exclusive_area: data.exclusive_area ?? '',
         current_floor: data.current_floor ?? '',
         total_floor: data.total_floor ?? '',
+        dong: data.dong ?? '',
         unit_number: data.unit_number ?? '',
         usage_type: data.usage_type ?? '',
         direction: data.direction ?? '',
@@ -192,8 +257,7 @@ export default function EditPropertyPage() {
 
   // ── 기존 이미지 삭제
   const removeExistingImage = async (img: { id: string; image_url: string }) => {
-    const match = img.image_url.match(/property-images\/(.+)$/);
-    if (match) await supabase.storage.from('property-images').remove([match[1]]);
+    await deleteImageFromR2(img.image_url);
     await supabase.from('property_images').delete().eq('id', img.id);
     setExistingImages(prev => prev.filter(i => i.id !== img.id));
   };
@@ -242,6 +306,7 @@ export default function EditPropertyPage() {
         exclusive_area: form.exclusive_area || null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
+        dong: form.dong || null,
         unit_number: form.unit_number || null,
         direction: form.direction || null,
         parking: form.parking,
@@ -279,20 +344,20 @@ export default function EditPropertyPage() {
         await supabase.from('property_images').update({ order_index: i }).eq('id', existingImages[i].id);
       }
 
-      // 새 이미지 업로드
+      // 새 이미지 R2 업로드
       const startIdx = existingImages.length;
       for (let i = 0; i < newImages.length; i++) {
         const img = newImages[i];
-        const ext = img.file.name.split('.').pop() ?? 'jpg';
-        const path = `${form.property_number}/${startIdx + i}_${Date.now()}.${ext}`;
-
-        const { error: upErr } = await supabase.storage.from('property-images').upload(path, img.file, { cacheControl: '3600', upsert: false });
-        if (upErr) { console.error('업로드 실패:', upErr); continue; }
-
-        const { data: urlData } = supabase.storage.from('property-images').getPublicUrl(path);
+        let publicUrl: string;
+        try {
+          publicUrl = await uploadImageToR2(img.file);
+        } catch (err) {
+          console.error('R2 업로드 실패:', err);
+          continue;
+        }
         await supabase.from('property_images').insert({
           property_id: propertyId,
-          image_url: urlData.publicUrl,
+          image_url: publicUrl,
           order_index: startIdx + i,
         });
       }
@@ -446,6 +511,7 @@ export default function EditPropertyPage() {
             <div><label style={labelSt}>전용면적 (㎡)</label><input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
+            <div><label style={labelSt}>동</label><input value={form.dong} onChange={e => set('dong', e.target.value)} placeholder="예: 101" style={inputSt} /></div>
             <div><label style={labelSt}>호수</label><input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>용도</label><input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} style={inputSt} /></div>
             <div>
