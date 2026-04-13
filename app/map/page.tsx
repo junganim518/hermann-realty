@@ -107,25 +107,41 @@ export default function MapPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // 모바일 드로어 초기 높이: 핸들바만 보이는 60px
+  // 모바일 드로어 초기 위치/스타일 직접 설정
   useEffect(() => {
-    if (!isMobile || !drawerRef.current) return;
-    drawerRef.current.style.height = '60px';
+    if (!drawerRef.current) return;
+    const isMob = window.innerWidth < 768;
+    if (isMob) {
+      const el = drawerRef.current;
+      el.style.position = 'fixed';
+      el.style.bottom = '60px';
+      el.style.left = '0';
+      el.style.right = '0';
+      el.style.width = '100%';
+      el.style.height = '44px';
+      el.style.zIndex = '300';
+      el.style.borderRadius = '16px 16px 0 0';
+      el.style.boxShadow = '0 -4px 20px rgba(0,0,0,0.15)';
+      el.style.borderLeft = 'none';
+    }
   }, [isMobile]);
 
-  // 드로어 드래그 핸들러
+  // 드로어 드래그 핸들러 (3단계 스냅)
   const handleDragStart = (clientY: number) => {
     if (!drawerRef.current) return;
     const startY = clientY;
     const startHeight = drawerRef.current.offsetHeight;
 
     const onMove = (e: TouchEvent | MouseEvent) => {
-      e.stopPropagation();
       e.preventDefault();
+      e.stopPropagation();
       const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
       const diff = startY - currentY;
       const newHeight = Math.min(window.innerHeight * 0.85, Math.max(44, startHeight + diff));
-      if (drawerRef.current) drawerRef.current.style.height = newHeight + 'px';
+      if (drawerRef.current) {
+        drawerRef.current.style.transition = 'none';
+        drawerRef.current.style.height = newHeight + 'px';
+      }
     };
 
     const onEnd = () => {
@@ -133,6 +149,15 @@ export default function MapPage() {
       document.removeEventListener('touchend', onEnd);
       document.removeEventListener('mousemove', onMove as any);
       document.removeEventListener('mouseup', onEnd);
+
+      if (!drawerRef.current) return;
+      const currentHeight = drawerRef.current.offsetHeight;
+      const snapPoints = [44, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.85)];
+      const closest = snapPoints.reduce((prev, curr) =>
+        Math.abs(curr - currentHeight) < Math.abs(prev - currentHeight) ? curr : prev
+      );
+      drawerRef.current.style.transition = 'height 0.3s ease';
+      drawerRef.current.style.height = closest + 'px';
     };
 
     document.addEventListener('touchmove', onMove as any, { passive: false });
@@ -435,24 +460,6 @@ export default function MapPage() {
           .map-container { height: 100vh !important; }
           .map-body { flex: 1 !important; display: flex !important; flex-direction: column !important; height: 50vh !important; }
           .map-area { flex: 1 !important; width: 100% !important; height: 50vh !important; min-height: 50vh !important; }
-          .map-panel {
-            position: fixed !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 60px !important;
-            top: auto !important;
-            width: 100% !important;
-            height: 60px !important;
-            border-radius: 16px 16px 0 0 !important;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
-            background: #fff !important;
-            z-index: 300 !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
-            border-left: none !important;
-            border-top: none !important;
-          }
           .map-panel { touch-action: none !important; }
           .map-panel .map-list-grid {
             display: block !important;
@@ -567,7 +574,7 @@ export default function MapPage() {
         </div>
 
         {/* ── 우측 매물 목록 */}
-        <div ref={drawerRef} className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+        <div ref={drawerRef} className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff', overflow: 'hidden' }}>
 
           {/* 모바일 드래그 핸들바 */}
           <div
