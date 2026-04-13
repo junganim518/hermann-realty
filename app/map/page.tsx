@@ -81,8 +81,10 @@ export default function MapPage() {
   const listRef         = useRef<HTMLDivElement>(null);
   const cardRefs        = useRef<Record<string, HTMLDivElement | null>>({});
   const drawerRef       = useRef<HTMLDivElement>(null);
+  const handleBarRef    = useRef<HTMLDivElement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [snapIndex, setSnapIndex] = useState(0);
 
   // state
   const [properties, setProperties]     = useState<any[]>([]);
@@ -107,6 +109,32 @@ export default function MapPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  // isMobile 변경 시 지도 relayout + 중심 재설정
+  useEffect(() => {
+    if (!mapObjRef.current) return;
+    const timer = setTimeout(() => {
+      const map = mapObjRef.current;
+      if (!map) return;
+      const center = map.getCenter();
+      map.relayout();
+      if (center) map.setCenter(center);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
+
+  // 모바일에서 body 스크롤 막기
+  useEffect(() => {
+    if (!isMobile) return;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isMobile]);
+
   // 모바일 드로어 초기 위치/스타일 직접 설정
   useEffect(() => {
     if (!drawerRef.current) return;
@@ -115,10 +143,11 @@ export default function MapPage() {
       const el = drawerRef.current;
       el.style.position = 'fixed';
       el.style.bottom = '60px';
+      el.style.top = 'auto';
       el.style.left = '0';
       el.style.right = '0';
       el.style.width = '100%';
-      el.style.height = '44px';
+      el.style.height = '72px';
       el.style.zIndex = '300';
       el.style.borderRadius = '16px 16px 0 0';
       el.style.boxShadow = '0 -4px 20px rgba(0,0,0,0.15)';
@@ -126,45 +155,38 @@ export default function MapPage() {
     }
   }, [isMobile]);
 
-  // 드로어 드래그 핸들러 (3단계 스냅)
-  const handleDragStart = (clientY: number) => {
+  // 드로어 핸들바 탭 (3단계 스냅 순환) — 마우스용
+  const handleHandleTap = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!drawerRef.current) return;
-    const startY = clientY;
-    const startHeight = drawerRef.current.offsetHeight;
+    const snapPoints = [72, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.85)];
+    const nextIndex = (snapIndex + 1) % snapPoints.length;
+    setSnapIndex(nextIndex);
+    drawerRef.current.style.transition = 'height 0.3s ease';
+    drawerRef.current.style.height = snapPoints[nextIndex] + 'px';
+  };
 
-    const onMove = (e: TouchEvent | MouseEvent) => {
+  // 핸들바 터치 — passive: false 로 네이티브 등록
+  useEffect(() => {
+    const el = handleBarRef.current;
+    if (!el) return;
+    const onTouch = (e: TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
-      const diff = startY - currentY;
-      const newHeight = Math.min(window.innerHeight * 0.85, Math.max(44, startHeight + diff));
-      if (drawerRef.current) {
-        drawerRef.current.style.transition = 'none';
-        drawerRef.current.style.height = newHeight + 'px';
-      }
+      const snapPoints = [72, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.85)];
+      setSnapIndex(prev => {
+        const nextIndex = (prev + 1) % snapPoints.length;
+        if (drawerRef.current) {
+          drawerRef.current.style.transition = 'height 0.3s ease';
+          drawerRef.current.style.height = snapPoints[nextIndex] + 'px';
+        }
+        return nextIndex;
+      });
     };
-
-    const onEnd = () => {
-      document.removeEventListener('touchmove', onMove as any);
-      document.removeEventListener('touchend', onEnd);
-      document.removeEventListener('mousemove', onMove as any);
-      document.removeEventListener('mouseup', onEnd);
-
-      if (!drawerRef.current) return;
-      const currentHeight = drawerRef.current.offsetHeight;
-      const snapPoints = [44, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.85)];
-      const closest = snapPoints.reduce((prev, curr) =>
-        Math.abs(curr - currentHeight) < Math.abs(prev - currentHeight) ? curr : prev
-      );
-      drawerRef.current.style.transition = 'height 0.3s ease';
-      drawerRef.current.style.height = closest + 'px';
-    };
-
-    document.addEventListener('touchmove', onMove as any, { passive: false });
-    document.addEventListener('touchend', onEnd);
-    document.addEventListener('mousemove', onMove as any);
-    document.addEventListener('mouseup', onEnd);
-  };
+    el.addEventListener('touchstart', onTouch, { passive: false });
+    return () => el.removeEventListener('touchstart', onTouch);
+  }, []);
 
   // 드로어 열릴 때 body 스크롤 막기
   useEffect(() => {
@@ -222,10 +244,11 @@ export default function MapPage() {
       if (mapObjRef.current) { setMapReady(true); console.log('지도 컨테이너 크기:', mapContainerRef.current?.offsetWidth, mapContainerRef.current?.offsetHeight); return; }
 
       const isMobile = window.innerWidth < 768;
-      const center = new window.kakao.maps.LatLng(37.5040479677868, 126.77522691726);
+      const centerLat = isMobile ? 37.5040479677868 - 0.02 : 37.5040479677868;
+      const center = new window.kakao.maps.LatLng(centerLat, 126.77522691726);
       const map = new window.kakao.maps.Map(mapContainerRef.current, {
         center,
-        level: isMobile ? 8 : 7,
+        level: isMobile ? 7 : 7,
         minLevel: 4,
       });
       mapObjRef.current = map;
@@ -410,7 +433,7 @@ export default function MapPage() {
 
   // ── 렌더
   return (
-    <div className="map-container" style={{ height: isMobile ? '50vh' : `calc(100vh - ${headerH}px)`, width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden', paddingBottom: isMobile ? 0 : undefined }}>
+    <div className="map-container" style={{ height: isMobile ? '100dvh' : `calc(100vh - ${headerH}px)`, width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden', paddingBottom: isMobile ? 0 : undefined }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (min-width: 768px) and (max-width: 1199px) {
@@ -444,6 +467,10 @@ export default function MapPage() {
         }
         @media (max-width: 767px) {
           .map-filter-bar {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 100 !important;
+            background: #fff !important;
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
             gap: 6px !important;
@@ -457,9 +484,9 @@ export default function MapPage() {
           .map-filter-bar select { width: 100% !important; height: 34px !important; font-size: 12px !important; padding: 0 4px !important; }
           .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
           .map-filter-bar .map-count { display: none !important; }
-          .map-container { height: 100vh !important; }
-          .map-body { flex: 1 !important; display: flex !important; flex-direction: column !important; height: 50vh !important; }
-          .map-area { flex: 1 !important; width: 100% !important; height: 50vh !important; min-height: 50vh !important; }
+          .map-container { height: 100dvh !important; }
+          .map-body { display: flex !important; flex-direction: column !important; height: 35vh !important; flex-shrink: 0 !important; }
+          .map-area { flex: 1 !important; width: 100% !important; height: 35vh !important; min-height: 35vh !important; flex-shrink: 0 !important; }
           .map-panel { touch-action: none !important; }
           .map-panel .map-list-grid {
             display: block !important;
@@ -541,10 +568,10 @@ export default function MapPage() {
       </div>
 
       {/* ════════════ 2열 본문 ════════════ */}
-      <div className="map-body" style={{ display: 'flex', flex: 1, height: isMobile ? '50vh' : '100%', overflow: 'hidden' }}>
+      <div className="map-body" style={{ display: 'flex', flex: 1, height: isMobile ? '40vh' : '100%', overflow: 'hidden' }}>
 
         {/* ── 좌측 지도 */}
-        <div className="map-area" style={{ flex: 1, height: isMobile ? '50vh' : '100%', position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
+        <div className="map-area" style={{ flex: 1, height: isMobile ? '40vh' : '100%', position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
           <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
           {/* 모바일 매물목록 토글 버튼 */}
@@ -578,10 +605,11 @@ export default function MapPage() {
 
           {/* 모바일 드래그 핸들바 */}
           <div
+            ref={handleBarRef}
             className="map-drawer-handle"
             style={{ padding: '8px 0', cursor: 'grab', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
-            onTouchStart={e => { e.stopPropagation(); handleDragStart(e.touches[0].clientY); }}
-            onMouseDown={e => { e.stopPropagation(); handleDragStart(e.clientY); }}
+            onClick={e => e.stopPropagation()}
+            onMouseDown={e => handleHandleTap(e)}
           >
             <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
           </div>
