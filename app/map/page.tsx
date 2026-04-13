@@ -80,6 +80,9 @@ export default function MapPage() {
   const markersRef      = useRef<any[]>([]);
   const listRef         = useRef<HTMLDivElement>(null);
   const cardRefs        = useRef<Record<string, HTMLDivElement | null>>({});
+  const drawerRef       = useRef<HTMLDivElement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // state
   const [properties, setProperties]     = useState<any[]>([]);
@@ -92,6 +95,47 @@ export default function MapPage() {
   const [drawerDragY, setDrawerDragY]   = useState(0);
   const drawerStartY = useRef(0);
 
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setIsAdmin(!!data.user));
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // 모바일 드로어 초기 높이: 핸들바만 보이는 60px
+  useEffect(() => {
+    if (!isMobile || !drawerRef.current) return;
+    drawerRef.current.style.height = '60px';
+  }, [isMobile]);
+
+  // 드로어 드래그 핸들러
+  const handleDragStart = (clientY: number) => {
+    if (!drawerRef.current) return;
+    const startY = clientY;
+    const startHeight = drawerRef.current.offsetHeight;
+    const onMove = (e: TouchEvent | MouseEvent) => {
+      e.preventDefault();
+      const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
+      const diff = startY - currentY;
+      const newHeight = Math.min(window.innerHeight * 0.85, Math.max(60, startHeight + diff));
+      if (drawerRef.current) drawerRef.current.style.height = newHeight + 'px';
+    };
+    const onEnd = () => {
+      window.removeEventListener('touchmove', onMove as any);
+      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('mousemove', onMove as any);
+      window.removeEventListener('mouseup', onEnd);
+    };
+    window.addEventListener('touchmove', onMove as any, { passive: false });
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('mousemove', onMove as any);
+    window.addEventListener('mouseup', onEnd);
+  };
 
   // 드로어 열릴 때 body 스크롤 막기
   useEffect(() => {
@@ -163,6 +207,7 @@ export default function MapPage() {
         map.setCenter(center);
       };
       setTimeout(recenter, 100);
+      setTimeout(recenter, 300);
       setTimeout(recenter, 500);
       // 태블릿 레이아웃 변경 후 추가 recenter
       const isTablet = window.innerWidth >= 768 && window.innerWidth <= 1199;
@@ -336,7 +381,7 @@ export default function MapPage() {
 
   // ── 렌더
   return (
-    <div className="map-container" style={{ height: `calc(100vh - ${headerH}px)`, display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden' }}>
+    <div className="map-container" style={{ height: isMobile ? '50vh' : `calc(100vh - ${headerH}px)`, width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: '#f5f5f5', overflow: 'hidden', paddingBottom: isMobile ? 0 : undefined }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (min-width: 768px) and (max-width: 1199px) {
@@ -359,6 +404,8 @@ export default function MapPage() {
             gap: 8px !important;
             padding: 12px !important;
           }
+        }
+        .map-drawer-handle { display: none; }
         @media (max-width: 1199px) {
           .map-filter-bar { padding: 10px 16px !important; }
           .map-filter-bar select { height: 36px !important; font-size: 13px !important; padding: 0 6px !important; }
@@ -381,10 +428,32 @@ export default function MapPage() {
           .map-filter-bar select { width: 100% !important; height: 34px !important; font-size: 12px !important; padding: 0 4px !important; }
           .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
           .map-filter-bar .map-count { display: none !important; }
-          .map-panel { display: none !important; }
-          .map-container { height: auto !important; overflow: visible !important; }
-          .map-area { width: 100% !important; height: 60vh !important; }
-          .map-drawer-toggle { display: flex !important; }
+          .map-container { height: 100vh !important; }
+          .map-body { flex: 1 !important; display: flex !important; flex-direction: column !important; height: 50vh !important; }
+          .map-area { flex: 1 !important; width: 100% !important; height: 50vh !important; min-height: 50vh !important; }
+          .map-panel {
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 60px !important;
+            top: auto !important;
+            width: 100% !important;
+            height: 60px !important;
+            border-radius: 16px 16px 0 0 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
+            background: #fff !important;
+            z-index: 300 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            border-left: none !important;
+            border-top: none !important;
+          }
+          .map-panel .map-list-grid {
+            display: block !important;
+            padding: 0 !important;
+          }
+          .map-drawer-handle { display: block !important; padding: 8px 0 !important; cursor: grab !important; background: #fff !important; border-radius: 16px 16px 0 0 !important; flex-shrink: 0 !important; touch-action: none !important; }
           .map-card-text { padding: 12px 14px !important; }
           .map-card-text .map-card-pnum { font-size: 11px !important; }
           .map-card-text .map-card-title { font-size: 14px !important; }
@@ -459,10 +528,10 @@ export default function MapPage() {
       </div>
 
       {/* ════════════ 2열 본문 ════════════ */}
-      <div className="map-body" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div className="map-body" style={{ display: 'flex', flex: 1, height: isMobile ? '50vh' : '100%', overflow: 'hidden' }}>
 
         {/* ── 좌측 지도 */}
-        <div className="map-area" style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
+        <div className="map-area" style={{ flex: 1, height: isMobile ? '50vh' : '100%', position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
           <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
           {/* 모바일 매물목록 토글 버튼 */}
@@ -492,7 +561,16 @@ export default function MapPage() {
         </div>
 
         {/* ── 우측 매물 목록 */}
-        <div className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+        <div ref={drawerRef} className="map-panel" style={{ width: '480px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e0e0e0', background: '#fff' }}>
+
+          {/* 모바일 드래그 핸들바 */}
+          <div
+            className="map-drawer-handle"
+            onTouchStart={e => handleDragStart(e.touches[0].clientY)}
+            onMouseDown={e => handleDragStart(e.clientY)}
+          >
+            <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
+          </div>
 
           {/* 헤더 */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -569,26 +647,39 @@ export default function MapPage() {
 
                       {/* 텍스트 */}
                       <div className="map-card-text" style={{ flex: 1, minWidth: 0 }}>
-                        <p className="map-card-pnum" style={{ fontSize: '13px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
-                        <p className="map-card-title" style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
-                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</p>
-                        {detail && <p className="map-card-detail" style={{ fontSize: '13px', color: '#888', margin: '0 0 5px' }}>{detail}</p>}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px', marginBottom: '4px' }}>
+                          <span className="map-card-pnum" style={{ fontSize: '11px', color: '#999' }}>{p.property_number}</span>
                           {p.transaction_type && (() => {
                             const colors: Record<string, { bg: string; border: string; text: string }> = {
                               '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
-                              '전세': { bg: '#f0f4ff', border: '#4a7cdc', text: '#4a7cdc' },
-                              '매매': { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a' },
+                              '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                              '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
                             };
                             const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                             return (
-                              <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                              <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
                                 {p.transaction_type}
                               </span>
                             );
                           })()}
+                        </div>
+                        <div style={{ marginBottom: '4px' }}>
                           <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
                         </div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          {p.premium ? (
+                            <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
+                          ) : (
+                            <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>무권리</span>
+                          )}
+                          {p.maintenance_fee && p.maintenance_fee !== 0 ? (
+                            <span style={{ fontSize: '11px', color: '#888' }}>관리비 {formatPrice(p.maintenance_fee)}</span>
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#888' }}>관리비 -</span>
+                          )}
+                        </div>
+                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</p>
+                        {detail && <p className="map-card-detail" style={{ fontSize: '13px', color: '#888', margin: 0 }}>{detail}</p>}
                       </div>
                     </Link>
                   </div>
@@ -670,22 +761,39 @@ export default function MapPage() {
                       )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 2px' }}>{p.property_number}</p>
-                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</p>
-                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatAddress(p.address ?? '')}</p>
-                      {detailStr && <p style={{ fontSize: '12px', color: '#888', margin: '0 0 4px' }}>{detailStr}</p>}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '11px', color: '#999' }}>{p.property_number}</span>
                         {p.transaction_type && (() => {
                           const colors: Record<string, { bg: string; border: string; text: string }> = {
                             '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
-                            '전세': { bg: '#f0f4ff', border: '#4a7cdc', text: '#4a7cdc' },
-                            '매매': { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a' },
+                            '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                            '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
                           };
                           const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
-                          return <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px' }}>{p.transaction_type}</span>;
+                          return (
+                            <span style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
+                              {p.transaction_type}
+                            </span>
+                          );
                         })()}
+                      </div>
+                      <div style={{ marginBottom: '4px' }}>
                         <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
                       </div>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        {p.premium ? (
+                          <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
+                        ) : (
+                          <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>무권리</span>
+                        )}
+                        {p.maintenance_fee && p.maintenance_fee !== 0 ? (
+                          <span style={{ fontSize: '11px', color: '#888' }}>관리비 {formatPrice(p.maintenance_fee)}</span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: '#888' }}>관리비 -</span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatAddress(p.address ?? '')}</p>
+                      {detailStr && <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{detailStr}</p>}
                     </div>
                   </a>
                 );

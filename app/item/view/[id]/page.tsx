@@ -633,10 +633,6 @@ export default function PropertyDetailPage() {
               <>
                 <div className="detail-carousel-img" style={{ position: 'relative', height: '600px' }}>
                   <img src={images[currentImage]} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45 }}>
-                    <span style={{ color: '#e2a06e', fontSize: '18px', fontWeight: 300, letterSpacing: '6px', fontFamily: 'Georgia, "Times New Roman", serif' }}>HERMANN REALTY</span>
-                    <span style={{ color: '#e2a06e', fontSize: '10px', fontWeight: 400, letterSpacing: '3px', marginTop: '4px' }}>헤르만부동산</span>
-                  </div>
                   {/* 좌측 상단: 매물번호 */}
                   <div className="detail-pnum" style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', zIndex: 2 }}>
                     매물번호 {property.property_number ?? id}
