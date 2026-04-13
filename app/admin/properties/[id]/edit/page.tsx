@@ -35,7 +35,6 @@ export default function EditPropertyPage() {
   const [propertyId, setPropertyId] = useState<string>('');
   const [form, setForm] = useState({
     property_number: '',
-    title: '',
     transaction_type: '월세',
     property_type: '상가',
     theme_types: [] as string[],
@@ -100,7 +99,6 @@ export default function EditPropertyPage() {
       const avail = data.available_date ?? '';
       setForm({
         property_number: data.property_number ?? '',
-        title: data.title ?? '',
         transaction_type: data.transaction_type ?? '월세',
         property_type: data.property_type ?? '상가',
         theme_types: data.theme_type ? data.theme_type.split(',').filter(Boolean) : [],
@@ -225,12 +223,10 @@ export default function EditPropertyPage() {
 
   // ── 저장 (UPDATE)
   const handleSave = async () => {
-    if (!form.title.trim()) { alert('제목을 입력해주세요.'); return; }
     setSaving(true);
 
     try {
       const row: any = {
-        title: form.title,
         transaction_type: form.transaction_type,
         property_type: form.property_type,
         usage_type: form.usage_type || null,
@@ -377,10 +373,6 @@ export default function EditPropertyPage() {
             <div>
               <label style={labelSt}>매물번호</label>
               <input value={form.property_number} readOnly style={{ ...inputSt, background: '#f5f5f5', color: '#999' }} />
-            </div>
-            <div>
-              <label style={labelSt}>제목 *</label>
-              <input value={form.title} onChange={e => set('title', e.target.value)} style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>거래유형</label>

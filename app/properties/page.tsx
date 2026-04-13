@@ -108,6 +108,7 @@ export default function PropertiesPage() {
   const [allProperties, setAllProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(200);
   const [filterTx, setFilterTx] = useState(readParam('tx', '전체'));
   const [filterType, setFilterType] = useState(readParam('type', '전체'));
@@ -157,6 +158,13 @@ export default function PropertiesPage() {
   }, []);
 
   useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
     const h = document.querySelector('header') as HTMLElement;
     if (h) setHeaderHeight(h.offsetHeight);
   }, []);
@@ -166,7 +174,7 @@ export default function PropertiesPage() {
       setLoading(true);
       let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
       if (searchParam) {
-        query = query.or(`address.ilike.%${searchParam}%,title.ilike.%${searchParam}%,property_number.ilike.%${searchParam}%,property_type.ilike.%${searchParam}%,transaction_type.ilike.%${searchParam}%,theme_type.ilike.%${searchParam}%,description.ilike.%${searchParam}%`);
+        query = query.or(`address.ilike.%${searchParam}%,property_number.ilike.%${searchParam}%,property_type.ilike.%${searchParam}%,transaction_type.ilike.%${searchParam}%,theme_type.ilike.%${searchParam}%,description.ilike.%${searchParam}%`);
       }
       const { data } = await query;
 
@@ -406,25 +414,25 @@ export default function PropertiesPage() {
                     }}
                     className="prop-card-mobile border border-gray-200 overflow-hidden"
                   >
-                    <div className="prop-card-header flex justify-between items-center" style={{ padding: '8px 12px', background: '#e2a06e', color: '#fff' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{p.property_number}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginLeft: '8px' }}>{(p.title ?? '').replace(/헤르만\s*/g, '')}</span>
-                    </div>
+                    <div className="prop-card-header" style={{ padding: isMobile ? '2px 8px' : '8px 12px', background: '#e2a06e' }} />
                     <div className="prop-card-content-row">
                       <div className="prop-card-img-wrap">
-                        <div className="prop-card-img relative" style={{ height: '260px' }}>
+                        <div className="prop-card-img relative" style={{ height: '260px', position: 'relative' }}>
+                          <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(100,100,100,0.6)', color: '#fff', fontSize: isMobile ? '10px' : '12px', fontWeight: 600, padding: isMobile ? '1px 6px' : '3px 8px', borderRadius: '4px', zIndex: 2 }}>
+                            {p.property_number}
+                          </div>
                           {p.image ? (
                             <>
-                              <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                                <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.45, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                                <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.45, whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                              <img src={p.image} alt="매물 이미지" className="w-full h-full object-cover" />
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', overflow: 'hidden' }}>
+                                <span style={{ color: '#e2a06e', fontSize: isMobile ? '8px' : 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: isMobile ? '1px' : 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.45, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                                <span style={{ color: '#e2a06e', fontSize: isMobile ? '6px' : 'clamp(8px, 1.2vw, 10px)', letterSpacing: isMobile ? '0.5px' : 'clamp(1px, 0.3vw, 3px)', marginTop: isMobile ? '1px' : '4px', opacity: 0.45, whiteSpace: 'nowrap' }}>헤르만부동산</span>
                               </div>
                             </>
                           ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0' }}>
-                              <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                              <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
+                              <span style={{ color: '#e2a06e', fontSize: isMobile ? '8px' : 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: isMobile ? '1px' : 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
+                              <span style={{ color: '#e2a06e', fontSize: isMobile ? '6px' : 'clamp(8px, 1.2vw, 10px)', letterSpacing: isMobile ? '0.5px' : 'clamp(1px, 0.3vw, 3px)', marginTop: isMobile ? '1px' : '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
                             </div>
                           )}
                           {p.is_sold && (
@@ -435,32 +443,23 @@ export default function PropertiesPage() {
                         </div>
                       </div>
                       <div className="prop-card-body p-3">
-                        <div className="mb-1 md:mb-2">
-                          <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {formatAddress(p.address ?? '')}
-                          </p>
-                          <p className="prop-meta" style={{ fontSize: '13px', color: '#666' }}>
-                            {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
-                          </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                          {p.transaction_type && (() => {
+                            const colors: Record<string, { bg: string; border: string; text: string }> = {
+                              '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
+                              '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+                              '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
+                            };
+                            const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
+                            return (
+                              <span className="prop-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: isMobile ? '0px 4px' : '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
+                                {p.transaction_type}
+                              </span>
+                            );
+                          })()}
+                          <span style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                         </div>
-                        <div style={{ paddingLeft: 0, marginLeft: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {p.transaction_type && (() => {
-                              const colors: Record<string, { bg: string; border: string; text: string }> = {
-                                '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
-                                '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
-                                '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
-                              };
-                              const c = colors[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
-                              return (
-                                <span className="prop-badge" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '3px', flexShrink: 0 }}>
-                                  {p.transaction_type}
-                                </span>
-                              );
-                            })()}
-                            <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '2px', marginBottom: '2px', flexWrap: 'wrap', alignItems: 'center' }}>
                           {p.premium ? (
                             <span style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
                           ) : (
@@ -471,8 +470,13 @@ export default function PropertiesPage() {
                           ) : (
                             <span style={{ fontSize: '13px', color: '#888' }}>관리비 -</span>
                           )}
-                          </div>
                         </div>
+                        <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {formatAddress(p.address ?? '')}
+                        </p>
+                        <p className="prop-meta" style={{ fontSize: '13px', color: '#666', marginBottom: isMobile ? '0' : '4px' }}>
+                          {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
+                        </p>
                       </div>
                     </div>
                   </Link>

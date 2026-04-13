@@ -890,33 +890,26 @@ export default function PropertyDetailPage() {
                     >
                       {/* 썸네일 4:3 */}
                       <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(100,100,100,0.6)', color: '#fff', fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', zIndex: 2 }}>
+                          {p.property_number}
+                        </div>
                         {p.image ? (
                           <>
-                            <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45 }}>
+                            <img src={p.image} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
                               <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
                               <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
                             </div>
                           </>
                         ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0' }}>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
                             <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
                             <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
                           </div>
                         )}
                       </div>
                       <div style={{ padding: '10px' }}>
-                        <p style={{ fontSize: '11px', color: '#bbb', marginBottom: '2px' }}>{p.property_number}</p>
-                        <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {(p.title ?? '').replace(/헤르만\s*/g, '')}
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {formatAddressLong(p.address ?? '')}
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>
-                          {[p.property_type, p.exclusive_area ? `${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
-                        </p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
                           {p.transaction_type && (() => {
                             const colors: Record<string, { bg: string; border: string; text: string }> = {
                               '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
@@ -932,6 +925,24 @@ export default function PropertyDetailPage() {
                           })()}
                           <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                         </div>
+                        <div style={{ display: 'flex', gap: '6px', marginBottom: '2px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          {p.premium ? (
+                            <span style={{ fontSize: '12px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#e05050', fontWeight: 600 }}>무권리</span>
+                          )}
+                          {p.maintenance_fee && p.maintenance_fee !== 0 ? (
+                            <span style={{ fontSize: '12px', color: '#888' }}>관리비 {formatPrice(p.maintenance_fee)}</span>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#888' }}>관리비 -</span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {formatAddressLong(p.address ?? '')}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
+                          {[p.property_type, p.exclusive_area ? `${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
+                        </p>
                       </div>
                     </a>
                   );
@@ -984,14 +995,6 @@ export default function PropertyDetailPage() {
             >
               매물 문의하기
             </button>
-            <div className="detail-aside-actions" style={{ display: 'flex', gap: '6px' }}>
-              {[{ icon: '♡', label: '찜하기' }, { icon: '🖨', label: '인쇄' }, { icon: '📤', label: '공유' }, { icon: '🔗', label: '링크복사' }].map((btn, i) => (
-                <button key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '7px 4px', background: '#fff', cursor: 'pointer', fontSize: '13px', color: '#555' }}>
-                  <span style={{ fontSize: '15px' }}>{btn.icon}</span>
-                  {btn.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* 공인중개사 카드 */}
@@ -1026,7 +1029,7 @@ export default function PropertyDetailPage() {
               </a>
               <button
                 onClick={async () => {
-                  if (!confirm(`매물 ${property.property_number} "${property.title}"을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+                  if (!confirm(`매물 ${property.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
                   const pid = property.id;
                   // 1) 이미지 조회 + Storage 삭제
                   const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', pid);

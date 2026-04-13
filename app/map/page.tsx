@@ -342,8 +342,7 @@ export default function MapPage() {
       if (filterType && p.property_type !== filterType) return false;
       if (!matchArea(p.exclusive_area, filterArea)) return false;
       if (filterTheme !== '전체' && !(p.theme_type ?? '').split(',').includes(filterTheme)) return false;
-      if (q && !String(p.title ?? '').toLowerCase().includes(q)
-             && !String(p.address ?? '').toLowerCase().includes(q)
+      if (q && !String(p.address ?? '').toLowerCase().includes(q)
              && !String(p.property_number ?? '').toLowerCase().includes(q)) return false;
       return true;
     });
@@ -644,7 +643,6 @@ export default function MapPage() {
             ) : (
               displayList.map(p => {
                 const thumb    = p.property_images?.[0]?.image_url ?? null;
-                const title    = String(p.title ?? '').replace(/헤르만\s*/g, '');
                 const pyeong   = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const isHl     = highlightId === p.property_number;
                 const price    = buildPriceStr(p);
@@ -662,13 +660,13 @@ export default function MapPage() {
                   >
                     <Link
                       href={`/item/view/${p.property_number}`}
-                      style={{ display: 'flex', gap: '14px', padding: '16px 20px', textDecoration: 'none', color: 'inherit' }}
+                      style={{ display: 'flex', gap: isMobile ? '6px' : '14px', padding: isMobile ? '10px 4px 4px 10px' : '16px 20px', textDecoration: 'none', color: 'inherit', borderRadius: isMobile ? '8px' : '0', border: isMobile ? '1px solid #eee' : 'none', marginBottom: isMobile ? '1px' : '0' }}
                     >
                       {/* 썸네일 */}
                       <div style={{ width: '100px', height: '100px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
                         {thumb ? (
                           <>
-                            <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={thumb} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
                               <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
                               <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
@@ -689,7 +687,7 @@ export default function MapPage() {
 
                       {/* 텍스트 */}
                       <div className="map-card-text" style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px', marginBottom: isMobile ? '2px' : '4px' }}>
                           <span className="map-card-pnum" style={{ fontSize: '11px', color: '#999' }}>{p.property_number}</span>
                           {p.transaction_type && (() => {
                             const colors: Record<string, { bg: string; border: string; text: string }> = {
@@ -705,10 +703,10 @@ export default function MapPage() {
                             );
                           })()}
                         </div>
-                        <div style={{ marginBottom: '4px' }}>
+                        <div style={{ marginBottom: isMobile ? '2px' : '4px' }}>
                           <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{price}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px', marginBottom: isMobile ? '2px' : '4px', flexWrap: 'wrap' }}>
                           {p.premium ? (
                             <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(p.premium) : '협의'}</span>
                           ) : (
@@ -720,7 +718,7 @@ export default function MapPage() {
                             <span style={{ fontSize: '11px', color: '#888' }}>관리비 -</span>
                           )}
                         </div>
-                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</p>
+                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</p>
                         {detail && <p className="map-card-detail" style={{ fontSize: '13px', color: '#888', margin: 0 }}>{detail}</p>}
                       </div>
                     </Link>
@@ -776,7 +774,6 @@ export default function MapPage() {
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {displayList.map(p => {
                 const thumb = p.property_images?.[0]?.image_url ?? null;
-                const title = String(p.title ?? '').replace(/헤르만\s*/g, '');
                 const pyeong = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const price = buildPriceStr(p);
                 const floorStr = p.current_floor ? (/^\d+$/.test(String(p.current_floor)) ? `${p.current_floor}층` : p.current_floor) : null;
@@ -789,7 +786,7 @@ export default function MapPage() {
                     <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
                       {thumb ? (
                         <>
-                          <img src={thumb} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={thumb} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
                             <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
                             <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap' }}>헤르만부동산</span>

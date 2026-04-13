@@ -35,7 +35,6 @@ export default function NewPropertyPage() {
   // ── 폼 상태
   const [form, setForm] = useState({
     property_number: '',
-    title: '',
     transaction_type: '월세',
     property_type: '상가',
     theme_types: [] as string[],
@@ -235,7 +234,6 @@ export default function NewPropertyPage() {
 
   // ── 저장
   const handleSave = async () => {
-    if (!form.title.trim()) { alert('제목을 입력해주세요.'); return; }
     if (!form.address.trim()) { alert('주소를 입력해주세요.'); return; }
 
     setSaving(true);
@@ -247,7 +245,6 @@ export default function NewPropertyPage() {
       // 1) properties 테이블 INSERT
       const row: any = {
         property_number: propertyNumber,
-        title: form.title,
         transaction_type: form.transaction_type,
         property_type: form.property_type,
         usage_type: form.usage_type || null,
@@ -388,10 +385,6 @@ export default function NewPropertyPage() {
             <div>
               <label style={labelSt}>매물번호 <span style={{ fontSize: '11px', color: '#aaa', fontWeight: 400 }}>(자동생성 — 수정 가능)</span></label>
               <input value={form.property_number} onChange={e => set('property_number', e.target.value)} placeholder="자동 생성 중..." style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>제목 *</label>
-              <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="매물 제목을 입력하세요" style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>거래유형 *</label>
