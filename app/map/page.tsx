@@ -160,7 +160,7 @@ export default function MapPage() {
     e.preventDefault();
     e.stopPropagation();
     if (!drawerRef.current) return;
-    const snapPoints = [72, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.85)];
+    const snapPoints = [72, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.7)];
     const nextIndex = (snapIndex + 1) % snapPoints.length;
     setSnapIndex(nextIndex);
     drawerRef.current.style.transition = 'height 0.3s ease';
@@ -174,7 +174,7 @@ export default function MapPage() {
     const onTouch = (e: TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const snapPoints = [72, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.85)];
+      const snapPoints = [72, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.7)];
       setSnapIndex(prev => {
         const nextIndex = (prev + 1) % snapPoints.length;
         if (drawerRef.current) {
