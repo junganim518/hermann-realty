@@ -118,23 +118,27 @@ export default function MapPage() {
     if (!drawerRef.current) return;
     const startY = clientY;
     const startHeight = drawerRef.current.offsetHeight;
+
     const onMove = (e: TouchEvent | MouseEvent) => {
+      e.stopPropagation();
       e.preventDefault();
       const currentY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
       const diff = startY - currentY;
-      const newHeight = Math.min(window.innerHeight * 0.85, Math.max(60, startHeight + diff));
+      const newHeight = Math.min(window.innerHeight * 0.85, Math.max(44, startHeight + diff));
       if (drawerRef.current) drawerRef.current.style.height = newHeight + 'px';
     };
+
     const onEnd = () => {
-      window.removeEventListener('touchmove', onMove as any);
-      window.removeEventListener('touchend', onEnd);
-      window.removeEventListener('mousemove', onMove as any);
-      window.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove as any);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('mousemove', onMove as any);
+      document.removeEventListener('mouseup', onEnd);
     };
-    window.addEventListener('touchmove', onMove as any, { passive: false });
-    window.addEventListener('touchend', onEnd);
-    window.addEventListener('mousemove', onMove as any);
-    window.addEventListener('mouseup', onEnd);
+
+    document.addEventListener('touchmove', onMove as any, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('mousemove', onMove as any);
+    document.addEventListener('mouseup', onEnd);
   };
 
   // 드로어 열릴 때 body 스크롤 막기
@@ -449,9 +453,11 @@ export default function MapPage() {
             border-left: none !important;
             border-top: none !important;
           }
+          .map-panel { touch-action: none !important; }
           .map-panel .map-list-grid {
             display: block !important;
             padding: 0 !important;
+            touch-action: pan-y !important;
           }
           .map-drawer-handle { display: block !important; padding: 8px 0 !important; cursor: grab !important; background: #fff !important; border-radius: 16px 16px 0 0 !important; flex-shrink: 0 !important; touch-action: none !important; }
           .map-card-text { padding: 12px 14px !important; }
@@ -566,8 +572,9 @@ export default function MapPage() {
           {/* 모바일 드래그 핸들바 */}
           <div
             className="map-drawer-handle"
-            onTouchStart={e => handleDragStart(e.touches[0].clientY)}
-            onMouseDown={e => handleDragStart(e.clientY)}
+            style={{ padding: '8px 0', cursor: 'grab', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+            onTouchStart={e => { e.stopPropagation(); handleDragStart(e.touches[0].clientY); }}
+            onMouseDown={e => { e.stopPropagation(); handleDragStart(e.clientY); }}
           >
             <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
           </div>
