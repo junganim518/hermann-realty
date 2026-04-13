@@ -63,6 +63,31 @@ const matchArea = (exclusive_area: any, range: string) => {
 
 // ── 상수 ────────────────────────────────────────────────────
 const TX_TYPES    = ['전체', '월세', '전세', '매매'];
+const DEPOSIT_RANGES = ['전체', '1천만원 이하', '1천~3천만원', '3천~5천만원', '5천만원~1억', '1억 이상'];
+const RENT_RANGES = ['전체', '50만원 이하', '50~100만원', '100~200만원', '200만원 이상'];
+
+const matchDeposit = (deposit: any, range: string) => {
+  if (range === '전체') return true;
+  const v = Number(deposit);
+  if (isNaN(v)) return false;
+  if (range === '1천만원 이하') return v <= 1000;
+  if (range === '1천~3천만원') return v > 1000 && v <= 3000;
+  if (range === '3천~5천만원') return v > 3000 && v <= 5000;
+  if (range === '5천만원~1억') return v > 5000 && v <= 10000;
+  if (range === '1억 이상') return v > 10000;
+  return true;
+};
+
+const matchRent = (rent: any, range: string) => {
+  if (range === '전체') return true;
+  const v = Number(rent);
+  if (isNaN(v)) return false;
+  if (range === '50만원 이하') return v <= 50;
+  if (range === '50~100만원') return v > 50 && v <= 100;
+  if (range === '100~200만원') return v > 100 && v <= 200;
+  if (range === '200만원 이상') return v > 200;
+  return true;
+};
 const PROP_TYPES  = ['', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~40평', '40~50평', '50평 이상'];
 const THEME_TYPES = ['전체', '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
@@ -204,10 +229,12 @@ export default function MapPage() {
   const [filterType, setFilterType]     = useState(readParam('type', ''));
   const [filterArea, setFilterArea]     = useState(readParam('area', '전체'));
   const [filterTheme, setFilterTheme]   = useState(readParam('theme', '전체'));
+  const [filterDeposit, setFilterDeposit] = useState(readParam('deposit', '전체'));
+  const [filterRent, setFilterRent]     = useState(readParam('rent', '전체'));
 
   const syncURL = useCallback((overrides: Record<string, string> = {}) => {
     const vals: Record<string, string> = {
-      search, tx: filterTx, type: filterType, area: filterArea, theme: filterTheme,
+      search, tx: filterTx, type: filterType, area: filterArea, theme: filterTheme, deposit: filterDeposit, rent: filterRent,
       ...overrides,
     };
     const params = new URLSearchParams();
@@ -216,7 +243,7 @@ export default function MapPage() {
     });
     const qs = params.toString();
     router.replace(`/map${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [search, filterTx, filterType, filterArea, filterTheme, router]);
+  }, [search, filterTx, filterType, filterArea, filterTheme, filterDeposit, filterRent, router]);
 
   // 뒤로가기 시 URL → state 동기화
   useEffect(() => {
@@ -226,6 +253,8 @@ export default function MapPage() {
     setFilterType(readParam('type', ''));
     setFilterArea(readParam('area', '전체'));
     setFilterTheme(readParam('theme', '전체'));
+    setFilterDeposit(readParam('deposit', '전체'));
+    setFilterRent(readParam('rent', '전체'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -342,11 +371,13 @@ export default function MapPage() {
       if (filterType && p.property_type !== filterType) return false;
       if (!matchArea(p.exclusive_area, filterArea)) return false;
       if (filterTheme !== '전체' && !(p.theme_type ?? '').split(',').includes(filterTheme)) return false;
+      if (!matchDeposit(p.deposit, filterDeposit)) return false;
+      if (!matchRent(p.monthly_rent, filterRent)) return false;
       if (q && !String(p.address ?? '').toLowerCase().includes(q)
              && !String(p.property_number ?? '').toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [properties, filterTx, filterType, filterArea, filterTheme, search]);
+  }, [properties, filterTx, filterType, filterArea, filterTheme, filterDeposit, filterRent, search]);
 
   // ── 마커 + 원 업데이트
   useEffect(() => {
@@ -419,8 +450,9 @@ export default function MapPage() {
     setSearchInput(''); setSearch('');
     setFilterTx('전체'); setFilterType('');
     setFilterArea('전체'); setFilterTheme('전체');
+    setFilterDeposit('전체'); setFilterRent('전체');
     setVisibleIds(null);
-    syncURL({ search: '', tx: '전체', type: '', area: '전체', theme: '전체' });
+    syncURL({ search: '', tx: '전체', type: '', area: '전체', theme: '전체', deposit: '전체', rent: '전체' });
   };
 
   // ── 스타일 상수
@@ -458,11 +490,14 @@ export default function MapPage() {
         }
         .map-drawer-handle { display: none; }
         @media (max-width: 1199px) {
-          .map-filter-bar { padding: 10px 16px !important; }
-          .map-filter-bar select { height: 36px !important; font-size: 13px !important; padding: 0 6px !important; }
-          .map-filter-bar input { width: 200px !important; }
-          .map-filter-bar button { height: 36px !important; font-size: 13px !important; }
+          .map-filter-bar { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; flex-wrap: nowrap !important; white-space: nowrap !important; padding: 8px !important; gap: 6px !important; }
+          .map-filter-bar::-webkit-scrollbar { display: none !important; }
+          .map-filter-bar select { flex-shrink: 0 !important; height: 34px !important; font-size: 12px !important; padding: 0 6px !important; min-width: 90px !important; max-width: 110px !important; }
+          .map-filter-bar button { flex-shrink: 0 !important; height: 34px !important; font-size: 12px !important; padding: 0 10px !important; white-space: nowrap !important; }
           .map-filter-bar .map-count { font-size: 13px !important; }
+          .map-search-bar { flex-shrink: 0 !important; padding: 0 !important; }
+          .map-search-bar input { font-size: 13px !important; height: 36px !important; width: 160px !important; }
+          .map-search-bar button { height: 36px !important; font-size: 13px !important; padding: 0 12px !important; }
         }
         @media (max-width: 767px) {
           .map-filter-bar {
@@ -470,18 +505,19 @@ export default function MapPage() {
             top: 0 !important;
             z-index: 100 !important;
             background: #fff !important;
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important;
+            padding: 6px 8px !important;
             gap: 6px !important;
-            padding: 8px 10px !important;
             width: 100% !important;
             box-sizing: border-box !important;
           }
-          .map-filter-bar .map-search { grid-column: 1 / -1 !important; display: flex !important; }
-          .map-filter-bar .map-search input { flex: 1 !important; width: auto !important; height: 36px !important; font-size: 13px !important; }
-          .map-filter-bar .map-search button { height: 36px !important; font-size: 13px !important; }
-          .map-filter-bar select { width: 100% !important; height: 34px !important; font-size: 12px !important; padding: 0 4px !important; }
-          .map-filter-bar .map-reset { height: 34px !important; font-size: 12px !important; padding: 0 8px !important; }
+          .map-filter-bar::-webkit-scrollbar { display: none !important; }
+          .map-filter-bar select { flex-shrink: 0 !important; height: 32px !important; font-size: 12px !important; padding: 0 4px !important; min-width: 85px !important; max-width: 100px !important; }
+          .map-filter-bar button { flex-shrink: 0 !important; height: 32px !important; font-size: 12px !important; padding: 0 8px !important; white-space: nowrap !important; }
           .map-filter-bar .map-count { display: none !important; }
           .map-container { height: 100dvh !important; }
           .map-body { display: flex !important; flex-direction: column !important; height: 35vh !important; flex-shrink: 0 !important; }
@@ -501,23 +537,21 @@ export default function MapPage() {
         }
       ` }} />
 
-      {/* ════════════ 필터 바 ════════════ */}
-      <div className="map-filter-bar" style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: '#fff', borderBottom: '1px solid #e0e0e0',
-        padding: '14px 24px', display: 'flex', alignItems: 'center',
-        gap: '8px', flexWrap: 'wrap', flexShrink: 0,
-        boxShadow: '0 2px 6px rgba(0,0,0,0.07)',
+      {/* ════════════ 검색 바 (상단) ════════════ */}
+      <div className="map-search-bar-wrap" style={{
+        position: 'sticky', top: 0, zIndex: 101,
+        background: '#fff', borderBottom: '1px solid #f0f0f0',
+        padding: '10px 16px', display: 'flex', alignItems: 'center',
+        gap: '8px', flexShrink: 0,
       }}>
-        {/* 검색 */}
-        <div className="map-search" style={{ display: 'flex' }}>
+        <div className="map-search map-search-bar" style={{ display: 'flex', flex: 1 }}>
           <input
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && runSearch()}
             placeholder="지역, 매물종류, 키워드 검색"
             style={{
-              width: '280px', height: '40px',
+              flex: 1, minWidth: 0, height: '40px',
               border: '1px solid #ddd', borderRight: 'none',
               borderRadius: '4px 0 0 4px', padding: '0 12px',
               fontSize: '15px', outline: 'none', color: '#333',
@@ -530,7 +564,16 @@ export default function MapPage() {
             검색
           </button>
         </div>
+      </div>
 
+      {/* ════════════ 필터 바 (하단) ════════════ */}
+      <div className="map-filter-bar" style={{
+        position: 'sticky', top: 62, zIndex: 100,
+        background: '#fff', borderBottom: '1px solid #e0e0e0',
+        padding: '10px 16px', display: 'flex', alignItems: 'center',
+        gap: '8px', flexWrap: 'wrap', flexShrink: 0,
+        boxShadow: '0 2px 6px rgba(0,0,0,0.07)',
+      }}>
         {/* 거래유형 */}
         <select value={filterTx} onChange={e => { setFilterTx(e.target.value); syncURL({ tx: e.target.value }); }} style={selectSt}>
           {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
@@ -550,6 +593,16 @@ export default function MapPage() {
         {/* 테마 */}
         <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); syncURL({ theme: e.target.value }); }} style={selectSt}>
           {THEME_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '테마 전체' : t}</option>)}
+        </select>
+
+        {/* 보증금 */}
+        <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); syncURL({ deposit: e.target.value }); }} style={selectSt}>
+          {DEPOSIT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '보증금 전체' : t}</option>)}
+        </select>
+
+        {/* 월세 */}
+        <select value={filterRent} onChange={e => { setFilterRent(e.target.value); syncURL({ rent: e.target.value }); }} style={selectSt}>
+          {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
         </select>
 
         {/* 초기화 */}
