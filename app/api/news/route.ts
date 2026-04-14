@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const revalidate = 3600; // 1시간마다 갱신
+export const revalidate = 21600; // 6시간마다 갱신
 
 interface NewsItem {
   title: string;
@@ -49,7 +49,7 @@ const extractImgFromDescription = (description: string): string | null => {
 async function fetchRss(source: string, url: string): Promise<NewsItem[]> {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
-    next: { revalidate: 3600 },
+    next: { revalidate: 21600 },
   });
   if (!res.ok) throw new Error(`${source} fetch failed: ${res.status}`);
 
@@ -102,7 +102,7 @@ export async function GET() {
 
     return NextResponse.json(
       { items: unique.slice(0, 30) },
-      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' } }
+      { headers: { 'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=43200' } }
     );
   } catch (err: any) {
     return NextResponse.json({ error: err.message, items: [] }, { status: 200 });

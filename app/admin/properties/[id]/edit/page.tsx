@@ -43,7 +43,7 @@ const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<File
 
 // ── R2 업로드 ────────────────────────────────────────────────
 const uploadImageToR2 = async (file: File): Promise<string> => {
-  const compressed = await compressImage(file, 1200, 0.6);
+  const compressed = await compressImage(file, 1000, 0.5);
   const formData = new FormData();
   formData.append('file', compressed);
   formData.append('folder', 'properties');
