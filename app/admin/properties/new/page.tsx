@@ -97,7 +97,7 @@ export default function NewPropertyPage() {
     exclusive_area: '',
     current_floor: '',
     total_floor: '',
-    dong: '',
+    building_name: '',
     unit_number: '',
     usage_type: '',
     direction: '',
@@ -121,6 +121,21 @@ export default function NewPropertyPage() {
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  // ── 건축물대장 관련 상태
+  const [buildingLoading, setBuildingLoading] = useState(false);
+  const [buildingExposList, setBuildingExposList] = useState<any[]>([]);
+  const [areaLoading, setAreaLoading] = useState(false);
+  const [lastBuildingParams, setLastBuildingParams] = useState({
+    sigunguCd: '', bjdongCd: '', bun: '', ji: '0000',
+  });
+  const [selectedBldHo, setSelectedBldHo] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
+  };
 
   // ── 매물번호 자동생성 (10000부터 시작, 최대값 +1)
   useEffect(() => {
@@ -220,12 +235,138 @@ export default function NewPropertyPage() {
             const lng = result[0].x;
             setForm(prev => ({ ...prev, address: addr, latitude: lat, longitude: lng }));
             console.log('[주소] 좌표 저장 — 위도:', lat, '경도:', lng);
+
+            // 건축물대장 조회
+            const addrInfo = result[0].address;
+            if (addrInfo?.b_code && addrInfo?.main_address_no) {
+              const sigunguCd = addrInfo.b_code.slice(0, 5);
+              const bjdongCd = addrInfo.b_code.slice(5, 10);
+              const bun = String(addrInfo.main_address_no).padStart(4, '0');
+              const ji = String(addrInfo.sub_address_no || '0').padStart(4, '0');
+              fetchBuildingInfo(sigunguCd, bjdongCd, bun, ji);
+            } else {
+              console.warn('[건축물대장] 주소 코드 추출 실패:', addrInfo);
+            }
           } else {
             console.warn('[주소] Geocoder 실패:', status);
           }
         });
       },
     }).open();
+  };
+
+  // ── 건축물대장 조회 (표제부 + 전유부 전체)
+  const fetchBuildingInfo = async (sigunguCd: string, bjdongCd: string, bun: string, ji: string) => {
+    setBuildingLoading(true);
+    setBuildingExposList([]);
+    setSelectedBldHo('');
+    setLastBuildingParams({ sigunguCd, bjdongCd, bun, ji });
+    try {
+      const res = await fetch(`/api/building?sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}`);
+      const data = await res.json();
+      console.log('[건축물대장] 응답:', data);
+
+      if (data.error) {
+        console.warn('[건축물대장] 오류:', data.error);
+        showToast('건축물대장 조회 실패');
+        return;
+      }
+
+      applyBuildingTitle(data.title, data.buildingName);
+      setBuildingExposList(data.exposList || []);
+
+      if (data.title || (data.exposList && data.exposList.length > 0)) {
+        showToast('건축물대장 정보가 자동입력되었습니다');
+      } else {
+        showToast('건축물대장 정보를 찾을 수 없습니다');
+      }
+    } catch (err: any) {
+      console.error('[건축물대장] 호출 실패:', err);
+      showToast('건축물대장 조회 실패');
+    } finally {
+      setBuildingLoading(false);
+    }
+  };
+
+  // ── 표제부 정보 → 폼 반영
+  const applyBuildingTitle = (title: any, buildingName?: string) => {
+    if (!title && !buildingName) return;
+    setForm(prev => ({
+      ...prev,
+      building_name: title?.bldNm || buildingName || prev.building_name,
+      usage_type: title?.etcPurps || prev.usage_type,
+      total_floor: title?.grndFlrCnt ? String(title.grndFlrCnt) : prev.total_floor,
+      approval_date: formatYmd(title?.useAprDay) || prev.approval_date,
+      elevator: Number(title?.rideUseElvtCnt) > 0 ? true : prev.elevator,
+    }));
+  };
+
+  // ── 전유부 정보 → 폼 반영 (area 필드가 없어 면적은 수동 입력)
+  const applyBuildingExpos = (expos: any) => {
+    if (!expos) return;
+    setForm(prev => ({
+      ...prev,
+      unit_number: expos.hoNm || prev.unit_number,
+      current_floor: expos.flrNo ? String(expos.flrNo) : prev.current_floor,
+    }));
+  };
+
+  // YYYYMMDD → YYYY-MM-DD
+  const formatYmd = (ymd: any): string => {
+    if (!ymd) return '';
+    const s = String(ymd);
+    if (s.length === 8) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+    return s;
+  };
+
+  // ── 호수 선택 시 전유공용면적 조회
+  const fetchAreaInfo = async (hoNm: string) => {
+    if (!lastBuildingParams.sigunguCd) return;
+    const params = new URLSearchParams({
+      sigunguCd: lastBuildingParams.sigunguCd,
+      bjdongCd: lastBuildingParams.bjdongCd,
+      bun: lastBuildingParams.bun,
+      ji: lastBuildingParams.ji,
+      ho: hoNm,
+    });
+    setAreaLoading(true);
+    try {
+      const res = await fetch(`/api/building?${params}`);
+      const data = await res.json();
+      console.log('[면적 응답]', data.areaItems);
+      if (data.areaItems && data.areaItems.length > 0) {
+        const 전유 = data.areaItems.find((item: any) => item.exposPubuseGbCdNm === '전유');
+        const 공용들 = data.areaItems.filter((item: any) => item.exposPubuseGbCdNm === '공용');
+        const 공용합계 = 공용들.reduce((sum: number, item: any) => sum + (Number(item.area) || 0), 0);
+
+        const 전용면적 = Number(전유?.area) || 0;
+        const 공급면적 = 전용면적 + 공용합계;
+
+        console.log('[면적 계산] 전용:', 전용면적, '공용합계:', 공용합계, '공급:', 공급면적);
+
+        setForm(prev => ({
+          ...prev,
+          exclusive_area: 전용면적 ? String(전용면적) : prev.exclusive_area,
+          supply_area: 공급면적 ? String(Math.round(공급면적 * 100) / 100) : prev.supply_area,
+          usage_type: 전유?.etcPurps || 전유?.mainPurpsCdNm || prev.usage_type,
+          current_floor: 전유?.flrNo ? (전유.flrGbCdNm === '지하' ? `지하${Math.abs(전유.flrNo)}` : String(전유.flrNo)) : prev.current_floor,
+        }));
+      }
+    } catch (err) {
+      console.error('[면적 조회] 실패:', err);
+    } finally {
+      setAreaLoading(false);
+    }
+  };
+
+  // ── 건축물대장 호 선택 (display 값으로 매칭)
+  const handleBldHoChange = (display: string) => {
+    setSelectedBldHo(display);
+    const match = buildingExposList.find(e => e.display === display);
+    if (match) {
+      applyBuildingExpos(match);
+      if (match.hoNm) fetchAreaInfo(match.hoNm);
+    }
   };
 
   // ── 이미지 추가 공통 로직
@@ -309,7 +450,7 @@ export default function NewPropertyPage() {
         exclusive_area: form.exclusive_area || null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
-        dong: form.dong || null,
+        building_name: form.building_name || null,
         unit_number: form.unit_number || null,
         direction: form.direction || null,
         parking: form.parking,
@@ -390,6 +531,17 @@ export default function NewPropertyPage() {
   // ── 렌더
   return (
     <main className="admin-page" style={{ background: '#f5f5f5', minHeight: '100vh', padding: '24px' }}>
+
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#333', color: '#fff', padding: '12px 24px', borderRadius: '8px',
+          fontSize: '14px', fontWeight: 500, boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          zIndex: 9999,
+        }}>
+          {toastMsg}
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 1199px) {
@@ -475,6 +627,42 @@ export default function NewPropertyPage() {
               </button>
             </div>
           </div>
+
+          {/* 건축물대장 건물명/호 입력 (항상 표시, API 응답 있으면 호수 드롭다운) */}
+          <div style={{ marginBottom: '12px', padding: '12px', background: '#fff6ef', border: '1px solid #f0d4b8', borderRadius: '6px' }}>
+            <div style={{ fontSize: '12px', color: '#8a5a2a', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🏢 건물명/호 정보
+              {buildingLoading && <span style={{ color: '#e2a06e', fontWeight: 500 }}>· 건축물대장 조회 중...</span>}
+              {!buildingLoading && buildingExposList.length > 0 && (
+                <span style={{ color: '#888', fontWeight: 500 }}>· {buildingExposList.length}개 호실 조회됨</span>
+              )}
+            </div>
+            <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ ...labelSt, fontSize: '12px' }}>건물명</label>
+                <input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} disabled={buildingLoading} />
+              </div>
+              <div>
+                <label style={{ ...labelSt, fontSize: '12px' }}>호수</label>
+                {buildingExposList.length > 0 ? (
+                  <select value={selectedBldHo} onChange={e => handleBldHoChange(e.target.value)} style={selectSt}>
+                    <option value="">선택</option>
+                    {buildingExposList.map((e, idx) => (
+                      <option key={`${e.display}-${idx}`} value={e.display}>{e.display || '(호 없음)'}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="예: 101동 712호" style={inputSt} disabled={buildingLoading} />
+                )}
+                {areaLoading && (
+                  <p style={{ fontSize: '13px', color: '#e2a06e', marginTop: '6px' }}>
+                    면적 정보 불러오는 중...
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>위도</label>
@@ -529,14 +717,6 @@ export default function NewPropertyPage() {
             <div>
               <label style={labelSt}>전체층</label>
               <input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} placeholder="예: 15" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>동</label>
-              <input value={form.dong} onChange={e => set('dong', e.target.value)} placeholder="예: 101" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>호수</label>
-              <input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="예: 712" style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>용도</label>

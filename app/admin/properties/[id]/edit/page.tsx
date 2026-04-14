@@ -112,7 +112,7 @@ export default function EditPropertyPage() {
     exclusive_area: '',
     current_floor: '',
     total_floor: '',
-    dong: '',
+    building_name: '',
     unit_number: '',
     usage_type: '',
     direction: '',
@@ -177,7 +177,7 @@ export default function EditPropertyPage() {
         exclusive_area: data.exclusive_area ?? '',
         current_floor: data.current_floor ?? '',
         total_floor: data.total_floor ?? '',
-        dong: data.dong ?? '',
+        building_name: data.building_name ?? '',
         unit_number: data.unit_number ?? '',
         usage_type: data.usage_type ?? '',
         direction: data.direction ?? '',
@@ -306,7 +306,7 @@ export default function EditPropertyPage() {
         exclusive_area: form.exclusive_area || null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
-        dong: form.dong || null,
+        building_name: form.building_name || null,
         unit_number: form.unit_number || null,
         direction: form.direction || null,
         parking: form.parking,
@@ -511,7 +511,7 @@ export default function EditPropertyPage() {
             <div><label style={labelSt}>전용면적 (㎡)</label><input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
-            <div><label style={labelSt}>동</label><input value={form.dong} onChange={e => set('dong', e.target.value)} placeholder="예: 101" style={inputSt} /></div>
+            <div><label style={labelSt}>건물명</label><input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} /></div>
             <div><label style={labelSt}>호수</label><input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>용도</label><input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} style={inputSt} /></div>
             <div>

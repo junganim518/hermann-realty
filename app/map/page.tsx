@@ -10,6 +10,9 @@ declare global {
 }
 
 // ── 유틸 ────────────────────────────────────────────────────
+const normalizeAddr = (addr: string) =>
+  addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
+
 const formatAddress = (addr: string) => {
   if (!addr) return '';
   const normalized = addr.replace(/^경기\s/, '경기도 ');
@@ -18,12 +21,6 @@ const formatAddress = (addr: string) => {
   const dongMatch = normalized.match(/^(.*?[가-힣]+동)/);
   if (dongMatch) return dongMatch[1];
   return normalized;
-};
-
-const extractBunji = (address: string) => {
-  if (!address) return '';
-  const match = address.match(/(\d+(?:-\d+)?)\s*(?:번지)?(?:\s|$)/);
-  return match ? match[1] : '';
 };
 
 const formatPrice = (v: number) => {
@@ -739,7 +736,7 @@ export default function MapPage() {
                 const pyeong   = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const isHl     = highlightId === p.property_number;
                 const price    = buildPriceStr(p);
-                const addr     = formatAddress(p.address ?? '');
+                const addr     = isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '');
                 const detail   = [
                   p.exclusive_area ? `전용 ${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null,
                   p.current_floor  ? (/^\d+$/.test(String(p.current_floor)) ? `${p.current_floor}층` : p.current_floor) : null,
@@ -813,9 +810,9 @@ export default function MapPage() {
                         </div>
                         <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {addr}
-                          {isAdmin && (extractBunji(p.address) || p.dong || p.unit_number) && (
+                          {isAdmin && (p.building_name || p.unit_number) && (
                             <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
-                              {[extractBunji(p.address), p.dong ? `${p.dong}동` : null, p.unit_number ? `${p.unit_number}호` : null].filter(Boolean).join(' ')}
+                              {[p.building_name, p.unit_number].filter(Boolean).join(' ')}
                             </span>
                           )}
                         </p>
@@ -932,10 +929,10 @@ export default function MapPage() {
                         )}
                       </div>
                       <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {formatAddress(p.address ?? '')}
-                        {isAdmin && (extractBunji(p.address) || p.dong || p.unit_number) && (
+                        {isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '')}
+                        {isAdmin && (p.building_name || p.unit_number) && (
                           <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
-                            {[extractBunji(p.address), p.dong ? `${p.dong}동` : null, p.unit_number ? `${p.unit_number}호` : null].filter(Boolean).join(' ')}
+                            {[p.building_name, p.unit_number].filter(Boolean).join(' ')}
                           </span>
                         )}
                       </p>

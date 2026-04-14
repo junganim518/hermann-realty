@@ -77,12 +77,6 @@ const formatAddressLong = (address: string) => {
   return [line1, line2].filter(Boolean).join(' ');
 };
 
-const extractBunji = (address: string) => {
-  if (!address) return '';
-  const match = address.match(/(\d+(?:-\d+)?)\s*(?:번지)?(?:\s|$)/);
-  return match ? match[1] : '';
-};
-
 /* ── 금액 포맷 함수 ── */
 const formatPrice = (v: number) => {
   if (!v) return '-';
@@ -124,7 +118,7 @@ interface Property {
   property_number?: string;
   title?: string;
   address?: string;
-  dong?: string;
+  building_name?: string;
   unit_number?: string;
   transaction_type?: string;
   property_type?: string;
@@ -170,7 +164,8 @@ export default function PropertyDetailPage() {
 
   const [currentImage, setCurrentImage] = useState(0);
   const [activeTab, setActiveTab] = useState('section-info');
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(144);
+  const [isMobile, setIsMobile] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
@@ -180,8 +175,28 @@ export default function PropertyDetailPage() {
   const [nearbySubway, setNearbySubway] = useState<any[]>([]);
 
   useEffect(() => {
-    const header = document.querySelector('header') as HTMLElement;
-    if (header) setHeaderHeight(header.offsetHeight);
+    const measure = () => {
+      const header = document.querySelector('header') as HTMLElement;
+      if (header) {
+        const h = header.offsetHeight;
+        setHeaderHeight(h);
+        console.log('[상세페이지] headerHeight:', h);
+      } else {
+        console.warn('[상세페이지] <header> 요소를 찾을 수 없습니다');
+      }
+    };
+    measure();
+    // 로고 이미지/폰트 로드 후 재측정
+    const t = setTimeout(measure, 300);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', measure);
+    window.addEventListener('resize', checkMobile);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   // 스크롤 감지 → 위로이동 버튼
@@ -474,28 +489,45 @@ export default function PropertyDetailPage() {
   }
 
   return (
-    <main style={{ background: '#f5f5f5', minHeight: '100vh', overflowX: 'hidden' }}>
+    <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .detail-carousel-thumbs::-webkit-scrollbar { display: none; }
 
+        /* ── PC 기본 ── */
+        .tab-bar { top: 144px; }
+        .detail-body { padding-top: 50px; }
+
+        /* ── 매물정보 테이블 (PC/태블릿) 컬럼 너비 고정 ── */
+        @media (min-width: 768px) {
+          .detail-info-table { table-layout: fixed !important; width: 100% !important; }
+          .detail-info-table td:nth-child(1),
+          .detail-info-table td:nth-child(3) { width: 15% !important; }
+          .detail-info-table td:nth-child(2),
+          .detail-info-table td:nth-child(4) { width: 35% !important; }
+        }
+
         /* ── 태블릿 (768px ~ 1199px) ── */
         @media (min-width: 768px) and (max-width: 1199px) {
+          .tab-bar { top: 124px !important; }
           .detail-tab-inner { padding: 0 24px !important; }
-          .detail-tab-inner .detail-tab-btns button { font-size: 14px !important; padding: 10px 12px !important; }
+          .detail-tab-inner .detail-tab-btns button { font-size: 15px !important; padding: 10px 12px !important; }
           .detail-tab-inner .detail-tab-utils { display: none !important; }
-          .detail-body { padding: 16px 24px 0 !important; gap: 16px !important; }
+          .detail-body { padding: 50px 24px 0 !important; gap: 16px !important; padding-top: 50px !important; }
           .detail-aside { width: 280px !important; }
-          .detail-carousel-img { height: 380px !important; }
+          .detail-carousel-img { height: 500px !important; }
+          .detail-carousel-thumb { height: 80px !important; }
           .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
           .detail-map-container { height: 300px !important; }
-          .detail-section { padding: 12px !important; }
+          .detail-section { padding: 12px !important; font-size: 15px !important; }
+          .detail-subway-item { font-size: 15px !important; }
+          .detail-similar .prop-card-body p { font-size: 14px !important; }
           .detail-info-table { border-collapse: collapse !important; width: 100% !important; table-layout: fixed !important; }
           .detail-info-table tbody { display: table-row-group !important; flex-direction: unset !important; }
           .detail-info-table tr { display: table-row !important; }
-          .detail-info-table td { display: table-cell !important; justify-content: unset !important; width: auto !important; padding: 10px 12px !important; border-bottom: 1px solid #f0f0f0 !important; font-size: 13px !important; }
-          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; color: #888 !important; font-weight: 500 !important; width: 90px !important; white-space: nowrap !important; }
-          .detail-info-table td:nth-child(even) { font-weight: 700 !important; color: #333 !important; }
+          .detail-info-table td { display: table-cell !important; justify-content: unset !important; width: auto !important; padding: 12px 14px !important; border-bottom: 1px solid #f0f0f0 !important; font-size: 15px !important; }
+          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; color: #888 !important; font-weight: 500 !important; width: 90px !important; white-space: nowrap !important; font-size: 14px !important; }
+          .detail-info-table td:nth-child(even) { font-weight: 700 !important; color: #333 !important; font-size: 15px !important; }
           .detail-body { padding-bottom: 180px !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
         }
@@ -522,21 +554,20 @@ export default function PropertyDetailPage() {
 
         /* ── 모바일 (768px 미만) ── */
         @media (max-width: 767px) {
-          .tab-bar { position: sticky !important; top: 0 !important; z-index: 100 !important; }
+          .tab-bar { top: 64px !important; }
           .detail-tab-inner { padding: 0 8px !important; }
           .detail-tab-inner .detail-tab-btns { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
           .detail-tab-inner .detail-tab-btns::-webkit-scrollbar { display: none; }
           .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
-          .detail-body { padding: 0 4px 200px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
+          .detail-body { padding: 50px 4px 200px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
           .detail-main { order: 2; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
           .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
           .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
-          .detail-info-table tr { display: contents !important; }
-          .detail-info-table td { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px 12px !important; border-bottom: 1px solid #f0f0f0 !important; box-sizing: border-box !important; }
-          .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; font-size: 13px !important; color: #888 !important; }
-          .detail-info-table td:nth-child(even) { font-size: 14px !important; font-weight: 700 !important; }
+          .detail-info-table tr { display: flex !important; flex-direction: row !important; border-bottom: 1px solid #f0f0f0 !important; }
+          .detail-info-table td:nth-child(1) { width: 80px !important; min-width: 80px !important; background: #f8f8f8 !important; font-size: 12px !important; color: #888 !important; padding: 10px 12px !important; }
+          .detail-info-table td:nth-child(2) { flex: 1 !important; font-size: 13px !important; font-weight: 700 !important; padding: 10px 12px !important; }
           .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
           .detail-section { padding: 10px !important; }
           .detail-map-container { height: 250px !important; }
@@ -585,7 +616,7 @@ export default function PropertyDetailPage() {
       ` }} />
 
       {/* ── 상단 탭 바 ── */}
-      <div className="tab-bar" style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'sticky', top: headerHeight, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+      <div className="tab-bar" style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'fixed', left: 0, right: 0, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
         <div className="detail-tab-inner" style={{ width: '100%', maxWidth: '100%', padding: '0 350px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="detail-tab-btns" style={{ display: 'flex', overflowX: 'auto' }}>
             {navTabs.map((tab) => (
@@ -629,7 +660,7 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* ── 2열 본문 ── */}
-      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', padding: '20px 350px 0', display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
 
         {/* ── 좌측 본문 ── */}
         <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -692,44 +723,26 @@ export default function PropertyDetailPage() {
             {openInfo && (
               <table className="detail-info-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  {/* 1행: 주소 | 매물종류 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>주소</td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#333', fontWeight: 700 }}>
-                      {property.address ? (
+                  {(() => {
+                    const labelTd: React.CSSProperties = { width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' };
+                    const valTd: React.CSSProperties = { padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 };
+                    const rowSt: React.CSSProperties = { borderBottom: '1px solid #f0f0f0' };
+                    const addrCell = (
+                      property.address ? (
                         <>
-                          {formatAddressLong(property.address ?? '')}
-                          {isAdmin && (extractBunji(property.address ?? '') || property.dong || property.unit_number) && (
+                          {isAdmin ? normalizeAddr(property.address ?? '') : formatAddressLong(property.address ?? '')}
+                          {isAdmin && (property.building_name || property.unit_number) && (
                             <span style={{ color: '#e2a06e', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
-                              {[extractBunji(property.address ?? ''), property.dong ? `${property.dong}동` : null, property.unit_number ? `${property.unit_number}호` : null].filter(Boolean).join(' ')}
+                              {[property.building_name, property.unit_number].filter(Boolean).join(' ')}
                             </span>
                           )}
                         </>
-                      ) : '-'}
-                    </td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>매물종류</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.property_type ?? '-'}</td>
-                  </tr>
-                  {/* 2행: 거래유형 | 금액 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>거래유형</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.transaction_type ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>금액</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: '#e2a06e', fontWeight: 700 }}>
-                      {buildPriceStr(property)}
-                    </td>
-                  </tr>
-                  {/* 3행: 권리금 | 관리비 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>권리금</td>
-                    <td style={{ padding: '12px 16px', fontSize: '16px', color: property.premium ? '#333' : '#E53935', fontWeight: 700 }}>{property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>관리비</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음'}</td>
-                  </tr>
-                  {/* 4행: 면적 | 층수 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>면적</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>
+                      ) : '-'
+                    );
+                    const priceCell = buildPriceStr(property);
+                    const premiumCell = property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리';
+                    const maintCell = property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음';
+                    const areaCell = (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {property.supply_area && (
                           <span>공급 {property.supply_area}㎡ ({toPyeong(parseFloat(property.supply_area))}평)</span>
@@ -739,38 +752,92 @@ export default function PropertyDetailPage() {
                         )}
                         {!property.supply_area && !property.exclusive_area && '-'}
                       </div>
-                    </td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>층수</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>
-                      {[property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-'}
-                    </td>
-                  </tr>
-                  {/* 5행: 방향 | 입주가능일 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>방향</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.direction ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>입주가능일</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.available_date ?? '-'}</td>
-                  </tr>
-                  {/* 6행: 주차 | 엘리베이터 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>주차</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>엘리베이터</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-'}</td>
-                  </tr>
-                  {/* 7행: 용도 | 사용승인일 */}
-                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>용도</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.usage_type ?? '-'}</td>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>사용승인일</td>
-                    <td style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.approval_date ?? '-'}</td>
-                  </tr>
-                  {/* 8행: 테마종류 (전체) */}
-                  <tr>
-                    <td style={{ width: '120px', padding: '12px 16px', background: '#f8f8f8', fontSize: '13px', color: '#888', fontWeight: 500, whiteSpace: 'nowrap' }}>테마종류</td>
-                    <td colSpan={3} style={{ padding: '12px 16px', fontSize: '15px', color: '#333', fontWeight: 700 }}>{property.theme_types ?? property.theme_type ?? '-'}</td>
-                  </tr>
+                    );
+                    const floorCell = [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
+                    const parkingCell = property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-';
+                    const elevatorCell = property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-';
+
+                    if (isMobile) {
+                      return (
+                        <>
+                          <tr style={rowSt}><td style={labelTd}>주소</td><td style={{ ...valTd, fontSize: '13px' }}>{addrCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>매물종류</td><td style={valTd}>{property.property_type ?? '-'}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>거래유형</td><td style={valTd}>{property.transaction_type ?? '-'}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>금액</td><td style={{ ...valTd, fontSize: '16px', color: '#e2a06e' }}>{priceCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>권리금</td><td style={{ ...valTd, fontSize: '16px', color: property.premium ? '#333' : '#E53935' }}>{premiumCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>관리비</td><td style={valTd}>{maintCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>면적</td><td style={valTd}>{areaCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>층수</td><td style={valTd}>{floorCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>방향</td><td style={valTd}>{property.direction ?? '-'}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>입주가능일</td><td style={valTd}>{property.available_date ?? '-'}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>주차</td><td style={valTd}>{parkingCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>엘리베이터</td><td style={valTd}>{elevatorCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>용도</td><td style={valTd}>{property.usage_type ?? '-'}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>사용승인일</td><td style={valTd}>{property.approval_date ?? '-'}</td></tr>
+                          <tr><td style={labelTd}>테마종류</td><td style={valTd}>{property.theme_types ?? property.theme_type ?? '-'}</td></tr>
+                        </>
+                      );
+                    }
+
+                    return (
+                      <>
+                        {/* 1행: 주소 | 매물종류 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>주소</td>
+                          <td style={{ ...valTd, fontSize: '13px' }}>{addrCell}</td>
+                          <td style={labelTd}>매물종류</td>
+                          <td style={valTd}>{property.property_type ?? '-'}</td>
+                        </tr>
+                        {/* 2행: 거래유형 | 금액 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>거래유형</td>
+                          <td style={valTd}>{property.transaction_type ?? '-'}</td>
+                          <td style={labelTd}>금액</td>
+                          <td style={{ ...valTd, fontSize: '16px', color: '#e2a06e' }}>{priceCell}</td>
+                        </tr>
+                        {/* 3행: 권리금 | 관리비 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>권리금</td>
+                          <td style={{ ...valTd, fontSize: '16px', color: property.premium ? '#333' : '#E53935' }}>{premiumCell}</td>
+                          <td style={labelTd}>관리비</td>
+                          <td style={valTd}>{maintCell}</td>
+                        </tr>
+                        {/* 4행: 면적 | 층수 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>면적</td>
+                          <td style={valTd}>{areaCell}</td>
+                          <td style={labelTd}>층수</td>
+                          <td style={valTd}>{floorCell}</td>
+                        </tr>
+                        {/* 5행: 방향 | 입주가능일 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>방향</td>
+                          <td style={valTd}>{property.direction ?? '-'}</td>
+                          <td style={labelTd}>입주가능일</td>
+                          <td style={valTd}>{property.available_date ?? '-'}</td>
+                        </tr>
+                        {/* 6행: 주차 | 엘리베이터 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>주차</td>
+                          <td style={valTd}>{parkingCell}</td>
+                          <td style={labelTd}>엘리베이터</td>
+                          <td style={valTd}>{elevatorCell}</td>
+                        </tr>
+                        {/* 7행: 용도 | 사용승인일 */}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>용도</td>
+                          <td style={valTd}>{property.usage_type ?? '-'}</td>
+                          <td style={labelTd}>사용승인일</td>
+                          <td style={valTd}>{property.approval_date ?? '-'}</td>
+                        </tr>
+                        {/* 8행: 테마종류 */}
+                        <tr>
+                          <td style={labelTd}>테마종류</td>
+                          <td colSpan={3} style={valTd}>{property.theme_types ?? property.theme_type ?? '-'}</td>
+                        </tr>
+                      </>
+                    );
+                  })()}
                 </tbody>
               </table>
             )}
@@ -956,7 +1023,7 @@ export default function PropertyDetailPage() {
                           )}
                         </div>
                         <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {formatAddressLong(p.address ?? '')}
+                          {isAdmin ? normalizeAddr(p.address ?? '') : formatAddressLong(p.address ?? '')}
                         </p>
                         <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
                           {[p.property_type, p.exclusive_area ? `${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
@@ -1002,10 +1069,10 @@ export default function PropertyDetailPage() {
                 <p style={{ fontSize: '13px', color: '#444', marginBottom: '4px' }}>
                   📍 {property.address ? (
                     <>
-                      {formatAddressLong(property.address ?? '')}
-                      {isAdmin && (extractBunji(property.address ?? '') || property.dong || property.unit_number) && (
+                      {isAdmin ? normalizeAddr(property.address ?? '') : formatAddressLong(property.address ?? '')}
+                      {isAdmin && (property.building_name || property.unit_number) && (
                         <span style={{ color: '#e2a06e', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
-                          {[extractBunji(property.address ?? ''), property.dong ? `${property.dong}동` : null, property.unit_number ? `${property.unit_number}호` : null].filter(Boolean).join(' ')}
+                          {[property.building_name, property.unit_number].filter(Boolean).join(' ')}
                         </span>
                       )}
                     </>
