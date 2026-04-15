@@ -105,6 +105,9 @@ export default function NewPropertyPage() {
     direction: '',
     parking: false,
     elevator: false,
+    total_parking: '',
+    room_count: '',
+    bathroom_count: '',
     available_date: '',
     available_immediate: false,
     available_negotiable: false,
@@ -294,6 +297,10 @@ export default function NewPropertyPage() {
   // ── 표제부 정보 → 폼 반영
   const applyBuildingTitle = (title: any, buildingName?: string) => {
     if (!title && !buildingName) return;
+    const totalParking = (Number(title?.indrAutoUtcnt) || 0)
+      + (Number(title?.indrMechUtcnt) || 0)
+      + (Number(title?.oudrAutoUtcnt) || 0)
+      + (Number(title?.oudrMechUtcnt) || 0);
     setForm(prev => ({
       ...prev,
       building_name: title?.bldNm || buildingName || prev.building_name,
@@ -301,6 +308,7 @@ export default function NewPropertyPage() {
       total_floor: title?.grndFlrCnt ? String(title.grndFlrCnt) : prev.total_floor,
       approval_date: formatYmd(title?.useAprDay) || prev.approval_date,
       elevator: Number(title?.rideUseElvtCnt) > 0 ? true : prev.elevator,
+      total_parking: totalParking > 0 ? String(totalParking) : prev.total_parking,
     }));
   };
 
@@ -375,8 +383,8 @@ export default function NewPropertyPage() {
   // ── 이미지 추가 공통 로직
   const addImageFiles = (files: File[]) => {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
-    const remaining = 20 - images.length;
-    if (remaining <= 0) { alert('최대 20장까지 업로드 가능합니다.'); return; }
+    const remaining = 15 - images.length;
+    if (remaining <= 0) { alert('최대 15장까지 업로드 가능합니다.'); return; }
 
     const selected = imageFiles.slice(0, remaining);
     const newImages = selected.map(file => ({
@@ -460,6 +468,9 @@ export default function NewPropertyPage() {
         direction: form.direction || null,
         parking: form.parking,
         elevator: form.elevator,
+        total_parking: form.total_parking ? parseInt(form.total_parking) : null,
+        room_count: form.room_count ? parseInt(form.room_count) : null,
+        bathroom_count: form.bathroom_count ? parseInt(form.bathroom_count) : null,
         available_date: (() => {
           const parts = [
             form.available_immediate && '즉시입주',
@@ -728,6 +739,18 @@ export default function NewPropertyPage() {
               <input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} placeholder="예: 15" style={inputSt} />
             </div>
             <div>
+              <label style={labelSt}>총 주차대수 <span style={{ fontSize: '11px', color: '#888', fontWeight: 400 }}>(건축물대장 자동입력)</span></label>
+              <input value={form.total_parking} readOnly placeholder="주소 검색 시 자동입력" style={{ ...inputSt, background: '#f9f9f9' }} />
+            </div>
+            <div>
+              <label style={labelSt}>방 수</label>
+              <input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="예: 3" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>욕실 수</label>
+              <input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="예: 2" style={inputSt} />
+            </div>
+            <div>
               <label style={labelSt}>용도</label>
               <input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} placeholder="예: 근린생활시설, 업무시설" style={inputSt} />
             </div>
@@ -792,7 +815,8 @@ export default function NewPropertyPage() {
             value={form.description}
             onChange={e => set('description', e.target.value)}
             placeholder="매물 설명을 입력하세요. 줄바꿈이 그대로 적용됩니다."
-            style={{ width: '100%', minHeight: '180px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }}
+            rows={12}
+            style={{ width: '100%', minHeight: '280px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }}
           />
         </div>
 
@@ -890,7 +914,7 @@ export default function NewPropertyPage() {
 
         {/* ════════════ 이미지 업로드 ════════════ */}
         <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/20 — 드래그로 순서 변경)</span></h2>
+          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — 드래그로 순서 변경)</span></h2>
 
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
@@ -940,7 +964,7 @@ export default function NewPropertyPage() {
             ))}
 
             {/* 추가 버튼 */}
-            {images.length < 20 && (
+            {images.length < 15 && (
               <div
                 onClick={() => fileInputRef.current?.click()}
                 style={{

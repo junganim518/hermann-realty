@@ -24,7 +24,7 @@ export async function generateMetadata(
   const images = (property.property_images ?? [])
     .slice()
     .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
-  const firstImage = images[0]?.image_url;
+  const firstImage = images[0]?.image_url || 'https://hermann-realty.com/og-image.png';
 
   const headline = customTitle
     ? [customTitle, transactionType].filter(Boolean).join(' ')
@@ -40,13 +40,13 @@ export async function generateMetadata(
     openGraph: {
       title,
       description,
-      images: firstImage ? [{ url: firstImage }] : undefined,
+      images: [{ url: firstImage }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: firstImage ? [firstImage] : undefined,
+      images: [firstImage],
     },
   };
 }

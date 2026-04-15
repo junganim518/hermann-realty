@@ -120,6 +120,9 @@ export default function EditPropertyPage() {
     direction: '',
     parking: false,
     elevator: false,
+    total_parking: '',
+    room_count: '',
+    bathroom_count: '',
     available_date: '',
     available_immediate: false,
     available_negotiable: false,
@@ -187,6 +190,9 @@ export default function EditPropertyPage() {
         direction: data.direction ?? '',
         parking: data.parking === true || data.parking === '가능',
         elevator: data.elevator === true || data.elevator === '있음',
+        total_parking: data.total_parking != null ? String(data.total_parking) : '',
+        room_count: data.room_count != null ? String(data.room_count) : '',
+        bathroom_count: data.bathroom_count != null ? String(data.bathroom_count) : '',
         available_date: avail.includes('즉시') || avail.includes('협의') ? '' : avail,
         available_immediate: avail.includes('즉시'),
         available_negotiable: avail.includes('협의'),
@@ -270,8 +276,8 @@ export default function EditPropertyPage() {
   // ── 새 이미지 추가
   const addImageFiles = (files: File[]) => {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
-    const remaining = 20 - existingImages.length - newImages.length;
-    if (remaining <= 0) { alert('최대 20장까지 업로드 가능합니다.'); return; }
+    const remaining = 15 - existingImages.length - newImages.length;
+    if (remaining <= 0) { alert('최대 15장까지 업로드 가능합니다.'); return; }
     const selected = imageFiles.slice(0, remaining);
     setNewImages(prev => [...prev, ...selected.map(file => ({ file, preview: URL.createObjectURL(file) }))]);
   };
@@ -318,6 +324,9 @@ export default function EditPropertyPage() {
         direction: form.direction || null,
         parking: form.parking,
         elevator: form.elevator,
+        total_parking: form.total_parking ? parseInt(form.total_parking) : null,
+        room_count: form.room_count ? parseInt(form.room_count) : null,
+        bathroom_count: form.bathroom_count ? parseInt(form.bathroom_count) : null,
         available_date: (() => {
           const parts = [form.available_immediate && '즉시입주', form.available_negotiable && '협의가능'].filter(Boolean);
           if (parts.length > 0) return parts.join('/');
@@ -522,6 +531,9 @@ export default function EditPropertyPage() {
             <div><label style={labelSt}>전용면적 (㎡)</label><input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
+            <div><label style={labelSt}>총 주차대수</label><input value={form.total_parking} onChange={e => set('total_parking', e.target.value)} placeholder="예: 8" style={inputSt} /></div>
+            <div><label style={labelSt}>방 수</label><input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="예: 3" style={inputSt} /></div>
+            <div><label style={labelSt}>욕실 수</label><input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="예: 2" style={inputSt} /></div>
             <div><label style={labelSt}>건물명</label><input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} /></div>
             <div><label style={labelSt}>호수</label><input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>용도</label><input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} style={inputSt} /></div>
@@ -558,7 +570,7 @@ export default function EditPropertyPage() {
         {/* ════════════ 매물 설명 ════════════ */}
         <div className="admin-section" style={sectionSt}>
           <h2 className="admin-section-title" style={sectionTitle}>매물 설명</h2>
-          <textarea value={form.description} onChange={e => set('description', e.target.value)} style={{ width: '100%', minHeight: '180px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }} />
+          <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={12} style={{ width: '100%', minHeight: '280px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }} />
         </div>
 
         {/* ════════════ 관리자 메모 ════════════ */}
@@ -634,7 +646,7 @@ export default function EditPropertyPage() {
 
         {/* ════════════ 이미지 ════════════ */}
         <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>이미지 ({totalImages}/20)</h2>
+          <h2 className="admin-section-title" style={sectionTitle}>이미지 ({totalImages}/15)</h2>
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
           <div
@@ -669,7 +681,7 @@ export default function EditPropertyPage() {
               </div>
             ))}
 
-            {totalImages < 20 && (
+            {totalImages < 15 && (
               <div onClick={() => fileInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: '6px', border: '2px dashed #ddd', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#aaa', gap: '4px' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = '#e2a06e')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = '#ddd')}
