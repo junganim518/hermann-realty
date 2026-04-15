@@ -64,8 +64,12 @@ export default function Footer() {
         {/* 하단 */}
         <div className="footer-bottom" style={{ borderTop: '1px solid #444', paddingTop: '24px', textAlign: 'center' }}>
           <div className="footer-links" style={{ marginBottom: '16px' }}>
-            {['회사소개', '매물 의뢰하기', '부동산 소식', '공지사항'].map((label) => (
-              <a key={label} href="#" style={{ color: '#bbb', fontSize: '14px', textDecoration: 'none' }}
+            {[
+              { label: '매물 의뢰하기', href: '/inquiry' },
+              { label: '부동산 소식', href: '/news' },
+              { label: '회사소개', href: '/about' },
+            ].map(({ label, href }) => (
+              <a key={label} href={href} style={{ color: '#bbb', fontSize: '14px', textDecoration: 'none' }}
                 onMouseEnter={e => (e.target as HTMLElement).style.color = '#fff'}
                 onMouseLeave={e => (e.target as HTMLElement).style.color = '#bbb'}
               >

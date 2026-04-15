@@ -286,7 +286,10 @@ export default function Home() {
           .main-card-mobile .main-card-content-row { display: flex !important; flex-direction: row !important; }
           .main-card-mobile .main-card-img-wrap { width: 120px !important; min-width: 120px !important; height: 120px !important; flex-shrink: 0 !important; }
           .main-card-mobile .main-card-img { width: 100% !important; height: 120px !important; }
-          .main-card-mobile .main-card-body { flex: 1 !important; padding: 8px 10px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
+          .main-card-mobile .main-card-body { flex: 1 !important; padding: 6px 10px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; line-height: 1.45 !important; }
+          .main-card-mobile .main-card-body > div { margin-top: 1px !important; margin-bottom: 1px !important; }
+          .main-card-mobile .main-card-body > p { margin: 1px 0 !important; line-height: 1.45 !important; }
+          .main-card-mobile .main-card-body span { line-height: 1.45 !important; }
           .price-nowrap { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
           .main-layout { width: 100% !important; margin: 0 !important; padding: 0 !important; }
           .center-content { padding-left: 0 !important; padding-right: 0 !important; }
@@ -679,7 +682,7 @@ export default function Home() {
                           const c = colors[property.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                           return <span className="card-badge-text" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: isMobile ? '0px 4px' : '2px 8px', borderRadius: '3px', flexShrink: 0 }}>{property.transaction_type}</span>;
                         })()}
-                        <span className="price-nowrap card-price-text" style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(property)}</span>
+                        <span className="card-price-text" style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(property)}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginTop: '2px', marginBottom: '2px', flexWrap: 'wrap' }}>
                         {property.premium ? (
@@ -693,7 +696,7 @@ export default function Home() {
                           <span className="card-sub-text" style={{ fontSize: '13px', color: '#888' }}>관리비 -</span>
                         )}
                       </div>
-                      <p className="card-addr-text" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatAddress(property.location ?? '')}</p>
+                      <p className="card-addr-text" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', whiteSpace: 'normal' }}>{formatAddress(property.location ?? '')}</p>
                       <p className="card-meta-text" style={{ fontSize: '13px', color: '#666', marginBottom: isMobile ? '0' : '4px' }}>
                         {[property.type, property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : null, property.floor ? `${/^\d+$/.test(String(property.floor)) ? property.floor + '층' : property.floor}` : null].filter(Boolean).join(' · ')}
                       </p>
