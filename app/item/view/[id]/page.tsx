@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { isNewProperty } from '@/lib/isNewProperty';
 
 declare global {
   interface Window { kakao: any; }
@@ -149,6 +150,7 @@ interface Property {
   tenant_phone?: string;
   extra_contacts?: { name: string; phone: string; role: string }[];
   is_sold?: boolean;
+  created_at?: string;
   latitude?: number | string;
   longitude?: number | string;
   sale_price?: number;
@@ -697,7 +699,7 @@ export default function PropertyDetailPage() {
               <>
                 <div
                   className="detail-carousel-img"
-                  style={{ position: 'relative', height: '600px' }}
+                  style={{ position: 'relative', height: '600px', overflow: 'hidden' }}
                   onTouchStart={(e) => { carouselTouchX.current = e.touches[0].clientX; }}
                   onTouchEnd={(e) => {
                     if (carouselTouchX.current === null) return;
@@ -713,6 +715,13 @@ export default function PropertyDetailPage() {
                   <div className="detail-pnum" style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', zIndex: 2 }}>
                     매물번호 {property.property_number ?? id}
                   </div>
+                  {isNewProperty(property.created_at) && (
+                    <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '70px' : '140px', height: isMobile ? '70px' : '140px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+                      <div style={{ position: 'absolute', top: isMobile ? '14px' : '28px', right: isMobile ? '-22px' : '-44px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '3px 0' : '6px 0', width: isMobile ? '90px' : '180px', fontSize: isMobile ? '10px' : '18px', fontWeight: 800, letterSpacing: isMobile ? '1px' : '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
+                        NEW
+                      </div>
+                    </div>
+                  )}
                   {images.length > 1 && (
                     <>
                       <button onClick={prevImage} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', border: 'none', color: '#fff', borderRadius: '50%', width: '44px', height: '44px', fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
@@ -740,9 +749,19 @@ export default function PropertyDetailPage() {
                 )}
               </>
             ) : (
-              <div style={{ width: '100%', height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0' }}>
+              <div style={{ width: '100%', height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', position: 'relative', overflow: 'hidden' }}>
                 <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 20px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
                 <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 12px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
+                <div className="detail-pnum" style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', zIndex: 2 }}>
+                  매물번호 {property.property_number ?? id}
+                </div>
+                {isNewProperty(property.created_at) && (
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '70px' : '140px', height: isMobile ? '70px' : '140px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+                    <div style={{ position: 'absolute', top: isMobile ? '14px' : '28px', right: isMobile ? '-22px' : '-44px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '3px 0' : '6px 0', width: isMobile ? '90px' : '180px', fontSize: isMobile ? '10px' : '18px', fontWeight: 800, letterSpacing: isMobile ? '1px' : '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
+                      NEW
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {/* 거래완료 오버레이 (이미지 유무 상관없이 컨테이너 위에 표시) */}
@@ -1201,7 +1220,11 @@ export default function PropertyDetailPage() {
                   const { error } = await supabase.from('properties').delete().eq('id', pid);
                   if (error) { alert(`삭제 실패: ${error.message}`); return; }
                   alert('매물이 삭제되었습니다.');
-                  window.location.href = '/map';
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push('/properties');
+                  }
                 }}
                 style={{ flex: 1, padding: '12px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
               >

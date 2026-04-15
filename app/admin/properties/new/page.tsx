@@ -112,8 +112,6 @@ export default function NewPropertyPage() {
     available_immediate: false,
     available_negotiable: false,
     approval_date: '',
-    is_recommended: false,
-    is_new: false,
     description: '',
     admin_memo: '',
     landlord_name: '',
@@ -476,8 +474,6 @@ export default function NewPropertyPage() {
           return parts.length > 0 ? parts.join('/') : null;
         })(),
         approval_date: form.approval_date || null,
-        is_recommended: form.is_recommended,
-        is_new: form.is_new,
         description: form.description || null,
         admin_memo: form.admin_memo || null,
         landlord_name: form.landlord_name || null,
@@ -787,8 +783,6 @@ export default function NewPropertyPage() {
             {[
               { key: 'parking', label: '주차 가능' },
               { key: 'elevator', label: '엘리베이터' },
-              { key: 'is_recommended', label: '추천매물' },
-              { key: 'is_new', label: '신규매물' },
             ].map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#444' }}>
                 <input

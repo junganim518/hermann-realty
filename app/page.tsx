@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { isNewProperty } from '@/lib/isNewProperty';
 
 const formatAddress = (address: string) => {
   if (!address) return '';
@@ -144,6 +145,7 @@ export default function Home() {
               premium: p.premium ?? null,
               maintenance_fee: p.maintenance_fee ?? null,
               is_sold: p.is_sold ?? false,
+              created_at: p.created_at,
               property_number: p.property_number ?? p.id,
               image: imgs?.[0]?.image_url ?? null,
               badges: p.badges ?? [],
@@ -283,8 +285,8 @@ export default function Home() {
           .main-card-mobile .main-card-header { display: flex !important; padding: 6px 10px !important; }
           .main-card-mobile .main-card-header span { font-size: 11px !important; }
           .main-card-mobile .main-card-content-row { display: flex !important; flex-direction: row !important; }
-          .main-card-mobile .main-card-img-wrap { width: 120px !important; min-width: 120px !important; height: 120px !important; flex-shrink: 0 !important; overflow: hidden !important; }
-          .main-card-mobile .main-card-img { height: 120px !important; }
+          .main-card-mobile .main-card-img-wrap { width: 120px !important; min-width: 120px !important; height: 120px !important; flex-shrink: 0 !important; }
+          .main-card-mobile .main-card-img { width: 100% !important; height: 120px !important; }
           .main-card-mobile .main-card-body { flex: 1 !important; padding: 8px 10px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
           .price-nowrap { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
           .main-layout { width: 100% !important; margin: 0 !important; padding: 0 !important; }
@@ -646,6 +648,13 @@ export default function Home() {
                         <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(100,100,100,0.6)', color: '#fff', fontSize: isMobile ? '10px' : '12px', fontWeight: 600, padding: isMobile ? '1px 6px' : '3px 8px', borderRadius: '4px', zIndex: 2 }}>
                           {property.property_number ?? property.id}
                         </div>
+                        {isNewProperty(property.created_at) && (
+                          <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '44px' : '80px', height: isMobile ? '44px' : '80px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+                            <div style={{ position: 'absolute', top: isMobile ? '7px' : '14px', right: isMobile ? '-14px' : '-24px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '1px 0' : '3px 0', width: isMobile ? '54px' : '100px', fontSize: isMobile ? '7px' : '11px', fontWeight: 700, letterSpacing: isMobile ? '0.5px' : '1px', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}>
+                              NEW
+                            </div>
+                          </div>
+                        )}
                         {property.image ? (
                           <>
                             <img src={property.image} alt="매물 이미지" className="w-full h-full object-cover" />

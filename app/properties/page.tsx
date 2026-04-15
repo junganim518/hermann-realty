@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { isNewProperty } from '@/lib/isNewProperty';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -421,6 +422,13 @@ export default function PropertiesPage() {
                           <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(100,100,100,0.6)', color: '#fff', fontSize: isMobile ? '10px' : '12px', fontWeight: 600, padding: isMobile ? '1px 6px' : '3px 8px', borderRadius: '4px', zIndex: 2 }}>
                             {p.property_number}
                           </div>
+                          {isNewProperty(p.created_at) && (
+                            <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '44px' : '80px', height: isMobile ? '44px' : '80px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+                              <div style={{ position: 'absolute', top: isMobile ? '7px' : '14px', right: isMobile ? '-14px' : '-24px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '1px 0' : '3px 0', width: isMobile ? '54px' : '100px', fontSize: isMobile ? '7px' : '11px', fontWeight: 700, letterSpacing: isMobile ? '0.5px' : '1px', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}>
+                                NEW
+                              </div>
+                            </div>
+                          )}
                           {p.image ? (
                             <>
                               <img src={p.image} alt="매물 이미지" className="w-full h-full object-cover" />

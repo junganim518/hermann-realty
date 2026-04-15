@@ -127,8 +127,6 @@ export default function EditPropertyPage() {
     available_immediate: false,
     available_negotiable: false,
     approval_date: '',
-    is_recommended: false,
-    is_new: false,
     is_sold: false,
     description: '',
     admin_memo: '',
@@ -199,8 +197,6 @@ export default function EditPropertyPage() {
         available_immediate: availParts.includes('즉시입주'),
         available_negotiable: availParts.includes('협의가능'),
         approval_date: data.approval_date ?? '',
-        is_recommended: data.is_recommended ?? false,
-        is_new: data.is_new ?? false,
         is_sold: data.is_sold ?? false,
         description: data.description ?? '',
         admin_memo: data.admin_memo ?? '',
@@ -349,8 +345,6 @@ export default function EditPropertyPage() {
           return parts.length > 0 ? parts.join('/') : null;
         })(),
         approval_date: form.approval_date || null,
-        is_recommended: form.is_recommended,
-        is_new: form.is_new,
         is_sold: form.is_sold,
         description: form.description || null,
         admin_memo: form.admin_memo || null,
@@ -581,7 +575,7 @@ export default function EditPropertyPage() {
             <div><label style={labelSt}>사용승인일</label><input value={form.approval_date} onChange={e => set('approval_date', e.target.value)} placeholder="예: 2026.03.14" style={inputSt} /></div>
           </div>
           <div className="admin-checkbox-row" style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
-            {[{ key: 'parking', label: '주차 가능' }, { key: 'elevator', label: '엘리베이터' }, { key: 'is_recommended', label: '추천매물' }, { key: 'is_new', label: '신규매물' }].map(({ key, label }) => (
+            {[{ key: 'parking', label: '주차 가능' }, { key: 'elevator', label: '엘리베이터' }].map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#444' }}>
                 <input type="checkbox" checked={(form as any)[key]} onChange={e => set(key, e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#e2a06e' }} /> {label}
               </label>

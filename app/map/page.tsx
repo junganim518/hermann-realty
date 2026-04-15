@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { isNewProperty } from '@/lib/isNewProperty';
 
 declare global {
   interface Window { kakao: any; }
@@ -773,6 +774,13 @@ export default function MapPage() {
                             <span style={{ color: '#fff', fontSize: '12px', fontWeight: 800, letterSpacing: '1px', border: '1px solid #fff', padding: '2px 6px', borderRadius: '3px' }}>거래완료</span>
                           </div>
                         )}
+                        {isNewProperty(p.created_at) && (
+                          <div style={{ position: 'absolute', top: 0, right: 0, width: '54px', height: '54px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+                            <div style={{ position: 'absolute', top: '8px', right: '-20px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: '1px 0', width: '72px', fontSize: '9px', fontWeight: 700, letterSpacing: '0.5px', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }}>
+                              NEW
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* 텍스트 */}
@@ -893,6 +901,13 @@ export default function MapPage() {
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
                           <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap', opacity: 0.7 }}>HERMANN REALTY</span>
                           <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap', opacity: 0.5 }}>헤르만부동산</span>
+                        </div>
+                      )}
+                      {isNewProperty(p.created_at) && (
+                        <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '32px' : '54px', height: isMobile ? '32px' : '54px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
+                          <div style={{ position: 'absolute', top: isMobile ? '4px' : '8px', right: isMobile ? '-12px' : '-20px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '0' : '1px 0', width: isMobile ? '42px' : '72px', fontSize: isMobile ? '6px' : '9px', fontWeight: 700, letterSpacing: isMobile ? '0.3px' : '0.5px', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }}>
+                            NEW
+                          </div>
                         </div>
                       )}
                     </div>

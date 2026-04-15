@@ -198,8 +198,6 @@ export default function BulkUploadPage() {
           property_number: propertyNumber,
           latitude,
           longitude,
-          is_new: true,
-          is_recommended: false,
           is_sold: false,
         };
 
