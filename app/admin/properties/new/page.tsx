@@ -125,7 +125,6 @@ export default function NewPropertyPage() {
 
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const [saving, setSaving] = useState(false);
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   // ── 건축물대장 관련 상태
   const [buildingLoading, setBuildingLoading] = useState(false);
@@ -419,18 +418,15 @@ export default function NewPropertyPage() {
     });
   };
 
-  // ── 이미지 드래그 정렬
-  const handleDragStart = (idx: number) => setDragIdx(idx);
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
-  const handleDrop = (targetIdx: number) => {
-    if (dragIdx === null || dragIdx === targetIdx) return;
+  // ── 이미지 순서 이동 (버튼 방식)
+  const moveImage = (idx: number, dir: -1 | 1) => {
     setImages(prev => {
+      const target = idx + dir;
+      if (target < 0 || target >= prev.length) return prev;
       const arr = [...prev];
-      const [moved] = arr.splice(dragIdx, 1);
-      arr.splice(targetIdx, 0, moved);
+      [arr[idx], arr[target]] = [arr[target], arr[idx]];
       return arr;
     });
-    setDragIdx(null);
   };
 
   // ── 저장
@@ -473,11 +469,11 @@ export default function NewPropertyPage() {
         bathroom_count: form.bathroom_count ? parseInt(form.bathroom_count) : null,
         available_date: (() => {
           const parts = [
+            form.available_date || '',
             form.available_immediate && '즉시입주',
             form.available_negotiable && '협의가능',
           ].filter(Boolean);
-          if (parts.length > 0) return parts.join('/');
-          return form.available_date || null;
+          return parts.length > 0 ? parts.join('/') : null;
         })(),
         approval_date: form.approval_date || null,
         is_recommended: form.is_recommended,
@@ -743,12 +739,12 @@ export default function NewPropertyPage() {
               <input value={form.total_parking} readOnly placeholder="주소 검색 시 자동입력" style={{ ...inputSt, background: '#f9f9f9' }} />
             </div>
             <div>
-              <label style={labelSt}>방 수</label>
-              <input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="예: 3" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>욕실 수</label>
-              <input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="예: 2" style={inputSt} />
+              <label style={labelSt}>방수/욕실수</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="방 수" style={{ ...inputSt, flex: 1 }} />
+                <span style={{ fontSize: '16px', color: '#888' }}>/</span>
+                <input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="욕실 수" style={{ ...inputSt, flex: 1 }} />
+              </div>
             </div>
             <div>
               <label style={labelSt}>용도</label>
@@ -767,8 +763,7 @@ export default function NewPropertyPage() {
                 type="date"
                 value={form.available_date}
                 onChange={e => set('available_date', e.target.value)}
-                disabled={form.available_immediate || form.available_negotiable}
-                style={{ ...inputSt, background: (form.available_immediate || form.available_negotiable) ? '#f5f5f5' : '#fff' }}
+                style={inputSt}
               />
               <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '13px', color: '#444' }}>
@@ -914,7 +909,7 @@ export default function NewPropertyPage() {
 
         {/* ════════════ 이미지 업로드 ════════════ */}
         <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — 드래그로 순서 변경)</span></h2>
+          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — ‹ › 버튼으로 순서 변경)</span></h2>
 
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
@@ -934,15 +929,11 @@ export default function NewPropertyPage() {
           >
             {images.map((img, i) => (
               <div
-                key={i}
-                draggable
-                onDragStart={() => handleDragStart(i)}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(i)}
+                key={img.preview}
                 style={{
                   position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden',
-                  border: dragIdx === i ? '2px solid #e2a06e' : '1px solid #e0e0e0',
-                  cursor: 'grab', background: '#f0f0f0',
+                  border: '1px solid #e0e0e0',
+                  background: '#f0f0f0',
                 }}
               >
                 <img src={img.preview} alt={`이미지 ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -955,11 +946,41 @@ export default function NewPropertyPage() {
                   {i + 1}
                 </span>
                 <button
+                  type="button"
                   onClick={() => removeImage(i)}
                   style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
                 >
                   ×
                 </button>
+                {/* 순서 이동 버튼 */}
+                <div style={{ position: 'absolute', bottom: '4px', right: '4px', display: 'flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => moveImage(i, -1)}
+                    disabled={i === 0}
+                    title="왼쪽으로 이동"
+                    style={{
+                      width: '24px', height: '24px', borderRadius: '50%',
+                      background: i === 0 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
+                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
+                      cursor: i === 0 ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                    }}
+                  >‹</button>
+                  <button
+                    type="button"
+                    onClick={() => moveImage(i, 1)}
+                    disabled={i === images.length - 1}
+                    title="오른쪽으로 이동"
+                    style={{
+                      width: '24px', height: '24px', borderRadius: '50%',
+                      background: i === images.length - 1 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
+                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
+                      cursor: i === images.length - 1 ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                    }}
+                  >›</button>
+                </div>
               </div>
             ))}
 

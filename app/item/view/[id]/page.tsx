@@ -166,6 +166,9 @@ export default function PropertyDetailPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [currentImage, setCurrentImage] = useState(0);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const lightboxTouchX = useRef<number | null>(null);
+  const carouselTouchX = useRef<number | null>(null);
   const [activeTab, setActiveTab] = useState('section-info');
   const [headerHeight, setHeaderHeight] = useState(144);
   const [isMobile, setIsMobile] = useState(false);
@@ -468,6 +471,23 @@ export default function PropertyDetailPage() {
   const prevImage = () => setCurrentImage((p) => (p === 0 ? images.length - 1 : p - 1));
   const nextImage = () => setCurrentImage((p) => (p === images.length - 1 ? 0 : p + 1));
 
+  // 라이트박스: 키보드 조작 + body 스크롤 락
+  useEffect(() => {
+    if (!showLightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowLightbox(false);
+      else if (e.key === 'ArrowLeft') prevImage();
+      else if (e.key === 'ArrowRight') nextImage();
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [showLightbox]);
+
   if (loading) {
     return (
       <main style={{ background: '#f5f5f5', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -508,6 +528,7 @@ export default function PropertyDetailPage() {
           .detail-info-table td:nth-child(3) { width: 15% !important; }
           .detail-info-table td:nth-child(2),
           .detail-info-table td:nth-child(4) { width: 35% !important; }
+          .detail-info-title { font-size: 18px !important; }
         }
 
         /* ── 태블릿 (768px ~ 1199px) ── */
@@ -566,6 +587,8 @@ export default function PropertyDetailPage() {
           .detail-main { order: 2; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
+          .lightbox-watermark-main { font-size: 20px !important; letter-spacing: 4px !important; }
+          .lightbox-watermark-sub { font-size: 11px !important; letter-spacing: 2px !important; margin-top: 4px !important; }
           .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
           .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
           .detail-info-table tr { display: flex !important; flex-direction: row !important; border-bottom: 1px solid #f0f0f0 !important; }
@@ -672,8 +695,20 @@ export default function PropertyDetailPage() {
           <div style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0', position: 'relative' }}>
             {hasImages ? (
               <>
-                <div className="detail-carousel-img" style={{ position: 'relative', height: '600px' }}>
-                  <img src={images[currentImage]} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div
+                  className="detail-carousel-img"
+                  style={{ position: 'relative', height: '600px' }}
+                  onTouchStart={(e) => { carouselTouchX.current = e.touches[0].clientX; }}
+                  onTouchEnd={(e) => {
+                    if (carouselTouchX.current === null) return;
+                    const dx = e.changedTouches[0].clientX - carouselTouchX.current;
+                    carouselTouchX.current = null;
+                    if (images.length > 1 && Math.abs(dx) > 50) {
+                      dx < 0 ? nextImage() : prevImage();
+                    }
+                  }}
+                >
+                  <img src={images[currentImage]} alt="매물 이미지" onClick={() => setShowLightbox(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }} />
                   {/* 좌측 상단: 매물번호 */}
                   <div className="detail-pnum" style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(100,100,100,0.55)', color: '#fff', fontSize: '18px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', zIndex: 2 }}>
                     매물번호 {property.property_number ?? id}
@@ -724,7 +759,7 @@ export default function PropertyDetailPage() {
           <div id="section-info" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏠" title="매물 정보" open={openInfo} onToggle={() => setOpenInfo(!openInfo)} />
             {openInfo && property.title && (
-              <p style={{ color: '#e2a06e', fontSize: '15px', fontWeight: 700, margin: '4px 0 12px', lineHeight: 1.4 }}>
+              <p className="detail-info-title" style={{ color: '#e2a06e', fontSize: '15px', fontWeight: 700, margin: '4px 0 12px', lineHeight: 1.4 }}>
                 {property.title}
               </p>
             )}
@@ -762,6 +797,14 @@ export default function PropertyDetailPage() {
                       </div>
                     );
                     const floorCell = [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
+                    const roomBathroomCell = `${property.room_count != null ? property.room_count : '-'}개 / ${property.bathroom_count != null ? property.bathroom_count : '-'}개`;
+                    const parkingCountCell = `${property.total_parking != null ? property.total_parking : '-'}대`;
+                    const availableDateCell = (() => {
+                      const v = property.available_date;
+                      if (!v) return '-';
+                      const parts = v.split('/').map(s => s.trim()).filter(Boolean);
+                      return parts.length > 0 ? parts.join(' / ') : '-';
+                    })();
                     const parkingCell = property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-';
                     const elevatorCell = property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-';
 
@@ -776,17 +819,10 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>관리비</td><td style={valTd}>{maintCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>면적</td><td style={valTd}>{areaCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>층수</td><td style={valTd}>{floorCell}</td></tr>
-                          {property.total_parking != null && (
-                            <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{`${property.total_parking}대`}</td></tr>
-                          )}
-                          {property.room_count != null && (
-                            <tr style={rowSt}><td style={labelTd}>방 수</td><td style={valTd}>{`${property.room_count}개`}</td></tr>
-                          )}
-                          {property.bathroom_count != null && (
-                            <tr style={rowSt}><td style={labelTd}>욕실 수</td><td style={valTd}>{`${property.bathroom_count}개`}</td></tr>
-                          )}
+                          <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>방향</td><td style={valTd}>{property.direction ?? '-'}</td></tr>
-                          <tr style={rowSt}><td style={labelTd}>입주가능일</td><td style={valTd}>{property.available_date ?? '-'}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>입주가능일</td><td style={valTd}>{availableDateCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>주차</td><td style={valTd}>{parkingCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>엘리베이터</td><td style={valTd}>{elevatorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>용도</td><td style={valTd}>{property.usage_type ?? '-'}</td></tr>
@@ -826,26 +862,18 @@ export default function PropertyDetailPage() {
                           <td style={labelTd}>층수</td>
                           <td style={valTd}>{floorCell}</td>
                         </tr>
-                        {(property.total_parking != null || property.room_count != null) && (
-                          <tr style={rowSt}>
-                            <td style={labelTd}>총 주차대수</td>
-                            <td style={valTd}>{property.total_parking != null ? `${property.total_parking}대` : '-'}</td>
-                            <td style={labelTd}>방 수</td>
-                            <td style={valTd}>{property.room_count != null ? `${property.room_count}개` : '-'}</td>
-                          </tr>
-                        )}
-                        {property.bathroom_count != null && (
-                          <tr style={rowSt}>
-                            <td style={labelTd}>욕실 수</td>
-                            <td colSpan={3} style={valTd}>{`${property.bathroom_count}개`}</td>
-                          </tr>
-                        )}
+                        <tr style={rowSt}>
+                          <td style={labelTd}>총 주차대수</td>
+                          <td style={valTd}>{parkingCountCell}</td>
+                          <td style={labelTd}>방수/욕실수</td>
+                          <td style={valTd}>{roomBathroomCell}</td>
+                        </tr>
                         {/* 5행: 방향 | 입주가능일 */}
                         <tr style={rowSt}>
                           <td style={labelTd}>방향</td>
                           <td style={valTd}>{property.direction ?? '-'}</td>
                           <td style={labelTd}>입주가능일</td>
-                          <td style={valTd}>{property.available_date ?? '-'}</td>
+                          <td style={valTd}>{availableDateCell}</td>
                         </tr>
                         {/* 6행: 주차 | 엘리베이터 */}
                         <tr style={rowSt}>
@@ -1327,6 +1355,90 @@ export default function PropertyDetailPage() {
               </a>
             </div>
           </div>
+        </div>
+      )}
+
+
+      {/* ── 이미지 라이트박스 ── */}
+      {showLightbox && hasImages && (
+        <div
+          onClick={() => setShowLightbox(false)}
+          onTouchStart={(e) => { lightboxTouchX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            if (lightboxTouchX.current === null) return;
+            const dx = e.changedTouches[0].clientX - lightboxTouchX.current;
+            lightboxTouchX.current = null;
+            if (Math.abs(dx) > 50) { dx < 0 ? nextImage() : prevImage(); }
+          }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 10000, cursor: 'zoom-out',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: 'relative', display: 'inline-flex', maxWidth: '92vw', maxHeight: '92vh' }}
+          >
+            <img
+              src={images[currentImage]}
+              alt={`매물 이미지 ${currentImage + 1}`}
+              style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain', userSelect: 'none', cursor: 'default' }}
+            />
+            <div className="lightbox-watermark" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.55, pointerEvents: 'none' }}>
+              <span className="lightbox-watermark-main" style={{ color: '#e2a06e', fontSize: '40px', fontWeight: 300, letterSpacing: '8px', fontFamily: 'Georgia, "Times New Roman", serif' }}>HERMANN REALTY</span>
+              <span className="lightbox-watermark-sub" style={{ color: '#e2a06e', fontSize: '20px', fontWeight: 400, letterSpacing: '4px', marginTop: '8px' }}>헤르만부동산</span>
+            </div>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowLightbox(false); }}
+            aria-label="닫기"
+            style={{
+              position: 'fixed', top: '20px', right: '20px',
+              width: '44px', height: '44px', borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)', color: '#fff',
+              border: 'none', fontSize: '26px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
+            }}
+          >×</button>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                aria-label="이전 이미지"
+                style={{
+                  position: 'fixed', left: '16px', top: '50%', transform: 'translateY(-50%)',
+                  width: '50px', height: '50px', borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.15)', color: '#fff',
+                  border: 'none', fontSize: '28px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >‹</button>
+              <button
+                onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                aria-label="다음 이미지"
+                style={{
+                  position: 'fixed', right: '16px', top: '50%', transform: 'translateY(-50%)',
+                  width: '50px', height: '50px', borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.15)', color: '#fff',
+                  border: 'none', fontSize: '28px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >›</button>
+              <div style={{
+                position: 'fixed', bottom: '20px', left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(255,255,255,0.15)', color: '#fff',
+                padding: '6px 14px', borderRadius: '20px', fontSize: '14px',
+                backdropFilter: 'blur(4px)',
+              }}>
+                {currentImage + 1} / {images.length}
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -166,6 +166,8 @@ export default function EditPropertyPage() {
       setPropertyId(data.id);
 
       const avail = data.available_date ?? '';
+      const availParts = avail.split('/').map((s: string) => s.trim()).filter(Boolean);
+      const availDateOnly = availParts.find((p: string) => p !== '즉시입주' && p !== '협의가능') || '';
       setForm({
         property_number: data.property_number ?? '',
         title: data.title ?? '',
@@ -193,9 +195,9 @@ export default function EditPropertyPage() {
         total_parking: data.total_parking != null ? String(data.total_parking) : '',
         room_count: data.room_count != null ? String(data.room_count) : '',
         bathroom_count: data.bathroom_count != null ? String(data.bathroom_count) : '',
-        available_date: avail.includes('즉시') || avail.includes('협의') ? '' : avail,
-        available_immediate: avail.includes('즉시'),
-        available_negotiable: avail.includes('협의'),
+        available_date: availDateOnly,
+        available_immediate: availParts.includes('즉시입주'),
+        available_negotiable: availParts.includes('협의가능'),
         approval_date: data.approval_date ?? '',
         is_recommended: data.is_recommended ?? false,
         is_new: data.is_new ?? false,
@@ -273,6 +275,17 @@ export default function EditPropertyPage() {
     setExistingImages(prev => prev.filter(i => i.id !== img.id));
   };
 
+  // ── 기존 이미지 순서 이동 (인접 스왑, order_index는 handleSave에서 저장)
+  const moveExistingImage = (idx: number, dir: -1 | 1) => {
+    setExistingImages(prev => {
+      const target = idx + dir;
+      if (target < 0 || target >= prev.length) return prev;
+      const arr = [...prev];
+      [arr[idx], arr[target]] = [arr[target], arr[idx]];
+      return arr;
+    });
+  };
+
   // ── 새 이미지 추가
   const addImageFiles = (files: File[]) => {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
@@ -328,9 +341,12 @@ export default function EditPropertyPage() {
         room_count: form.room_count ? parseInt(form.room_count) : null,
         bathroom_count: form.bathroom_count ? parseInt(form.bathroom_count) : null,
         available_date: (() => {
-          const parts = [form.available_immediate && '즉시입주', form.available_negotiable && '협의가능'].filter(Boolean);
-          if (parts.length > 0) return parts.join('/');
-          return form.available_date || null;
+          const parts = [
+            form.available_date || '',
+            form.available_immediate && '즉시입주',
+            form.available_negotiable && '협의가능',
+          ].filter(Boolean);
+          return parts.length > 0 ? parts.join('/') : null;
         })(),
         approval_date: form.approval_date || null,
         is_recommended: form.is_recommended,
@@ -532,8 +548,14 @@ export default function EditPropertyPage() {
             <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>총 주차대수</label><input value={form.total_parking} onChange={e => set('total_parking', e.target.value)} placeholder="예: 8" style={inputSt} /></div>
-            <div><label style={labelSt}>방 수</label><input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="예: 3" style={inputSt} /></div>
-            <div><label style={labelSt}>욕실 수</label><input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="예: 2" style={inputSt} /></div>
+            <div>
+              <label style={labelSt}>방수/욕실수</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="방 수" style={{ ...inputSt, flex: 1 }} />
+                <span style={{ fontSize: '16px', color: '#888' }}>/</span>
+                <input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="욕실 수" style={{ ...inputSt, flex: 1 }} />
+              </div>
+            </div>
             <div><label style={labelSt}>건물명</label><input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} /></div>
             <div><label style={labelSt}>호수</label><input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>용도</label><input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} style={inputSt} /></div>
@@ -546,7 +568,7 @@ export default function EditPropertyPage() {
             </div>
             <div>
               <label style={labelSt}>입주가능일</label>
-              <input type="date" value={form.available_date} onChange={e => set('available_date', e.target.value)} disabled={form.available_immediate || form.available_negotiable} style={{ ...inputSt, background: (form.available_immediate || form.available_negotiable) ? '#f5f5f5' : '#fff' }} />
+              <input type="date" value={form.available_date} onChange={e => set('available_date', e.target.value)} style={inputSt} />
               <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '13px', color: '#444' }}>
                   <input type="checkbox" checked={form.available_immediate} onChange={e => set('available_immediate', e.target.checked)} style={{ accentColor: '#e2a06e' }} /> 즉시입주
@@ -667,7 +689,35 @@ export default function EditPropertyPage() {
                 <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 {i === 0 && <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#e2a06e', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>대표</span>}
                 <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>{i + 1}</span>
-                <button onClick={() => removeExistingImage(img)} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                <button type="button" onClick={() => removeExistingImage(img)} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                <div style={{ position: 'absolute', bottom: '4px', right: '4px', display: 'flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => moveExistingImage(i, -1)}
+                    disabled={i === 0}
+                    title="왼쪽으로 이동"
+                    style={{
+                      width: '24px', height: '24px', borderRadius: '50%',
+                      background: i === 0 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
+                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
+                      cursor: i === 0 ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                    }}
+                  >‹</button>
+                  <button
+                    type="button"
+                    onClick={() => moveExistingImage(i, 1)}
+                    disabled={i === existingImages.length - 1}
+                    title="오른쪽으로 이동"
+                    style={{
+                      width: '24px', height: '24px', borderRadius: '50%',
+                      background: i === existingImages.length - 1 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
+                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
+                      cursor: i === existingImages.length - 1 ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                    }}
+                  >›</button>
+                </div>
               </div>
             ))}
 
