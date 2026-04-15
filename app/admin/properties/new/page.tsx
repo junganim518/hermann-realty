@@ -87,6 +87,7 @@ export default function NewPropertyPage() {
     property_type: '상가',
     theme_types: [] as string[],
     address: '',
+    land_number: '',
     latitude: '',
     longitude: '',
     deposit: '',
@@ -219,8 +220,9 @@ export default function NewPropertyPage() {
         const addr = data.userSelectedType === 'J'
           ? (data.jibunAddress || data.autoJibunAddress)
           : (data.roadAddress || data.autoRoadAddress);
-        setForm(prev => ({ ...prev, address: addr }));
-        console.log('[주소] 선택 유형:', data.userSelectedType, '주소:', addr);
+        const jibun = data.jibunAddress || data.autoJibunAddress || '';
+        setForm(prev => ({ ...prev, address: addr, land_number: jibun }));
+        console.log('[주소] 선택 유형:', data.userSelectedType, '주소:', addr, '지번:', jibun);
 
         if (!kakaoReady) {
           console.warn('[주소] 카카오 SDK 미로드 — 좌표 변환 불가');
@@ -440,6 +442,7 @@ export default function NewPropertyPage() {
         usage_type: form.usage_type || null,
         theme_type: form.theme_types.length > 0 ? form.theme_types.join(',') : null,
         address: form.address,
+        land_number: form.land_number || null,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         deposit: form.deposit ? parseInt(form.deposit) : null,

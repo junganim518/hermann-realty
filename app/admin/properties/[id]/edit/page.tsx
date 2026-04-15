@@ -102,6 +102,7 @@ export default function EditPropertyPage() {
     property_type: '상가',
     theme_types: [] as string[],
     address: '',
+    land_number: '',
     latitude: '',
     longitude: '',
     deposit: '',
@@ -167,6 +168,7 @@ export default function EditPropertyPage() {
         property_type: data.property_type ?? '상가',
         theme_types: data.theme_type ? data.theme_type.split(',').filter(Boolean) : [],
         address: data.address ?? '',
+        land_number: data.land_number ?? '',
         latitude: data.latitude ? String(data.latitude) : '',
         longitude: data.longitude ? String(data.longitude) : '',
         deposit: data.deposit ? String(data.deposit) : '',
@@ -243,12 +245,13 @@ export default function EditPropertyPage() {
     new window.daum.Postcode({
       oncomplete: (data: any) => {
         const addr = data.userSelectedType === 'J' ? (data.jibunAddress || data.autoJibunAddress) : (data.roadAddress || data.autoRoadAddress);
-        setForm(prev => ({ ...prev, address: addr }));
+        const jibun = data.jibunAddress || data.autoJibunAddress || '';
+        setForm(prev => ({ ...prev, address: addr, land_number: jibun }));
         if (!kakaoReady) return;
         const geocoder = new window.kakao.maps.services.Geocoder();
         geocoder.addressSearch(addr, (result: any, status: any) => {
           if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
-            setForm(prev => ({ ...prev, address: addr, latitude: result[0].y, longitude: result[0].x }));
+            setForm(prev => ({ ...prev, address: addr, land_number: jibun, latitude: result[0].y, longitude: result[0].x }));
           }
         });
       },
@@ -296,6 +299,7 @@ export default function EditPropertyPage() {
         usage_type: form.usage_type || null,
         theme_type: form.theme_types.length > 0 ? form.theme_types.join(',') : null,
         address: form.address,
+        land_number: form.land_number || null,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         deposit: form.deposit ? parseInt(form.deposit) : null,

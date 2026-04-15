@@ -5,8 +5,34 @@ import ConditionalFooter from '@/components/ConditionalFooter';
 import ScrollToTop from '@/components/ScrollToTop';
 
 export const metadata: Metadata = {
-  title: 'Hermann Realty',
-  description: '헤르만부동산 - 안전하고 신뢰할 수 있는 부동산 서비스',
+  metadataBase: new URL('https://hermann-realty.com'),
+  title: {
+    default: '헤르만부동산',
+    template: '%s | 헤르만부동산',
+  },
+  description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    url: 'https://hermann-realty.com',
+    siteName: '헤르만부동산',
+    title: '헤르만부동산',
+    description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: '헤르만부동산',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '헤르만부동산',
+    description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
+    images: ['/og-image.png'],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
