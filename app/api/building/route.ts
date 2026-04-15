@@ -24,25 +24,24 @@ export async function GET(req: NextRequest) {
   const firstExposUrl = exposBaseUrl + '&numOfRows=100&pageNo=1';
 
   try {
-    const titleRes = await fetch(titleUrl);
-    const titleData = await titleRes.json();
-
-    // 전유부 1페이지
-    const firstRes = await fetch(firstExposUrl);
-    const firstData = await firstRes.json();
+    // 표제부 + 전유부 1페이지 병렬 호출
+    const [titleRes, firstRes] = await Promise.all([fetch(titleUrl), fetch(firstExposUrl)]);
+    const [titleData, firstData] = await Promise.all([titleRes.json(), firstRes.json()]);
 
     const firstItemsRaw = firstData?.response?.body?.items?.item;
     let allItems: any[] = Array.isArray(firstItemsRaw)
       ? [...firstItemsRaw]
       : (firstItemsRaw ? [firstItemsRaw] : []);
 
-    // totalCount 확인 후 남은 페이지 순차 호출 (타임아웃 방지)
+    // totalCount 확인 후 남은 페이지 병렬 호출
     const totalCount = Number(firstData?.response?.body?.totalCount) || 0;
     if (totalCount > 100) {
       const pages = Math.ceil(totalCount / 100);
-      for (let i = 2; i <= pages; i++) {
-        const res = await fetch(exposBaseUrl + `&numOfRows=100&pageNo=${i}`);
-        const data = await res.json();
+      const pageNums = Array.from({ length: pages - 1 }, (_, i) => i + 2);
+      const results = await Promise.all(
+        pageNums.map(i => fetch(exposBaseUrl + `&numOfRows=100&pageNo=${i}`).then(r => r.json()))
+      );
+      for (const data of results) {
         const items = data?.response?.body?.items?.item;
         if (Array.isArray(items)) allItems = [...allItems, ...items];
         else if (items) allItems.push(items);
