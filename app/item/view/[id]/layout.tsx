@@ -8,7 +8,7 @@ export async function generateMetadata(
 
   const { data: property } = await supabase
     .from('properties')
-    .select('building_name, transaction_type, property_type, exclusive_area, property_images(image_url, order_index)')
+    .select('title, transaction_type, property_type, exclusive_area, property_images(image_url, order_index)')
     .eq('property_number', id)
     .single();
 
@@ -16,7 +16,7 @@ export async function generateMetadata(
     return { title: { absolute: '매물 정보 없음 | 헤르만부동산' } };
   }
 
-  const buildingName = property.building_name || '';
+  const customTitle = (property.title || '').trim();
   const transactionType = property.transaction_type || '';
   const propertyType = property.property_type || '';
   const exclusiveArea = property.exclusive_area || '';
@@ -26,8 +26,10 @@ export async function generateMetadata(
     .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
   const firstImage = images[0]?.image_url;
 
-  const titleParts = [buildingName, transactionType].filter(Boolean).join(' ');
-  const title = `${titleParts ? titleParts + ' - ' : ''}헤르만부동산`;
+  const headline = customTitle
+    ? [customTitle, transactionType].filter(Boolean).join(' ')
+    : [propertyType, transactionType].filter(Boolean).join(' ') + ' - 부천시';
+  const title = `${headline} - 헤르만부동산`;
   const description = ['부천시', propertyType, transactionType, exclusiveArea ? `${exclusiveArea}㎡` : '']
     .filter(Boolean)
     .join(' ');

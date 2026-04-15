@@ -720,6 +720,11 @@ export default function PropertyDetailPage() {
           {/* 🏠 매물 정보 */}
           <div id="section-info" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏠" title="매물 정보" open={openInfo} onToggle={() => setOpenInfo(!openInfo)} />
+            {openInfo && property.title && (
+              <p style={{ color: '#e2a06e', fontSize: '15px', fontWeight: 700, margin: '4px 0 12px', lineHeight: 1.4 }}>
+                {property.title}
+              </p>
+            )}
             {openInfo && (
               <table className="detail-info-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>

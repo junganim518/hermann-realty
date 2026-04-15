@@ -98,6 +98,7 @@ export default function EditPropertyPage() {
   const [propertyId, setPropertyId] = useState<string>('');
   const [form, setForm] = useState({
     property_number: '',
+    title: '',
     transaction_type: '월세',
     property_type: '상가',
     theme_types: [] as string[],
@@ -164,6 +165,7 @@ export default function EditPropertyPage() {
       const avail = data.available_date ?? '';
       setForm({
         property_number: data.property_number ?? '',
+        title: data.title ?? '',
         transaction_type: data.transaction_type ?? '월세',
         property_type: data.property_type ?? '상가',
         theme_types: data.theme_type ? data.theme_type.split(',').filter(Boolean) : [],
@@ -298,6 +300,7 @@ export default function EditPropertyPage() {
         property_type: form.property_type,
         usage_type: form.usage_type || null,
         theme_type: form.theme_types.length > 0 ? form.theme_types.join(',') : null,
+        title: form.title || null,
         address: form.address,
         land_number: form.land_number || null,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
@@ -483,6 +486,10 @@ export default function EditPropertyPage() {
         {/* ════════════ 위치 정보 ════════════ */}
         <div className="admin-section" style={sectionSt}>
           <h2 className="admin-section-title" style={sectionTitle}>위치 정보</h2>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={labelSt}>매물 제목</label>
+            <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="예) 역세권 1층 상가 월세, 채광 좋은 사무실 전세" style={inputSt} />
+          </div>
           <div style={{ marginBottom: '12px' }}>
             <label style={labelSt}>주소</label>
             <div style={{ display: 'flex', gap: '8px' }}>
