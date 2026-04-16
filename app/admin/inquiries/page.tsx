@@ -34,6 +34,7 @@ export default function AdminInquiriesPage() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+  const [modalInquiry, setModalInquiry] = useState<any>(null);
 
   // 로그인 체크
   useEffect(() => {
@@ -140,7 +141,11 @@ export default function AdminInquiriesPage() {
                         <td style={{ padding: '10px', color: '#666' }}>{q.property_type ?? '-'}</td>
                         <td style={{ padding: '10px', color: '#666', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={q.address ?? ''}>{q.address ?? '-'}</td>
                         <td style={{ padding: '10px', color: '#1a1a1a', fontWeight: 600, whiteSpace: 'nowrap' }}>{buildPriceStr(q)}</td>
-                        <td style={{ padding: '10px', color: '#666', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={q.message ?? ''}>{q.message ?? '-'}</td>
+                        <td style={{ padding: '10px', color: '#666', maxWidth: '280px' }}>
+                          {q.message ? (
+                            <span onClick={() => setModalInquiry(q)} style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', cursor: 'pointer', whiteSpace: 'pre-line', lineHeight: 1.5 }} title="클릭하여 전체 보기">{q.message}</span>
+                          ) : '-'}
+                        </td>
                         <td style={{ padding: '10px', whiteSpace: 'nowrap' }}>
                           <select
                             value={status}
@@ -184,7 +189,11 @@ export default function AdminInquiriesPage() {
                     {q.property_type && <p style={{ fontSize: '13px', color: '#666', margin: '2px 0' }}>매물: {q.property_type}</p>}
                     {q.address && <p style={{ fontSize: '13px', color: '#666', margin: '2px 0' }}>주소: {q.address}</p>}
                     {(q.deposit || q.monthly_rent || q.sale_price) && <p style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 600, margin: '4px 0' }}>{buildPriceStr(q)}</p>}
-                    {q.message && <p style={{ fontSize: '12px', color: '#888', margin: '6px 0 0', padding: '8px', background: '#f8f8f8', borderRadius: '4px', whiteSpace: 'pre-line' }}>{q.message}</p>}
+                    {q.message && (
+                      <div onClick={() => setModalInquiry(q)} style={{ margin: '6px 0 0', padding: '8px', background: '#f8f8f8', borderRadius: '4px', cursor: 'pointer' }}>
+                        <p style={{ fontSize: '12px', color: '#888', margin: 0, whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{q.message}</p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -192,6 +201,47 @@ export default function AdminInquiriesPage() {
           </>
         )}
       </div>
+
+      {/* 요청사항 모달 */}
+      {modalInquiry && (
+        <div onClick={() => setModalInquiry(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', maxWidth: '520px', width: '100%', maxHeight: '80vh', overflow: 'auto', position: 'relative' }}>
+            {/* 헤더 */}
+            <div style={{ padding: '20px 24px 16px', borderBottom: '2px solid #e2a06e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>의뢰 상세</h3>
+              <button onClick={() => setModalInquiry(null)} style={{ background: 'none', border: 'none', fontSize: '22px', color: '#999', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+            {/* 정보 */}
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '10px 12px', fontSize: '14px', marginBottom: '20px' }}>
+                <span style={{ color: '#888', fontWeight: 500 }}>이름</span>
+                <span style={{ color: '#1a1a1a', fontWeight: 700 }}>{modalInquiry.name}</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>연락처</span>
+                <a href={`tel:${modalInquiry.phone}`} style={{ color: '#4a7cdc', fontWeight: 600, textDecoration: 'none' }}>{modalInquiry.phone}</a>
+                <span style={{ color: '#888', fontWeight: 500 }}>의뢰유형</span>
+                <span><span style={{ background: '#fff8f2', border: '1px solid #e2a06e', color: '#e2a06e', padding: '2px 8px', borderRadius: '3px', fontSize: '12px', fontWeight: 700 }}>{modalInquiry.inquiry_type}</span></span>
+                {modalInquiry.property_type && <>
+                  <span style={{ color: '#888', fontWeight: 500 }}>매물종류</span>
+                  <span style={{ color: '#333' }}>{modalInquiry.property_type}</span>
+                </>}
+                {modalInquiry.address && <>
+                  <span style={{ color: '#888', fontWeight: 500 }}>주소</span>
+                  <span style={{ color: '#333' }}>{modalInquiry.address}</span>
+                </>}
+                {(modalInquiry.deposit || modalInquiry.monthly_rent || modalInquiry.sale_price) && <>
+                  <span style={{ color: '#888', fontWeight: 500 }}>희망조건</span>
+                  <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{buildPriceStr(modalInquiry)}</span>
+                </>}
+              </div>
+              {/* 요청사항 */}
+              <div style={{ background: '#f8f8f8', borderRadius: '8px', padding: '16px', border: '1px solid #f0f0f0' }}>
+                <p style={{ fontSize: '12px', color: '#888', fontWeight: 600, marginBottom: '8px' }}>요청사항</p>
+                <p style={{ fontSize: '14px', color: '#333', margin: 0, whiteSpace: 'pre-line', lineHeight: 1.7 }}>{modalInquiry.message || '내용 없음'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

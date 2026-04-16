@@ -3,10 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-declare global {
-  interface Window { daum: any; }
-}
-
 const INQUIRY_TYPES = [
   { id: '임대 의뢰', desc: '내 매물 임대' },
   { id: '매매 의뢰', desc: '내 매물 판매' },
@@ -23,7 +19,7 @@ export default function InquiryPage() {
   const [form, setForm] = useState({
     inquiry_type: '임대 의뢰',
     name: '', phone: '', email: '',
-    property_type: '', address: '',
+    property_type: '', transaction_type: '', address: '',
     deposit: '', monthly_rent: '', sale_price: '',
     area: '', message: '',
   });
@@ -33,26 +29,6 @@ export default function InquiryPage() {
 
   const set = (k: string, v: any) => setForm(prev => ({ ...prev, [k]: v }));
 
-  useEffect(() => {
-    if (document.getElementById('daum-postcode-script')) return;
-    const s = document.createElement('script');
-    s.id = 'daum-postcode-script';
-    s.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
-    s.async = true;
-    document.head.appendChild(s);
-  }, []);
-
-  const searchAddress = () => {
-    if (!window.daum?.Postcode) { alert('주소검색 스크립트를 불러오는 중입니다.'); return; }
-    new window.daum.Postcode({
-      oncomplete: (data: any) => {
-        const addr = data.userSelectedType === 'J'
-          ? (data.jibunAddress || data.autoJibunAddress)
-          : (data.roadAddress || data.autoRoadAddress);
-        set('address', addr);
-      },
-    }).open();
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +42,7 @@ export default function InquiryPage() {
       phone: form.phone,
       email: form.email || null,
       property_type: form.property_type || null,
+      transaction_type: form.transaction_type || null,
       address: form.address || null,
       deposit: form.deposit ? parseInt(form.deposit) : null,
       monthly_rent: form.monthly_rent ? parseInt(form.monthly_rent) : null,
@@ -184,11 +161,22 @@ export default function InquiryPage() {
             </div>
           </div>
 
-          <div style={{ marginBottom: '14px' }}>
-            <label style={labelSt}>주소</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input value={form.address} readOnly placeholder="주소를 검색하세요" style={{ ...inputSt, flex: 1, background: '#f9f9f9' }} />
-              <button type="button" onClick={searchAddress} style={{ height: '44px', padding: '0 18px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>주소 검색</button>
+          <div className="inq-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div>
+              <label style={labelSt}>매물 위치</label>
+              <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="예) 부천시 중동, 신중동역 근처 등" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>거래유형</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {['월세', '전세', '매매', '상관없음'].map(t => (
+                  <button key={t} type="button" onClick={() => set('transaction_type', t)} style={{
+                    flex: 1, height: '44px', borderRadius: '6px', fontSize: '14px', fontWeight: form.transaction_type === t ? 700 : 400, cursor: 'pointer',
+                    background: form.transaction_type === t ? '#1a1a1a' : '#fff', color: form.transaction_type === t ? '#e2a06e' : '#666',
+                    border: form.transaction_type === t ? '1px solid #1a1a1a' : '1px solid #ddd',
+                  }}>{t}</button>
+                ))}
+              </div>
             </div>
           </div>
 

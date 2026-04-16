@@ -149,8 +149,7 @@ export default function Header() {
         <div className="h-auth-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}>
           {user ? (
             <>
-              <a href="/admin/properties/new" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none' }}>매물 등록</a>
-              <a href="/admin/inquiries" style={{ background: '#fff', color: '#e2a06e', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none', border: '1px solid #e2a06e' }}>의뢰 목록</a>
+              <a href="/admin" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none' }}>관리자 페이지</a>
               <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
             </>
           ) : (
