@@ -698,7 +698,7 @@ export default function Home() {
                       </div>
                       <p className="card-addr-text" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', whiteSpace: 'normal' }}>{formatAddress(property.location ?? '')}</p>
                       <p className="card-meta-text" style={{ fontSize: '13px', color: '#666', marginBottom: isMobile ? '0' : '4px' }}>
-                        {[property.type, property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : null, property.floor ? `${/^\d+$/.test(String(property.floor)) ? property.floor + '층' : property.floor}` : null].filter(Boolean).join(' · ')}
+                        {[property.type, property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : null, property.floor ? `${String(property.floor).trim().endsWith('층') ? property.floor : property.floor + '층'}` : null].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                   </div>

@@ -190,7 +190,7 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
             )}
           </p>
           <p className="prop-meta" style={{ fontSize: '13px', color: '#666', marginBottom: isMobile ? '0' : '4px' }}>
-            {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
+            {[p.property_type, p.exclusive_area ? `전용 ${p.exclusive_area}㎡ (${toPyeong(parseFloat(p.exclusive_area))}평)` : null, p.current_floor ? `${String(p.current_floor).trim().endsWith('층') ? p.current_floor : p.current_floor + '층'}` : null].filter(Boolean).join(' · ')}
           </p>
         </div>
       </div>

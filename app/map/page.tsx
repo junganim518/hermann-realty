@@ -740,7 +740,7 @@ export default function MapPage() {
                 const addr     = isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '');
                 const detail   = [
                   p.exclusive_area ? `전용 ${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null,
-                  p.current_floor  ? (/^\d+$/.test(String(p.current_floor)) ? `${p.current_floor}층` : p.current_floor) : null,
+                  p.current_floor  ? (String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`) : null,
                 ].filter(Boolean).join(' · ');
 
                 return (
@@ -881,7 +881,7 @@ export default function MapPage() {
                 const thumb = p.property_images?.[0]?.image_url ?? null;
                 const pyeong = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const price = buildPriceStr(p);
-                const floorStr = p.current_floor ? (/^\d+$/.test(String(p.current_floor)) ? `${p.current_floor}층` : p.current_floor) : null;
+                const floorStr = p.current_floor ? (String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`) : null;
                 const detailStr = [
                   p.exclusive_area ? `전용 ${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null,
                   floorStr,

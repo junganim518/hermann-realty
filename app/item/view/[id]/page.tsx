@@ -31,17 +31,37 @@ const formatDist = (m: number) => m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${
 /* ── 평수 계산 함수 ── */
 const toPyeong = (sqm: number) => (sqm * 0.3025).toFixed(1);
 
-/* ── 호수 포맷: 숫자만이면 "호" 붙이기 ── */
+/* ── 호수 포맷: 숫자만이면 "호" 붙이기, "호"로 끝나면 유지 ── */
 const formatUnit = (v?: string) => {
   if (!v) return '';
-  return /^\d+$/.test(v.trim()) ? `${v.trim()}호` : v;
+  const s = v.trim();
+  if (s.endsWith('호') || /^\d+$/.test(s) === false) return s;
+  return `${s}호`;
 };
 
-/* ── 층수 포맷: 숫자만이면 "층" 붙이기 ── */
+/* ── 동 포맷: 숫자만이면 "동" 붙이기, "동"으로 끝나면 유지 ── */
+const formatDong = (v?: string) => {
+  if (!v) return '';
+  const s = v.trim();
+  if (s.endsWith('동')) return s;
+  if (/^\d+$/.test(s)) return `${s}동`;
+  return s;
+};
+
+/* ── 동호수 합쳐서 표시 ── */
+const formatBuildingUnit = (buildingName?: string, unitNumber?: string) => {
+  const parts = [
+    buildingName ? formatDong(buildingName) : '',
+    unitNumber ? formatUnit(unitNumber) : '',
+  ].filter(Boolean);
+  return parts.join(' ');
+};
+
+/* ── 층수 포맷: "층"으로 안 끝나면 "층" 붙이기 ── */
 const formatFloor = (v: any) => {
   if (!v) return '';
   const s = String(v).trim();
-  return /^\d+$/.test(s) ? `${s}층` : s;
+  return s.endsWith('층') ? s : `${s}층`;
 };
 
 /* ── 주소 정규화 ── */
@@ -795,7 +815,7 @@ export default function PropertyDetailPage() {
                           {isAdmin ? normalizeAddr(property.address ?? '') : formatAddressLong(property.address ?? '')}
                           {isAdmin && (property.building_name || property.unit_number) && (
                             <span style={{ color: '#e2a06e', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
-                              {[property.building_name, property.unit_number].filter(Boolean).join(' ')}
+                              {formatBuildingUnit(property.building_name, property.unit_number)}
                             </span>
                           )}
                         </>
@@ -1150,7 +1170,7 @@ export default function PropertyDetailPage() {
                       {isAdmin ? normalizeAddr(property.address ?? '') : formatAddressLong(property.address ?? '')}
                       {isAdmin && (property.building_name || property.unit_number) && (
                         <span style={{ color: '#e2a06e', fontSize: '13px', fontWeight: 600, marginLeft: '4px' }}>
-                          {[property.building_name, property.unit_number].filter(Boolean).join(' ')}
+                          {formatBuildingUnit(property.building_name, property.unit_number)}
                         </span>
                       )}
                     </>
