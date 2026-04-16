@@ -25,11 +25,12 @@ export async function generateMetadata(
   const images = (property.property_images ?? [])
     .slice()
     .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
-  const firstImage = images[0]?.image_url || 'https://hermann-realty.com/og-image.png';
+  const firstImageUrl = (images[0]?.image_url || '').trim();
+  const firstImage = firstImageUrl || 'https://hermann-realty.com/og-image.png';
 
   const headline = customTitle
-    ? [customTitle, transactionType].filter(Boolean).join(' ')
-    : [propertyType, transactionType].filter(Boolean).join(' ') + ' - 부천시';
+    ? customTitle
+    : [propertyType, transactionType].filter(Boolean).join(' ');
   const title = `${[propertyNumber, headline].filter(Boolean).join(' ')} - 헤르만부동산`;
   const description = ['부천시', propertyType, transactionType, exclusiveArea ? `${exclusiveArea}㎡` : '']
     .filter(Boolean)
