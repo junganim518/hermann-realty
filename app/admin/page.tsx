@@ -121,6 +121,7 @@ export default function AdminDashboard() {
   const [todayVisitors, setTodayVisitors] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [propImages, setPropImages] = useState<Record<string, string>>({});
+  const [unreadInquiries, setUnreadInquiries] = useState(0);
 
   // 검색 & 필터 & 페이지
   const [search, setSearch] = useState('');
@@ -178,6 +179,10 @@ export default function AdminDashboard() {
       .lte('visit_date', todayEnd.toISOString())
       .order('visit_date', { ascending: true });
     setTodayVisitors(visitors ?? []);
+
+    // 읽지 않은 의뢰 수
+    const { count } = await supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('is_read', false);
+    setUnreadInquiries(count ?? 0);
   };
 
   const toggleSold = async (id: string, currentSold: boolean) => {
@@ -297,8 +302,11 @@ export default function AdminDashboard() {
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
           ].map(link => (
-            <a key={link.href} href={link.href} style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333' }}>
+            <a key={link.href} href={link.href} style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333', position: 'relative' }}>
               {link.label}
+              {link.href === '/admin/inquiries' && unreadInquiries > 0 && (
+                <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#e05050', color: '#fff', fontSize: '10px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadInquiries}</span>
+              )}
             </a>
           ))}
         </div>

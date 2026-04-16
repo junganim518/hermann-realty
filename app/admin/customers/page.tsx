@@ -16,6 +16,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [filter, setFilter] = useState('전체');
   const [loading, setLoading] = useState(true);
+  const [modalCustomer, setModalCustomer] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -32,6 +33,12 @@ export default function CustomersPage() {
     setLoading(false);
   };
 
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from('customers').update({ status }).eq('id', id);
+    if (error) { alert(`상태 변경 실패: ${error.message}`); return; }
+    setCustomers(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+  };
+
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`"${name}" 손님 정보를 삭제하시겠습니까?`)) return;
     await supabase.from('customers').delete().eq('id', id);
@@ -45,7 +52,12 @@ export default function CustomersPage() {
   const thSt: React.CSSProperties = { padding: '12px 10px', fontSize: '13px', fontWeight: 600, color: '#888', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '2px solid #e2a06e' };
   const tdSt: React.CSSProperties = { padding: '12px 10px', fontSize: '14px', borderBottom: '1px solid #f0f0f0' };
 
-  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('ko-KR') : '-';
+  const formatDate = (d: string | null) => {
+    if (!d) return '-';
+    const dt = new Date(d);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${dt.getFullYear()}.${pad(dt.getMonth() + 1)}.${pad(dt.getDate())}`;
+  };
   const formatDateTime = (d: string | null) => {
     if (!d) return '-';
     const dt = new Date(d);
@@ -81,16 +93,17 @@ export default function CustomersPage() {
           ) : filtered.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>등록된 손님이 없습니다</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1050px' }}>
               <thead>
                 <tr>
+                  <th style={thSt}>상담날짜</th>
                   <th style={thSt}>이름</th>
                   <th style={thSt}>연락처</th>
                   <th style={thSt}>관심매물</th>
                   <th style={thSt}>예산</th>
                   <th style={thSt}>지역</th>
-                  <th style={thSt}>상담날짜</th>
                   <th style={thSt}>방문날짜</th>
+                  <th style={thSt}>메모</th>
                   <th style={thSt}>진행상태</th>
                   <th style={{ ...thSt, textAlign: 'center' }}>관리</th>
                 </tr>
@@ -98,15 +111,26 @@ export default function CustomersPage() {
               <tbody>
                 {filtered.map(c => (
                   <tr key={c.id} style={{ transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#fafafa')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                    <td style={{ ...tdSt, fontSize: '13px', whiteSpace: 'nowrap' }}>{formatDate(c.consultation_date)}</td>
                     <td style={{ ...tdSt, fontWeight: 700 }}>{c.name}</td>
                     <td style={tdSt}>{c.phone || '-'}</td>
                     <td style={tdSt}>{c.interest_type || '-'}</td>
                     <td style={tdSt}>{c.budget || '-'}</td>
                     <td style={tdSt}>{c.region || '-'}</td>
-                    <td style={{ ...tdSt, fontSize: '13px' }}>{formatDateTime(c.consultation_date)}</td>
-                    <td style={{ ...tdSt, fontSize: '13px' }}>{formatDateTime(c.visit_date)}</td>
-                    <td style={tdSt}>
-                      <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '10px', background: STATUS_COLORS[c.status] ?? '#999', color: '#fff', fontWeight: 600 }}>{c.status}</span>
+                    <td style={{ ...tdSt, fontSize: '13px', whiteSpace: 'nowrap' }}>{formatDate(c.visit_date)}</td>
+                    <td style={{ ...tdSt, maxWidth: '200px' }}>
+                      {c.memo ? (
+                        <span onClick={() => setModalCustomer(c)} style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', whiteSpace: 'pre-line', lineHeight: 1.4, fontSize: '12px', color: '#666', cursor: 'pointer' }} title="클릭하여 전체 보기">{c.memo}</span>
+                      ) : <span style={{ color: '#ccc', fontSize: '12px' }}>-</span>}
+                    </td>
+                    <td style={{ ...tdSt, whiteSpace: 'nowrap' }}>
+                      <select
+                        value={c.status}
+                        onChange={e => updateStatus(c.id, e.target.value)}
+                        style={{ padding: '4px 8px', fontSize: '12px', fontWeight: 700, borderRadius: '4px', cursor: 'pointer', border: `1px solid ${STATUS_COLORS[c.status] ?? '#999'}`, background: (STATUS_COLORS[c.status] ?? '#999') + '18', color: STATUS_COLORS[c.status] ?? '#999' }}
+                      >
+                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
                     </td>
                     <td style={{ ...tdSt, textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
@@ -121,6 +145,38 @@ export default function CustomersPage() {
           )}
         </div>
       </div>
+
+      {/* 메모 모달 */}
+      {modalCustomer && (
+        <div onClick={() => setModalCustomer(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', maxWidth: '520px', width: '100%', maxHeight: '80vh', overflow: 'auto', position: 'relative' }}>
+            <div style={{ padding: '20px 24px 16px', borderBottom: '2px solid #e2a06e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>손님 상세</h3>
+              <button onClick={() => setModalCustomer(null)} style={{ background: 'none', border: 'none', fontSize: '22px', color: '#999', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '10px 12px', fontSize: '14px', marginBottom: '20px' }}>
+                <span style={{ color: '#888', fontWeight: 500 }}>이름</span>
+                <span style={{ color: '#1a1a1a', fontWeight: 700 }}>{modalCustomer.name}</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>연락처</span>
+                <span>{modalCustomer.phone || '-'}</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>관심매물</span>
+                <span>{modalCustomer.interest_type || '-'}</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>예산</span>
+                <span>{modalCustomer.budget || '-'}</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>지역</span>
+                <span>{modalCustomer.region || '-'}</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>진행상태</span>
+                <span><span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '10px', background: STATUS_COLORS[modalCustomer.status] ?? '#999', color: '#fff', fontWeight: 600 }}>{modalCustomer.status}</span></span>
+              </div>
+              <div style={{ background: '#f8f8f8', borderRadius: '8px', padding: '16px', border: '1px solid #f0f0f0' }}>
+                <p style={{ fontSize: '12px', color: '#888', fontWeight: 600, marginBottom: '8px' }}>메모</p>
+                <p style={{ fontSize: '14px', color: '#333', margin: 0, whiteSpace: 'pre-line', lineHeight: 1.7 }}>{modalCustomer.memo || '내용 없음'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

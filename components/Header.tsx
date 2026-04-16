@@ -7,16 +7,26 @@ import { supabase } from '@/lib/supabase';
 export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) fetchUnread();
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchUnread();
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUnread = async () => {
+    const { count } = await supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('is_read', false);
+    setUnreadCount(count ?? 0);
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -149,7 +159,12 @@ export default function Header() {
         <div className="h-auth-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}>
           {user ? (
             <>
-              <a href="/admin" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none' }}>관리자 페이지</a>
+              <a href="/admin" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none', position: 'relative' }}>
+                관리자 페이지
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#e05050', color: '#fff', fontSize: '10px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>
+                )}
+              </a>
               <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
             </>
           ) : (
