@@ -3,9 +3,38 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 declare global {
   interface Window { daum: any; }
+}
+
+function SortableImageItem({ img, index, onRemove }: { img: { preview: string }; index: number; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: img.preview });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative' as const, aspectRatio: '1', borderRadius: '6px', overflow: 'hidden' as const,
+    border: '1px solid #e0e0e0', background: '#f0f0f0', cursor: 'grab',
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <img src={img.preview} alt={`이미지 ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+      {index === 0 && (
+        <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#e2a06e', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>대표</span>
+      )}
+      <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>{index + 1}</span>
+      <button
+        type="button"
+        onPointerDown={e => e.stopPropagation()}
+        onClick={onRemove}
+        style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+      >×</button>
+    </div>
+  );
 }
 
 // ── 이미지 압축 ─────────────────────────────────────────────
@@ -416,14 +445,18 @@ export default function NewPropertyPage() {
     });
   };
 
-  // ── 이미지 순서 이동 (버튼 방식)
-  const moveImage = (idx: number, dir: -1 | 1) => {
+  // ── 이미지 드래그 정렬
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
     setImages(prev => {
-      const target = idx + dir;
-      if (target < 0 || target >= prev.length) return prev;
-      const arr = [...prev];
-      [arr[idx], arr[target]] = [arr[target], arr[idx]];
-      return arr;
+      const oldIdx = prev.findIndex(img => img.preview === active.id);
+      const newIdx = prev.findIndex(img => img.preview === over.id);
+      return arrayMove(prev, oldIdx, newIdx);
     });
   };
 
@@ -903,7 +936,7 @@ export default function NewPropertyPage() {
 
         {/* ════════════ 이미지 업로드 ════════════ */}
         <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — ‹ › 버튼으로 순서 변경)</span></h2>
+          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — 드래그로 순서 변경)</span></h2>
 
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
@@ -921,62 +954,13 @@ export default function NewPropertyPage() {
               transition: 'all 0.2s',
             }}
           >
-            {images.map((img, i) => (
-              <div
-                key={img.preview}
-                style={{
-                  position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden',
-                  border: '1px solid #e0e0e0',
-                  background: '#f0f0f0',
-                }}
-              >
-                <img src={img.preview} alt={`이미지 ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {i === 0 && (
-                  <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#e2a06e', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>
-                    대표
-                  </span>
-                )}
-                <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>
-                  {i + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeImage(i)}
-                  style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-                >
-                  ×
-                </button>
-                {/* 순서 이동 버튼 */}
-                <div style={{ position: 'absolute', bottom: '4px', right: '4px', display: 'flex', gap: '4px' }}>
-                  <button
-                    type="button"
-                    onClick={() => moveImage(i, -1)}
-                    disabled={i === 0}
-                    title="왼쪽으로 이동"
-                    style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      background: i === 0 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
-                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
-                      cursor: i === 0 ? 'not-allowed' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                    }}
-                  >‹</button>
-                  <button
-                    type="button"
-                    onClick={() => moveImage(i, 1)}
-                    disabled={i === images.length - 1}
-                    title="오른쪽으로 이동"
-                    style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      background: i === images.length - 1 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
-                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
-                      cursor: i === images.length - 1 ? 'not-allowed' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                    }}
-                  >›</button>
-                </div>
-              </div>
-            ))}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={images.map(img => img.preview)} strategy={rectSortingStrategy}>
+                {images.map((img, i) => (
+                  <SortableImageItem key={img.preview} img={img} index={i} onRemove={() => removeImage(i)} />
+                ))}
+              </SortableContext>
+            </DndContext>
 
             {/* 추가 버튼 */}
             {images.length < 15 && (
