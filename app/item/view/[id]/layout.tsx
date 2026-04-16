@@ -8,7 +8,7 @@ export async function generateMetadata(
 
   const { data: property } = await supabase
     .from('properties')
-    .select('property_number, title, transaction_type, property_type, exclusive_area, property_images(image_url, order_index)')
+    .select('id, property_number, title, transaction_type, property_type, exclusive_area')
     .eq('property_number', id)
     .single();
 
@@ -16,16 +16,20 @@ export async function generateMetadata(
     return { title: { absolute: '매물 정보 없음 | 헤르만부동산' } };
   }
 
+  const { data: imgs } = await supabase
+    .from('property_images')
+    .select('image_url, order_index')
+    .eq('property_id', property.id)
+    .order('order_index', { ascending: true })
+    .limit(1);
+
   const propertyNumber = property.property_number || '';
   const customTitle = (property.title || '').trim();
   const transactionType = property.transaction_type || '';
   const propertyType = property.property_type || '';
   const exclusiveArea = property.exclusive_area || '';
 
-  const images = (property.property_images ?? [])
-    .slice()
-    .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
-  const firstImageUrl = (images[0]?.image_url || '').trim();
+  const firstImageUrl = ((imgs ?? [])[0]?.image_url || '').trim();
   const firstImage = firstImageUrl || 'https://hermann-realty.com/og-image.png';
 
   const headline = customTitle
