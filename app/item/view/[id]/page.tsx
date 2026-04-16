@@ -614,8 +614,8 @@ export default function PropertyDetailPage() {
           .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
           .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
           .detail-info-table tr { display: flex !important; flex-direction: row !important; border-bottom: 1px solid #f0f0f0 !important; }
-          .detail-info-table td:nth-child(1) { width: 80px !important; min-width: 80px !important; background: #f8f8f8 !important; font-size: 12px !important; color: #888 !important; padding: 10px 12px !important; }
-          .detail-info-table td:nth-child(2) { flex: 1 !important; font-size: 13px !important; font-weight: 700 !important; padding: 10px 12px !important; }
+          .detail-info-table td:nth-child(1) { width: 80px !important; min-width: 80px !important; background: #f8f8f8 !important; font-size: 13px !important; color: #888 !important; padding: 10px 12px !important; }
+          .detail-info-table td:nth-child(2) { flex: 1 !important; font-size: 14px !important; font-weight: 700 !important; padding: 10px 12px !important; }
           .detail-similar { grid-template-columns: repeat(2, 1fr) !important; }
           .detail-section { padding: 10px !important; }
           .detail-map-container { height: 250px !important; }
