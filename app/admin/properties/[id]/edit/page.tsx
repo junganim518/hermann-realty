@@ -3,9 +3,39 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 declare global {
   interface Window { daum: any; }
+}
+
+function SortableEditImageItem({ id, src, index, badge, borderColor, onRemove }: {
+  id: string; src: string; index: number; badge?: { label: string; bg: string }; borderColor?: string; onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform), transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative' as const, aspectRatio: '1', borderRadius: '6px', overflow: 'hidden' as const,
+    border: `${borderColor === '#e2a06e' ? '2px' : '1px'} solid ${borderColor || '#e0e0e0'}`, background: '#f0f0f0', cursor: 'grab',
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+      {index === 0 && !badge && (
+        <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#e2a06e', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>대표</span>
+      )}
+      {badge && (
+        <span style={{ position: 'absolute', top: '4px', left: '4px', background: badge.bg, color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>{badge.label}</span>
+      )}
+      <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>{index + 1}</span>
+      <button type="button" onPointerDown={e => e.stopPropagation()} onClick={onRemove}
+        style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+      >×</button>
+    </div>
+  );
 }
 
 // ── 이미지 압축 ─────────────────────────────────────────────
@@ -271,14 +301,27 @@ export default function EditPropertyPage() {
     setExistingImages(prev => prev.filter(i => i.id !== img.id));
   };
 
-  // ── 기존 이미지 순서 이동 (인접 스왑, order_index는 handleSave에서 저장)
-  const moveExistingImage = (idx: number, dir: -1 | 1) => {
+  // ── 이미지 드래그 정렬
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+  const handleExistingDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
     setExistingImages(prev => {
-      const target = idx + dir;
-      if (target < 0 || target >= prev.length) return prev;
-      const arr = [...prev];
-      [arr[idx], arr[target]] = [arr[target], arr[idx]];
-      return arr;
+      const oldIdx = prev.findIndex(img => img.id === active.id);
+      const newIdx = prev.findIndex(img => img.id === over.id);
+      return arrayMove(prev, oldIdx, newIdx);
+    });
+  };
+  const handleNewDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setNewImages(prev => {
+      const oldIdx = prev.findIndex(img => img.preview === active.id);
+      const newIdx = prev.findIndex(img => img.preview === over.id);
+      return arrayMove(prev, oldIdx, newIdx);
     });
   };
 
@@ -678,52 +721,22 @@ export default function EditPropertyPage() {
             }}
           >
             {/* 기존 이미지 */}
-            {existingImages.map((img, i) => (
-              <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e0e0e0', background: '#f0f0f0' }}>
-                <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {i === 0 && <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#e2a06e', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>대표</span>}
-                <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>{i + 1}</span>
-                <button type="button" onClick={() => removeExistingImage(img)} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-                <div style={{ position: 'absolute', bottom: '4px', right: '4px', display: 'flex', gap: '4px' }}>
-                  <button
-                    type="button"
-                    onClick={() => moveExistingImage(i, -1)}
-                    disabled={i === 0}
-                    title="왼쪽으로 이동"
-                    style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      background: i === 0 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
-                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
-                      cursor: i === 0 ? 'not-allowed' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                    }}
-                  >‹</button>
-                  <button
-                    type="button"
-                    onClick={() => moveExistingImage(i, 1)}
-                    disabled={i === existingImages.length - 1}
-                    title="오른쪽으로 이동"
-                    style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      background: i === existingImages.length - 1 ? 'rgba(0,0,0,0.25)' : 'rgba(226,160,110,0.95)',
-                      color: '#fff', border: 'none', fontSize: '14px', fontWeight: 700,
-                      cursor: i === existingImages.length - 1 ? 'not-allowed' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                    }}
-                  >›</button>
-                </div>
-              </div>
-            ))}
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleExistingDragEnd}>
+              <SortableContext items={existingImages.map(img => img.id)} strategy={rectSortingStrategy}>
+                {existingImages.map((img, i) => (
+                  <SortableEditImageItem key={img.id} id={img.id} src={img.image_url} index={i} onRemove={() => removeExistingImage(img)} />
+                ))}
+              </SortableContext>
+            </DndContext>
 
             {/* 새 이미지 */}
-            {newImages.map((img, i) => (
-              <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden', border: '2px solid #e2a06e', background: '#f0f0f0' }}>
-                <img src={img.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#4caf50', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px' }}>NEW</span>
-                <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>{existingImages.length + i + 1}</span>
-                <button onClick={() => removeNewImage(i)} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-              </div>
-            ))}
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleNewDragEnd}>
+              <SortableContext items={newImages.map(img => img.preview)} strategy={rectSortingStrategy}>
+                {newImages.map((img, i) => (
+                  <SortableEditImageItem key={img.preview} id={img.preview} src={img.preview} index={existingImages.length + i} badge={{ label: 'NEW', bg: '#4caf50' }} borderColor="#e2a06e" onRemove={() => removeNewImage(i)} />
+                ))}
+              </SortableContext>
+            </DndContext>
 
             {totalImages < 15 && (
               <div onClick={() => fileInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: '6px', border: '2px dashed #ddd', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#aaa', gap: '4px' }}
