@@ -559,7 +559,11 @@ export default function EditPropertyPage() {
               <button onClick={searchAddress} style={{ height: '40px', padding: '0 20px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>주소 검색</button>
             </div>
           </div>
-          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
+            <div><label style={labelSt}>건물명</label><input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} /></div>
+            <div><label style={labelSt}>호수</label><input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="예: 101동 712호" style={inputSt} /></div>
+          </div>
+          <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
             <div><label style={labelSt}>위도</label><input value={form.latitude} onChange={e => set('latitude', e.target.value)} style={{ ...inputSt, background: '#f9f9f9' }} /></div>
             <div><label style={labelSt}>경도</label><input value={form.longitude} onChange={e => set('longitude', e.target.value)} style={{ ...inputSt, background: '#f9f9f9' }} /></div>
           </div>
@@ -593,8 +597,6 @@ export default function EditPropertyPage() {
                 <input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="욕실 수" style={{ ...inputSt, flex: 1 }} />
               </div>
             </div>
-            <div><label style={labelSt}>건물명</label><input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} /></div>
-            <div><label style={labelSt}>호수</label><input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>용도</label><input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} style={inputSt} /></div>
             <div>
               <label style={labelSt}>방향</label>

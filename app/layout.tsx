@@ -7,7 +7,7 @@ import ScrollToTop from '@/components/ScrollToTop';
 export const metadata: Metadata = {
   metadataBase: new URL('https://hermann-realty.com'),
   title: {
-    default: '헤르만부동산',
+    default: '부천 상동 상가 사무실 오피스텔 전문 - 헤르만부동산',
     template: '%s | 헤르만부동산',
   },
   description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
