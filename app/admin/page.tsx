@@ -406,7 +406,7 @@ export default function AdminDashboard() {
                       </div>
                       {/* 4행: 메모 */}
                       {p.admin_memo && (
-                        <p style={{ fontSize: '11px', color: '#999', margin: 0, lineHeight: 1.4, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>메모: {p.admin_memo}</p>
+                        <p style={{ fontSize: '11px', color: '#999', margin: 0, lineHeight: 1.4, fontStyle: 'italic', overflow: 'hidden', wordBreak: 'break-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap', maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>메모: {p.admin_memo}</p>
                       )}
                     </div>
 
@@ -464,8 +464,11 @@ export default function AdminDashboard() {
         .admin-filters::-webkit-scrollbar { height: 4px; }
         .admin-filters::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
         .admin-shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 24px; }
-        .admin-prop-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 6px; border: 1px solid #eee; }
-        .admin-prop-info { flex: 1; min-width: 0; }
+        .admin-prop-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 6px; border: 1px solid #eee; overflow: hidden; }
+        .admin-prop-info { flex: 1; min-width: 0; overflow: hidden; }
+        .admin-prop-info p,
+        .admin-prop-info span,
+        .admin-prop-info div { overflow-wrap: break-word; word-break: break-all; }
         .admin-prop-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
 
         @media (min-width: 768px) and (max-width: 1199px) {
