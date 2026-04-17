@@ -478,7 +478,7 @@ export default function AdminDashboard() {
         }
 
         @media (max-width: 767px) {
-          main { padding: 12px 8px 80px !important; }
+          main { padding: 12px 8px !important; }
           main h1 { font-size: 22px !important; }
           .admin-stats { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
           .admin-stats > div { padding: 12px 8px !important; }

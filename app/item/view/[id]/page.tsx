@@ -194,6 +194,7 @@ export default function PropertyDetailPage() {
   const [activeTab, setActiveTab] = useState('section-info');
   const [headerHeight, setHeaderHeight] = useState(144);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
@@ -216,7 +217,7 @@ export default function PropertyDetailPage() {
     measure();
     // 로고 이미지/폰트 로드 후 재측정
     const t = setTimeout(measure, 300);
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => { const w = window.innerWidth; setIsMobile(w < 768); setIsTablet(w >= 768 && w < 1200); };
     checkMobile();
     window.addEventListener('resize', measure);
     window.addEventListener('resize', checkMobile);
@@ -574,7 +575,6 @@ export default function PropertyDetailPage() {
           .detail-info-table td { display: table-cell !important; justify-content: unset !important; width: auto !important; padding: 12px 14px !important; border-bottom: 1px solid #f0f0f0 !important; font-size: 15px !important; }
           .detail-info-table td:nth-child(odd) { background: #f8f8f8 !important; color: #888 !important; font-weight: 500 !important; width: 90px !important; white-space: nowrap !important; font-size: 14px !important; }
           .detail-info-table td:nth-child(even) { font-weight: 700 !important; color: #333 !important; font-size: 15px !important; }
-          .detail-body { padding-bottom: 180px !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
         }
 
@@ -605,7 +605,7 @@ export default function PropertyDetailPage() {
           .detail-tab-inner .detail-tab-btns { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
           .detail-tab-inner .detail-tab-btns::-webkit-scrollbar { display: none; }
           .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
-          .detail-body { padding: 50px 4px 200px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
+          .detail-body { padding-top: 50px !important; padding-left: 4px !important; padding-right: 4px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
           .detail-main { order: 2; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
@@ -708,7 +708,7 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* ── 2열 본문 ── */}
-      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: isMobile ? (isAdmin ? '170px' : '128px') : isTablet ? (isAdmin ? '140px' : '104px') : 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
 
         {/* ── 좌측 본문 ── */}
         <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1051,7 +1051,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* 🏘 비슷한 매물 */}
-          <div id="section-similar" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
+          <div id="section-similar" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px', marginBottom: 0 }}>
             <SectionHeader icon="🏢" title="비슷한 매물" open={true} onToggle={() => {}} />
             {similarProperties.length > 0 ? (
               <div className="detail-similar" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
