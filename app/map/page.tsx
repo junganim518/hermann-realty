@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
@@ -98,6 +98,14 @@ const THEME_TYPES = ['전체', '추천매물', '사옥형및통임대', '대형�
 
 // ── 컴포넌트 ─────────────────────────────────────────────────
 export default function MapPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩중...</div>}>
+      <MapPageInner />
+    </Suspense>
+  );
+}
+
+function MapPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
