@@ -7,17 +7,17 @@ import ScrollToTop from '@/components/ScrollToTop';
 export const metadata: Metadata = {
   metadataBase: new URL('https://hermann-realty.com'),
   title: {
-    default: '부천 상동 상가 사무실 오피스텔 전문 - 헤르만부동산',
+    default: '부천 상가 사무실 전문 부동산 - 헤르만부동산',
     template: '%s | 헤르만부동산',
   },
-  description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
+  description: '부천 상가, 사무실 전문 부동산',
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
     url: 'https://hermann-realty.com',
     siteName: '헤르만부동산',
     title: '헤르만부동산',
-    description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
+    description: '부천 상가, 사무실 전문 부동산',
     images: [
       {
         url: '/og-image.png',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: '헤르만부동산',
-    description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
+    description: '부천 상가, 사무실 전문 부동산',
     images: ['/og-image.png'],
   },
   icons: {
@@ -40,7 +40,6 @@ export const metadata: Metadata = {
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
   },
-  manifest: '/manifest.json',
   verification: {
     google: 'dUwwvqgiN2aBLfazjOISrtHgU-IbPwWUxj1t3lLNYlQ',
     other: {
