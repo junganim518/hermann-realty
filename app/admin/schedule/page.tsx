@@ -86,7 +86,7 @@ export default function SchedulePage() {
           {/* 월 네비게이션 */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#1a1a1a' }}>
             <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '20px', cursor: 'pointer', padding: '4px 12px' }}>&lsaquo;</button>
-            <span style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>{year}년 {month + 1}월</span>
+            <span className="sched-nav" style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>{year}년 {month + 1}월</span>
             <button onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '20px', cursor: 'pointer', padding: '4px 12px' }}>&rsaquo;</button>
           </div>
 
@@ -111,6 +111,7 @@ export default function SchedulePage() {
                 <div
                   key={day}
                   onClick={() => setSelectedDate(isSelected ? null : dateKey)}
+                  className="sched-cal-day"
                   style={{
                     minHeight: '80px', padding: '6px', cursor: 'pointer',
                     borderBottom: '1px solid #f0f0f0', borderRight: '1px solid #f0f0f0',
@@ -128,7 +129,7 @@ export default function SchedulePage() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     {dayCustomers.slice(0, 3).map(c => (
-                      <div key={c.id} style={{ fontSize: '10px', padding: '1px 4px', borderRadius: '3px', background: STATUS_COLORS[c.status] ?? '#999', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div key={c.id} className="sched-badge" style={{ fontSize: '10px', padding: '1px 4px', borderRadius: '3px', background: STATUS_COLORS[c.status] ?? '#999', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {c.name}
                       </div>
                     ))}
@@ -153,7 +154,7 @@ export default function SchedulePage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {selectedCustomers.map(c => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fafafa', borderRadius: '6px', border: '1px solid #f0f0f0', flexWrap: 'wrap', gap: '8px' }}>
+                  <div key={c.id} className="sched-detail-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fafafa', borderRadius: '6px', border: '1px solid #f0f0f0', flexWrap: 'wrap', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 700, fontSize: '15px' }}>{c.name}</span>
                       <span style={{ fontSize: '13px', color: '#888' }}>{c.phone || ''}</span>
@@ -177,8 +178,17 @@ export default function SchedulePage() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 767px) {
-          main > div > div:first-child { flex-direction: column !important; }
+          main { padding: 12px 8px !important; }
           main h1 { font-size: 22px !important; }
+          main > div > div:first-child { flex-direction: column !important; }
+          .sched-cal-day { min-height: 60px !important; padding: 4px !important; }
+          .sched-cal-day > div:first-child { font-size: 11px !important; }
+          .sched-cal-day .sched-badge { font-size: 8px !important; padding: 0 3px !important; }
+          .sched-nav span { font-size: 16px !important; }
+          .sched-detail-row { flex-direction: column !important; gap: 4px !important; padding: 10px 12px !important; }
+        }
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .sched-cal-day { min-height: 100px !important; padding: 8px !important; }
         }
       ` }} />
     </main>

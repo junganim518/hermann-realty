@@ -295,7 +295,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* 바로가기 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '24px' }}>
+        <div className="admin-shortcuts">
           {[
             { label: '매물 등록', href: '/admin/properties/new' },
             { label: '손님 관리', href: '/admin/customers' },
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
               {displayed.map(p => {
                 const tx = TX_COLORS[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                 return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', background: p.is_sold ? '#fafafa' : '#fff', borderRadius: '6px', border: '1px solid #eee', opacity: p.is_sold ? 0.65 : 1 }}>
+                  <div key={p.id} className="admin-prop-row" style={{ background: p.is_sold ? '#fafafa' : '#fff', opacity: p.is_sold ? 0.65 : 1 }}>
                     {/* 썸네일 */}
                     <a href={`/item/view/${p.property_number}`} target="_blank" rel="noopener noreferrer" style={{ width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
@@ -385,7 +385,7 @@ export default function AdminDashboard() {
                     </a>
 
                     {/* 정보 영역 */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="admin-prop-info">
                       {/* 1행: 매물번호 + 뱃지 + 주소 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a' }}>{p.property_number}</span>
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* 액션 영역 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', flexShrink: 0 }}>
+                    <div className="admin-prop-actions">
                       {/* 토글 스위치 */}
                       <div
                         onClick={() => toggleSold(p.id, p.is_sold)}
@@ -463,12 +463,31 @@ export default function AdminDashboard() {
         .admin-filters { scrollbar-width: thin; }
         .admin-filters::-webkit-scrollbar { height: 4px; }
         .admin-filters::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+        .admin-shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 24px; }
+        .admin-prop-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 6px; border: 1px solid #eee; }
+        .admin-prop-info { flex: 1; min-width: 0; }
+        .admin-prop-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
+
+        @media (min-width: 768px) and (max-width: 1199px) {
+          main > div { max-width: 100% !important; padding: 0 16px !important; }
+          .admin-stats { grid-template-columns: repeat(5, 1fr) !important; gap: 10px !important; }
+          .admin-shortcuts { grid-template-columns: repeat(4, 1fr) !important; }
+        }
+
         @media (max-width: 767px) {
+          main { padding: 12px 8px !important; }
           main h1 { font-size: 22px !important; }
           .admin-stats { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
           .admin-stats > div { padding: 12px 8px !important; }
           .admin-stats > div p:last-child { font-size: 22px !important; }
           .admin-filters select { min-width: 110px !important; font-size: 12px !important; }
+          .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
+          .admin-prop-row { flex-direction: column !important; gap: 8px !important; padding: 10px !important; }
+          .admin-prop-row > a:first-child,
+          .admin-prop-row > div:first-child { display: flex; gap: 10px; width: 100%; }
+          .admin-prop-actions { flex-direction: row !important; width: 100% !important; justify-content: space-between !important; align-items: center !important; }
+          .admin-prop-actions > div { display: flex; gap: 4px; }
         }
       ` }} />
     </main>

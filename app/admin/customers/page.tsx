@@ -86,8 +86,8 @@ export default function CustomersPage() {
           ))}
         </div>
 
-        {/* 테이블 */}
-        <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'auto' }}>
+        {/* PC 테이블 */}
+        <div className="cust-table" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'auto' }}>
           {loading ? (
             <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
           ) : filtered.length === 0 ? (
@@ -145,6 +145,54 @@ export default function CustomersPage() {
           )}
         </div>
       </div>
+
+        {/* 모바일 카드 */}
+        <div className="cust-cards" style={{ display: 'none', flexDirection: 'column', gap: '10px' }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
+          ) : filtered.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>등록된 손님이 없습니다</p>
+          ) : filtered.map(c => (
+            <div key={c.id} onClick={() => setModalCustomer(c)} style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '14px', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: 700, fontSize: '15px' }}>{c.name}</span>
+                  <span style={{ fontSize: '13px', color: '#888' }}>{c.phone || ''}</span>
+                </div>
+                <select value={c.status} onClick={e => e.stopPropagation()} onChange={e => updateStatus(c.id, e.target.value)}
+                  style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '4px', cursor: 'pointer', border: `1px solid ${STATUS_COLORS[c.status] ?? '#999'}`, background: (STATUS_COLORS[c.status] ?? '#999') + '18', color: STATUS_COLORS[c.status] ?? '#999' }}>
+                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '12px', color: '#666', marginBottom: '6px' }}>
+                {c.interest_type && <span>{c.interest_type}</span>}
+                {c.budget && <span>· {c.budget}</span>}
+                {c.region && <span>· {c.region}</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#888', marginBottom: c.memo ? '6px' : '0' }}>
+                <span>상담 {formatDate(c.consultation_date)}</span>
+                <span>방문 {formatDate(c.visit_date)}</span>
+              </div>
+              {c.memo && <p style={{ fontSize: '11px', color: '#999', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.memo}</p>}
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }} onClick={e => e.stopPropagation()}>
+                <a href={`/admin/customers/${c.id}/edit`} style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>수정</a>
+                <button onClick={() => handleDelete(c.id, c.name)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>삭제</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 767px) {
+          main { padding: 12px 8px !important; }
+          main h1 { font-size: 22px !important; }
+          .cust-table { display: none !important; }
+          .cust-cards { display: flex !important; }
+        }
+        @media (min-width: 768px) {
+          .cust-cards { display: none !important; }
+        }
+      ` }} />
 
       {/* 메모 모달 */}
       {modalCustomer && (

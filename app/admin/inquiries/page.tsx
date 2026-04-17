@@ -108,8 +108,13 @@ export default function AdminInquiriesPage() {
           .inq-cards { display: none !important; }
         }
         @media (max-width: 767px) {
-          .inq-page { padding: 16px 8px !important; }
+          main { padding: 12px 8px !important; }
+          .inq-page { padding: 0 !important; }
           .inq-page h1 { font-size: 22px !important; }
+          .inq-page > div:first-child { flex-direction: column !important; gap: 8px !important; }
+          .inq-page > div:first-child > div:last-child { width: 100% !important; }
+          .inq-page > div:first-child > div:last-child a,
+          .inq-page > div:first-child > div:last-child button { flex: 1 !important; text-align: center !important; }
         }
       ` }} />
 

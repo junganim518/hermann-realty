@@ -167,6 +167,10 @@ export default function EditCustomerPage() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 767px) {
+          main { padding: 12px 8px !important; }
+          main h1 { font-size: 22px !important; }
+          .admin-section { padding: 16px !important; }
+          .admin-section h2 { font-size: 16px !important; }
           main > div > div > div { grid-template-columns: 1fr !important; }
         }
       ` }} />

@@ -132,13 +132,9 @@ export default function Header() {
             }}>
               {user ? (
                 <>
-                  <a href="/admin/properties/new" onClick={() => setIsUserMenuOpen(false)}
+                  <a href="/admin" onClick={() => setIsUserMenuOpen(false)}
                     style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#fff', textDecoration: 'none', borderBottom: '1px solid #333' }}>
-                    매물등록
-                  </a>
-                  <a href="/admin/inquiries" onClick={() => setIsUserMenuOpen(false)}
-                    style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#fff', textDecoration: 'none', borderBottom: '1px solid #333' }}>
-                    의뢰 확인
+                    관리자 페이지
                   </a>
                   <button type="button" onClick={() => { handleLogout(); setIsUserMenuOpen(false); }}
                     style={{ display: 'block', width: '100%', padding: '12px 20px', fontSize: '14px', color: '#ef5350', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
