@@ -33,6 +33,14 @@ export const metadata: Metadata = {
     description: '부천 상동 상가, 사무실, 오피스텔 전문 부동산',
     images: ['/og-image.png'],
   },
+  icons: {
+    apple: '/icon-192.png',
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
+  manifest: '/manifest.json',
   verification: {
     google: 'dUwwvqgiN2aBLfazjOISrtHgU-IbPwWUxj1t3lLNYlQ',
     other: {
