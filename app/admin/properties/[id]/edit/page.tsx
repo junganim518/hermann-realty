@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FloorPlanPicker } from '@/components/FloorPlanPin';
 
 declare global {
   interface Window { daum: any; }
@@ -145,8 +144,6 @@ export default function EditPropertyPage() {
     exclusive_area: '',
     current_floor: '',
     total_floor: '',
-    floor_plan_x: '',
-    floor_plan_y: '',
     building_name: '',
     unit_number: '',
     usage_type: '',
@@ -217,8 +214,6 @@ export default function EditPropertyPage() {
         exclusive_area: data.exclusive_area ?? '',
         current_floor: data.current_floor ?? '',
         total_floor: data.total_floor ?? '',
-        floor_plan_x: data.floor_plan_x != null ? String(data.floor_plan_x) : '',
-        floor_plan_y: data.floor_plan_y != null ? String(data.floor_plan_y) : '',
         building_name: data.building_name ?? '',
         unit_number: data.unit_number ?? '',
         usage_type: data.usage_type ?? '',
@@ -376,8 +371,6 @@ export default function EditPropertyPage() {
         exclusive_area: form.exclusive_area || null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
-        floor_plan_x: form.floor_plan_x ? parseFloat(form.floor_plan_x) : null,
-        floor_plan_y: form.floor_plan_y ? parseFloat(form.floor_plan_y) : null,
         building_name: form.building_name || null,
         unit_number: form.unit_number || null,
         direction: form.direction || null,
@@ -637,19 +630,6 @@ export default function EditPropertyPage() {
               </label>
             ))}
           </div>
-        </div>
-
-        {/* ════════════ 배치도 호실 위치 ════════════ */}
-        <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>
-            배치도 호실 위치 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(현재층 기준 배치도 표시)</span>
-          </h2>
-          <FloorPlanPicker
-            floor={form.current_floor}
-            x={form.floor_plan_x}
-            y={form.floor_plan_y}
-            onChange={(x, y) => setForm(prev => ({ ...prev, floor_plan_x: x, floor_plan_y: y }))}
-          />
         </div>
 
         {/* ════════════ 매물 설명 ════════════ */}

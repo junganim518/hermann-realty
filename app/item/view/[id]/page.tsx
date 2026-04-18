@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
-import { FloorPlanDisplay } from '@/components/FloorPlanPin';
 
 declare global {
   interface Window { kakao: any; }
@@ -174,8 +173,6 @@ interface Property {
   created_at?: string;
   latitude?: number | string;
   longitude?: number | string;
-  floor_plan_x?: number | string | null;
-  floor_plan_y?: number | string | null;
   sale_price?: number;
   property_images?: { image_url: string; thumbnail_url?: string }[];
 }
@@ -1021,11 +1018,6 @@ export default function PropertyDetailPage() {
             <SectionHeader icon="📍" title="위치" open={openLocation} onToggle={() => setOpenLocation(!openLocation)} />
             {openLocation && (
               <div>
-                <FloorPlanDisplay
-                  floor={property.current_floor}
-                  x={property.floor_plan_x}
-                  y={property.floor_plan_y}
-                />
                 <div className="detail-map-container" style={{ position: 'relative', width: '100%', height: '400px', marginBottom: '16px', borderRadius: '4px', overflow: 'hidden' }}>
                   <div ref={locationMapRef} style={{ width: '100%', height: '100%' }} />
                   {!locationMapObjRef.current && (
