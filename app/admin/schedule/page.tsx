@@ -3,14 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { parseTimeString, isoToTimeString, combineDateTime } from '@/lib/parseTime';
 
-const SCHEDULE_TYPES = ['방문', '계약', '상담', '기타'] as const;
+const SCHEDULE_TYPES = ['방문', '계약', '상담', '잔금', '개인', '기타'] as const;
 type ScheduleType = typeof SCHEDULE_TYPES[number];
 
 const SCHEDULE_COLORS: Record<ScheduleType, string> = {
   '방문': '#2196F3',
   '계약': '#e2a06e',
   '상담': '#4caf50',
+  '잔금': '#9c27b0',
+  '개인': '#e91e63',
   '기타': '#888',
 };
 
@@ -67,7 +70,7 @@ type ModalData = {
   memo: string;
 };
 
-const emptyModal: ModalData = { title: '', date: '', time: '10:00', type: '방문', customer_id: null, memo: '' };
+const emptyModal: ModalData = { title: '', date: '', time: '', type: '방문', customer_id: null, memo: '' };
 
 const labelSt: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#333', marginBottom: '6px' };
 const inputSt: React.CSSProperties = { width: '100%', height: '40px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 12px', fontSize: '14px', outline: 'none', background: '#fff' };
@@ -87,6 +90,7 @@ export default function SchedulePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [modalData, setModalData] = useState<ModalData>(emptyModal);
+  const [holidays, setHolidays] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -96,10 +100,26 @@ export default function SchedulePage() {
     });
   }, []);
 
+  // 월 변경 시 공휴일 조회
+  useEffect(() => {
+    if (!authChecked) return;
+    let cancelled = false;
+    fetch(`/api/holidays?year=${year}&month=${month + 1}`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        (data.holidays ?? []).forEach((h: { date: string; name: string }) => { map[h.date] = h.name; });
+        setHolidays(map);
+      })
+      .catch(err => console.warn('[holidays]', err));
+    return () => { cancelled = true; };
+  }, [authChecked, year, month]);
+
   const fetchAll = async () => {
     const [schedRes, visitRes, allRes] = await Promise.all([
       supabase.from('schedules').select('*').order('schedule_date', { ascending: true }),
-      supabase.from('customers').select('*').not('visit_date', 'is', null).order('visit_date', { ascending: true }),
+      supabase.from('customers').select('*').not('visit_date', 'is', null).in('status', ['방문예정', '방문완료']).order('visit_date', { ascending: true }),
       supabase.from('customers').select('id, name, phone').order('name', { ascending: true }),
     ]);
     setSchedules(schedRes.data ?? []);
@@ -159,13 +179,12 @@ export default function SchedulePage() {
     const dt = new Date(s.schedule_date);
     const pad = (n: number) => String(n).padStart(2, '0');
     const dateStr = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
-    const timeStr = `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
     setModalMode('edit');
     setModalData({
       id: s.id,
       title: s.title ?? '',
       date: dateStr,
-      time: timeStr,
+      time: isoToTimeString(s.schedule_date),
       type: (SCHEDULE_TYPES as readonly string[]).includes(s.type) ? (s.type as ScheduleType) : '기타',
       customer_id: s.customer_id,
       memo: s.memo ?? '',
@@ -179,7 +198,10 @@ export default function SchedulePage() {
     if (!modalData.title.trim()) { alert('제목을 입력해주세요.'); return; }
     if (!modalData.date) { alert('날짜를 선택해주세요.'); return; }
 
-    const iso = new Date(`${modalData.date}T${modalData.time || '00:00'}:00`).toISOString();
+    const { iso, error: timeErr } = combineDateTime(modalData.date, modalData.time);
+    if (timeErr) { alert(`${timeErr}\n예) 14:00, 오후 2시, 오전 10시 30분`); return; }
+    if (!iso) { alert('날짜를 다시 확인해주세요.'); return; }
+
     const payload = {
       title: modalData.title.trim(),
       schedule_date: iso,
@@ -230,19 +252,10 @@ export default function SchedulePage() {
 
         {/* 범례 */}
         <div className="sched-legend" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', marginBottom: '12px', padding: '10px 14px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '12px', color: '#555' }}>
-          <span style={{ fontWeight: 700, color: '#1a1a1a' }}>일정:</span>
           {SCHEDULE_TYPES.map(t => (
             <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '3px', background: SCHEDULE_COLORS[t] }} />
               {t}
-            </span>
-          ))}
-          <span style={{ borderLeft: '1px solid #ddd', height: '14px', margin: '0 4px' }} />
-          <span style={{ fontWeight: 700, color: '#1a1a1a' }}>손님:</span>
-          {Object.entries(STATUS_COLORS).map(([label, color]) => (
-            <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '3px', background: color }} />
-              {label}
             </span>
           ))}
         </div>
@@ -269,6 +282,9 @@ export default function SchedulePage() {
               const isSelected = dateKey === selectedDate;
               const dayItems = itemsByDate[dateKey] ?? [];
               const dayOfWeek = new Date(year, month, day).getDay();
+              const holidayName = holidays[dateKey];
+              const isHoliday = !!holidayName;
+              const dayColor = isHoliday || dayOfWeek === 0 ? '#e05050' : dayOfWeek === 6 ? '#4a80e8' : '#333';
 
               return (
                 <div
@@ -283,25 +299,42 @@ export default function SchedulePage() {
                   }}
                 >
                   <div style={{
-                    fontSize: '15px', fontWeight: isToday ? 800 : 500, marginBottom: '6px',
-                    color: dayOfWeek === 0 ? '#e05050' : dayOfWeek === 6 ? '#4a80e8' : '#333',
+                    fontSize: '15px', fontWeight: isToday ? 800 : 500, marginBottom: '4px',
+                    color: dayColor,
+                    display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap',
                   }}>
                     {isToday ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: '#e2a06e', color: '#fff', fontSize: '14px' }}>{day}</span>
                     ) : day}
+                    {isHoliday && (
+                      <span className="sched-holiday" style={{ fontSize: '10px', fontWeight: 600, color: '#e05050', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={holidayName}>
+                        {holidayName}
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    {dayItems.slice(0, 4).map(item => (
-                      <div
-                        key={item.key}
-                        onClick={e => { e.stopPropagation(); handleItemClick(item); }}
-                        className="sched-badge"
-                        title={item.label}
-                        style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '3px', background: item.color, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                      >
-                        {item.label}
-                      </div>
-                    ))}
+                    {dayItems.slice(0, 4).map(item => {
+                      const isCustomer = item.source === 'customer';
+                      const typeLabel = isCustomer ? '방문' : item.schedule.type;
+                      const badgeColor = isCustomer ? SCHEDULE_COLORS['방문'] : item.color;
+                      const timeStr = isoToTimeString(item.iso);
+                      const titleText = isCustomer ? `[방문] ${timeStr}` : `[${typeLabel}] ${timeStr} ${item.label}`;
+                      return (
+                        <div
+                          key={item.key}
+                          onClick={e => { e.stopPropagation(); handleItemClick(item); }}
+                          className="sched-badge"
+                          title={titleText}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', overflow: 'hidden', whiteSpace: 'nowrap', cursor: 'pointer', color: '#333' }}
+                        >
+                          <span style={{ background: badgeColor, color: '#fff', fontWeight: 700, fontSize: '10px', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>{typeLabel}</span>
+                          {timeStr && <span style={{ color: '#888', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{timeStr}</span>}
+                          {!isCustomer && (
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>{item.label}</span>
+                          )}
+                        </div>
+                      );
+                    })}
                     {dayItems.length > 4 && (
                       <div style={{ fontSize: '11px', color: '#999', fontWeight: 600 }}>+{dayItems.length - 4}개</div>
                     )}
@@ -387,7 +420,13 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelSt}>시간</label>
-                  <input type="time" value={modalData.time} onChange={e => setModalData({ ...modalData, time: e.target.value })} style={inputSt} />
+                  <input
+                    type="text"
+                    value={modalData.time}
+                    onChange={e => setModalData({ ...modalData, time: e.target.value })}
+                    placeholder="예) 14:00, 오후 2시, 오전 10시 30분"
+                    style={inputSt}
+                  />
                 </div>
               </div>
 
@@ -463,6 +502,7 @@ export default function SchedulePage() {
           .sched-cal-day { min-height: 100px !important; padding: 5px !important; }
           .sched-cal-day > div:first-child { font-size: 12px !important; }
           .sched-cal-day .sched-badge { font-size: 9px !important; padding: 1px 4px !important; }
+          .sched-cal-day .sched-holiday { font-size: 9px !important; }
           .sched-nav span { font-size: 16px !important; }
           .sched-detail-row { flex-direction: column !important; align-items: flex-start !important; gap: 4px !important; padding: 10px 12px !important; }
           .sched-legend { gap: 8px !important; font-size: 11px !important; }

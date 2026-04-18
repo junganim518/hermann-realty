@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { combineDateTime } from '@/lib/parseTime';
 
 const STATUSES = ['상담중', '방문예정', '방문완료', '계약진행', '계약완료', '보류'];
 const INTEREST_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
@@ -13,7 +14,9 @@ export default function NewCustomerPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '', phone: '', interest_type: '', budget: '', region: '',
-    consultation_date: '', visit_date: '', memo: '', status: '상담중',
+    consultation_date: '', consultation_time: '',
+    visit_date: '', visit_time: '',
+    memo: '', status: '상담중',
   });
 
   useEffect(() => {
@@ -27,6 +30,12 @@ export default function NewCustomerPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) { alert('이름을 입력해주세요.'); return; }
+
+    const consult = combineDateTime(form.consultation_date, form.consultation_time);
+    if (consult.error) { alert(`상담 시간: ${consult.error}\n예) 14:00, 오후 2시`); return; }
+    const visit = combineDateTime(form.visit_date, form.visit_time);
+    if (visit.error) { alert(`방문 시간: ${visit.error}\n예) 14:00, 오후 2시`); return; }
+
     setSaving(true);
     const payload = {
       name: form.name.trim(),
@@ -34,8 +43,8 @@ export default function NewCustomerPage() {
       interest_type: form.interest_type || null,
       budget: form.budget.trim() || null,
       region: form.region.trim() || null,
-      consultation_date: form.consultation_date ? new Date(form.consultation_date).toISOString() : null,
-      visit_date: form.visit_date ? new Date(form.visit_date).toISOString() : null,
+      consultation_date: consult.iso,
+      visit_date: visit.iso,
       memo: form.memo.trim() || null,
       status: form.status,
     };
@@ -98,11 +107,17 @@ export default function NewCustomerPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelSt}>상담날짜</label>
-              <input type="datetime-local" value={form.consultation_date} onChange={e => set('consultation_date', e.target.value)} style={inputSt} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <input type="date" value={form.consultation_date} onChange={e => set('consultation_date', e.target.value)} style={inputSt} />
+                <input type="text" value={form.consultation_time} onChange={e => set('consultation_time', e.target.value)} placeholder="예) 14:00, 오후 2시" style={inputSt} />
+              </div>
             </div>
             <div>
               <label style={labelSt}>방문날짜</label>
-              <input type="datetime-local" value={form.visit_date} onChange={e => set('visit_date', e.target.value)} style={inputSt} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <input type="date" value={form.visit_date} onChange={e => set('visit_date', e.target.value)} style={inputSt} />
+                <input type="text" value={form.visit_time} onChange={e => set('visit_time', e.target.value)} placeholder="예) 14:00, 오후 2시" style={inputSt} />
+              </div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>진행상태</label>
