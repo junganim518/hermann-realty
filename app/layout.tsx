@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import Header from '@/components/Header';
 import ConditionalFooter from '@/components/ConditionalFooter';
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-pretendard">
         <ScrollToTop /><Header />{children}<ConditionalFooter />
+        <Analytics />
       </body>
     </html>
   );

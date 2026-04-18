@@ -308,8 +308,15 @@ export default function AdminDashboard() {
             { label: '손님 관리', href: '/admin/customers' },
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
+            { label: '📊 Analytics', href: 'https://vercel.com/dashboard', external: true },
           ].map(link => (
-            <a key={link.href} href={link.href} style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333', position: 'relative' }}>
+            <a
+              key={link.href}
+              href={link.href}
+              target={link.external ? '_blank' : undefined}
+              rel={link.external ? 'noopener noreferrer' : undefined}
+              style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333', position: 'relative' }}
+            >
               {link.label}
               {link.href === '/admin/inquiries' && unreadInquiries > 0 && (
                 <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#e05050', color: '#fff', fontSize: '10px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadInquiries}</span>
