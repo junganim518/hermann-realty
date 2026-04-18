@@ -91,6 +91,14 @@ export default function SchedulePage() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [modalData, setModalData] = useState<ModalData>(emptyModal);
   const [holidays, setHolidays] = useState<Record<string, string>>({});
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -276,7 +284,7 @@ export default function SchedulePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
             {days.map((day, i) => {
-              if (day === null) return <div key={`e-${i}`} style={{ minHeight: '130px', borderBottom: '1px solid #f0f0f0', borderRight: '1px solid #f0f0f0' }} />;
+              if (day === null) return <div key={`e-${i}`} className="sched-cal-day sched-cal-empty" style={{ minHeight: '130px', borderBottom: '1px solid #f0f0f0', borderRight: '1px solid #f0f0f0' }} />;
               const dateKey = getDateKey(day);
               const isToday = dateKey === todayKey;
               const isSelected = dateKey === selectedDate;
@@ -312,8 +320,8 @@ export default function SchedulePage() {
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    {dayItems.slice(0, 4).map(item => {
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflow: 'hidden' }}>
+                    {dayItems.slice(0, isMobile ? 2 : 4).map(item => {
                       const isCustomer = item.source === 'customer';
                       const typeLabel = isCustomer ? '방문' : item.schedule.type;
                       const badgeColor = isCustomer ? SCHEDULE_COLORS['방문'] : item.color;
@@ -335,8 +343,8 @@ export default function SchedulePage() {
                         </div>
                       );
                     })}
-                    {dayItems.length > 4 && (
-                      <div style={{ fontSize: '11px', color: '#999', fontWeight: 600 }}>+{dayItems.length - 4}개</div>
+                    {dayItems.length > (isMobile ? 2 : 4) && (
+                      <div style={{ fontSize: '11px', color: '#999', fontWeight: 600 }}>+{dayItems.length - (isMobile ? 2 : 4)}개</div>
                     )}
                   </div>
                 </div>
@@ -499,8 +507,8 @@ export default function SchedulePage() {
           main { padding: 12px 8px !important; }
           main h1 { font-size: 22px !important; }
           main > div > div:first-child { flex-direction: column !important; align-items: stretch !important; }
-          .sched-cal-day { min-height: 100px !important; padding: 5px !important; }
-          .sched-cal-day > div:first-child { font-size: 12px !important; }
+          .sched-cal-day { height: 92px !important; min-height: 92px !important; max-height: 92px !important; padding: 5px !important; overflow: hidden !important; box-sizing: border-box !important; }
+          .sched-cal-day > div:first-child { font-size: 12px !important; margin-bottom: 2px !important; }
           .sched-cal-day .sched-badge { font-size: 9px !important; padding: 1px 4px !important; }
           .sched-cal-day .sched-holiday { font-size: 9px !important; }
           .sched-nav span { font-size: 16px !important; }
