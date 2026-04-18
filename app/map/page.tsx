@@ -134,6 +134,8 @@ function MapPageInner() {
   const [visibleIds, setVisibleIds]     = useState<Set<string> | null>(null);
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [drawerDragY, setDrawerDragY]   = useState(0);
+  const [drawerHeight, setDrawerHeight] = useState<'45vh' | '60vh' | '85vh'>('60vh');
+  const [topPropertyNumber, setTopPropertyNumber] = useState<string | null>(null);
   const drawerStartY = useRef(0);
 
 
@@ -430,12 +432,19 @@ function MapPageInner() {
         const marker = new window.kakao.maps.Marker({ position });
         (marker as any)._pnum = p.property_number;
 
-        // 클릭 이벤트 — 카드 하이라이트 + 스크롤만
+        // 클릭 이벤트 — 카드 하이라이트 + 스크롤 (+ 모바일 드로어 45vh)
         window.kakao.maps.event.addListener(marker, 'click', () => {
           setHighlightId(p.property_number);
-          const card = cardRefs.current[p.property_number];
-          if (card && listRef.current) {
-            listRef.current.scrollTo({ top: card.offsetTop - 16, behavior: 'smooth' });
+          if (isMobile) {
+            setTopPropertyNumber(p.property_number);
+            setDrawerHeight('45vh');
+            setDrawerOpen(true);
+            setDrawerDragY(0);
+          } else {
+            const card = cardRefs.current[p.property_number];
+            if (card && listRef.current) {
+              listRef.current.scrollTo({ top: card.offsetTop - 16, behavior: 'smooth' });
+            }
           }
         });
 
@@ -464,12 +473,20 @@ function MapPageInner() {
         window.kakao.maps.event.removeListener(clustererRef.current, 'clusterclick', handleClusterClick);
       }
     };
-  }, [filtered, mapReady]);
+  }, [filtered, mapReady, isMobile]);
 
   // ── 지도 내 표시 목록
   const displayList = visibleIds
     ? filtered.filter(p => visibleIds.has(p.property_number))
     : filtered;
+
+  // 모바일 드로어: 선택한 매물을 맨 위로 재정렬
+  const drawerList = useMemo(() => {
+    if (!topPropertyNumber) return displayList;
+    const top = displayList.find(p => p.property_number === topPropertyNumber);
+    if (!top) return displayList;
+    return [top, ...displayList.filter(p => p.property_number !== topPropertyNumber)];
+  }, [displayList, topPropertyNumber]);
 
   // ── 핸들러
   const runSearch = () => { setSearch(searchInput); syncURL({ search: searchInput }); };
@@ -846,46 +863,48 @@ function MapPageInner() {
       {/* ════════════ 모바일 드로어 ════════════ */}
       {/* 배경 오버레이 */}
       {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.4)' }} onClick={() => setDrawerOpen(false)} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.4)' }} onClick={() => { setDrawerOpen(false); setTopPropertyNumber(null); }} />
       )}
       {/* 드로어 시트 (항상 렌더, transform으로 표시/숨김) */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%',
-          height: '60vh', maxHeight: '60vh', background: '#fff',
+          height: drawerHeight, maxHeight: '85vh', background: '#fff',
           borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
           boxShadow: drawerOpen ? '0 -4px 20px rgba(0,0,0,0.15)' : 'none',
           display: 'flex', flexDirection: 'column',
           overscrollBehavior: 'contain', zIndex: 200,
           transform: drawerOpen ? `translateY(${drawerDragY}px)` : 'translateY(100%)',
-          transition: drawerDragY === 0 ? 'transform 0.3s ease' : 'none',
+          transition: drawerDragY === 0 ? 'transform 0.3s ease, height 0.3s ease' : 'none',
         }}
           >
             {/* 드로어 핸들 + 헤더 */}
             <div
-              style={{ padding: '12px 20px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'pan-y' }}
+              style={{ padding: '8px 20px 12px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'pan-y' }}
               onTouchStart={e => { drawerStartY.current = e.touches[0].clientY; setDrawerDragY(0); }}
               onTouchMove={e => {
                 const diff = e.touches[0].clientY - drawerStartY.current;
                 setDrawerDragY(diff > 0 ? diff : 0);
               }}
               onTouchEnd={() => {
-                if (drawerDragY > 100) { setDrawerOpen(false); }
+                if (drawerDragY > 100) { setDrawerOpen(false); setTopPropertyNumber(null); }
                 setDrawerDragY(0);
               }}
             >
-              <div onClick={() => setDrawerOpen(false)} style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto 10px', cursor: 'pointer' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
-                  매물 목록&nbsp;<span style={{ color: '#e2a06e' }}>{displayList.length}</span>개
-                </span>
-                <button onClick={() => setDrawerOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#999', cursor: 'pointer' }}>×</button>
+              <div style={{ textAlign: 'center', fontSize: '12px', color: '#888', fontWeight: 500, marginBottom: '6px' }}>
+                매물 <span style={{ color: '#e2a06e', fontWeight: 700 }}>{drawerList.length}</span>개
               </div>
+              <div
+                onClick={() => {
+                  setDrawerHeight(prev => prev === '45vh' ? '85vh' : '45vh');
+                }}
+                style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto', cursor: 'pointer' }}
+              />
             </div>
             {/* 카드 리스트 */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {displayList.map(p => {
+              {drawerList.map(p => {
                 const thumb = p.property_images?.[0]?.image_url ?? null;
                 const pyeong = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
                 const price = buildPriceStr(p);
@@ -894,8 +913,21 @@ function MapPageInner() {
                   p.exclusive_area ? `전용 ${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null,
                   floorStr,
                 ].filter(Boolean).join(' · ');
+                const isTop = p.property_number === topPropertyNumber;
                 return (
-                  <a key={p.property_number} href={`/item/view/${p.property_number}`} style={{ display: 'flex', gap: '12px', padding: '14px 20px', textDecoration: 'none', color: 'inherit', borderBottom: '1px solid #f0f0f0' }}>
+                  <a
+                    key={p.property_number}
+                    href={`/item/view/${p.property_number}`}
+                    style={{
+                      display: 'flex', gap: '12px', padding: '14px 20px',
+                      textDecoration: 'none', color: 'inherit',
+                      borderBottom: '1px solid #f0f0f0',
+                      border: isTop ? '2px solid #e2a06e' : undefined,
+                      background: isTop ? '#fff8f2' : 'transparent',
+                      borderRadius: isTop ? '8px' : 0,
+                      margin: isTop ? '8px 12px' : 0,
+                    }}
+                  >
                     <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
                       {thumb ? (
                         <>
