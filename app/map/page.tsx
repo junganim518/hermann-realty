@@ -96,6 +96,34 @@ const PROP_TYPES  = ['', '상가', '사무실', '오피스텔', '아파트', '�
 const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~40평', '40~50평', '50평 이상'];
 const THEME_TYPES = ['전체', '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
 
+// ── 지도 상태 sessionStorage 복원 ─────────────────────────────
+const MAP_STATE_KEY = 'hermann-map-state-v1';
+
+type SavedMapState = {
+  center?: { lat: number; lng: number };
+  level?: number;
+  drawerOpen?: boolean;
+  drawerHeight?: number;
+  topPropertyNumber?: string | null;
+  filters?: Record<string, string>;
+};
+
+function readMapState(): SavedMapState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(MAP_STATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveMapState(partial: SavedMapState) {
+  if (typeof window === 'undefined') return;
+  try {
+    const prev = readMapState() ?? {};
+    sessionStorage.setItem(MAP_STATE_KEY, JSON.stringify({ ...prev, ...partial }));
+  } catch { /* quota / private mode 등 무시 */ }
+}
+
 // ── 컴포넌트 ─────────────────────────────────────────────────
 export default function MapPage() {
   return (
@@ -134,9 +162,10 @@ function MapPageInner() {
   const [visibleIds, setVisibleIds]     = useState<Set<string> | null>(null);
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [drawerDragY, setDrawerDragY]   = useState(0);
-  const [drawerHeight, setDrawerHeight] = useState<'45vh' | '60vh' | '85vh'>('60vh');
+  const [drawerHeight, setDrawerHeight] = useState<number>(45); // vh 단위
   const [topPropertyNumber, setTopPropertyNumber] = useState<string | null>(null);
   const drawerStartY = useRef(0);
+  const drawerDragRef = useRef(0);
 
 
   useEffect(() => {
@@ -302,6 +331,40 @@ function MapPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // ── sessionStorage: 마운트 시 드로어/상단매물/필터 복원
+  useEffect(() => {
+    const s = readMapState();
+    if (!s) return;
+    if (s.drawerOpen !== undefined) setDrawerOpen(s.drawerOpen);
+    if (s.drawerHeight !== undefined) setDrawerHeight(s.drawerHeight);
+    if (s.topPropertyNumber !== undefined) setTopPropertyNumber(s.topPropertyNumber);
+
+    // 필터: URL 파라미터가 없을 때만 sessionStorage 복원
+    const hasUrlParams = Array.from(searchParams?.keys() ?? []).length > 0;
+    if (!hasUrlParams && s.filters) {
+      if (s.filters.search !== undefined) { setSearch(s.filters.search); setSearchInput(s.filters.search); }
+      if (s.filters.filterTx !== undefined) setFilterTx(s.filters.filterTx);
+      if (s.filters.filterType !== undefined) setFilterType(s.filters.filterType);
+      if (s.filters.filterArea !== undefined) setFilterArea(s.filters.filterArea);
+      if (s.filters.filterTheme !== undefined) setFilterTheme(s.filters.filterTheme);
+      if (s.filters.filterDeposit !== undefined) setFilterDeposit(s.filters.filterDeposit);
+      if (s.filters.filterRent !== undefined) setFilterRent(s.filters.filterRent);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── sessionStorage: 드로어/상단매물 저장
+  useEffect(() => {
+    saveMapState({ drawerOpen, drawerHeight, topPropertyNumber });
+  }, [drawerOpen, drawerHeight, topPropertyNumber]);
+
+  // ── sessionStorage: 필터 저장
+  useEffect(() => {
+    saveMapState({
+      filters: { search, filterTx, filterType, filterArea, filterTheme, filterDeposit, filterRent },
+    });
+  }, [search, filterTx, filterType, filterArea, filterTheme, filterDeposit, filterRent]);
+
   // ── 헤더 높이 측정
   useEffect(() => {
     const h = document.querySelector('header') as HTMLElement | null;
@@ -317,14 +380,27 @@ function MapPageInner() {
       if (mapObjRef.current) { setMapReady(true); console.log('지도 컨테이너 크기:', mapContainerRef.current?.offsetWidth, mapContainerRef.current?.offsetHeight); return; }
 
       const isMobile = window.innerWidth < 768;
-      const centerLat = isMobile ? 37.5040479677868 - 0.02 : 37.5040479677868;
-      const center = new window.kakao.maps.LatLng(centerLat, 126.77522691726);
+      const saved = readMapState();
+      const defaultLat = isMobile ? 37.5040479677868 - 0.02 : 37.5040479677868;
+      const defaultLng = 126.77522691726;
+      const startLat = saved?.center?.lat ?? defaultLat;
+      const startLng = saved?.center?.lng ?? defaultLng;
+      const startLevel = saved?.level ?? 7;
+      console.log('[map] 초기 view — saved?', !!saved?.center, 'lat:', startLat, 'lng:', startLng, 'level:', startLevel);
+
+      const center = new window.kakao.maps.LatLng(startLat, startLng);
       const map = new window.kakao.maps.Map(mapContainerRef.current, {
         center,
-        level: isMobile ? 7 : 7,
+        level: startLevel,
         minLevel: 4,
       });
       mapObjRef.current = map;
+
+      // idle 이벤트 — 드래그/줌 종료 시 sessionStorage에 저장
+      window.kakao.maps.event.addListener(map, 'idle', () => {
+        const c = map.getCenter();
+        saveMapState({ center: { lat: c.getLat(), lng: c.getLng() }, level: map.getLevel() });
+      });
 
       // 크기 재계산 + 중심 재설정 (여러 타이밍에 보장)
       const recenter = () => {
@@ -457,7 +533,7 @@ function MapPageInner() {
             console.log('[마커클릭] drawerOpen 설정 전');
             setDrawerOpen(true);
             console.log('[마커클릭] drawerOpen 설정 후');
-            setDrawerHeight('45vh');
+            setDrawerHeight(45);
             console.log('[마커클릭] drawerHeight 설정 후');
             setDrawerDragY(0);
           } else {
@@ -489,7 +565,7 @@ function MapPageInner() {
       if (window.innerWidth < 768) {
         console.log('[클러스터클릭] 모바일 분기: drawerHeight=45vh, drawerOpen=true');
         setTopPropertyNumber(null);
-        setDrawerHeight('45vh');
+        setDrawerHeight(45);
         setDrawerDragY(0);
         setDrawerOpen(true);
       }
@@ -723,7 +799,7 @@ function MapPageInner() {
             className="map-drawer-toggle"
             onClick={() => {
               console.log('[오버레이클릭] 매물 수 오버레이 클릭됨');
-              setDrawerHeight('45vh');
+              setDrawerHeight(45);
               setDrawerDragY(0);
               setDrawerOpen(true);
             }}
@@ -895,46 +971,57 @@ function MapPageInner() {
       </div>
 
       {/* ════════════ 모바일 드로어 ════════════ */}
-      {/* 배경 오버레이 */}
-      {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.4)' }} onClick={() => { setDrawerOpen(false); setTopPropertyNumber(null); }} />
-      )}
+      {/* 배경 오버레이 제거 — 뒤 지도 터치/드래그 가능 */}
       {/* 드로어 시트 (항상 렌더, transform으로 표시/숨김) */}
       <div
-        onClick={e => e.stopPropagation()}
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%',
-          height: drawerHeight, maxHeight: '85vh', background: '#fff',
+          height: `${drawerHeight}vh`, maxHeight: '90vh', background: '#fff',
           borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
           boxShadow: drawerOpen ? '0 -4px 20px rgba(0,0,0,0.15)' : 'none',
           display: 'flex', flexDirection: 'column',
           overscrollBehavior: 'contain', zIndex: 200,
           transform: drawerOpen ? `translateY(${drawerDragY}px)` : 'translateY(100%)',
           transition: drawerDragY === 0 ? 'transform 0.3s ease, height 0.3s ease' : 'none',
+          pointerEvents: drawerOpen ? 'auto' : 'none',
         }}
           >
             {/* 드로어 핸들 + 헤더 */}
             <div
-              style={{ padding: '8px 20px 12px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'pan-y' }}
-              onTouchStart={e => { drawerStartY.current = e.touches[0].clientY; setDrawerDragY(0); }}
+              style={{ padding: '8px 20px 12px', borderBottom: '1px solid #eee', flexShrink: 0, touchAction: 'none', cursor: 'grab' }}
+              onTouchStart={e => {
+                drawerStartY.current = e.touches[0].clientY;
+                drawerDragRef.current = 0;
+                setDrawerDragY(0);
+              }}
               onTouchMove={e => {
                 const diff = e.touches[0].clientY - drawerStartY.current;
-                setDrawerDragY(diff > 0 ? diff : 0);
+                drawerDragRef.current = diff;
+                setDrawerDragY(diff);
               }}
               onTouchEnd={() => {
-                if (drawerDragY > 100) { setDrawerOpen(false); setTopPropertyNumber(null); }
+                const dy = drawerDragRef.current;
+                drawerDragRef.current = 0;
                 setDrawerDragY(0);
+                if (Math.abs(dy) < 50) return;
+                if (dy < 0) {
+                  // 위로 스와이프 → 항상 90vh
+                  setDrawerHeight(90);
+                } else {
+                  // 아래로 스와이프: 90 → 45 → 닫힘
+                  if (drawerHeight >= 90) {
+                    setDrawerHeight(45);
+                  } else {
+                    setDrawerOpen(false);
+                    setTopPropertyNumber(null);
+                  }
+                }
               }}
             >
               <div style={{ textAlign: 'center', fontSize: '12px', color: '#888', fontWeight: 500, marginBottom: '6px' }}>
                 매물 <span style={{ color: '#e2a06e', fontWeight: 700 }}>{drawerList.length}</span>개
               </div>
-              <div
-                onClick={() => {
-                  setDrawerHeight(prev => prev === '45vh' ? '85vh' : '45vh');
-                }}
-                style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto', cursor: 'pointer' }}
-              />
+              <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
             </div>
             {/* 카드 리스트 */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
