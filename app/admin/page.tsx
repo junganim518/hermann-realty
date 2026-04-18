@@ -390,7 +390,7 @@ export default function AdminDashboard() {
                 return (
                   <div key={p.id} className="admin-prop-row" style={{ background: p.is_sold ? '#fafafa' : '#fff', opacity: p.is_sold ? 0.65 : 1 }}>
                     {/* 썸네일 */}
-                    <a href={`/item/view/${p.property_number}`} target="_blank" rel="noopener noreferrer" style={{ width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
+                    <a href={`/item/view/${p.property_number}`} style={{ width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
                         <img src={propImages[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
