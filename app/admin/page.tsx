@@ -125,6 +125,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0 });
+  const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
   const [todayVisitors, setTodayVisitors] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [propImages, setPropImages] = useState<Record<string, string>>({});
@@ -190,6 +191,19 @@ export default function AdminDashboard() {
     // 읽지 않은 의뢰 수
     const { count } = await supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('is_read', false);
     setUnreadInquiries(count ?? 0);
+
+    // 방문자 통계
+    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 6); weekStart.setHours(0, 0, 0, 0);
+    const [todayRes, weekRes, totalRes] = await Promise.all([
+      supabase.from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+      supabase.from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', weekStart.toISOString()),
+      supabase.from('page_views').select('*', { count: 'exact', head: true }),
+    ]);
+    setVisitors({
+      today: todayRes.count ?? 0,
+      week: weekRes.count ?? 0,
+      total: totalRes.count ?? 0,
+    });
   };
 
   const toggleSold = async (id: string, currentSold: boolean) => {
@@ -262,7 +276,12 @@ export default function AdminDashboard() {
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a' }}>관리자 대시보드</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a', display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
+          관리자 대시보드
+          <span style={{ fontSize: '12px', fontWeight: 500, color: '#C8A96E' }}>
+            👁 오늘 {visitors.today.toLocaleString()} · 이번주 {visitors.week.toLocaleString()} · 전체 {visitors.total.toLocaleString()}
+          </span>
+        </h1>
 
         {/* 통계 카드 */}
         <div className="admin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
@@ -279,6 +298,7 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
+
 
         {/* 오늘 방문 예정 (축소) */}
         <div style={{ ...sectionSt, padding: '16px 20px' }}>
@@ -308,15 +328,8 @@ export default function AdminDashboard() {
             { label: '손님 관리', href: '/admin/customers' },
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
-            { label: '📊 Analytics', href: 'https://vercel.com/dashboard', external: true },
           ].map(link => (
-            <a
-              key={link.href}
-              href={link.href}
-              target={link.external ? '_blank' : undefined}
-              rel={link.external ? 'noopener noreferrer' : undefined}
-              style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333', position: 'relative' }}
-            >
+            <a key={link.href} href={link.href} style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333', position: 'relative' }}>
               {link.label}
               {link.href === '/admin/inquiries' && unreadInquiries > 0 && (
                 <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#e05050', color: '#fff', fontSize: '10px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadInquiries}</span>
