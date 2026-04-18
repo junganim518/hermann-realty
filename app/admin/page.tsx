@@ -108,6 +108,13 @@ const buildPriceStr = (p: any) => {
   return parts.length > 0 ? parts.join(' / ') : '-';
 };
 
+const formatDate = (d: string | null) => {
+  if (!d) return '-';
+  const dt = new Date(d);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${dt.getFullYear()}.${pad(dt.getMonth() + 1)}.${pad(dt.getDate())}`;
+};
+
 const formatAddr = (p: any) => {
   const addr = p.address || '';
   const extra = [p.building_name, p.unit_number].filter(Boolean).join(' ');
@@ -408,6 +415,11 @@ export default function AdminDashboard() {
                       {p.admin_memo && (
                         <p style={{ fontSize: '11px', color: '#999', margin: 0, lineHeight: 1.4, fontStyle: 'italic', overflow: 'hidden', wordBreak: 'break-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap', maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>메모: {p.admin_memo}</p>
                       )}
+                      {/* 5행: 등록일 / 수정일 */}
+                      <p style={{ fontSize: '10px', color: '#bbb', margin: '4px 0 0', lineHeight: 1.3 }}>
+                        등록 {formatDate(p.created_at)}
+                        {p.updated_at && formatDate(p.updated_at) !== formatDate(p.created_at) && ` · 수정 ${formatDate(p.updated_at)}`}
+                      </p>
                     </div>
 
                     {/* 액션 영역 */}

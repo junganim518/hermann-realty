@@ -432,7 +432,11 @@ export default function EditPropertyPage() {
       }
 
       alert('매물이 수정되었습니다.');
-      router.push(`/item/view/${form.property_number}`);
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.push(`/item/view/${form.property_number}`);
+      }
     } catch (err: any) {
       alert(`저장 실패: ${err.message ?? err}`);
     } finally {
