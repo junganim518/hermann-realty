@@ -144,11 +144,26 @@ function MapPageInner() {
   }, []);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => {
+      // window.innerWidth < 768 직접 비교 (기존 방식 유지)
+      setIsMobile(window.innerWidth < 768);
+    };
     check();
     window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.removeEventListener('orientationchange', check);
+    };
   }, []);
+
+  useEffect(() => {
+    console.log('[map] isMobile state 변경:', isMobile);
+  }, [isMobile]);
+
+  useEffect(() => {
+    console.log('[map] 드로어 상태 — open:', drawerOpen, 'height:', drawerHeight, 'topProperty:', topPropertyNumber);
+  }, [drawerOpen, drawerHeight, topPropertyNumber]);
 
   // 필터 바 가로 스크롤 힌트
   useEffect(() => {
@@ -432,13 +447,18 @@ function MapPageInner() {
         const marker = new window.kakao.maps.Marker({ position });
         (marker as any)._pnum = p.property_number;
 
-        // 클릭 이벤트 — 카드 하이라이트 + 스크롤 (+ 모바일 드로어 45vh)
-        window.kakao.maps.event.addListener(marker, 'click', () => {
+        // 클릭/터치 이벤트 공통 핸들러
+        const handleMarkerClick = () => {
+          console.log('[마커클릭] 실행됨', p.property_number);
+          console.log('[마커클릭] mobile:', window.innerWidth < 768);
           setHighlightId(p.property_number);
-          if (isMobile) {
+          if (window.innerWidth < 768) {
             setTopPropertyNumber(p.property_number);
-            setDrawerHeight('45vh');
+            console.log('[마커클릭] drawerOpen 설정 전');
             setDrawerOpen(true);
+            console.log('[마커클릭] drawerOpen 설정 후');
+            setDrawerHeight('45vh');
+            console.log('[마커클릭] drawerHeight 설정 후');
             setDrawerDragY(0);
           } else {
             const card = cardRefs.current[p.property_number];
@@ -446,7 +466,9 @@ function MapPageInner() {
               listRef.current.scrollTo({ top: card.offsetTop - 16, behavior: 'smooth' });
             }
           }
-        });
+        };
+        window.kakao.maps.event.addListener(marker, 'click', handleMarkerClick);
+        window.kakao.maps.event.addListener(marker, 'touchend', handleMarkerClick);
 
         newMarkers.push(marker);
       });
@@ -454,14 +476,23 @@ function MapPageInner() {
     markersRef.current = newMarkers;
     clustererRef.current?.addMarkers(newMarkers);
 
-    // 클러스터 클릭 → 해당 매물만 목록 표시
+    // 클러스터 클릭 → 해당 매물만 목록 표시 (+ 모바일 드로어 45vh)
     const handleClusterClick = (cluster: any) => {
+      console.log('[클러스터클릭] 실행됨');
       const bounds = cluster.getBounds();
       const ids = new Set<string>();
       markersRef.current.forEach((m: any) => {
         if (bounds.contain(m.getPosition()) && m._pnum) ids.add(m._pnum);
       });
       if (ids.size > 0) setVisibleIds(ids);
+
+      if (window.innerWidth < 768) {
+        console.log('[클러스터클릭] 모바일 분기: drawerHeight=45vh, drawerOpen=true');
+        setTopPropertyNumber(null);
+        setDrawerHeight('45vh');
+        setDrawerDragY(0);
+        setDrawerOpen(true);
+      }
     };
 
     if (clustererRef.current) {
@@ -473,7 +504,7 @@ function MapPageInner() {
         window.kakao.maps.event.removeListener(clustererRef.current, 'clusterclick', handleClusterClick);
       }
     };
-  }, [filtered, mapReady, isMobile]);
+  }, [filtered, mapReady]);
 
   // ── 지도 내 표시 목록
   const displayList = visibleIds
@@ -566,13 +597,11 @@ function MapPageInner() {
           .map-container { height: 100dvh !important; }
           .map-body { display: flex !important; flex-direction: column !important; height: 35vh !important; flex-shrink: 0 !important; }
           .map-area { flex: 1 !important; width: 100% !important; height: 35vh !important; min-height: 35vh !important; flex-shrink: 0 !important; }
-          .map-panel { touch-action: none !important; }
-          .map-panel .map-list-grid {
-            display: block !important;
-            padding: 0 !important;
-            touch-action: pan-y !important;
-          }
-          .map-drawer-handle { display: block !important; padding: 8px 0 !important; cursor: grab !important; background: #fff !important; border-radius: 16px 16px 0 0 !important; flex-shrink: 0 !important; touch-action: none !important; }
+          .map-panel { display: none !important; }
+          .map-body { height: auto !important; flex: 1 !important; }
+          .map-area { flex: 1 !important; height: 100% !important; min-height: 0 !important; }
+          .map-drawer-handle { display: none !important; }
+          .map-drawer-toggle { display: flex !important; }
           .map-card-text { padding: 12px 14px !important; }
           .map-card-text .map-card-pnum { font-size: 11px !important; }
           .map-card-text .map-card-title { font-size: 14px !important; }
@@ -689,19 +718,24 @@ function MapPageInner() {
         <div className="map-area" style={{ flex: 1, height: isMobile ? '40vh' : '100%', position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
           <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-          {/* 모바일 매물목록 토글 버튼 */}
+          {/* 모바일 매물수 오버레이 버튼 */}
           <button
             className="map-drawer-toggle"
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => {
+              console.log('[오버레이클릭] 매물 수 오버레이 클릭됨');
+              setDrawerHeight('45vh');
+              setDrawerDragY(0);
+              setDrawerOpen(true);
+            }}
             style={{
-              display: 'none', position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-              zIndex: 50, padding: '10px 24px', background: '#e2a06e', color: '#fff',
+              display: 'none', position: 'fixed', bottom: '70px', right: '16px',
+              zIndex: 150, padding: '12px 18px', background: '#e2a06e', color: '#fff',
               fontSize: '14px', fontWeight: 700, border: 'none', borderRadius: '24px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.25)', cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.25)', cursor: 'pointer',
               alignItems: 'center', gap: '6px',
             }}
           >
-            매물 목록 보기 <strong>{displayList.length}</strong>개
+            매물 <strong>{displayList.length}</strong>개 목록보기
           </button>
 
           {!mapReady && (
