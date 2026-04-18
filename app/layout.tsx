@@ -4,6 +4,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import ScrollToTop from '@/components/ScrollToTop';
+import PageViewTracker from '@/components/PageViewTracker';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hermann-realty.com'),
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-pretendard">
         <ScrollToTop /><Header />{children}<ConditionalFooter />
+        <PageViewTracker />
         <Analytics />
       </body>
     </html>
