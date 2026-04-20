@@ -145,6 +145,57 @@ export default function AdminDashboard() {
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
+  // 블로그 글 생성 모달
+  const [blogOpen, setBlogOpen] = useState(false);
+  const [blogProperty, setBlogProperty] = useState<any>(null);
+  const [blogLoading, setBlogLoading] = useState(false);
+  const [blogText, setBlogText] = useState('');
+  const [blogError, setBlogError] = useState('');
+
+  const openBlogModal = async (p: any) => {
+    setBlogProperty(p);
+    setBlogOpen(true);
+    await generateBlog(p);
+  };
+
+  const closeBlogModal = () => {
+    setBlogOpen(false);
+    setBlogProperty(null);
+    setBlogText('');
+    setBlogError('');
+    setBlogLoading(false);
+  };
+
+  const generateBlog = async (p: any) => {
+    setBlogLoading(true);
+    setBlogError('');
+    setBlogText('');
+    try {
+      const res = await fetch('/api/blog-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property: p }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      setBlogText(data.text ?? '');
+    } catch (err: any) {
+      setBlogError(err?.message ?? '생성 실패');
+    } finally {
+      setBlogLoading(false);
+    }
+  };
+
+  const copyBlogText = async () => {
+    if (!blogText) return;
+    try {
+      await navigator.clipboard.writeText(blogText);
+      showToast('블로그 글이 복사되었습니다');
+    } catch {
+      showToast('복사 실패');
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 2500);
@@ -388,6 +439,72 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* 블로그 글 생성 모달 */}
+      {blogOpen && (
+        <div
+          onClick={closeBlogModal}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '12px', maxWidth: '720px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}
+          >
+            {/* 헤더 */}
+            <div style={{ padding: '16px 20px', background: '#1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#e2a06e' }}>
+                📝 블로그 글 생성
+                {blogProperty && (
+                  <span style={{ fontSize: '12px', color: '#888', fontWeight: 500, marginLeft: '10px' }}>
+                    매물번호 {blogProperty.property_number}
+                  </span>
+                )}
+              </h3>
+              <button onClick={closeBlogModal} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* 본문 */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', minHeight: '200px' }}>
+              {blogLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: '#888' }}>
+                  <div style={{ width: '36px', height: '36px', border: '3px solid #f0f0f0', borderTop: '3px solid #e2a06e', borderRadius: '50%', animation: 'blog-spin 0.8s linear infinite' }} />
+                  <p style={{ fontSize: '14px' }}>Claude가 블로그 글을 작성 중입니다...</p>
+                  <style>{`@keyframes blog-spin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+              ) : blogError ? (
+                <div style={{ padding: '20px', background: '#fff0f0', border: '1px solid #e05050', borderRadius: '6px', color: '#c03030', fontSize: '14px' }}>
+                  생성 실패: {blogError}
+                </div>
+              ) : (
+                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', fontSize: '14px', lineHeight: 1.8, color: '#333', margin: 0 }}>
+                  {blogText}
+                </pre>
+              )}
+            </div>
+
+            {/* 푸터 */}
+            <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+              <button onClick={closeBlogModal} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #ddd', color: '#666', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                닫기
+              </button>
+              <button
+                onClick={() => blogProperty && generateBlog(blogProperty)}
+                disabled={blogLoading}
+                style={{ padding: '8px 16px', background: '#fff', border: '1px solid #e2a06e', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: blogLoading ? 'wait' : 'pointer', opacity: blogLoading ? 0.5 : 1 }}
+              >
+                🔄 다시 생성
+              </button>
+              <button
+                onClick={copyBlogText}
+                disabled={!blogText || blogLoading}
+                style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: (!blogText || blogLoading) ? 'not-allowed' : 'pointer', opacity: (!blogText || blogLoading) ? 0.5 : 1 }}
+              >
+                📋 복사하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a', display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
           관리자 대시보드
@@ -573,11 +690,12 @@ export default function AdminDashboard() {
                       </div>
                       <span style={{ fontSize: '10px', color: p.is_sold ? '#999' : '#4caf50', fontWeight: 600 }}>{p.is_sold ? '거래완료' : '거래중'}</span>
 
-                      {/* 복사/수정/삭제 */}
-                      <div style={{ display: 'flex', gap: '4px' }}>
+                      {/* 복사/블로그/수정/삭제 */}
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                         <button onClick={() => copyProperty(p)} disabled={copying === p.id} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #4a80e8', color: '#4a80e8', background: '#fff', cursor: copying === p.id ? 'wait' : 'pointer', opacity: copying === p.id ? 0.6 : 1 }}>
                           {copying === p.id ? '복사중...' : '복사'}
                         </button>
+                        <button onClick={() => openBlogModal(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #9c27b0', color: '#9c27b0', background: '#fff', cursor: 'pointer' }}>블로그 글</button>
                         <a href={`/admin/properties/${p.property_number}/edit`} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', textDecoration: 'none' }}>수정</a>
                         <button onClick={() => deleteProperty(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e05050', color: '#e05050', background: '#fff', cursor: 'pointer' }}>삭제</button>
                       </div>
