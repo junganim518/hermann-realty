@@ -601,7 +601,7 @@ export default function NewPropertyPage() {
       }
 
       alert('매물이 등록되었습니다.');
-      router.push(`/item/view/${propertyNumber}`);
+      router.push('/admin');
     } catch (err: any) {
       console.error(err);
       alert(`저장 실패: ${err.message ?? err}`);
