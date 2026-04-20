@@ -747,7 +747,7 @@ export default function Home() {
           </div>
 
           <div style={{ padding: '16px' }}>
-            <p style={{ fontSize: '26px', fontWeight: 700, color: '#e2a06e', marginBottom: '4px' }}>010-8680-8151</p>
+            <p style={{ fontSize: 'clamp(18px, 1.7vw, 24px)', fontWeight: 700, color: '#e2a06e', marginBottom: '4px', whiteSpace: 'nowrap', letterSpacing: '-0.5px' }}>010-8680-8151</p>
             <p style={{ fontSize: '12px', color: '#888', marginBottom: '16px', lineHeight: 1.6 }}>평일 10:00 - 19:00<br />토요일 10:00 - 19:00</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

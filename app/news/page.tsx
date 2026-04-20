@@ -32,8 +32,11 @@ export default function NewsPage() {
   // 블로그 프롬프트 모달
   const [blogOpen, setBlogOpen] = useState(false);
   const [blogText, setBlogText] = useState('');
-  const [newsLoading, setNewsLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+
+  // 뉴스 선택 모달
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [selectedNewsIdx, setSelectedNewsIdx] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -59,28 +62,56 @@ export default function NewsPage() {
     setTimeout(() => setToastMsg(''), 2500);
   };
 
-  const openNewsBlogModal = async () => {
-    if (newsLoading) return;
-    setNewsLoading(true);
-    setBlogText('');
-    setBlogOpen(true);
-    try {
-      const res = await fetch('/api/news');
-      const data = await res.json();
-      const newsItems: any[] = data?.items ?? [];
-      if (newsItems.length === 0) throw new Error('뉴스를 불러올 수 없습니다');
+  const openNewsSelector = () => {
+    if (items.length === 0) {
+      alert('불러온 뉴스가 없습니다');
+      return;
+    }
+    setSelectedNewsIdx(new Set());
+    setSelectorOpen(true);
+  };
 
-      const today = new Date();
-      const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
-      const yy = String(today.getFullYear()).slice(-2);
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const shortDate = `${yy}.${mm}.${dd}`;
-      const newsLines = newsItems.slice(0, 5)
-        .map((n, i) => `${i + 1}. ${n.title}\n   요약: ${n.description || '(요약 없음)'}`)
-        .join('\n\n');
+  const closeNewsSelector = () => {
+    setSelectorOpen(false);
+  };
 
-      const prompt = `당신은 부동산 전문 블로거입니다.
+  const toggleNewsSelect = (idx: number) => {
+    setSelectedNewsIdx(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        if (next.size >= 5) {
+          showToast('최대 5개까지 선택 가능합니다');
+          return prev;
+        }
+        next.add(idx);
+      }
+      return next;
+    });
+  };
+
+  const generatePromptFromSelected = () => {
+    if (selectedNewsIdx.size === 0) {
+      showToast('뉴스를 1개 이상 선택해주세요');
+      return;
+    }
+    const selectedItems = Array.from(selectedNewsIdx)
+      .sort((a, b) => a - b)
+      .map(idx => items[idx])
+      .filter(Boolean);
+
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+    const yy = String(today.getFullYear()).slice(-2);
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const shortDate = `${yy}.${mm}.${dd}`;
+    const newsLines = selectedItems
+      .map((n, i) => `${i + 1}. ${n.title}\n   요약: ${n.description || '(요약 없음)'}`)
+      .join('\n\n');
+
+    const prompt = `당신은 부동산 전문 블로거입니다.
 아래 오늘의 부동산 뉴스를 바탕으로
 네이버 블로그에 올릴 정보전달식 블로그 글을 작성해주세요.
 
@@ -108,12 +139,9 @@ export default function NewsPage() {
 오늘의 부동산 뉴스 (${dateStr}):
 ${newsLines}`;
 
-      setBlogText(prompt);
-    } catch (err: any) {
-      setBlogText(`뉴스 불러오기 실패: ${err?.message ?? '알 수 없는 오류'}`);
-    } finally {
-      setNewsLoading(false);
-    }
+    setBlogText(prompt);
+    setSelectorOpen(false);
+    setBlogOpen(true);
   };
 
   const closeBlogModal = () => {
@@ -157,19 +185,19 @@ ${newsLines}`;
         {isAdmin && (
           <div style={{ marginBottom: '24px' }}>
             <button
-              onClick={openNewsBlogModal}
-              disabled={newsLoading}
+              onClick={openNewsSelector}
+              disabled={loading || items.length === 0}
               style={{
                 width: '100%', padding: '14px 20px',
                 background: '#1a1a1a', color: '#e2a06e',
                 border: '1px solid #e2a06e', borderRadius: '8px',
                 fontSize: '15px', fontWeight: 700,
-                cursor: newsLoading ? 'wait' : 'pointer',
-                opacity: newsLoading ? 0.6 : 1,
+                cursor: (loading || items.length === 0) ? 'not-allowed' : 'pointer',
+                opacity: (loading || items.length === 0) ? 0.5 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}
             >
-              {newsLoading ? '뉴스 불러오는 중...' : '📰 오늘의 부동산 소식 블로그 글 생성'}
+              📰 오늘의 부동산 소식 블로그 글 생성
             </button>
           </div>
         )}
@@ -253,6 +281,93 @@ ${newsLines}`;
         </div>
       )}
 
+      {/* 뉴스 선택 모달 */}
+      {selectorOpen && (
+        <div
+          onClick={closeNewsSelector}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '12px', maxWidth: '720px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}
+          >
+            <div style={{ padding: '16px 20px', background: '#1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#e2a06e' }}>
+                📰 블로그에 포함할 뉴스 선택
+                <span style={{ fontSize: '12px', color: '#888', fontWeight: 500, marginLeft: '10px' }}>
+                  {selectedNewsIdx.size} / 5
+                </span>
+              </h3>
+              <button onClick={closeNewsSelector} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0', background: '#fafafa' }}>
+              {items.map((item, idx) => {
+                const checked = selectedNewsIdx.has(idx);
+                const reachedMax = selectedNewsIdx.size >= 5 && !checked;
+                return (
+                  <label
+                    key={`${item.link}-${idx}`}
+                    onClick={e => {
+                      if (reachedMax) {
+                        e.preventDefault();
+                        showToast('최대 5개까지 선택 가능합니다');
+                      }
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: '10px',
+                      padding: '10px 20px', cursor: reachedMax ? 'not-allowed' : 'pointer',
+                      background: checked ? '#fff8f2' : '#fff',
+                      borderBottom: '1px solid #f0f0f0',
+                      opacity: reachedMax ? 0.45 : 1,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => !reachedMax && toggleNewsSelect(idx)}
+                      style={{ accentColor: '#e2a06e', cursor: reachedMax ? 'not-allowed' : 'pointer', marginTop: '2px', flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a', marginBottom: '4px', lineHeight: 1.4 }}>
+                        {item.title}
+                      </p>
+                      <p style={{ fontSize: '11px', color: '#888' }}>
+                        <span style={{ color: '#e2a06e', fontWeight: 600 }}>{item.source}</span>
+                        {item.pubDate && <> · {formatDate(item.pubDate)}</>}
+                      </p>
+                      {item.description && (
+                        <p style={{ fontSize: '12px', color: '#666', marginTop: '4px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', color: '#666' }}>
+                최대 5개까지 선택 가능
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={closeNewsSelector} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #ddd', color: '#666', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  취소
+                </button>
+                <button
+                  onClick={generatePromptFromSelected}
+                  disabled={selectedNewsIdx.size === 0}
+                  style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: selectedNewsIdx.size === 0 ? 'not-allowed' : 'pointer', opacity: selectedNewsIdx.size === 0 ? 0.5 : 1 }}
+                >
+                  ✨ 프롬프트 생성
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 블로그 프롬프트 모달 */}
       {blogOpen && (
         <div
@@ -274,17 +389,9 @@ ${newsLines}`;
               <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
                 아래 프롬프트를 복사해 ChatGPT / Claude / Gemini 등에 붙여넣어 블로그 글을 생성하세요.
               </p>
-              {newsLoading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: '#888' }}>
-                  <div style={{ width: '36px', height: '36px', border: '3px solid #f0f0f0', borderTop: '3px solid #e2a06e', borderRadius: '50%', animation: 'news-blog-spin 0.8s linear infinite' }} />
-                  <p style={{ fontSize: '14px' }}>오늘의 부동산 뉴스를 불러오는 중...</p>
-                  <style>{`@keyframes news-blog-spin { to { transform: rotate(360deg); } }`}</style>
-                </div>
-              ) : (
-                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.7, color: '#333', margin: 0, background: '#fafafa', padding: '14px', borderRadius: '6px', border: '1px solid #eee' }}>
-                  {blogText}
-                </pre>
-              )}
+              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.7, color: '#333', margin: 0, background: '#fafafa', padding: '14px', borderRadius: '6px', border: '1px solid #eee' }}>
+                {blogText}
+              </pre>
             </div>
 
             <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
@@ -293,8 +400,8 @@ ${newsLines}`;
               </button>
               <button
                 onClick={copyBlogText}
-                disabled={!blogText || newsLoading}
-                style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: (!blogText || newsLoading) ? 'not-allowed' : 'pointer', opacity: (!blogText || newsLoading) ? 0.5 : 1 }}
+                disabled={!blogText}
+                style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: !blogText ? 'not-allowed' : 'pointer', opacity: !blogText ? 0.5 : 1 }}
               >
                 📋 복사하기
               </button>
