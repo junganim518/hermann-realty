@@ -18,6 +18,17 @@ function detectDevice(): 'mobile' | 'pc' {
     : 'pc';
 }
 
+function categorizeReferrer(): string {
+  if (typeof document === 'undefined') return 'direct';
+  const ref = document.referrer;
+  if (!ref) return 'direct';
+  const lower = ref.toLowerCase();
+  if (lower.includes('naver')) return 'naver';
+  if (lower.includes('google')) return 'google';
+  if (lower.includes('kakao')) return 'kakao';
+  return ref;
+}
+
 export default function PageViewTracker() {
   const pathname = usePathname();
 
@@ -35,12 +46,18 @@ export default function PageViewTracker() {
       // sessionStorage 접근 불가(privacy mode 등) — 그대로 진행
     }
 
-    supabase
-      .from('page_views')
-      .insert({ page: pathname, device: detectDevice() })
-      .then(({ error }) => {
-        if (error) console.warn('[PageViewTracker]', error.message);
-      });
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        console.log('[PageViewTracker] 로그인 사용자 — 수집 제외');
+        return;
+      }
+      supabase
+        .from('page_views')
+        .insert({ page: pathname, device: detectDevice(), referrer: categorizeReferrer() })
+        .then(({ error }) => {
+          if (error) console.warn('[PageViewTracker]', error.message);
+        });
+    });
   }, [pathname]);
 
   return null;

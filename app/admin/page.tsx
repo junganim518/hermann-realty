@@ -126,6 +126,10 @@ export default function AdminDashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0 });
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
+  type RefDetailRow = { total: number; pages: { page: string; count: number }[] };
+  const [referralDetail, setReferralDetail] = useState<{ today: Record<string, RefDetailRow>; total: Record<string, RefDetailRow> }>({ today: {}, total: {} });
+  const [referralModalOpen, setReferralModalOpen] = useState(false);
+  const [referralTab, setReferralTab] = useState<'today' | 'total'>('today');
   const [todayVisitors, setTodayVisitors] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [propImages, setPropImages] = useState<Record<string, string>>({});
@@ -273,6 +277,56 @@ export default function AdminDashboard() {
       week: weekRes.count ?? 0,
       total: totalRes.count ?? 0,
     });
+
+    // 유입 경로 통계
+    const { data: views } = await supabase
+      .from('page_views')
+      .select('referrer, page, created_at');
+    if (views) {
+      const categorize = (ref: string | null | undefined) => {
+        if (!ref || ref === 'direct') return '직접접속';
+        if (ref === 'naver') return '네이버';
+        if (ref === 'google') return '구글';
+        if (ref === 'kakao') return '카카오톡';
+        return '기타';
+      };
+      const todayCounts: Record<string, number> = {};
+      const totalCounts: Record<string, number> = {};
+      // referrer → page → count
+      const todayPageMap: Record<string, Record<string, number>> = {};
+      const totalPageMap: Record<string, Record<string, number>> = {};
+      const todayTs = todayStart.getTime();
+      for (const v of views) {
+        const label = categorize(v.referrer);
+        const page = v.page ?? '(unknown)';
+        totalCounts[label] = (totalCounts[label] ?? 0) + 1;
+        (totalPageMap[label] ??= {})[page] = (totalPageMap[label]?.[page] ?? 0) + 1;
+        if (new Date(v.created_at).getTime() >= todayTs) {
+          todayCounts[label] = (todayCounts[label] ?? 0) + 1;
+          (todayPageMap[label] ??= {})[page] = (todayPageMap[label]?.[page] ?? 0) + 1;
+        }
+      }
+      const ORDER = ['네이버', '구글', '카카오톡', '직접접속', '기타'];
+
+      const buildDetail = (counts: Record<string, number>, pageMap: Record<string, Record<string, number>>) => {
+        const out: Record<string, RefDetailRow> = {};
+        for (const label of ORDER) {
+          const count = counts[label] ?? 0;
+          if (count === 0) continue;
+          const pagesObj = pageMap[label] ?? {};
+          const pages = Object.entries(pagesObj)
+            .map(([page, c]) => ({ page, count: c }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+          out[label] = { total: count, pages };
+        }
+        return out;
+      };
+      setReferralDetail({
+        today: buildDetail(todayCounts, todayPageMap),
+        total: buildDetail(totalCounts, totalPageMap),
+      });
+    }
   };
 
   const toggleSold = async (id: string, currentSold: boolean) => {
@@ -450,6 +504,97 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* 유입 경로 상세 모달 */}
+      {referralModalOpen && (
+        <div
+          onClick={() => setReferralModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '12px', maxWidth: '760px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}
+          >
+            <div style={{ padding: '16px 20px', background: '#1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#e2a06e' }}>📊 유입 경로 상세</h3>
+              <button onClick={() => setReferralModalOpen(false)} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* 탭 */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e0e0e0', background: '#fafafa' }}>
+              {(['today', 'total'] as const).map(tab => {
+                const active = referralTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setReferralTab(tab)}
+                    style={{
+                      flex: 1, padding: '12px 20px', fontSize: '14px', fontWeight: 700,
+                      background: active ? '#fff' : 'transparent',
+                      color: active ? '#e2a06e' : '#888',
+                      border: 'none',
+                      borderBottom: active ? '3px solid #e2a06e' : '3px solid transparent',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {tab === 'today' ? '오늘' : '전체'}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+              {(() => {
+                const detail = referralDetail[referralTab];
+                const entries = Object.entries(detail);
+                if (entries.length === 0) {
+                  return (
+                    <p style={{ color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+                      {referralTab === 'today' ? '오늘 방문 기록이 없습니다' : '방문 기록이 없습니다'}
+                    </p>
+                  );
+                }
+                return entries.map(([label, row]) => (
+                  <div key={label} style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '2px solid #e2a06e' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{label}</span>
+                      <span style={{ fontSize: '12px', color: '#e2a06e', fontWeight: 600 }}>{row.total.toLocaleString()}회 방문</span>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '6px 4px', color: '#888', fontWeight: 600, fontSize: '11px' }}>착지 페이지 Top 5</th>
+                          <th style={{ textAlign: 'right', padding: '6px 4px', color: '#888', fontWeight: 600, fontSize: '11px', width: '80px' }}>방문수</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {row.pages.map((p, i) => (
+                          <tr key={`${label}-${p.page}-${i}`} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                            <td style={{ padding: '8px 4px', color: '#333', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '12px', wordBreak: 'break-all' }}>
+                              <span style={{ color: '#e2a06e', fontWeight: 700, marginRight: '6px' }}>{i + 1}</span>
+                              {p.page}
+                            </td>
+                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#333', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{p.count.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ));
+              })()}
+            </div>
+
+            <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setReferralModalOpen(false)}
+                style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 블로그 프롬프트 모달 */}
       {blogOpen && (
         <div
@@ -502,6 +647,12 @@ export default function AdminDashboard() {
           <span style={{ fontSize: '12px', fontWeight: 500, color: '#C8A96E' }}>
             👁 오늘 {visitors.today.toLocaleString()} · 이번주 {visitors.week.toLocaleString()} · 전체 {visitors.total.toLocaleString()}
           </span>
+          <button
+            onClick={() => setReferralModalOpen(true)}
+            style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #1a1a1a', background: '#1a1a1a', color: '#e2a06e', cursor: 'pointer' }}
+          >
+            📊 유입 경로 보기
+          </button>
         </h1>
 
         {/* 통계 카드 */}
