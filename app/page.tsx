@@ -223,6 +223,19 @@ export default function Home() {
         .grid-recent { display: grid; grid-template-columns: repeat(4, 1fr); }
         .sidebar-left  { display: block; }
         .sidebar-right { display: block; }
+
+        /* ── PC 1200px 이상: 사이드바 유연 폭 ── */
+        @media (min-width: 1200px) {
+          .sidebar-left {
+            min-width: clamp(160px, 15vw, 220px) !important;
+            max-width: clamp(160px, 15vw, 220px) !important;
+          }
+          .sidebar-right {
+            min-width: clamp(160px, 15vw, 220px) !important;
+            max-width: clamp(160px, 15vw, 220px) !important;
+          }
+        }
+
         .main-card-mobile { display: block; }
         .main-card-content-row { display: block; }
         .card-header-text { font-size: 13px; }

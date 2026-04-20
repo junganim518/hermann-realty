@@ -238,6 +238,18 @@ function PropertiesPageInner() {
         .prop-card-mobile { display: block; }
         .prop-card-content-row { display: block; }
 
+        /* ── PC 1200px 이상: 사이드바 유연 폭 ── */
+        @media (min-width: 1200px) {
+          .prop-sidebar-left {
+            min-width: clamp(160px, 15vw, 220px) !important;
+            max-width: clamp(160px, 15vw, 220px) !important;
+          }
+          .prop-sidebar-right {
+            min-width: clamp(160px, 15vw, 220px) !important;
+            max-width: clamp(160px, 15vw, 220px) !important;
+          }
+        }
+
         /* ── 태블릿 (768px ~ 1199px) ── */
         @media (max-width: 1199px) {
           .prop-sidebar-left { min-width: 160px !important; max-width: 160px !important; }
