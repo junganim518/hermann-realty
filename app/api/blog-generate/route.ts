@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 
 export const maxDuration = 60;
 
-// ── 작성자 페르소나 (안정 — 요청마다 동일) ─────────────────────
+// ── 작성자 페르소나 + 작성 규칙 ────────────────────────────────
 const SYSTEM_PROMPT = `당신은 부동산 전문 블로그 작가입니다.
 아래 매물 정보를 바탕으로 네이버 블로그에 올릴 정성스러운 블로그 글을 작성해주세요.
 
@@ -50,52 +49,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'property 필드 필요' }, { status: 400 });
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY 환경변수 미설정' },
+        { error: 'GEMINI_API_KEY 환경변수 미설정' },
         { status: 500 },
       );
     }
 
-    const client = new Anthropic();
+    // 시스템 프롬프트 + 매물정보를 하나의 텍스트로 결합
+    const fullPrompt = `${SYSTEM_PROMPT}\n\n${buildPropertyInfo(property)}`;
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      system: [
-        {
-          type: 'text',
-          text: SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
-      messages: [
-        { role: 'user', content: buildPropertyInfo(property) },
-      ],
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          { parts: [{ text: fullPrompt }] },
+        ],
+      }),
     });
 
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map(b => b.text)
-      .join('\n');
+    const data = await res.json();
+    console.log('[blog-generate] Gemini 응답 상태:', res.status);
+
+    if (!res.ok) {
+      console.error('[blog-generate] Gemini 오류:', data);
+      return NextResponse.json(
+        { error: data?.error?.message ?? `HTTP ${res.status}` },
+        { status: res.status },
+      );
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+
+    if (!text) {
+      console.warn('[blog-generate] 텍스트 없음. 전체 응답:', JSON.stringify(data));
+      return NextResponse.json(
+        { error: '응답에 텍스트가 없습니다', raw: data },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       text,
-      usage: {
-        input: response.usage.input_tokens,
-        output: response.usage.output_tokens,
-        cache_read: response.usage.cache_read_input_tokens ?? 0,
-        cache_write: response.usage.cache_creation_input_tokens ?? 0,
-      },
+      usage: data?.usageMetadata ?? null,
     });
   } catch (err: any) {
-    console.error('[blog-generate]', err);
-    if (err instanceof Anthropic.APIError) {
-      return NextResponse.json(
-        { error: err.message, status: err.status },
-        { status: err.status ?? 500 },
-      );
-    }
+    console.error('[blog-generate] 예외:', err);
     return NextResponse.json(
       { error: err?.message ?? '알 수 없는 오류' },
       { status: 500 },
