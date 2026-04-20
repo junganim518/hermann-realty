@@ -142,6 +142,13 @@ export default function AdminDashboard() {
   const [filterFloor, setFilterFloor] = useState('전체');
   const [filterPremium, setFilterPremium] = useState('전체');
   const [page, setPage] = useState(1);
+  const [toastMsg, setToastMsg] = useState('');
+  const [copying, setCopying] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 2500);
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -212,12 +219,103 @@ export default function AdminDashboard() {
     setStats(prev => ({ ...prev, sold: prev.sold + (currentSold ? -1 : 1) }));
   };
 
+  const copyProperty = async (p: any) => {
+    if (copying) return;
+    setCopying(p.id);
+    try {
+      // 다음 매물번호 (properties.property_number 최댓값 + 1)
+      const { data: maxRows } = await supabase
+        .from('properties')
+        .select('property_number')
+        .order('property_number', { ascending: false })
+        .limit(100);
+      let maxNum = 9999;
+      (maxRows ?? []).forEach((r: any) => {
+        const n = parseInt(r.property_number, 10);
+        if (!isNaN(n) && n > maxNum) maxNum = n;
+      });
+      const nextNumber = String(maxNum + 1);
+
+      // 제외 필드 제거
+      const { id: _id, property_number: _pn, created_at: _ca, updated_at: _ua, ...rest } = p;
+
+      const payload = {
+        ...rest,
+        property_number: nextNumber,
+        title: p.title ? `(복사) ${p.title}` : '(복사)',
+        is_sold: false,
+      };
+
+      const { data: inserted, error } = await supabase
+        .from('properties')
+        .insert(payload)
+        .select('*')
+        .single();
+      if (error || !inserted) { alert(`복사 실패: ${error?.message ?? '알 수 없는 오류'}`); return; }
+
+      // 이미지 복사 (같은 R2 URL 공유)
+      const { data: origImgs, error: origErr } = await supabase
+        .from('property_images')
+        .select('image_url, order_index')
+        .eq('property_id', p.id)
+        .order('order_index', { ascending: true });
+      if (origErr) console.error('[복사] 원본 이미지 조회 실패:', origErr);
+      console.log('[복사] 원본 이미지 개수:', origImgs?.length ?? 0, 'property_id:', p.id);
+
+      if (origImgs && origImgs.length > 0) {
+        const imgRows = origImgs.map(img => ({
+          property_id: inserted.id,
+          image_url: img.image_url,
+          order_index: img.order_index,
+        }));
+        const { data: copiedImgs, error: imgErr } = await supabase
+          .from('property_images')
+          .insert(imgRows)
+          .select();
+        if (imgErr) {
+          console.error('[복사] property_images INSERT 실패:', imgErr);
+          alert(`이미지 복사 실패: ${imgErr.message}`);
+        } else {
+          console.log('[복사] 이미지 복사 성공:', copiedImgs?.length ?? 0, '개');
+        }
+      }
+
+      // 로컬 state: 맨 위에 추가
+      setProperties(prev => [inserted, ...prev]);
+      setPropImages(prev => {
+        const firstUrl = origImgs?.[0]?.image_url;
+        return firstUrl ? { ...prev, [inserted.id]: firstUrl } : prev;
+      });
+      setStats(prev => ({
+        ...prev,
+        total: prev.total + 1,
+        wolse: prev.wolse + (inserted.transaction_type === '월세' ? 1 : 0),
+        jeonse: prev.jeonse + (inserted.transaction_type === '전세' ? 1 : 0),
+        maemae: prev.maemae + (inserted.transaction_type === '매매' ? 1 : 0),
+      }));
+      setPage(1);
+      showToast('복사완료!');
+    } finally {
+      setCopying(null);
+    }
+  };
+
   const deleteProperty = async (p: any) => {
     if (!confirm(`매물 ${p.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
     const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', p.id);
     if (imgs && imgs.length > 0) {
+      // 같은 image_url을 다른 매물이 참조하는지 일괄 확인 후, 공유 안 되는 파일만 R2에서 삭제
       for (const img of imgs) {
-        try { await fetch('/api/delete-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: img.image_url }) }); } catch {}
+        const { count } = await supabase
+          .from('property_images')
+          .select('*', { count: 'exact', head: true })
+          .eq('image_url', img.image_url);
+        const isShared = (count ?? 1) > 1;
+        if (!isShared) {
+          try { await fetch('/api/delete-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: img.image_url }) }); } catch {}
+        } else {
+          console.log('[매물 삭제] 이미지 공유 중 — R2 보존:', img.image_url);
+        }
       }
       await supabase.from('property_images').delete().eq('property_id', p.id);
     }
@@ -275,6 +373,18 @@ export default function AdminDashboard() {
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
+
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: '#1a1a1a', color: '#e2a06e', padding: '12px 24px', borderRadius: '8px',
+          fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          zIndex: 9999,
+        }}>
+          {toastMsg}
+        </div>
+      )}
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a', display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
           관리자 대시보드
@@ -460,8 +570,11 @@ export default function AdminDashboard() {
                       </div>
                       <span style={{ fontSize: '10px', color: p.is_sold ? '#999' : '#4caf50', fontWeight: 600 }}>{p.is_sold ? '거래완료' : '거래중'}</span>
 
-                      {/* 수정/삭제 */}
+                      {/* 복사/수정/삭제 */}
                       <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => copyProperty(p)} disabled={copying === p.id} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #4a80e8', color: '#4a80e8', background: '#fff', cursor: copying === p.id ? 'wait' : 'pointer', opacity: copying === p.id ? 0.6 : 1 }}>
+                          {copying === p.id ? '복사중...' : '복사'}
+                        </button>
                         <a href={`/admin/properties/${p.property_number}/edit`} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', textDecoration: 'none' }}>수정</a>
                         <button onClick={() => deleteProperty(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e05050', color: '#e05050', background: '#fff', cursor: 'pointer' }}>삭제</button>
                       </div>
