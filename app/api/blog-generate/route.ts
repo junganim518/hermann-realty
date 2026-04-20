@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // 시스템 프롬프트 + 매물정보를 하나의 텍스트로 결합
     const fullPrompt = `${SYSTEM_PROMPT}\n\n${buildPropertyInfo(property)}`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
     const res = await fetch(url, {
       method: 'POST',
