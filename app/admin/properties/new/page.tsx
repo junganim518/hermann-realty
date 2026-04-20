@@ -950,7 +950,22 @@ export default function NewPropertyPage() {
 
         {/* ════════════ 이미지 업로드 ════════════ */}
         <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — 드래그로 순서 변경)</span></h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e2a06e' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a' }}>이미지 업로드 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>({images.length}/15 — 드래그로 순서 변경)</span></h2>
+            {images.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!confirm('이미지를 전부 삭제하시겠습니까?')) return;
+                  images.forEach(img => URL.revokeObjectURL(img.preview));
+                  setImages([]);
+                }}
+                style={{ padding: '6px 12px', fontSize: '12px', background: '#fff', border: '1px solid #e05050', color: '#e05050', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                전체삭제
+              </button>
+            )}
+          </div>
 
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 

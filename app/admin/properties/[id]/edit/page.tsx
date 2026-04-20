@@ -440,6 +440,32 @@ export default function EditPropertyPage() {
     }
   };
 
+  // ── 이미지 전체 삭제
+  const removeAllImages = async () => {
+    if (existingImages.length === 0 && newImages.length === 0) return;
+    if (!confirm('이미지를 전부 삭제하시겠습니까?')) return;
+
+    // 새 이미지(로컬): preview URL 해제
+    newImages.forEach(img => URL.revokeObjectURL(img.preview));
+    setNewImages([]);
+
+    // 기존 이미지: R2 공유 체크 후 삭제
+    for (const img of existingImages) {
+      const { count } = await supabase
+        .from('property_images')
+        .select('*', { count: 'exact', head: true })
+        .eq('image_url', img.image_url);
+      const isShared = (count ?? 1) > 1;
+      if (!isShared) {
+        await deleteImageFromR2(img.image_url);
+      }
+    }
+    if (existingImages.length > 0) {
+      await supabase.from('property_images').delete().eq('property_id', propertyId);
+    }
+    setExistingImages([]);
+  };
+
   // ── 기존 이미지 삭제 (다른 매물과 공유된 URL이면 R2 파일은 보존)
   const removeExistingImage = async (img: { id: string; image_url: string }) => {
     const { count, error: countErr } = await supabase
@@ -928,7 +954,18 @@ export default function EditPropertyPage() {
 
         {/* ════════════ 이미지 ════════════ */}
         <div className="admin-section" style={sectionSt}>
-          <h2 className="admin-section-title" style={sectionTitle}>이미지 ({totalImages}/15)</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e2a06e' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a' }}>이미지 ({totalImages}/15)</h2>
+            {totalImages > 0 && (
+              <button
+                type="button"
+                onClick={removeAllImages}
+                style={{ padding: '6px 12px', fontSize: '12px', background: '#fff', border: '1px solid #e05050', color: '#e05050', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                전체삭제
+              </button>
+            )}
+          </div>
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
 
           <div

@@ -295,6 +295,9 @@ export default function AdminDashboard() {
       }));
       setPage(1);
       showToast('복사완료!');
+
+      // 복사된 매물의 수정페이지로 이동
+      router.push(`/admin/properties/${inserted.property_number}/edit`);
     } finally {
       setCopying(null);
     }
