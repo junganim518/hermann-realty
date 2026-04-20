@@ -748,11 +748,25 @@ export default function NewPropertyPage() {
           <h2 className="admin-section-title" style={sectionTitle}>상세 정보</h2>
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={labelSt}>공급면적 (㎡)</label>
+              <label style={labelSt}>
+                공급면적 (㎡)
+                {form.supply_area && !isNaN(parseFloat(form.supply_area)) && (
+                  <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                    ({(parseFloat(form.supply_area) / 3.3058).toFixed(1)}평)
+                  </span>
+                )}
+              </label>
               <input value={form.supply_area} onChange={e => set('supply_area', e.target.value)} placeholder="예: 85.5" style={inputSt} />
             </div>
             <div>
-              <label style={labelSt}>전용면적 (㎡)</label>
+              <label style={labelSt}>
+                전용면적 (㎡)
+                {form.exclusive_area && !isNaN(parseFloat(form.exclusive_area)) && (
+                  <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                    ({(parseFloat(form.exclusive_area) / 3.3058).toFixed(1)}평)
+                  </span>
+                )}
+              </label>
               <input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} placeholder="예: 59.9" style={inputSt} />
             </div>
             <div>
