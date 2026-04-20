@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { generateTitle } from '@/lib/generateTitle';
 
 declare global {
   interface Window { daum: any; }
@@ -160,7 +161,8 @@ export default function NewPropertyPage() {
   const [lastBuildingParams, setLastBuildingParams] = useState({
     sigunguCd: '', bjdongCd: '', bun: '', ji: '0000',
   });
-  const [selectedBldHo, setSelectedBldHo] = useState('');
+  const [selectedBldHos, setSelectedBldHos] = useState<string[]>([]);
+  const [areaCache, setAreaCache] = useState<Record<string, { exclusive: number; publicArea: number; currentFloor?: string; usageType?: string }>>({});
   const [toastMsg, setToastMsg] = useState('');
 
   const showToast = (msg: string) => {
@@ -291,7 +293,8 @@ export default function NewPropertyPage() {
   const fetchBuildingInfo = async (sigunguCd: string, bjdongCd: string, bun: string, ji: string) => {
     setBuildingLoading(true);
     setBuildingExposList([]);
-    setSelectedBldHo('');
+    setSelectedBldHos([]);
+    setAreaCache({});
     setLastBuildingParams({ sigunguCd, bjdongCd, bun, ji });
     try {
       const res = await fetch(`/api/building?sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}`);
@@ -338,15 +341,7 @@ export default function NewPropertyPage() {
     }));
   };
 
-  // ── 전유부 정보 → 폼 반영 (area 필드가 없어 면적은 수동 입력)
-  const applyBuildingExpos = (expos: any) => {
-    if (!expos) return;
-    setForm(prev => ({
-      ...prev,
-      unit_number: expos.hoNm || prev.unit_number,
-      current_floor: expos.flrNo ? String(expos.flrNo) : prev.current_floor,
-    }));
-  };
+  // ── (제거됨) 전유부 단일 선택 시 unit_number/current_floor 자동입력 — 수동 입력 전환
 
   // YYYYMMDD → YYYY-MM-DD
   const formatYmd = (ymd: any): string => {
@@ -356,9 +351,13 @@ export default function NewPropertyPage() {
     return s;
   };
 
-  // ── 호수 선택 시 전유공용면적 조회
-  const fetchAreaInfo = async (hoNm: string) => {
+  // ── 호수별 면적 조회 → areaCache에만 저장 (폼은 useEffect에서 일괄 갱신)
+  const fetchAreaForHo = async (hoNm: string) => {
     if (!lastBuildingParams.sigunguCd) return;
+    if (areaCache[hoNm]) {
+      console.log('[면적] 캐시 히트 — 재조회 생략:', hoNm);
+      return;
+    }
     const params = new URLSearchParams({
       sigunguCd: lastBuildingParams.sigunguCd,
       bjdongCd: lastBuildingParams.bjdongCd,
@@ -366,45 +365,87 @@ export default function NewPropertyPage() {
       ji: lastBuildingParams.ji,
       ho: hoNm,
     });
+    console.log('[면적] 조회 시작:', hoNm);
     setAreaLoading(true);
     try {
       const res = await fetch(`/api/building?${params}`);
       const data = await res.json();
-      console.log('[면적 응답]', data.areaItems);
       if (data.areaItems && data.areaItems.length > 0) {
         const 전유 = data.areaItems.find((item: any) => item.exposPubuseGbCdNm === '전유');
         const 공용들 = data.areaItems.filter((item: any) => item.exposPubuseGbCdNm === '공용');
         const 공용합계 = 공용들.reduce((sum: number, item: any) => sum + (Number(item.area) || 0), 0);
-
-        const 전용면적 = Number(전유?.area) || 0;
-        const 공급면적 = 전용면적 + 공용합계;
-
-        console.log('[면적 계산] 전용:', 전용면적, '공용합계:', 공용합계, '공급:', 공급면적);
-
-        setForm(prev => ({
-          ...prev,
-          exclusive_area: 전용면적 ? String(전용면적) : prev.exclusive_area,
-          supply_area: 공급면적 ? String(Math.round(공급면적 * 100) / 100) : prev.supply_area,
-          usage_type: 전유?.etcPurps || 전유?.mainPurpsCdNm || prev.usage_type,
-          current_floor: 전유?.flrNo ? (전유.flrGbCdNm === '지하' ? `지하${Math.abs(전유.flrNo)}` : String(전유.flrNo)) : prev.current_floor,
-        }));
+        const exclusive = Number(전유?.area) || 0;
+        const currentFloor = 전유?.flrNo
+          ? (전유.flrGbCdNm === '지하' ? `지하${Math.abs(전유.flrNo)}` : String(전유.flrNo))
+          : undefined;
+        const usageType = 전유?.etcPurps || 전유?.mainPurpsCdNm || undefined;
+        console.log('[면적] 조회 결과:', hoNm, '→ 전용:', exclusive, '공용:', 공용합계, '층:', currentFloor);
+        setAreaCache(prev => ({ ...prev, [hoNm]: { exclusive, publicArea: 공용합계, currentFloor, usageType } }));
+      } else {
+        console.warn('[면적] 응답에 areaItems 없음:', hoNm, data);
       }
     } catch (err) {
-      console.error('[면적 조회] 실패:', err);
+      console.error('[면적 조회] 실패:', hoNm, err);
     } finally {
       setAreaLoading(false);
     }
   };
 
-  // ── 건축물대장 호 선택 (display 값으로 매칭)
-  const handleBldHoChange = (display: string) => {
-    setSelectedBldHo(display);
-    const match = buildingExposList.find(e => e.display === display);
-    if (match) {
-      applyBuildingExpos(match);
-      if (match.hoNm) fetchAreaInfo(match.hoNm);
+  // ── 멀티셀렉트 드롭다운 변경 핸들러
+  const handleMultiSelect = async (next: string[]) => {
+    console.log('[호실선택] onChange 호출 — 이전:', selectedBldHos, '→ 새 선택:', next);
+    const added = next.filter(d => !selectedBldHos.includes(d));
+    console.log('[호실선택] 새로 추가된 호실:', added);
+    setSelectedBldHos(next);
+    for (const display of added) {
+      const match = buildingExposList.find(e => e.display === display);
+      if (match?.hoNm) {
+        await fetchAreaForHo(match.hoNm);
+      } else {
+        console.warn('[호실선택] hoNm 매칭 실패:', display);
+      }
     }
+    console.log('[호실선택] 추가 호실 조회 완료');
   };
+
+  // ── 선택된 호실 변경 시 면적/층/용도 합산·반영
+  useEffect(() => {
+    if (selectedBldHos.length === 0) return;
+    let totalEx = 0;
+    let totalPub = 0;
+    let firstFloor: string | undefined;
+    let firstUsage: string | undefined;
+    const rows: Array<{ display: string; hoNm: string; cached: boolean; exclusive: number; publicArea: number }> = [];
+    for (const display of selectedBldHos) {
+      const match = buildingExposList.find(e => e.display === display);
+      if (!match?.hoNm) {
+        rows.push({ display, hoNm: '(없음)', cached: false, exclusive: 0, publicArea: 0 });
+        continue;
+      }
+      const cached = areaCache[match.hoNm];
+      if (!cached) {
+        rows.push({ display, hoNm: match.hoNm, cached: false, exclusive: 0, publicArea: 0 });
+        continue;
+      }
+      totalEx += cached.exclusive;
+      totalPub += cached.publicArea;
+      if (!firstFloor && cached.currentFloor) firstFloor = cached.currentFloor;
+      if (!firstUsage && cached.usageType) firstUsage = cached.usageType;
+      rows.push({ display, hoNm: match.hoNm, cached: true, exclusive: cached.exclusive, publicArea: cached.publicArea });
+    }
+    const totalSupply = totalEx + totalPub;
+    console.log('[면적합산] 선택된 호실:', selectedBldHos.length, '개 / 캐시된 호실:', rows.filter(r => r.cached).length, '개');
+    console.table(rows);
+    console.log('[면적합산] 총 전용:', totalEx.toFixed(2), '㎡ / 총 공용:', totalPub.toFixed(2), '㎡ / 총 공급:', totalSupply.toFixed(2), '㎡');
+
+    setForm(prev => ({
+      ...prev,
+      exclusive_area: totalEx ? String(Math.round(totalEx * 100) / 100) : prev.exclusive_area,
+      supply_area: totalSupply ? String(Math.round(totalSupply * 100) / 100) : prev.supply_area,
+      current_floor: firstFloor || prev.current_floor,
+      usage_type: firstUsage || prev.usage_type,
+    }));
+  }, [selectedBldHos, areaCache, buildingExposList]);
 
   // ── 이미지 추가 공통 로직
   const addImageFiles = (files: File[]) => {
@@ -660,7 +701,16 @@ export default function NewPropertyPage() {
         <div className="admin-section" style={sectionSt}>
           <h2 className="admin-section-title" style={sectionTitle}>위치 정보</h2>
           <div style={{ marginBottom: '12px' }}>
-            <label style={labelSt}>매물 제목</label>
+            <label style={{ ...labelSt, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>매물 제목</span>
+              <button
+                type="button"
+                onClick={() => set('title', generateTitle(form))}
+                style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', background: '#fff', cursor: 'pointer' }}
+              >
+                ✨ 타이틀 자동생성
+              </button>
+            </label>
             <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="예) 역세권 1층 상가 월세, 채광 좋은 사무실 전세" style={inputSt} />
           </div>
           <div style={{ marginBottom: '12px' }}>
@@ -673,39 +723,68 @@ export default function NewPropertyPage() {
             </div>
           </div>
 
-          {/* 건축물대장 건물명/호 입력 (항상 표시, API 응답 있으면 호수 드롭다운) */}
+          {/* 건축물대장 건물명/호 정보 */}
           <div style={{ marginBottom: '12px', padding: '12px', background: '#fff6ef', border: '1px solid #f0d4b8', borderRadius: '6px' }}>
-            <div style={{ fontSize: '12px', color: '#8a5a2a', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '12px', color: '#8a5a2a', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               🏢 건물명/호 정보
               {buildingLoading && <span style={{ color: '#e2a06e', fontWeight: 500 }}>· 건축물대장 조회 중...</span>}
               {!buildingLoading && buildingExposList.length > 0 && (
                 <span style={{ color: '#888', fontWeight: 500 }}>· {buildingExposList.length}개 호실 조회됨</span>
               )}
+              {areaLoading && <span style={{ color: '#e2a06e', fontWeight: 500 }}>· 면적 조회 중...</span>}
             </div>
-            <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
                 <label style={{ ...labelSt, fontSize: '12px' }}>건물명</label>
                 <input value={form.building_name} onChange={e => set('building_name', e.target.value)} placeholder="예: 삼성빌딩" style={inputSt} disabled={buildingLoading} />
               </div>
               <div>
-                <label style={{ ...labelSt, fontSize: '12px' }}>호수</label>
-                {buildingExposList.length > 0 ? (
-                  <select value={selectedBldHo} onChange={e => handleBldHoChange(e.target.value)} style={selectSt}>
-                    <option value="">선택</option>
-                    {buildingExposList.map((e, idx) => (
-                      <option key={`${e.display}-${idx}`} value={e.display}>{e.display || '(호 없음)'}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="예: 101동 712호" style={inputSt} disabled={buildingLoading} />
-                )}
-                {areaLoading && (
-                  <p style={{ fontSize: '13px', color: '#e2a06e', marginTop: '6px' }}>
-                    면적 정보 불러오는 중...
+                <label style={{ ...labelSt, fontSize: '12px' }}>동호수 (직접 입력)</label>
+                <input
+                  value={form.unit_number}
+                  onChange={e => set('unit_number', e.target.value)}
+                  placeholder="예) 101호, B101호, 101동 102호"
+                  style={inputSt}
+                />
+              </div>
+            </div>
+
+            {buildingExposList.length > 0 && (
+              <div>
+                <label style={{ ...labelSt, fontSize: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  호실 선택 <span style={{ fontWeight: 400, color: '#888' }}>(Ctrl/Cmd+클릭으로 여러 호실 선택 — 전용/공급면적 자동 합산)</span>
+                  {selectedBldHos.length > 0 && (
+                    <span style={{ color: '#e2a06e', fontWeight: 700 }}>· {selectedBldHos.length}개 선택</span>
+                  )}
+                </label>
+                <select
+                  multiple
+                  value={selectedBldHos}
+                  onChange={e => {
+                    const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                    handleMultiSelect(opts);
+                  }}
+                  disabled={buildingLoading}
+                  style={{
+                    width: '100%', minHeight: '140px',
+                    border: '1px solid #e0d4b8', borderRadius: '4px',
+                    padding: '6px', background: '#fff', fontSize: '13px',
+                    outline: 'none',
+                  }}
+                >
+                  {buildingExposList.map((e, idx) => (
+                    <option key={`${e.display}-${idx}`} value={e.display}>
+                      {e.display || '(호 없음)'}
+                    </option>
+                  ))}
+                </select>
+                {selectedBldHos.length > 0 && (
+                  <p style={{ fontSize: '11px', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
+                    선택된 호실: <strong style={{ color: '#8a5a2a' }}>{selectedBldHos.join(', ')}</strong> → 면적 자동 합산됨
                   </p>
                 )}
               </div>
-            </div>
+            )}
           </div>
 
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
