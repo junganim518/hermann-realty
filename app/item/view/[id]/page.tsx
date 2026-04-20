@@ -551,7 +551,22 @@ export default function PropertyDetailPage() {
           .detail-info-table td:nth-child(3) { width: 15% !important; }
           .detail-info-table td:nth-child(2),
           .detail-info-table td:nth-child(4) { width: 35% !important; }
+          .detail-info-table td { word-break: break-word !important; overflow-wrap: break-word !important; }
           .detail-info-title { font-size: 18px !important; }
+        }
+
+        /* ── PC (1200px 이상) 좌측 본문 오버플로우 방지 ── */
+        @media (min-width: 1200px) {
+          .detail-main { overflow: hidden !important; min-width: 0 !important; }
+          .detail-body { padding-left: clamp(16px, calc((100% - 1280px) / 2 + 16px), 350px) !important; padding-right: clamp(16px, calc((100% - 1280px) / 2 + 16px), 350px) !important; gap: clamp(16px, 2vw, 32px) !important; }
+          /* aside를 유연하게: 기본 360px, 1500px 미만에서 단계적으로 줄어듦 */
+          .detail-aside {
+            width: clamp(280px, 22vw, 360px) !important;
+            flex: 0 1 auto !important;
+            flex-shrink: 1 !important;
+            min-width: 280px !important;
+          }
+          .detail-aside-card, .detail-aside-card * { min-width: 0 !important; overflow-wrap: break-word !important; word-break: break-word !important; }
         }
 
         /* ── 태블릿 (768px ~ 1199px) ── */
