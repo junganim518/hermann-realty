@@ -145,52 +145,112 @@ export default function AdminDashboard() {
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
-  // 블로그 글 생성 모달
+  // 블로그 프롬프트 생성 모달
   const [blogOpen, setBlogOpen] = useState(false);
   const [blogProperty, setBlogProperty] = useState<any>(null);
-  const [blogLoading, setBlogLoading] = useState(false);
   const [blogText, setBlogText] = useState('');
-  const [blogError, setBlogError] = useState('');
+  const [blogMode, setBlogMode] = useState<'property' | 'news'>('property');
+  const [newsLoading, setNewsLoading] = useState(false);
 
-  const openBlogModal = async (p: any) => {
+  const buildBlogPrompt = (p: any): string => {
+    const exArea = p.exclusive_area ? parseFloat(p.exclusive_area) : 0;
+    const pyeong = exArea ? (exArea / 3.3058).toFixed(1) : '-';
+    const exArearStr = p.exclusive_area ? `${p.exclusive_area}㎡ (${pyeong}평)` : '-';
+    const premiumStr = p.premium ? `${p.premium}만원` : '무권리';
+    return `당신은 부동산 전문 블로그 작가입니다.
+아래 매물 정보를 바탕으로 네이버 블로그에 올릴 정성스러운 블로그 글을 작성해주세요.
+
+작성 규칙:
+- 첫 문장은 반드시 "안녕하세요 헤르만부동산입니다." 로 시작
+- 도입부: 감성적이고 흥미로운 스토리텔링
+- 위치/교통 장점 강조
+- 매물 상세 정보 자연스럽게 녹여내기
+- 이런 분께 추천 섹션
+- 마무리: 헤르만부동산 연락처(010-8680-8151) 포함
+- 이모지 적절히 사용
+- 전체 길이 1000자 이상
+- 구어체로 친근하게
+- 해시태그 30개 글 맨 마지막에
+
+매물 정보:
+- 매물번호: ${p.property_number ?? ''}
+- 매물종류: ${p.property_type ?? ''}
+- 거래유형: ${p.transaction_type ?? ''}
+- 주소: ${p.address ?? ''}
+- 보증금: ${p.deposit ?? 0}만원
+- 월세: ${p.monthly_rent ?? 0}만원
+- 전용면적: ${exArearStr}
+- 층수: ${p.current_floor ?? '-'}
+- 권리금: ${premiumStr}
+- 관리비: ${p.maintenance_fee ?? 0}만원
+- 매물 제목: ${p.title ?? ''}
+- 매물 설명: ${p.description ?? ''}`;
+  };
+
+  const openBlogModal = (p: any) => {
+    setBlogMode('property');
     setBlogProperty(p);
+    setBlogText(buildBlogPrompt(p));
     setBlogOpen(true);
-    await generateBlog(p);
+  };
+
+  const openNewsBlogModal = async () => {
+    if (newsLoading) return;
+    setNewsLoading(true);
+    setBlogMode('news');
+    setBlogProperty(null);
+    setBlogText('');
+    setBlogOpen(true);
+    try {
+      const res = await fetch('/api/news');
+      const data = await res.json();
+      const items: any[] = data?.items ?? [];
+      if (items.length === 0) throw new Error('뉴스를 불러올 수 없습니다');
+
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+      const newsLines = items.slice(0, 10)
+        .map(n => `- ${n.title}${n.description ? ` - ${n.description}` : ''}`)
+        .join('\n');
+
+      const prompt = `당신은 부동산 전문 블로거입니다.
+아래 오늘의 부동산 뉴스를 바탕으로
+네이버 블로그에 올릴 정보전달식 블로그 글을 작성해주세요.
+
+작성 규칙:
+- 첫 문장: "안녕하세요 헤르만부동산입니다." 로 시작
+- 오늘 날짜 포함 (예: ${dateStr} 부동산 소식)
+- 각 뉴스를 쉽고 친근하게 요약 설명
+- 독자에게 도움이 되는 인사이트 추가
+- 판매글 느낌 없이 순수 정보전달
+- 마무리: 헤르만부동산 소개 + 연락처(010-8680-8151)
+- 이모지 적절히 사용
+- 전체 길이 1500자 이상
+- 해시태그 30개 글 맨 마지막
+
+오늘의 부동산 뉴스 (${dateStr}):
+${newsLines}`;
+
+      setBlogText(prompt);
+    } catch (err: any) {
+      setBlogText(`뉴스 불러오기 실패: ${err?.message ?? '알 수 없는 오류'}`);
+    } finally {
+      setNewsLoading(false);
+    }
   };
 
   const closeBlogModal = () => {
     setBlogOpen(false);
     setBlogProperty(null);
     setBlogText('');
-    setBlogError('');
-    setBlogLoading(false);
-  };
-
-  const generateBlog = async (p: any) => {
-    setBlogLoading(true);
-    setBlogError('');
-    setBlogText('');
-    try {
-      const res = await fetch('/api/blog-generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ property: p }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      setBlogText(data.text ?? '');
-    } catch (err: any) {
-      setBlogError(err?.message ?? '생성 실패');
-    } finally {
-      setBlogLoading(false);
-    }
+    setBlogMode('property');
   };
 
   const copyBlogText = async () => {
     if (!blogText) return;
     try {
       await navigator.clipboard.writeText(blogText);
-      showToast('블로그 글이 복사되었습니다');
+      showToast('프롬프트가 복사되었습니다');
     } catch {
       showToast('복사 실패');
     }
@@ -439,7 +499,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 블로그 글 생성 모달 */}
+      {/* 블로그 프롬프트 모달 */}
       {blogOpen && (
         <div
           onClick={closeBlogModal}
@@ -449,11 +509,10 @@ export default function AdminDashboard() {
             onClick={e => e.stopPropagation()}
             style={{ background: '#fff', borderRadius: '12px', maxWidth: '720px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}
           >
-            {/* 헤더 */}
             <div style={{ padding: '16px 20px', background: '#1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#e2a06e' }}>
-                📝 블로그 글 생성
-                {blogProperty && (
+                {blogMode === 'news' ? '📰 오늘의 부동산 소식 프롬프트' : '📝 블로그 글 프롬프트'}
+                {blogMode === 'property' && blogProperty && (
                   <span style={{ fontSize: '12px', color: '#888', fontWeight: 500, marginLeft: '10px' }}>
                     매물번호 {blogProperty.property_number}
                   </span>
@@ -462,41 +521,30 @@ export default function AdminDashboard() {
               <button onClick={closeBlogModal} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>×</button>
             </div>
 
-            {/* 본문 */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', minHeight: '200px' }}>
-              {blogLoading ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+              <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
+                아래 프롬프트를 복사해 ChatGPT / Claude / Gemini 등에 붙여넣어 블로그 글을 생성하세요.
+              </p>
+              {newsLoading && blogMode === 'news' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0', color: '#888' }}>
                   <div style={{ width: '36px', height: '36px', border: '3px solid #f0f0f0', borderTop: '3px solid #e2a06e', borderRadius: '50%', animation: 'blog-spin 0.8s linear infinite' }} />
-                  <p style={{ fontSize: '14px' }}>Claude가 블로그 글을 작성 중입니다...</p>
+                  <p style={{ fontSize: '14px' }}>오늘의 부동산 뉴스를 불러오는 중...</p>
                   <style>{`@keyframes blog-spin { to { transform: rotate(360deg); } }`}</style>
                 </div>
-              ) : blogError ? (
-                <div style={{ padding: '20px', background: '#fff0f0', border: '1px solid #e05050', borderRadius: '6px', color: '#c03030', fontSize: '14px' }}>
-                  생성 실패: {blogError}
-                </div>
               ) : (
-                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', fontSize: '14px', lineHeight: 1.8, color: '#333', margin: 0 }}>
+                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.7, color: '#333', margin: 0, background: '#fafafa', padding: '14px', borderRadius: '6px', border: '1px solid #eee' }}>
                   {blogText}
                 </pre>
               )}
             </div>
 
-            {/* 푸터 */}
             <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
               <button onClick={closeBlogModal} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #ddd', color: '#666', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                 닫기
               </button>
               <button
-                onClick={() => blogProperty && generateBlog(blogProperty)}
-                disabled={blogLoading}
-                style={{ padding: '8px 16px', background: '#fff', border: '1px solid #e2a06e', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: blogLoading ? 'wait' : 'pointer', opacity: blogLoading ? 0.5 : 1 }}
-              >
-                🔄 다시 생성
-              </button>
-              <button
                 onClick={copyBlogText}
-                disabled={!blogText || blogLoading}
-                style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: (!blogText || blogLoading) ? 'not-allowed' : 'pointer', opacity: (!blogText || blogLoading) ? 0.5 : 1 }}
+                style={{ padding: '8px 20px', background: '#1a1a1a', border: '1px solid #1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
               >
                 📋 복사하기
               </button>
@@ -567,6 +615,23 @@ export default function AdminDashboard() {
             </a>
           ))}
         </div>
+
+        {/* 오늘의 부동산 소식 블로그 글 생성 */}
+        <button
+          onClick={openNewsBlogModal}
+          disabled={newsLoading}
+          style={{
+            width: '100%', marginBottom: '16px', padding: '14px 20px',
+            background: '#1a1a1a', color: '#e2a06e',
+            border: '1px solid #e2a06e', borderRadius: '8px',
+            fontSize: '15px', fontWeight: 700,
+            cursor: newsLoading ? 'wait' : 'pointer',
+            opacity: newsLoading ? 0.6 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          }}
+        >
+          {newsLoading ? '뉴스 불러오는 중...' : '📰 오늘의 부동산 소식 블로그 글 생성'}
+        </button>
 
         {/* ═══ 매물 관리 리스트 ═══ */}
         <div style={sectionSt}>
