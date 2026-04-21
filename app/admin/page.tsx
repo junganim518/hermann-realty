@@ -126,8 +126,8 @@ export default function AdminDashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0 });
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
-  type RefDetailRow = { total: number; pages: { page: string; count: number }[] };
-  const [referralDetail, setReferralDetail] = useState<{ today: Record<string, RefDetailRow>; total: Record<string, RefDetailRow> }>({ today: {}, total: {} });
+  type RefTableRow = { referrer: string; page: string; count: number };
+  const [referralTable, setReferralTable] = useState<{ today: RefTableRow[]; total: RefTableRow[] }>({ today: [], total: [] });
   const [referralModalOpen, setReferralModalOpen] = useState(false);
   const [referralTab, setReferralTab] = useState<'today' | 'total'>('today');
   const [todayVisitors, setTodayVisitors] = useState<any[]>([]);
@@ -283,48 +283,39 @@ export default function AdminDashboard() {
       .from('page_views')
       .select('referrer, page, created_at');
     if (views) {
-      const categorize = (ref: string | null | undefined) => {
+      const categorize = (ref: string | null | undefined): string => {
         if (!ref || ref === 'direct') return '직접접속';
-        if (ref === 'naver') return '네이버';
-        if (ref === 'google') return '구글';
-        if (ref === 'kakao') return '카카오톡';
-        return '기타';
+        const lower = ref.toLowerCase();
+        if (lower.includes('naver')) return '네이버';
+        if (lower.includes('google')) return '구글';
+        if (lower.includes('kakao')) return '카카오';
+        if (lower.includes('daum')) return '다음';
+        return ref;
       };
-      const todayCounts: Record<string, number> = {};
-      const totalCounts: Record<string, number> = {};
-      // referrer → page → count
-      const todayPageMap: Record<string, Record<string, number>> = {};
-      const totalPageMap: Record<string, Record<string, number>> = {};
-      const todayTs = todayStart.getTime();
-      for (const v of views) {
-        const label = categorize(v.referrer);
-        const page = v.page ?? '(unknown)';
-        totalCounts[label] = (totalCounts[label] ?? 0) + 1;
-        (totalPageMap[label] ??= {})[page] = (totalPageMap[label]?.[page] ?? 0) + 1;
-        if (new Date(v.created_at).getTime() >= todayTs) {
-          todayCounts[label] = (todayCounts[label] ?? 0) + 1;
-          (todayPageMap[label] ??= {})[page] = (todayPageMap[label]?.[page] ?? 0) + 1;
-        }
-      }
-      const ORDER = ['네이버', '구글', '카카오톡', '직접접속', '기타'];
 
-      const buildDetail = (counts: Record<string, number>, pageMap: Record<string, Record<string, number>>) => {
-        const out: Record<string, RefDetailRow> = {};
-        for (const label of ORDER) {
-          const count = counts[label] ?? 0;
-          if (count === 0) continue;
-          const pagesObj = pageMap[label] ?? {};
-          const pages = Object.entries(pagesObj)
-            .map(([page, c]) => ({ page, count: c }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-          out[label] = { total: count, pages };
+      const buildRows = (rows: typeof views): RefTableRow[] => {
+        const nested: Record<string, Record<string, number>> = {};
+        for (const v of rows) {
+          const referrer = categorize(v.referrer);
+          const page = v.page ?? '(unknown)';
+          if (!nested[referrer]) nested[referrer] = {};
+          nested[referrer][page] = (nested[referrer][page] ?? 0) + 1;
         }
+        const out: RefTableRow[] = [];
+        Object.keys(nested).forEach(referrer => {
+          Object.keys(nested[referrer]).forEach(page => {
+            out.push({ referrer, page, count: nested[referrer][page] });
+          });
+        });
+        out.sort((a, b) => b.count - a.count);
         return out;
       };
-      setReferralDetail({
-        today: buildDetail(todayCounts, todayPageMap),
-        total: buildDetail(totalCounts, totalPageMap),
+
+      const todayTs = todayStart.getTime();
+      const todayViews = views.filter(v => new Date(v.created_at).getTime() >= todayTs);
+      setReferralTable({
+        today: buildRows(todayViews),
+        total: buildRows(views),
       });
     }
   };
@@ -544,42 +535,56 @@ export default function AdminDashboard() {
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
               {(() => {
-                const detail = referralDetail[referralTab];
-                const entries = Object.entries(detail);
-                if (entries.length === 0) {
+                const rows = referralTable[referralTab];
+                if (rows.length === 0) {
                   return (
                     <p style={{ color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
                       {referralTab === 'today' ? '오늘 방문 기록이 없습니다' : '방문 기록이 없습니다'}
                     </p>
                   );
                 }
-                return entries.map(([label, row]) => (
-                  <div key={label} style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '2px solid #e2a06e' }}>
-                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{label}</span>
-                      <span style={{ fontSize: '12px', color: '#e2a06e', fontWeight: 600 }}>{row.total.toLocaleString()}회 방문</span>
-                    </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: 'left', padding: '6px 4px', color: '#888', fontWeight: 600, fontSize: '11px' }}>착지 페이지 Top 5</th>
-                          <th style={{ textAlign: 'right', padding: '6px 4px', color: '#888', fontWeight: 600, fontSize: '11px', width: '80px' }}>방문수</th>
+                const KNOWN = new Set(['네이버', '구글', '카카오', '다음', '직접접속']);
+                const badgeStyle = (ref: string): React.CSSProperties => {
+                  const map: Record<string, { bg: string; color: string }> = {
+                    '네이버': { bg: '#03c75a', color: '#fff' },
+                    '구글': { bg: '#4285f4', color: '#fff' },
+                    '카카오': { bg: '#fee500', color: '#3c1e1e' },
+                    '다음': { bg: '#0066ff', color: '#fff' },
+                    '직접접속': { bg: '#888', color: '#fff' },
+                  };
+                  const c = map[ref] ?? { bg: '#f5f5f5', color: '#555' };
+                  return {
+                    display: 'inline-block', padding: '3px 8px', borderRadius: '10px',
+                    fontSize: '11px', fontWeight: 700, background: c.bg, color: c.color,
+                    maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  };
+                };
+                return (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ background: '#fafafa', borderBottom: '2px solid #e2a06e' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 8px', color: '#666', fontWeight: 700, fontSize: '12px', width: '28%' }}>유입경로</th>
+                        <th style={{ textAlign: 'left', padding: '10px 8px', color: '#666', fontWeight: 700, fontSize: '12px' }}>착지페이지</th>
+                        <th style={{ textAlign: 'right', padding: '10px 8px', color: '#666', fontWeight: 700, fontSize: '12px', width: '80px' }}>방문수</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r, i) => (
+                        <tr key={`${r.referrer}-${r.page}-${i}`} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ padding: '10px 8px' }}>
+                            <span style={badgeStyle(r.referrer)} title={r.referrer}>
+                              {KNOWN.has(r.referrer) ? r.referrer : r.referrer}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 8px', color: '#333', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '12px', wordBreak: 'break-all' }}>
+                            {r.page}
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'right', color: '#333', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{r.count.toLocaleString()}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {row.pages.map((p, i) => (
-                          <tr key={`${label}-${p.page}-${i}`} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                            <td style={{ padding: '8px 4px', color: '#333', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '12px', wordBreak: 'break-all' }}>
-                              <span style={{ color: '#e2a06e', fontWeight: 700, marginRight: '6px' }}>{i + 1}</span>
-                              {p.page}
-                            </td>
-                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#333', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{p.count.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ));
+                      ))}
+                    </tbody>
+                  </table>
+                );
               })()}
             </div>
 
