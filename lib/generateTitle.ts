@@ -38,13 +38,25 @@ const TEMPLATES = [
 ];
 
 // 주소에서 '동'으로 끝나는 단어 추출 (예: 중동, 상동, 소사동, 원미동)
+// '구'/'시'/'도'로 끝나는 단어는 제외
 function extractRegion(addr: string): string {
-  if (!addr) return '';
-  const tokens = addr.split(/\s+/);
-  for (const t of tokens) {
-    if (/^[가-힣]{2,}동$/.test(t)) return t;
+  if (!addr) {
+    console.log('[extractRegion] address 없음');
+    return '';
   }
-  return '';
+  console.log('[extractRegion] address:', addr);
+  const tokens = addr.split(/\s+/);
+  console.log('[extractRegion] 토큰:', tokens);
+
+  const dong = tokens.find(t =>
+    t.endsWith('동') &&
+    !t.endsWith('구') &&
+    !t.endsWith('시') &&
+    !t.endsWith('도') &&
+    t.length >= 2
+  ) || '';
+  console.log('[extractRegion] 추출 결과:', dong);
+  return dong;
 }
 
 // 층수 특성: "1층 황금입지" / "지하 알짜상가" / "3층 독립공간"
@@ -112,6 +124,14 @@ function pickTemplateIndex(seedStr: string): number {
 }
 
 export function generateTitle(form: TitleForm): string {
+  console.log('[generateTitle] form 입력:', {
+    address: form.address,
+    property_type: form.property_type,
+    transaction_type: form.transaction_type,
+    current_floor: form.current_floor,
+    exclusive_area: form.exclusive_area,
+    property_number: form.property_number,
+  });
   const region = extractRegion(form.address ?? '');
   const exArea = parseFloat(form.exclusive_area ?? '');
   const pyeongNum = !isNaN(exArea) && exArea > 0 ? exArea / 3.3058 : 0;
