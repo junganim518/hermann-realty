@@ -138,7 +138,7 @@ export default function AdminInquiriesPage() {
                 선택 삭제 ({selectedIds.size})
               </button>
             )}
-            <a href="/admin" style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>대시보드</a>
+            <a href="/admin" onClick={() => window.scrollTo(0, 0)} style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>대시보드</a>
           </div>
         </div>
 

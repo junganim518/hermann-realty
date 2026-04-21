@@ -713,7 +713,7 @@ export default function PropertyDetailPage() {
           </div>
           <div className="detail-tab-utils detail-pc-back" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <button
-              onClick={() => router.back()}
+              onClick={() => { window.scrollTo(0, 0); router.back(); }}
               style={{ fontSize: '14px', color: '#fff', background: 'rgba(100,100,100,0.5)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', whiteSpace: 'nowrap' }}
             >
               ← 목록으로
@@ -1255,6 +1255,7 @@ export default function PropertyDetailPage() {
                   const { error } = await supabase.from('properties').delete().eq('id', pid);
                   if (error) { alert(`삭제 실패: ${error.message}`); return; }
                   alert('매물이 삭제되었습니다.');
+                  window.scrollTo(0, 0);
                   if (window.history.length > 1) {
                     router.back();
                   } else {
@@ -1296,7 +1297,7 @@ export default function PropertyDetailPage() {
           </button>
         )}
         <button
-          onClick={() => router.back()}
+          onClick={() => { window.scrollTo(0, 0); router.back(); }}
           style={{
             width: '48px', height: '48px', borderRadius: '50%',
             background: 'rgba(100,100,100,0.7)', color: '#fff',
@@ -1338,7 +1339,7 @@ export default function PropertyDetailPage() {
       {/* 태블릿용 뒤로가기 */}
       <button
         className="detail-pc-back-btn"
-        onClick={() => router.back()}
+        onClick={() => { window.scrollTo(0, 0); router.back(); }}
         style={{
           display: 'none',
           position: 'fixed',

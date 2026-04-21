@@ -68,7 +68,7 @@ export default function NewCustomerPage() {
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a1a' }}>신규 손님 등록</h1>
-          <a href="/admin/customers" style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>목록으로</a>
+          <a href="/admin/customers" onClick={() => window.scrollTo(0, 0)} style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>목록으로</a>
         </div>
 
         {/* 기본 정보 */}

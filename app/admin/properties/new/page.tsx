@@ -1092,7 +1092,7 @@ export default function NewPropertyPage() {
         {/* ════════════ 저장 버튼 ════════════ */}
         <div className="admin-btn-row" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingBottom: '40px' }}>
           <button
-            onClick={() => router.back()}
+            onClick={() => { window.scrollTo(0, 0); router.back(); }}
             style={{ height: '48px', padding: '0 32px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '16px', color: '#666', background: '#fff', cursor: 'pointer' }}
           >
             취소

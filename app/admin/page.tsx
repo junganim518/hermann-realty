@@ -785,13 +785,16 @@ export default function AdminDashboard() {
 
                     {/* 정보 영역 */}
                     <div className="admin-prop-info">
-                      {/* 1행: 매물번호 + 뱃지 + 주소 */}
+                      {/* 1행: 매물번호 + 뱃지 + 타이틀 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a' }}>{p.property_number}</span>
                         {p.property_type && (
                           <span style={{ fontSize: '11px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', background: '#f5f5f5', color: '#666', border: '1px solid #e0e0e0' }}>{p.property_type}</span>
                         )}
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: tx.bg, border: `1px solid ${tx.border}`, color: tx.text }}>{p.transaction_type}</span>
+                        {p.title && (
+                          <span style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title}>{p.title}</span>
+                        )}
                       </div>
                       {/* 2행: 주소 */}
                       <p style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4 }}>{formatAddr(p)}</p>

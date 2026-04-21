@@ -1091,7 +1091,7 @@ export default function EditPropertyPage() {
 
         {/* ════════════ 버튼 ════════════ */}
         <div className="admin-btn-row" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingBottom: '40px' }}>
-          <button onClick={() => router.back()} style={{ height: '48px', padding: '0 32px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '16px', color: '#666', background: '#fff', cursor: 'pointer' }}>취소</button>
+          <button onClick={() => { window.scrollTo(0, 0); router.back(); }} style={{ height: '48px', padding: '0 32px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '16px', color: '#666', background: '#fff', cursor: 'pointer' }}>취소</button>
           <button onClick={handleSave} disabled={saving} style={{ height: '48px', padding: '0 40px', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 700, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? '#ccc' : '#e2a06e' }}>
             {saving ? '저장 중...' : '매물 수정'}
           </button>

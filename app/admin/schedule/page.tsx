@@ -253,8 +253,8 @@ export default function SchedulePage() {
           <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a1a' }}>스케줄</h1>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button onClick={() => openAddModal(todayKey)} style={{ padding: '10px 16px', background: '#1a1a1a', color: '#e2a06e', border: '1px solid #333', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>+ 일정 추가</button>
-            <a href="/admin" style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>대시보드</a>
-            <a href="/admin/customers" style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>손님 관리</a>
+            <a href="/admin" onClick={() => window.scrollTo(0, 0)} style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>대시보드</a>
+            <a href="/admin/customers" onClick={() => window.scrollTo(0, 0)} style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>손님 관리</a>
           </div>
         </div>
 

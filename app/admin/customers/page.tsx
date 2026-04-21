@@ -70,7 +70,7 @@ export default function CustomersPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a1a' }}>손님 관리</h1>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <a href="/admin" style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>대시보드</a>
+            <a href="/admin" onClick={() => window.scrollTo(0, 0)} style={{ padding: '10px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', color: '#666', textDecoration: 'none' }}>대시보드</a>
             <a href="/admin/customers/new" style={{ padding: '10px 20px', background: '#e2a06e', color: '#fff', borderRadius: '6px', fontSize: '14px', fontWeight: 700, textDecoration: 'none', border: 'none' }}>+ 신규 손님 등록</a>
           </div>
         </div>
