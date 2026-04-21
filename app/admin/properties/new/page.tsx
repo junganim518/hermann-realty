@@ -570,34 +570,37 @@ export default function NewPropertyPage() {
       const pNum = inserted.property_number;
       console.log('[1] 성공 — uuid:', propertyId, 'property_number:', pNum);
 
-      // 2) 이미지 R2 업로드 + property_images INSERT
-      console.log(`[2] 이미지 업로드 시작 (${images.length}장)`);
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        let publicUrl: string;
-        try {
-          publicUrl = await uploadImageToR2(img.file);
-          console.log(`[2-${i + 1}] R2 업로드 성공:`, publicUrl);
-        } catch (err) {
-          console.error(`[2-${i + 1}] R2 업로드 실패:`, err);
-          continue;
-        }
+      // 2) 이미지 R2 업로드 + property_images INSERT (병렬)
+      console.log(`[2] 이미지 업로드 시작 (${images.length}장, 병렬)`);
+      const uploadResults = await Promise.all(
+        images.map(async (img, i) => {
+          try {
+            const publicUrl = await uploadImageToR2(img.file);
+            console.log(`[2-${i + 1}] R2 업로드 성공:`, publicUrl);
+            return { i, publicUrl };
+          } catch (err) {
+            console.error(`[2-${i + 1}] R2 업로드 실패:`, err);
+            return null;
+          }
+        })
+      );
 
-        // property_images INSERT
-        const insertPayload = {
+      const insertRows = uploadResults
+        .filter((r): r is { i: number; publicUrl: string } => r !== null)
+        .map(({ i, publicUrl }) => ({
           property_id: propertyId,
           image_url: publicUrl,
           order_index: i,
-        };
-        console.log(`[4-${i + 1}] property_images INSERT 데이터:`, insertPayload);
+        }));
+
+      if (insertRows.length > 0) {
+        console.log(`[4] property_images INSERT (${insertRows.length}건)`);
         const { data: imgData, error: imgErr } = await supabase
           .from('property_images')
-          .insert(insertPayload)
+          .insert(insertRows)
           .select();
-        console.log(`[4-${i + 1}] property_images 결과:`, { imgData, imgErr });
-        if (imgErr) {
-          console.error(`[4-${i + 1}] property_images INSERT 실패:`, imgErr);
-        }
+        console.log('[4] property_images 결과:', { imgData, imgErr });
+        if (imgErr) console.error('[4] property_images INSERT 실패:', imgErr);
       }
 
       alert('매물이 등록되었습니다.');

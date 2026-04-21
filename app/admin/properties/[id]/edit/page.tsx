@@ -636,22 +636,30 @@ export default function EditPropertyPage() {
         await supabase.from('property_images').update({ order_index: i }).eq('id', existingImages[i].id);
       }
 
-      // 새 이미지 R2 업로드
+      // 새 이미지 R2 업로드 (병렬)
       const startIdx = existingImages.length;
-      for (let i = 0; i < newImages.length; i++) {
-        const img = newImages[i];
-        let publicUrl: string;
-        try {
-          publicUrl = await uploadImageToR2(img.file);
-        } catch (err) {
-          console.error('R2 업로드 실패:', err);
-          continue;
-        }
-        await supabase.from('property_images').insert({
+      const uploadResults = await Promise.all(
+        newImages.map(async (img, i) => {
+          try {
+            const publicUrl = await uploadImageToR2(img.file);
+            return { i, publicUrl };
+          } catch (err) {
+            console.error('R2 업로드 실패:', err);
+            return null;
+          }
+        })
+      );
+
+      const insertRows = uploadResults
+        .filter((r): r is { i: number; publicUrl: string } => r !== null)
+        .map(({ i, publicUrl }) => ({
           property_id: propertyId,
           image_url: publicUrl,
           order_index: startIdx + i,
-        });
+        }));
+
+      if (insertRows.length > 0) {
+        await supabase.from('property_images').insert(insertRows);
       }
 
       alert('매물이 수정되었습니다.');
