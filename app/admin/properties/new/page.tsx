@@ -701,19 +701,6 @@ export default function NewPropertyPage() {
         <div className="admin-section" style={sectionSt}>
           <h2 className="admin-section-title" style={sectionTitle}>위치 정보</h2>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ ...labelSt, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>매물 제목</span>
-              <button
-                type="button"
-                onClick={() => set('title', generateTitle(form))}
-                style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', background: '#fff', cursor: 'pointer' }}
-              >
-                ✨ 타이틀 자동생성
-              </button>
-            </label>
-            <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="예) 역세권 1층 상가 월세, 채광 좋은 사무실 전세" style={inputSt} />
-          </div>
-          <div style={{ marginBottom: '12px' }}>
             <label style={labelSt}>주소 *</label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="주소를 검색하세요" style={{ ...inputSt, flex: 1 }} readOnly />
@@ -933,6 +920,21 @@ export default function NewPropertyPage() {
             rows={12}
             style={{ width: '100%', minHeight: '280px', border: '1px solid #ddd', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit' }}
           />
+        </div>
+
+        {/* ════════════ 매물 제목 ════════════ */}
+        <div className="admin-section" style={sectionSt}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e2a06e' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a' }}>매물 제목</h2>
+            <button
+              type="button"
+              onClick={() => set('title', generateTitle(form))}
+              style={{ fontSize: '12px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', background: '#fff', cursor: 'pointer' }}
+            >
+              ✨ 타이틀 자동생성
+            </button>
+          </div>
+          <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="예) [부천 중동 상가 월세] 전용 10평 초역세권 무권리" style={inputSt} />
         </div>
 
         {/* ════════════ 관리자 메모 ════════════ */}
