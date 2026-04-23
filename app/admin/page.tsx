@@ -217,6 +217,10 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login?redirect=/admin'); return; }
       setAuthChecked(true);
@@ -716,7 +720,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* ═══ 매물 관리 리스트 ═══ */}
-        <div style={sectionSt}>
+        <div id="property-management-section" style={sectionSt}>
           <div style={sectionTitleSt}>
             <span>매물 관리 ({filtered.length})</span>
             <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
@@ -860,13 +864,19 @@ export default function AdminDashboard() {
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '20px' }}>
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => {
+                  setPage(p => Math.max(1, p - 1));
+                  document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 disabled={safePage <= 1}
                 style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #ddd', background: safePage <= 1 ? '#f5f5f5' : '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer', fontSize: '13px', fontWeight: 600 }}
               >이전</button>
               <span style={{ fontSize: '14px', color: '#666' }}>{safePage} / {totalPages}</span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => {
+                  setPage(p => Math.min(totalPages, p + 1));
+                  document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 disabled={safePage >= totalPages}
                 style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #ddd', background: safePage >= totalPages ? '#f5f5f5' : '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer', fontSize: '13px', fontWeight: 600 }}
               >다음</button>
