@@ -16,9 +16,9 @@ const RSS_SOURCES = [
   { source: '한국경제', url: 'https://www.hankyung.com/feed/realestate' },
   { source: '아시아경제', url: 'https://www.asiae.co.kr/rss/realestate.htm' },
   { source: '이데일리', url: 'https://rss.edaily.co.kr/edaily/section/realestate.xml' },
-  { source: '조선일보', url: 'https://www.chosun.com/arc/outboundfeeds/rss/category/real_estate/?outputType=xml' },
-  { source: '헤럴드경제', url: 'http://biz.heraldcorp.com/rss/010000000000.xml' },
   { source: '머니투데이', url: 'https://rss.mt.co.kr/mt_news.xml' },
+  { source: '연합뉴스', url: 'https://www.yna.co.kr/rss/economy.xml' },
+  { source: '동아일보', url: 'https://rss.donga.com/economy.xml' },
 ];
 
 const KEYWORDS = ['부동산', '아파트', '분양', '임대', '매매', '전세', '월세', '상가', '오피스', '빌딩', '토지', '재건축', '재개발', '청약'];
