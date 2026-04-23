@@ -14,9 +14,11 @@ interface NewsItem {
 const RSS_SOURCES = [
   { source: '매일경제', url: 'https://www.mk.co.kr/rss/30000001/' },
   { source: '한국경제', url: 'https://www.hankyung.com/feed/realestate' },
-  { source: '뉴스1', url: 'https://www.news1.kr/rss/realestate' },
   { source: '아시아경제', url: 'https://www.asiae.co.kr/rss/realestate.htm' },
   { source: '이데일리', url: 'https://rss.edaily.co.kr/edaily/section/realestate.xml' },
+  { source: '조선일보', url: 'https://www.chosun.com/arc/outboundfeeds/rss/category/real_estate/?outputType=xml' },
+  { source: '헤럴드경제', url: 'http://biz.heraldcorp.com/rss/010000000000.xml' },
+  { source: '머니투데이', url: 'https://rss.mt.co.kr/mt_news.xml' },
 ];
 
 const KEYWORDS = ['부동산', '아파트', '분양', '임대', '매매', '전세', '월세', '상가', '오피스', '빌딩', '토지', '재건축', '재개발', '청약'];
@@ -47,16 +49,33 @@ const extractImgFromDescription = (description: string): string | null => {
 };
 
 async function fetchRss(source: string, url: string): Promise<NewsItem[]> {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-    next: { revalidate: 21600 },
-  });
-  if (!res.ok) throw new Error(`${source} fetch failed: ${res.status}`);
+  const start = Date.now();
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: 21600 },
+    });
+  } catch (err: any) {
+    console.error(`[RSS] ❌ ${source} (${url}) — fetch 실패:`, err?.message ?? err);
+    throw err;
+  }
+  if (!res.ok) {
+    console.warn(`[RSS] ❌ ${source} (${url}) — HTTP ${res.status}`);
+    throw new Error(`${source} fetch failed: ${res.status}`);
+  }
 
   const xml = await res.text();
-  const itemBlocks = xml.match(/<item>[\s\S]*?<\/item>/g) ?? [];
+  const contentType = res.headers.get('content-type') ?? '';
+  const looksLikeXml = /^<\?xml|^<rss|^<feed/i.test(xml.trimStart().slice(0, 50));
+  const itemBlocks = xml.match(/<item[^>]*>[\s\S]*?<\/item>/g) ?? [];
+  const elapsed = Date.now() - start;
 
-  return itemBlocks.map(block => {
+  if (!looksLikeXml) {
+    console.warn(`[RSS] ⚠️ ${source} — XML이 아닌 응답 (content-type=${contentType}, ${elapsed}ms, ${xml.length}B)`);
+  }
+
+  const items = itemBlocks.map(block => {
     const title = stripHtml(extractTag(block, 'title'));
     const link = stripHtml(extractTag(block, 'link'));
     const rawDescription = extractTag(block, 'description');
@@ -65,13 +84,32 @@ async function fetchRss(source: string, url: string): Promise<NewsItem[]> {
     const thumbnail = extractEnclosureUrl(block) ?? extractMediaContent(block) ?? extractImgFromDescription(rawDescription);
     return { title, link, description, pubDate, thumbnail, source };
   });
+
+  const sampleTitle = items[0]?.title?.slice(0, 40) ?? '-';
+  const icon = items.length > 0 ? '✅' : '⚠️';
+  console.log(`[RSS] ${icon} ${source}: ${items.length}건 (${elapsed}ms, ${xml.length}B) | 첫 기사: "${sampleTitle}"`);
+
+  return items;
 }
 
 export async function GET() {
   try {
+    console.log(`[RSS] ━━━ RSS 수집 시작 (${RSS_SOURCES.length}개 소스) ━━━`);
     const results = await Promise.allSettled(
       RSS_SOURCES.map(s => fetchRss(s.source, s.url))
     );
+
+    // 소스별 집계 로그
+    let totalFetched = 0;
+    results.forEach((r, i) => {
+      const source = RSS_SOURCES[i].source;
+      if (r.status === 'fulfilled') {
+        totalFetched += r.value.length;
+      } else {
+        console.error(`[RSS] ❌ ${source}: 실패 — ${r.reason?.message ?? r.reason}`);
+      }
+    });
+    console.log(`[RSS] ━━━ 수집 완료: 총 ${totalFetched}건 ━━━`);
 
     // 성공한 것만 합치기
     const allItems: NewsItem[] = results
