@@ -1390,7 +1390,7 @@ export default function PropertyDetailPage() {
             propertyNumber={property.property_number ?? ''}
             imageUrl={images[0] ?? ''}
             description={summaryParts.join(' · ')}
-            shareUrl={typeof window !== 'undefined' ? window.location.href : ''}
+            shareUrl={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : ''}
           />
         );
       })()}

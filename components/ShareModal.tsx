@@ -91,19 +91,44 @@ export default function ShareModal({
       }
       window.Kakao.init(appKey);
     }
+
+    // 절대 URL 보장: 전달받은 shareUrl이 http(s)로 시작하지 않으면 현재 페이지의 canonical URL로 대체
+    const absShareUrl = /^https?:\/\//i.test(shareUrl)
+      ? shareUrl
+      : `${window.location.origin}${window.location.pathname}`;
+
+    const absImageUrl = /^https?:\/\//i.test(imageUrl)
+      ? imageUrl
+      : 'https://hermann-realty.com/og-image.png';
+
+    const safeTitle = propertyTitle || `매물번호 ${propertyNumber}`;
+
+    console.log('카카오 공유 데이터:', {
+      title: safeTitle,
+      description,
+      imageUrl: absImageUrl,
+      shareUrl: absShareUrl,
+    });
+
     try {
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-          title: propertyTitle || `매물번호 ${propertyNumber}`,
+          title: safeTitle,
           description,
-          imageUrl: imageUrl || 'https://hermann-realty.com/og-image.png',
-          link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+          imageUrl: absImageUrl,
+          link: {
+            mobileWebUrl: absShareUrl,
+            webUrl: absShareUrl,
+          },
         },
         buttons: [
           {
             title: '매물 보기',
-            link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+            link: {
+              mobileWebUrl: absShareUrl,
+              webUrl: absShareUrl,
+            },
           },
         ],
       });
