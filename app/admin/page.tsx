@@ -861,27 +861,64 @@ export default function AdminDashboard() {
           )}
 
           {/* 페이지네이션 */}
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '20px' }}>
-              <button
-                onClick={() => {
-                  setPage(p => Math.max(1, p - 1));
-                  document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                disabled={safePage <= 1}
-                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #ddd', background: safePage <= 1 ? '#f5f5f5' : '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer', fontSize: '13px', fontWeight: 600 }}
-              >이전</button>
-              <span style={{ fontSize: '14px', color: '#666' }}>{safePage} / {totalPages}</span>
-              <button
-                onClick={() => {
-                  setPage(p => Math.min(totalPages, p + 1));
-                  document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                disabled={safePage >= totalPages}
-                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #ddd', background: safePage >= totalPages ? '#f5f5f5' : '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer', fontSize: '13px', fontWeight: 600 }}
-              >다음</button>
-            </div>
-          )}
+          {totalPages > 1 && (() => {
+            const WINDOW = 5;
+            let start = Math.max(1, safePage - Math.floor(WINDOW / 2));
+            let end = start + WINDOW - 1;
+            if (end > totalPages) {
+              end = totalPages;
+              start = Math.max(1, end - WINDOW + 1);
+            }
+            const pages: number[] = [];
+            for (let i = start; i <= end; i++) pages.push(i);
+
+            const goTo = (n: number) => {
+              setPage(n);
+              document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' });
+            };
+
+            const navBtnSt = (disabled: boolean): React.CSSProperties => ({
+              minWidth: '60px', height: '36px', padding: '0 14px', borderRadius: '6px',
+              border: `1px solid ${disabled ? '#e0e0e0' : '#1a1a1a'}`,
+              background: disabled ? '#f5f5f5' : '#1a1a1a',
+              color: disabled ? '#bbb' : '#e2a06e',
+              cursor: disabled ? 'default' : 'pointer', fontSize: '13px', fontWeight: 700,
+            });
+
+            const numBtnSt = (active: boolean): React.CSSProperties => ({
+              minWidth: '36px', height: '36px', padding: '0 10px', borderRadius: '6px',
+              border: `1px solid ${active ? '#e2a06e' : '#ddd'}`,
+              background: active ? '#e2a06e' : '#fff',
+              color: active ? '#1a1a1a' : '#666',
+              cursor: active ? 'default' : 'pointer',
+              fontSize: '13px', fontWeight: active ? 800 : 600,
+              fontVariantNumeric: 'tabular-nums',
+            });
+
+            return (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '20px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => goTo(Math.max(1, safePage - 1))}
+                  disabled={safePage <= 1}
+                  style={navBtnSt(safePage <= 1)}
+                >이전</button>
+
+                {pages.map(n => (
+                  <button
+                    key={n}
+                    onClick={() => { if (n !== safePage) goTo(n); }}
+                    style={numBtnSt(n === safePage)}
+                  >{n}</button>
+                ))}
+
+                <button
+                  onClick={() => goTo(Math.min(totalPages, safePage + 1))}
+                  disabled={safePage >= totalPages}
+                  style={navBtnSt(safePage >= totalPages)}
+                >다음</button>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
