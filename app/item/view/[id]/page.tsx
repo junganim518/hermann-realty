@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Link as LinkIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
 
@@ -1238,10 +1239,10 @@ export default function PropertyDetailPage() {
                   showMsg(fallback() ? '링크가 복사되었습니다' : '링크 복사에 실패했습니다');
                 }}
                 aria-label="링크 복사"
-                style={{ width: '52px', height: '52px', flexShrink: 0, background: '#1a1a1a', color: '#e2a06e', fontSize: '20px', fontWeight: 700, border: '1px solid #1a1a1a', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: '52px', height: '52px', flexShrink: 0, background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title="링크 복사"
               >
-                🔗
+                <LinkIcon size={22} strokeWidth={2.2} />
               </button>
             </div>
           </div>
