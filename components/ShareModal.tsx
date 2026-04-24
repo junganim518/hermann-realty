@@ -91,7 +91,16 @@ export default function ShareModal({
 
   const handleKakaoShare = () => {
     if (typeof window === 'undefined' || !window.Kakao) {
+      console.error('[카카오 공유] window.Kakao 없음');
       alert('카카오 SDK 로드 실패');
+      return;
+    }
+
+    // SDK 버전/구조 점검: v2는 window.Kakao.Share, v1(deprecated)은 window.Kakao.Link
+    console.log('Kakao.Share:', window.Kakao?.Share);
+    if (!window.Kakao.Share || typeof window.Kakao.Share.sendDefault !== 'function') {
+      console.error('[카카오 공유] Kakao.Share.sendDefault 미지원 — SDK 버전 확인 필요');
+      alert('카카오 공유 기능을 사용할 수 없습니다.');
       return;
     }
 
@@ -118,6 +127,7 @@ export default function ShareModal({
     });
 
     try {
+      console.log('[카카오] sendDefault 호출');
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
@@ -139,6 +149,7 @@ export default function ShareModal({
           },
         ],
       });
+      console.log('[카카오] sendDefault 호출 완료');
       onClose();
     } catch (error) {
       console.error('[카카오 공유] 에러:', error);
