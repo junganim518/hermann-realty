@@ -24,6 +24,7 @@ export default function ShareModal({
   const [isMobile, setIsMobile] = useState(false);
   const [toast, setToast] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [resolvedShareUrl, setResolvedShareUrl] = useState(shareUrl);
 
   useEffect(() => {
     setMounted(true);
@@ -32,6 +33,16 @@ export default function ShareModal({
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  // prop으로 받은 shareUrl이 비었거나 상대경로면 window.location.href로 덮어쓰기
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!shareUrl || !shareUrl.startsWith('http')) {
+      setResolvedShareUrl(window.location.href);
+    } else {
+      setResolvedShareUrl(shareUrl);
+    }
+  }, [shareUrl]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -64,14 +75,14 @@ export default function ShareModal({
   const handleCopyLink = async () => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(resolvedShareUrl);
         showToast('링크가 복사되었습니다');
         return;
       }
     } catch {
       // fall through to fallback
     }
-    if (fallbackCopy(shareUrl)) {
+    if (fallbackCopy(resolvedShareUrl)) {
       showToast('링크가 복사되었습니다');
     } else {
       showToast('링크 복사에 실패했습니다');
@@ -79,66 +90,63 @@ export default function ShareModal({
   };
 
   const handleKakaoShare = () => {
-    if (!window.Kakao) {
-      showToast('카카오 SDK 로드 중입니다');
+    if (typeof window === 'undefined' || !window.Kakao) {
+      alert('카카오 SDK 로드 실패');
       return;
     }
-    const appKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? '';
+
     if (!window.Kakao.isInitialized()) {
-      if (!appKey) {
-        showToast('카카오 공유 설정이 필요합니다');
-        return;
-      }
-      window.Kakao.init(appKey);
+      const key = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+      if (key) window.Kakao.init(key);
     }
 
-    // 절대 URL 보장: 전달받은 shareUrl이 http(s)로 시작하지 않으면 현재 페이지의 canonical URL로 대체
-    const absShareUrl = /^https?:\/\//i.test(shareUrl)
-      ? shareUrl
+    // 절대 URL 보장
+    const absoluteShareUrl = resolvedShareUrl.startsWith('http')
+      ? resolvedShareUrl
       : `${window.location.origin}${window.location.pathname}`;
 
-    const absImageUrl = /^https?:\/\//i.test(imageUrl)
+    const absoluteImageUrl = imageUrl && imageUrl.startsWith('http')
       ? imageUrl
-      : 'https://hermann-realty.com/og-image.png';
+      : 'https://hermann-realty.com/og-default.jpg';
 
-    const safeTitle = propertyTitle || `매물번호 ${propertyNumber}`;
-
-    console.log('카카오 공유 데이터:', {
-      title: safeTitle,
+    // 디버깅용 로그
+    console.log('[카카오 공유] 전송 데이터:', {
+      title: propertyTitle,
       description,
-      imageUrl: absImageUrl,
-      shareUrl: absShareUrl,
+      imageUrl: absoluteImageUrl,
+      shareUrl: absoluteShareUrl,
     });
 
     try {
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-          title: safeTitle,
-          description,
-          imageUrl: absImageUrl,
+          title: propertyTitle,
+          description: description,
+          imageUrl: absoluteImageUrl,
           link: {
-            mobileWebUrl: absShareUrl,
-            webUrl: absShareUrl,
+            mobileWebUrl: absoluteShareUrl,
+            webUrl: absoluteShareUrl,
           },
         },
         buttons: [
           {
-            title: '매물 보기',
+            title: '매물 자세히 보기',
             link: {
-              mobileWebUrl: absShareUrl,
-              webUrl: absShareUrl,
+              mobileWebUrl: absoluteShareUrl,
+              webUrl: absoluteShareUrl,
             },
           },
         ],
       });
-    } catch (err) {
-      console.error('[ShareModal] 카카오 공유 실패:', err);
-      showToast('카카오 공유에 실패했습니다');
+      onClose();
+    } catch (error) {
+      console.error('[카카오 공유] 에러:', error);
+      alert('공유 중 오류가 발생했습니다.');
     }
   };
 
-  const smsBody = `[헤르만부동산] ${propertyTitle || `매물 ${propertyNumber}`}\n${shareUrl}`;
+  const smsBody = `[헤르만부동산] ${propertyTitle || `매물 ${propertyNumber}`}\n${resolvedShareUrl}`;
   const smsHref = `sms:?&body=${encodeURIComponent(smsBody)}`;
 
   if (!mounted || !isOpen) return null;
