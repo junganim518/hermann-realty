@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
-import ShareModal from '@/components/ShareModal';
 
 declare global {
   interface Window { kakao: any; }
@@ -198,7 +197,7 @@ export default function PropertyDetailPage() {
   const [isTablet, setIsTablet] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareToast, setShareToast] = useState('');
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -1208,10 +1207,39 @@ export default function PropertyDetailPage() {
                 매물 문의하기
               </button>
               <button
-                onClick={() => setShowShareModal(true)}
-                aria-label="공유하기"
+                onClick={async () => {
+                  const url = `${window.location.origin}${window.location.pathname}`;
+                  const showMsg = (msg: string) => {
+                    setShareToast(msg);
+                    setTimeout(() => setShareToast(''), 2000);
+                  };
+                  const fallback = () => {
+                    try {
+                      const ta = document.createElement('textarea');
+                      ta.value = url;
+                      ta.style.position = 'fixed';
+                      ta.style.left = '-9999px';
+                      document.body.appendChild(ta);
+                      ta.select();
+                      const ok = document.execCommand('copy');
+                      document.body.removeChild(ta);
+                      return ok;
+                    } catch { return false; }
+                  };
+                  try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                      await navigator.clipboard.writeText(url);
+                      showMsg('링크가 복사되었습니다');
+                      return;
+                    }
+                  } catch {
+                    // fall through
+                  }
+                  showMsg(fallback() ? '링크가 복사되었습니다' : '링크 복사에 실패했습니다');
+                }}
+                aria-label="링크 복사"
                 style={{ width: '52px', height: '52px', flexShrink: 0, background: '#1a1a1a', color: '#e2a06e', fontSize: '20px', fontWeight: 700, border: '1px solid #1a1a1a', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title="공유하기"
+                title="링크 복사"
               >
                 🔗
               </button>
@@ -1373,27 +1401,27 @@ export default function PropertyDetailPage() {
         ←
       </button>
 
-      {/* 공유 모달 */}
-      {property && (() => {
-        const summaryParts = [
-          `매물번호 ${property.property_number ?? ''}`,
-          property.transaction_type,
-          buildPriceStr(property),
-          property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : '',
-          property.current_floor ? formatFloor(property.current_floor) : '',
-        ].filter(Boolean) as string[];
-        return (
-          <ShareModal
-            isOpen={showShareModal}
-            onClose={() => setShowShareModal(false)}
-            propertyTitle={property.title ?? `매물번호 ${property.property_number ?? ''}`}
-            propertyNumber={property.property_number ?? ''}
-            imageUrl={images[0] ?? ''}
-            description={summaryParts.join(' · ')}
-            shareUrl={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : ''}
-          />
-        );
-      })()}
+      {/* 공유 토스트 */}
+      {shareToast && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: isMobile ? '180px' : '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(26,26,26,0.92)',
+            color: '#e2a06e',
+            padding: '10px 18px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: 600,
+            zIndex: 10000,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          }}
+        >
+          {shareToast}
+        </div>
+      )}
 
       {/* 매물 문의 모달 */}
       {showInquiryModal && (
