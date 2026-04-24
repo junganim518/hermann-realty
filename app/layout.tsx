@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import ScrollToTop from '@/components/ScrollToTop';
 import PageViewTracker from '@/components/PageViewTracker';
+import KakaoSDKScript from '@/components/KakaoSDKScript';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hermann-realty.com'),
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-pretendard">
         <ScrollToTop /><Header />{children}<ConditionalFooter />
         <PageViewTracker />
+        <KakaoSDKScript />
         <Analytics />
       </body>
     </html>

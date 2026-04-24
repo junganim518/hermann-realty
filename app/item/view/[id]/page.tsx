@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
+import ShareModal from '@/components/ShareModal';
 
 declare global {
   interface Window { kakao: any; }
@@ -197,6 +198,7 @@ export default function PropertyDetailPage() {
   const [isTablet, setIsTablet] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -1196,14 +1198,24 @@ export default function PropertyDetailPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowInquiryModal(true)}
-              style={{ width: '100%', height: '52px', background: '#e2a06e', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', marginBottom: 0, transition: 'background 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#A06828')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#e2a06e')}
-            >
-              매물 문의하기
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowInquiryModal(true)}
+                style={{ flex: 1, height: '52px', background: '#e2a06e', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#A06828')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#e2a06e')}
+              >
+                매물 문의하기
+              </button>
+              <button
+                onClick={() => setShowShareModal(true)}
+                aria-label="공유하기"
+                style={{ width: '52px', height: '52px', flexShrink: 0, background: '#1a1a1a', color: '#e2a06e', fontSize: '20px', fontWeight: 700, border: '1px solid #1a1a1a', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="공유하기"
+              >
+                🔗
+              </button>
+            </div>
           </div>
 
           {/* 공인중개사 카드 */}
@@ -1360,6 +1372,28 @@ export default function PropertyDetailPage() {
       >
         ←
       </button>
+
+      {/* 공유 모달 */}
+      {property && (() => {
+        const summaryParts = [
+          `매물번호 ${property.property_number ?? ''}`,
+          property.transaction_type,
+          buildPriceStr(property),
+          property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : '',
+          property.current_floor ? formatFloor(property.current_floor) : '',
+        ].filter(Boolean) as string[];
+        return (
+          <ShareModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            propertyTitle={property.title ?? `매물번호 ${property.property_number ?? ''}`}
+            propertyNumber={property.property_number ?? ''}
+            imageUrl={images[0] ?? ''}
+            description={summaryParts.join(' · ')}
+            shareUrl={typeof window !== 'undefined' ? window.location.href : ''}
+          />
+        );
+      })()}
 
       {/* 매물 문의 모달 */}
       {showInquiryModal && (
