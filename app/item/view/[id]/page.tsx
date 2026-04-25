@@ -938,10 +938,10 @@ export default function PropertyDetailPage() {
             flex-shrink: 0;
           }
           .print-title-block .print-title {
-            font-size: 13px;
+            font-size: 17px !important;
             font-weight: 700;
             color: #000;
-            margin: 0 0 2px 0;
+            margin: 0 0 3px 0;
             line-height: 1.25;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -949,7 +949,7 @@ export default function PropertyDetailPage() {
             overflow: hidden;
           }
           .print-title-block .print-pnum {
-            font-size: 9.5px;
+            font-size: 13.5px !important;
             color: #888;
             font-weight: 500;
           }
@@ -961,12 +961,12 @@ export default function PropertyDetailPage() {
             flex-shrink: 0;
           }
           .print-photo-main {
-            width: 100%; height: 280px; object-fit: cover;
+            width: 100%; height: 260px; object-fit: cover;
             display: block; border: 1px solid #ccc;
           }
           .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
           .print-photo-row img {
-            width: 50%; height: 140px; object-fit: cover;
+            width: 50%; height: 130px; object-fit: cover;
             border: 1px solid #ccc;
           }
 
@@ -979,11 +979,11 @@ export default function PropertyDetailPage() {
             overflow: hidden;
           }
           .print-info-title {
-            font-size: 13px;
+            font-size: 17px !important;
             font-weight: 700;
             color: #1a1a1a;
-            margin: 0 0 3px 0;
-            padding: 0 0 2px 0;
+            margin: 0 0 4px 0;
+            padding: 0 0 3px 0;
             border-bottom: 2px solid #e2a06e !important;
             letter-spacing: 0.3px;
             flex-shrink: 0;
