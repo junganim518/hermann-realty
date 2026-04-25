@@ -954,26 +954,25 @@ export default function PropertyDetailPage() {
             font-weight: 500;
           }
 
-          /* 3) 사진 */
+          /* 3) 사진 — 큼 */
           .print-photos {
             padding: 0 8mm;
             margin-bottom: 2mm;
             flex-shrink: 0;
           }
           .print-photo-main {
-            width: 100%; height: 250px; object-fit: cover;
+            width: 100%; height: 340px; object-fit: cover;
             display: block; border: 1px solid #ccc;
           }
           .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
           .print-photo-row img {
-            width: 50%; height: 130px; object-fit: cover;
+            width: 50%; height: 165px; object-fit: cover;
             border: 1px solid #ccc;
           }
 
-          /* 4) 정보 표 — flex:1로 남은 공간 자동 확장 */
+          /* 4) 정보 표 — 컴팩트 (자동 stretch 안 함) */
           .print-info-block {
-            flex: 1 1 0 !important;
-            min-height: 0 !important;
+            flex-shrink: 0 !important;
             padding: 0 8mm 2mm;
             display: flex;
             flex-direction: column;
@@ -991,18 +990,16 @@ export default function PropertyDetailPage() {
           }
           .print-info-table {
             width: 100%;
-            height: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 10.5px;
             table-layout: fixed;
-            flex: 1 1 auto;
           }
           .print-info-table th,
           .print-info-table td {
             border: 1px solid #d0d0d0;
-            padding: 5px 9px;
+            padding: 3px 8px;
             vertical-align: middle;
-            line-height: 1.35;
+            line-height: 1.3;
             word-break: keep-all;
             overflow-wrap: anywhere;
           }
@@ -1011,7 +1008,7 @@ export default function PropertyDetailPage() {
             background: #f3f3f3 !important;
             color: #555 !important;
             font-weight: 600;
-            font-size: 10.5px;
+            font-size: 10px;
             text-align: left;
           }
           .print-info-table td {
