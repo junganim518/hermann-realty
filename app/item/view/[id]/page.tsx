@@ -863,10 +863,16 @@ export default function PropertyDetailPage() {
         .print-only { display: none !important; }
 
         @media print {
-          /* 페이지 설정: A4 + 작은 여백 */
-          @page { size: A4; margin: 10mm; }
+          /* 모든 요소에 색상 보정 강제 (배경/보더 정확히 인쇄) */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          /* 페이지 설정: A4 풀블리드 (마진 0 → 헤더/푸터 가장자리까지) */
+          @page { size: A4; margin: 0; }
           html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: 'Pretendard', sans-serif; }
+          body { font-family: 'Pretendard', sans-serif; }
 
           /* 화면용 요소 숨김 */
           header,
@@ -887,31 +893,48 @@ export default function PropertyDetailPage() {
             display: none !important;
           }
 
-          /* main 컨테이너 정리 */
-          main { background: #fff !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
+          /* main: A4 1페이지 flex column으로 꽉 채우기 */
+          main {
+            background: #fff !important;
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: 100vh !important;
+            min-height: 297mm !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
 
           /* 인쇄 전용 요소 표시 */
           .print-only { display: block !important; }
 
-          /* 1) 헤더 */
+          /* 1) 헤더 — 블랙 배경 + 골드 라인 */
           .print-header {
+            background: #1a1a1a !important;
+            color: #fff !important;
             text-align: center;
-            padding-bottom: 6px;
-            border-bottom: 2px solid #1a1a1a;
-            margin-bottom: 10px;
-            page-break-after: avoid;
+            padding: 8mm 10mm 6mm;
+            border-bottom: 3px solid #e2a06e !important;
           }
-          .print-header .print-logo { font-size: 20px; font-weight: 800; color: #000; letter-spacing: 1px; }
-          .print-header .print-tagline { font-size: 9px; letter-spacing: 3px; color: #555; margin-top: 2px; }
+          .print-header .print-logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff !important;
+            letter-spacing: 2px;
+          }
+          .print-header .print-tagline {
+            font-size: 10px;
+            letter-spacing: 5px;
+            color: #e2a06e !important;
+            margin-top: 4px;
+            font-weight: 600;
+          }
 
-          /* 2) 매물 타이틀 + 매물번호 */
+          /* 2) 타이틀 + 매물번호 */
           .print-title-block {
-            margin-bottom: 8px;
-            page-break-after: avoid;
-            page-break-inside: avoid;
+            padding: 4mm 8mm 2mm;
           }
           .print-title-block .print-title {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
             color: #000;
             margin: 0 0 2px 0;
@@ -919,67 +942,90 @@ export default function PropertyDetailPage() {
           }
           .print-title-block .print-pnum {
             font-size: 10px;
-            color: #666;
+            color: #888;
             font-weight: 500;
           }
 
-          /* 3) 사진 */
-          .print-photos { margin-bottom: 10px; page-break-inside: avoid; }
+          /* 3) 사진 — 크게 */
+          .print-photos {
+            padding: 0 8mm;
+            margin-bottom: 3mm;
+          }
           .print-photo-main {
-            width: 100%; height: 200px; object-fit: cover;
+            width: 100%; height: 260px; object-fit: cover;
             display: block; border: 1px solid #ccc;
           }
-          .print-photo-row { display: flex; gap: 4px; margin-top: 4px; }
+          .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
           .print-photo-row img {
-            width: 50%; height: 90px; object-fit: cover;
+            width: 50%; height: 130px; object-fit: cover;
             border: 1px solid #ccc;
           }
 
-          /* 4) 매물 정보 표 */
-          .print-info-block { margin-bottom: 10px; page-break-inside: avoid; }
+          /* 4) 정보 표 — flex:1로 남은 공간 자동 확장 */
+          .print-info-block {
+            flex: 1 1 auto !important;
+            padding: 0 8mm 3mm;
+            display: flex;
+            flex-direction: column;
+          }
           .print-info-table {
             width: 100%;
+            height: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 11px;
             table-layout: fixed;
+            flex: 1;
           }
           .print-info-table th,
           .print-info-table td {
             border: 1px solid #d0d0d0;
-            padding: 4px 7px;
+            padding: 7px 9px;
             vertical-align: middle;
-            line-height: 1.3;
+            line-height: 1.4;
             word-break: keep-all;
             overflow-wrap: anywhere;
           }
           .print-info-table th {
             width: 16%;
-            background: #f3f3f3;
-            color: #555;
+            background: #f3f3f3 !important;
+            color: #555 !important;
             font-weight: 600;
-            font-size: 9.5px;
+            font-size: 10px;
             text-align: left;
           }
           .print-info-table td {
             width: 34%;
-            color: #000;
+            color: #000 !important;
             font-weight: 500;
           }
 
-          /* 5) 푸터 */
+          /* 5) 푸터 — 블랙 배경 + 골드 라인 (페이지 하단 고정) */
           .print-footer {
-            border-top: 1px solid #1a1a1a;
-            padding-top: 6px;
-            margin-top: 8px;
-            font-size: 9px;
-            color: #555;
-            line-height: 1.6;
+            background: #1a1a1a !important;
+            color: #fff !important;
             text-align: center;
-            page-break-inside: avoid;
+            padding: 6mm 10mm 8mm;
+            border-top: 3px solid #e2a06e !important;
+            margin-top: auto !important;
+            line-height: 1.7;
+            font-size: 10px;
           }
-          .print-footer-line { font-size: 10px; color: #000; }
-          .print-footer-line strong { color: #000; font-weight: 700; }
-          .print-footer .print-date { color: #999; margin-top: 3px; font-size: 9px; }
+          .print-footer .print-footer-line {
+            font-size: 12px;
+            color: #fff !important;
+            font-weight: 600;
+            margin-bottom: 2px;
+          }
+          .print-footer .print-footer-line strong { color: #e2a06e !important; }
+          .print-footer > div:not(.print-footer-line):not(.print-date) {
+            color: #ccc !important;
+            font-size: 10px;
+          }
+          .print-footer .print-date {
+            color: #888 !important;
+            font-size: 9px;
+            margin-top: 4px;
+          }
         }
       ` }} />
 
