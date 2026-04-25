@@ -678,6 +678,16 @@ export default function PropertyDetailPage() {
           .detail-aside-actions button { font-size: 11px !important; padding: 7px 2px !important; word-break: keep-all !important; overflow: visible !important; white-space: nowrap !important; }
           .detail-aside-agent { padding: 20px !important; }
         }
+
+        /* ── 모바일 전용: 매물 문의/공유 버튼 세로 배치 (PC/태블릿 영향 없음) ── */
+        @media (max-width: 767px) {
+          aside.detail-aside > div.detail-aside-card { display: block !important; padding: 10px 12px !important; }
+          .aside-cta-row { display: flex !important; flex-direction: column !important; gap: 6px !important; margin-top: 8px !important; width: 100% !important; }
+          .aside-cta-row > .cta-inquiry { width: 100% !important; height: 44px !important; font-size: 15px !important; flex: none !important; }
+          .aside-cta-row > .cta-share { width: 100% !important; height: 36px !important; background: #fff !important; color: #1a1a1a !important; border: 1px solid #ddd !important; font-size: 13px !important; gap: 6px !important; }
+          .aside-cta-row > .cta-share svg { width: 16px !important; height: 16px !important; }
+          .cta-share-label { display: inline !important; }
+        }
       ` }} />
 
       {/* ── 상단 탭 바 ── */}
@@ -1198,8 +1208,9 @@ export default function PropertyDetailPage() {
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="aside-cta-row" style={{ display: 'flex', gap: '8px' }}>
               <button
+                className="cta-inquiry"
                 onClick={() => setShowInquiryModal(true)}
                 style={{ flex: 1, height: '52px', background: '#e2a06e', color: '#fff', fontSize: '18px', fontWeight: 700, border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.background = '#A06828')}
@@ -1208,6 +1219,7 @@ export default function PropertyDetailPage() {
                 매물 문의하기
               </button>
               <button
+                className="cta-share"
                 onClick={async () => {
                   const url = `${window.location.origin}${window.location.pathname}`;
                   const showMsg = (msg: string) => {
@@ -1243,6 +1255,7 @@ export default function PropertyDetailPage() {
                 title="링크 복사"
               >
                 <LinkIcon size={22} strokeWidth={2.2} />
+                <span className="cta-share-label" style={{ display: 'none' }}>링크 복사</span>
               </button>
             </div>
           </div>
