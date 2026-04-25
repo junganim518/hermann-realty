@@ -589,6 +589,14 @@ export default function PropertyDetailPage() {
         <div className="print-tagline">REAL ESTATE &amp; INVESTMENTS</div>
       </div>
 
+      {/* ── 인쇄 전용 매물 타이틀 + 매물번호 ── */}
+      {property && (
+        <div className="print-only print-title-block">
+          <h1 className="print-title">{property.title || '(제목 없음)'}</h1>
+          <div className="print-pnum">매물번호 {property.property_number ?? '-'}</div>
+        </div>
+      )}
+
       {/* ── 인쇄 전용 사진 섹션 (대표 1장 + 보조 2장) ── */}
       {property && images.length > 0 && (
         <div className="print-only print-photos">
@@ -600,6 +608,95 @@ export default function PropertyDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── 인쇄 전용 매물 정보 표 (4-column 고정) ── */}
+      {property && (
+        <div className="print-only print-info-block">
+          <table className="print-info-table">
+            <tbody>
+              <tr>
+                <th>주소</th>
+                <td>
+                  {normalizeAddr(property.address ?? '-')}
+                  {(property.building_name || property.unit_number) && (
+                    <span> {formatBuildingUnit(property.building_name, property.unit_number)}</span>
+                  )}
+                </td>
+                <th>매물종류</th>
+                <td>{property.property_type ?? '-'}</td>
+              </tr>
+              <tr>
+                <th>거래유형</th>
+                <td>{property.transaction_type ?? '-'}</td>
+                <th>금액</th>
+                <td>{buildPriceStr(property)}</td>
+              </tr>
+              <tr>
+                <th>권리금</th>
+                <td>{property.premium ? formatPrice(property.premium) : '무권리'}</td>
+                <th>관리비</th>
+                <td>{property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음'}</td>
+              </tr>
+              <tr>
+                <th>면적</th>
+                <td>
+                  {[
+                    property.supply_area ? `공급 ${property.supply_area}㎡` : '',
+                    property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : '',
+                  ].filter(Boolean).join(' / ') || '-'}
+                </td>
+                <th>층수</th>
+                <td>
+                  {[
+                    property.current_floor && formatFloor(property.current_floor),
+                    property.total_floor && `전체 ${formatFloor(property.total_floor)}`,
+                  ].filter(Boolean).join(' / ') || '-'}
+                </td>
+              </tr>
+              <tr>
+                <th>총 주차대수</th>
+                <td>{property.total_parking != null ? `${property.total_parking}대` : '-'}</td>
+                <th>방수/욕실수</th>
+                <td>{`${property.room_count != null ? property.room_count : '-'}개 / ${property.bathroom_count != null ? property.bathroom_count : '-'}개`}</td>
+              </tr>
+              <tr>
+                <th>방향</th>
+                <td>{property.direction ?? '-'}</td>
+                <th>입주가능일</th>
+                <td>{property.available_date ?? '-'}</td>
+              </tr>
+              <tr>
+                <th>주차</th>
+                <td>
+                  {property.parking === true || property.parking === '가능'
+                    ? '가능'
+                    : property.parking === false || property.parking === '불가'
+                    ? '불가'
+                    : property.parking ?? '-'}
+                </td>
+                <th>엘리베이터</th>
+                <td>
+                  {property.elevator === true || property.elevator === '있음'
+                    ? '있음'
+                    : property.elevator === false || property.elevator === '없음'
+                    ? '없음'
+                    : property.elevator ?? '-'}
+                </td>
+              </tr>
+              <tr>
+                <th>용도</th>
+                <td>{property.usage_type ?? '-'}</td>
+                <th>사용승인일</th>
+                <td>{property.approval_date ?? '-'}</td>
+              </tr>
+              <tr>
+                <th>테마종류</th>
+                <td colSpan={3}>{property.theme_types ?? property.theme_type ?? '-'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -766,10 +863,10 @@ export default function PropertyDetailPage() {
         .print-only { display: none !important; }
 
         @media print {
-          /* 페이지 설정 */
-          @page { size: A4; margin: 1cm; }
-          html, body { background: #fff !important; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          /* 페이지 설정: A4 + 작은 여백 */
+          @page { size: A4; margin: 10mm; }
+          html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: 'Pretendard', sans-serif; }
 
           /* 화면용 요소 숨김 */
           header,
@@ -780,66 +877,109 @@ export default function PropertyDetailPage() {
           .detail-pc-scroll-top,
           .detail-aside,
           .detail-image-section,
+          .detail-body,
+          .print-hide,
+          #section-info,
+          #section-desc,
           #section-location,
           #section-transport,
           #section-similar {
             display: none !important;
           }
 
-          /* main/본문 패딩·갭 정리 */
-          main { background: #fff !important; min-height: 0 !important; }
-          .detail-body {
-            padding: 0 !important;
-            margin: 0 !important;
-            gap: 0 !important;
-            flex-direction: column !important;
-            display: block !important;
-          }
-          .detail-main { gap: 8px !important; max-width: 100% !important; width: 100% !important; }
+          /* main 컨테이너 정리 */
+          main { background: #fff !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
 
           /* 인쇄 전용 요소 표시 */
           .print-only { display: block !important; }
 
-          /* 헤더 */
-          .print-header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #1a1a1a; margin-bottom: 14px; }
-          .print-header .print-logo { font-size: 22px; font-weight: 800; color: #000; letter-spacing: 1px; }
-          .print-header .print-tagline { font-size: 10px; letter-spacing: 4px; color: #555; margin-top: 4px; }
+          /* 1) 헤더 */
+          .print-header {
+            text-align: center;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #1a1a1a;
+            margin-bottom: 10px;
+            page-break-after: avoid;
+          }
+          .print-header .print-logo { font-size: 20px; font-weight: 800; color: #000; letter-spacing: 1px; }
+          .print-header .print-tagline { font-size: 9px; letter-spacing: 3px; color: #555; margin-top: 2px; }
 
-          /* 사진 */
-          .print-photos { margin-bottom: 12px; page-break-inside: avoid; }
-          .print-photo-main { width: 100%; height: 240px; object-fit: cover; display: block; border: 1px solid #ddd; }
-          .print-photo-row { display: flex; gap: 6px; margin-top: 6px; }
-          .print-photo-row img { width: 50%; height: 110px; object-fit: cover; border: 1px solid #ddd; }
+          /* 2) 매물 타이틀 + 매물번호 */
+          .print-title-block {
+            margin-bottom: 8px;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+          }
+          .print-title-block .print-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #000;
+            margin: 0 0 2px 0;
+            line-height: 1.3;
+          }
+          .print-title-block .print-pnum {
+            font-size: 10px;
+            color: #666;
+            font-weight: 500;
+          }
 
-          /* 본문 폰트 축소 */
-          .detail-section { padding: 0 !important; margin: 0 0 10px !important; box-shadow: none !important; border: none !important; background: transparent !important; }
-          .detail-info-title { font-size: 13px !important; color: #000 !important; padding-bottom: 4px !important; border-bottom: 1px solid #888 !important; margin-bottom: 6px !important; }
-          .detail-info-table { font-size: 11px !important; }
-          .detail-info-table td { padding: 4px 6px !important; font-size: 11px !important; border-bottom: 1px solid #eee !important; }
-          .detail-info-table td:nth-child(odd) { background: #f5f5f5 !important; color: #555 !important; font-weight: 500 !important; }
-          .detail-info-table td:nth-child(even) { color: #000 !important; font-weight: 600 !important; }
-          .detail-info-table { page-break-inside: avoid; }
+          /* 3) 사진 */
+          .print-photos { margin-bottom: 10px; page-break-inside: avoid; }
+          .print-photo-main {
+            width: 100%; height: 200px; object-fit: cover;
+            display: block; border: 1px solid #ccc;
+          }
+          .print-photo-row { display: flex; gap: 4px; margin-top: 4px; }
+          .print-photo-row img {
+            width: 50%; height: 90px; object-fit: cover;
+            border: 1px solid #ccc;
+          }
 
-          /* 매물 설명 */
-          #section-desc { font-size: 11px !important; line-height: 1.5 !important; color: #000 !important; }
+          /* 4) 매물 정보 표 */
+          .print-info-block { margin-bottom: 10px; page-break-inside: avoid; }
+          .print-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            table-layout: fixed;
+          }
+          .print-info-table th,
+          .print-info-table td {
+            border: 1px solid #d0d0d0;
+            padding: 4px 7px;
+            vertical-align: middle;
+            line-height: 1.3;
+            word-break: keep-all;
+            overflow-wrap: anywhere;
+          }
+          .print-info-table th {
+            width: 16%;
+            background: #f3f3f3;
+            color: #555;
+            font-weight: 600;
+            font-size: 9.5px;
+            text-align: left;
+          }
+          .print-info-table td {
+            width: 34%;
+            color: #000;
+            font-weight: 500;
+          }
 
-          /* 푸터 */
+          /* 5) 푸터 */
           .print-footer {
             border-top: 1px solid #1a1a1a;
-            padding-top: 8px;
-            margin-top: 14px;
-            font-size: 10px;
+            padding-top: 6px;
+            margin-top: 8px;
+            font-size: 9px;
             color: #555;
             line-height: 1.6;
             text-align: center;
             page-break-inside: avoid;
           }
-          .print-footer-line strong { color: #000; font-size: 11px; }
-          .print-footer .print-date { color: #999; margin-top: 4px; }
-
-          /* 색상 보정: 골드/베이지 등은 검정으로 통일 (가독성) */
-          .detail-main, .detail-main * { color: #000 !important; }
-          .detail-info-table td:nth-child(odd) { color: #555 !important; }
+          .print-footer-line { font-size: 10px; color: #000; }
+          .print-footer-line strong { color: #000; font-weight: 700; }
+          .print-footer .print-date { color: #999; margin-top: 3px; font-size: 9px; }
         }
       ` }} />
 
@@ -1135,7 +1275,7 @@ export default function PropertyDetailPage() {
 
           {/* 🔒 관리자 메모 (로그인 시에만 표시) */}
           {isAdmin && property?.admin_memo && (
-            <div style={{ background: '#fffdf0', border: '1px solid #f0e6b8', padding: '16px', borderRadius: '4px' }}>
+            <div className="print-hide" style={{ background: '#fffdf0', border: '1px solid #f0e6b8', padding: '16px', borderRadius: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                 <span style={{ fontSize: '16px' }}>🔒</span>
                 <span style={{ fontSize: '16px', fontWeight: 700, color: '#8b7000' }}>관리자 메모</span>
@@ -1148,7 +1288,7 @@ export default function PropertyDetailPage() {
 
           {/* 🔒 연락처 (관리자 전용) */}
           {isAdmin && (property?.landlord_name || property?.landlord_phone || property?.tenant_name || property?.tenant_phone || (property?.extra_contacts && property.extra_contacts.length > 0)) && (
-            <div style={{ background: '#f0f6ff', border: '1px solid #c6dcf3', padding: '16px', borderRadius: '4px' }}>
+            <div className="print-hide" style={{ background: '#f0f6ff', border: '1px solid #c6dcf3', padding: '16px', borderRadius: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                 <span style={{ fontSize: '16px' }}>🔒</span>
                 <span style={{ fontSize: '16px', fontWeight: 700, color: '#2c4f8c' }}>연락처</span>
