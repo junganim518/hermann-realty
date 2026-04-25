@@ -146,6 +146,7 @@ export default function AdminDashboard() {
   const [filterFloor, setFilterFloor] = useState('전체');
   const [filterPremium, setFilterPremium] = useState('전체');
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'latest' | 'views'>('latest');
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
@@ -471,9 +472,21 @@ export default function AdminDashboard() {
     resetPage();
   };
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sortedFiltered = (() => {
+    if (sortBy === 'views') {
+      return [...filtered].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0));
+    }
+    return filtered; // 'latest' — fetchData가 created_at desc로 가져오므로 그대로
+  })();
+
+  const topByViews = [...properties]
+    .filter(p => (p.view_count ?? 0) > 0)
+    .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+    .slice(0, 10);
+
+  const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const displayed = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const displayed = sortedFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   // 필터 변경 시 페이지 리셋
   const resetPage = () => setPage(1);
@@ -680,6 +693,39 @@ export default function AdminDashboard() {
           ))}
         </div>
 
+        {/* 🔥 인기 매물 TOP 10 */}
+        <div style={{ ...sectionSt, padding: '16px 20px', marginBottom: '24px' }}>
+          <div style={{ ...sectionTitleSt, marginBottom: '10px', paddingBottom: '8px' }}>
+            <span style={{ fontSize: '15px' }}>🔥 인기 매물 TOP 10</span>
+            <span style={{ fontSize: '11px', color: '#888', fontWeight: 500 }}>조회수 기준</span>
+          </div>
+          {topByViews.length === 0 ? (
+            <p style={{ color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '16px 0' }}>아직 조회 기록이 없습니다</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {topByViews.map((p, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+                return (
+                  <a
+                    key={p.id}
+                    href={`/item/view/${p.property_number}`}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 4px', borderBottom: '1px solid #f5f5f5', textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <span style={{ minWidth: '30px', fontSize: i < 3 ? '18px' : '13px', fontWeight: 700, color: i < 3 ? '#1a1a1a' : '#888', textAlign: 'center' }}>{medal}</span>
+                    <span style={{ minWidth: '60px', fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{p.property_number}</span>
+                    <span style={{ flex: 1, fontSize: '13px', color: '#e2a06e', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title ?? ''}>
+                      {p.title || '(제목 없음)'}
+                    </span>
+                    <span style={{ minWidth: '70px', fontSize: '13px', color: '#1a1a1a', fontWeight: 700, textAlign: 'right' }}>
+                      {(p.view_count ?? 0).toLocaleString()}회
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
 
         {/* 오늘 방문 예정 (축소) */}
         <div style={{ ...sectionSt, padding: '16px 20px' }}>
@@ -723,7 +769,29 @@ export default function AdminDashboard() {
         <div id="property-management-section" style={sectionSt}>
           <div style={sectionTitleSt}>
             <span>매물 관리 ({filtered.length})</span>
-            <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* 정렬 토글 */}
+              <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                {(['latest', 'views'] as const).map(opt => {
+                  const active = sortBy === opt;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => { setSortBy(opt); setPage(1); }}
+                      style={{
+                        padding: '5px 10px', fontSize: '12px', fontWeight: 600,
+                        background: active ? '#1a1a1a' : '#fff',
+                        color: active ? '#e2a06e' : '#666',
+                        border: 'none', cursor: active ? 'default' : 'pointer',
+                      }}
+                    >
+                      {opt === 'latest' ? '최신순' : '조회수순'}
+                    </button>
+                  );
+                })}
+              </div>
+              <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
+            </div>
           </div>
 
           {/* 검색 & 필터 */}
@@ -819,10 +887,12 @@ export default function AdminDashboard() {
                       {p.admin_memo && (
                         <p style={{ fontSize: '11px', color: '#999', margin: 0, lineHeight: 1.4, fontStyle: 'italic', overflow: 'hidden', wordBreak: 'break-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap', maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>메모: {p.admin_memo}</p>
                       )}
-                      {/* 5행: 등록일 / 수정일 */}
+                      {/* 5행: 등록일 / 수정일 / 조회수 */}
                       <p style={{ fontSize: '10px', color: '#bbb', margin: '4px 0 0', lineHeight: 1.3 }}>
                         등록 {formatDate(p.created_at)}
                         {p.updated_at && formatDate(p.updated_at) !== formatDate(p.created_at) && ` · 수정 ${formatDate(p.updated_at)}`}
+                        {' · '}
+                        <span style={{ color: '#888', fontWeight: 600 }}>조회수 {(p.view_count ?? 0).toLocaleString()}</span>
                       </p>
                     </div>
 

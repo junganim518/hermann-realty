@@ -265,6 +265,26 @@ export default function PropertyDetailPage() {
     });
   }, []);
 
+  // 매물 조회수 +1 (localStorage 24시간 중복 방지)
+  useEffect(() => {
+    if (!property?.id) return;
+    const STORAGE_KEY = `viewed_property_${property.id}`;
+    const TTL_MS = 24 * 60 * 60 * 1000;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const last = parseInt(stored, 10);
+        if (!isNaN(last) && Date.now() - last < TTL_MS) return;
+      }
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+    } catch {
+      // localStorage 접근 불가(사파리 프라이빗 모드 등) — 그대로 진행
+    }
+    supabase.rpc('increment_view_count', { p_property_id: property.id }).then(({ error }) => {
+      if (error) console.warn('[조회수] 증가 실패:', error.message);
+    });
+  }, [property?.id]);
+
   useEffect(() => {
     if (!id) return;
     async function fetchProperty() {
