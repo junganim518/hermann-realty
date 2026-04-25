@@ -679,6 +679,9 @@ export default function PropertyDetailPage() {
           .detail-aside-agent { padding: 20px !important; }
         }
 
+        /* ── 매물 문의하기 버튼 줄바꿈 방지 (모든 화면) ── */
+        .cta-inquiry { white-space: nowrap !important; }
+
         /* ── 모바일 전용: 매물 문의/공유 버튼 세로 배치 (PC/태블릿 영향 없음) ── */
         @media (max-width: 767px) {
           aside.detail-aside > div.detail-aside-card { display: block !important; padding: 10px 12px !important; }
@@ -687,6 +690,11 @@ export default function PropertyDetailPage() {
           .aside-cta-row > .cta-share { width: 100% !important; height: 36px !important; background: #f3f4f6 !important; color: #374151 !important; border: 1px solid #f3f4f6 !important; font-size: 13px !important; gap: 6px !important; }
           .aside-cta-row > .cta-share svg { width: 16px !important; height: 16px !important; }
           .cta-share-label { display: inline !important; }
+        }
+
+        /* ── 태블릿 전용: 매물 문의하기 버튼 너비 확보 (글씨 잘림 방지) ── */
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .aside-cta-row > .cta-inquiry { min-width: 160px !important; padding: 0 18px !important; }
         }
       ` }} />
 
