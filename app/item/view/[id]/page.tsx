@@ -684,7 +684,7 @@ export default function PropertyDetailPage() {
           aside.detail-aside > div.detail-aside-card { display: block !important; padding: 10px 12px !important; }
           .aside-cta-row { display: flex !important; flex-direction: column !important; gap: 6px !important; margin-top: 8px !important; width: 100% !important; }
           .aside-cta-row > .cta-inquiry { width: 100% !important; height: 44px !important; font-size: 15px !important; flex: none !important; }
-          .aside-cta-row > .cta-share { width: 100% !important; height: 36px !important; background: #fff !important; color: #1a1a1a !important; border: 1px solid #ddd !important; font-size: 13px !important; gap: 6px !important; }
+          .aside-cta-row > .cta-share { width: 100% !important; height: 36px !important; background: #f3f4f6 !important; color: #374151 !important; border: 1px solid #f3f4f6 !important; font-size: 13px !important; gap: 6px !important; }
           .aside-cta-row > .cta-share svg { width: 16px !important; height: 16px !important; }
           .cta-share-label { display: inline !important; }
         }
@@ -1251,7 +1251,9 @@ export default function PropertyDetailPage() {
                   showMsg(fallback() ? '링크가 복사되었습니다' : '링크 복사에 실패했습니다');
                 }}
                 aria-label="링크 복사"
-                style={{ width: '52px', height: '52px', flexShrink: 0, background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: '52px', height: '52px', flexShrink: 0, background: '#f3f4f6', color: '#374151', border: '1px solid #f3f4f6', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#e5e7eb')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#f3f4f6')}
                 title="링크 복사"
               >
                 <LinkIcon size={22} strokeWidth={2.2} />
