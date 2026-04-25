@@ -991,7 +991,7 @@ export default function PropertyDetailPage() {
           .print-info-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 12px;
             table-layout: fixed;
           }
           .print-info-table th,
@@ -1008,7 +1008,7 @@ export default function PropertyDetailPage() {
             background: #f3f3f3 !important;
             color: #555 !important;
             font-weight: 600;
-            font-size: 10.5px;
+            font-size: 11.5px;
             text-align: left;
           }
           .print-info-table td {
