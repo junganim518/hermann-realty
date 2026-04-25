@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Link as LinkIcon } from 'lucide-react';
+import { Link as LinkIcon, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
 
@@ -583,6 +583,26 @@ export default function PropertyDetailPage() {
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
+      {/* ── 인쇄 전용 헤더 (화면에서는 숨김) ── */}
+      <div className="print-only print-header">
+        <div className="print-logo">헤르만부동산</div>
+        <div className="print-tagline">REAL ESTATE &amp; INVESTMENTS</div>
+      </div>
+
+      {/* ── 인쇄 전용 사진 섹션 (대표 1장 + 보조 2장) ── */}
+      {property && images.length > 0 && (
+        <div className="print-only print-photos">
+          <img src={images[0]} alt="대표 사진" className="print-photo-main" />
+          {images.length > 1 && (
+            <div className="print-photo-row">
+              {images.slice(1, 3).map((src, i) => (
+                <img key={`print-photo-${i}`} src={src} alt="" className="print-photo-sub" />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <style dangerouslySetInnerHTML={{ __html: `
         .detail-carousel-thumbs::-webkit-scrollbar { display: none; }
 
@@ -740,6 +760,87 @@ export default function PropertyDetailPage() {
         @media (min-width: 768px) and (max-width: 1199px) {
           .aside-cta-row > .cta-inquiry { min-width: 160px !important; padding: 0 18px !important; }
         }
+
+        /* ════════════ 인쇄 전용 ════════════ */
+        /* 화면에서는 인쇄 전용 요소 숨김 */
+        .print-only { display: none !important; }
+
+        @media print {
+          /* 페이지 설정 */
+          @page { size: A4; margin: 1cm; }
+          html, body { background: #fff !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+          /* 화면용 요소 숨김 */
+          header,
+          footer,
+          .tab-bar,
+          .detail-mobile-fab,
+          .detail-pc-back-btn,
+          .detail-pc-scroll-top,
+          .detail-aside,
+          .detail-image-section,
+          #section-location,
+          #section-transport,
+          #section-similar {
+            display: none !important;
+          }
+
+          /* main/본문 패딩·갭 정리 */
+          main { background: #fff !important; min-height: 0 !important; }
+          .detail-body {
+            padding: 0 !important;
+            margin: 0 !important;
+            gap: 0 !important;
+            flex-direction: column !important;
+            display: block !important;
+          }
+          .detail-main { gap: 8px !important; max-width: 100% !important; width: 100% !important; }
+
+          /* 인쇄 전용 요소 표시 */
+          .print-only { display: block !important; }
+
+          /* 헤더 */
+          .print-header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #1a1a1a; margin-bottom: 14px; }
+          .print-header .print-logo { font-size: 22px; font-weight: 800; color: #000; letter-spacing: 1px; }
+          .print-header .print-tagline { font-size: 10px; letter-spacing: 4px; color: #555; margin-top: 4px; }
+
+          /* 사진 */
+          .print-photos { margin-bottom: 12px; page-break-inside: avoid; }
+          .print-photo-main { width: 100%; height: 240px; object-fit: cover; display: block; border: 1px solid #ddd; }
+          .print-photo-row { display: flex; gap: 6px; margin-top: 6px; }
+          .print-photo-row img { width: 50%; height: 110px; object-fit: cover; border: 1px solid #ddd; }
+
+          /* 본문 폰트 축소 */
+          .detail-section { padding: 0 !important; margin: 0 0 10px !important; box-shadow: none !important; border: none !important; background: transparent !important; }
+          .detail-info-title { font-size: 13px !important; color: #000 !important; padding-bottom: 4px !important; border-bottom: 1px solid #888 !important; margin-bottom: 6px !important; }
+          .detail-info-table { font-size: 11px !important; }
+          .detail-info-table td { padding: 4px 6px !important; font-size: 11px !important; border-bottom: 1px solid #eee !important; }
+          .detail-info-table td:nth-child(odd) { background: #f5f5f5 !important; color: #555 !important; font-weight: 500 !important; }
+          .detail-info-table td:nth-child(even) { color: #000 !important; font-weight: 600 !important; }
+          .detail-info-table { page-break-inside: avoid; }
+
+          /* 매물 설명 */
+          #section-desc { font-size: 11px !important; line-height: 1.5 !important; color: #000 !important; }
+
+          /* 푸터 */
+          .print-footer {
+            border-top: 1px solid #1a1a1a;
+            padding-top: 8px;
+            margin-top: 14px;
+            font-size: 10px;
+            color: #555;
+            line-height: 1.6;
+            text-align: center;
+            page-break-inside: avoid;
+          }
+          .print-footer-line strong { color: #000; font-size: 11px; }
+          .print-footer .print-date { color: #999; margin-top: 4px; }
+
+          /* 색상 보정: 골드/베이지 등은 검정으로 통일 (가독성) */
+          .detail-main, .detail-main * { color: #000 !important; }
+          .detail-info-table td:nth-child(odd) { color: #555 !important; }
+        }
       ` }} />
 
       {/* ── 상단 탭 바 ── */}
@@ -793,7 +894,7 @@ export default function PropertyDetailPage() {
         <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* 이미지 캐러셀 */}
-          <div style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0', position: 'relative' }}>
+          <div className="detail-image-section" style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0', position: 'relative' }}>
             {hasImages ? (
               <>
                 <div
@@ -1337,13 +1438,21 @@ export default function PropertyDetailPage() {
 
           {/* 수정/삭제 (로그인 시에만) */}
           {isAdmin && (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="admin-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <a
                 href={`/admin/properties/${property.property_number}/edit`}
-                style={{ flex: 1, display: 'block', textAlign: 'center', padding: '12px', background: '#f8f8f8', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', fontSize: '15px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+                style={{ flex: 1, minWidth: '90px', display: 'block', textAlign: 'center', padding: '12px', background: '#f8f8f8', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', fontSize: '15px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
               >
                 매물 수정
               </a>
+              <button
+                onClick={() => window.print()}
+                style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                title="인쇄하기"
+              >
+                <Printer size={16} strokeWidth={2.2} />
+                인쇄
+              </button>
               <button
                 onClick={async () => {
                   if (!confirm(`매물 ${property.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
@@ -1370,7 +1479,7 @@ export default function PropertyDetailPage() {
                     router.push('/properties');
                   }
                 }}
-                style={{ flex: 1, padding: '12px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
               >
                 매물 삭제
               </button>
@@ -1379,6 +1488,14 @@ export default function PropertyDetailPage() {
 
         </aside>
 
+      </div>
+
+      {/* ── 인쇄 전용 푸터 (화면에서는 숨김) ── */}
+      <div className="print-only print-footer">
+        <div className="print-footer-line"><strong>헤르만부동산</strong> / 010-8680-8151</div>
+        <div>사무소: 부천시 신흥로 223 101동 712호</div>
+        <div>등록번호: 제41192-2024-00113호</div>
+        <div className="print-date">인쇄일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
       </div>
 
       {/* 모바일 우측 하단 FAB (뒤로가기 + 위로이동) */}
