@@ -874,6 +874,17 @@ export default function PropertyDetailPage() {
           }
           .aside-cta-row > .cta-share svg { width: 20px !important; height: 20px !important; }
           .cta-share-label { display: none !important; }
+
+          /* 관리자 버튼(수정/인쇄/삭제) — 모바일에서만 컴팩트 */
+          .admin-actions > a,
+          .admin-actions > button {
+            padding: 7px 6px !important;
+            font-size: 13px !important;
+            min-width: 60px !important;
+            min-height: 0 !important;
+            line-height: 1.2 !important;
+          }
+          .admin-actions > button svg { width: 14px !important; height: 14px !important; }
         }
 
         /* ── 태블릿 전용: 매물 문의하기 버튼 너비 확보 (글씨 잘림 방지) ── */
