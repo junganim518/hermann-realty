@@ -894,13 +894,14 @@ export default function PropertyDetailPage() {
             display: none !important;
           }
 
-          /* main: A4 1페이지 flex column으로 꽉 채우기 */
+          /* main: A4 1페이지 flex column — 안전 장치로 max-height + overflow:hidden */
           main {
             background: #fff !important;
             display: flex !important;
             flex-direction: column !important;
-            min-height: 100vh !important;
-            min-height: 297mm !important;
+            height: 100vh !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
             padding: 0 !important;
             margin: 0 !important;
           }
@@ -913,85 +914,95 @@ export default function PropertyDetailPage() {
             background: #1a1a1a !important;
             color: #fff !important;
             text-align: center;
-            padding: 8mm 10mm 6mm;
+            padding: 6mm 10mm 5mm;
             border-bottom: 3px solid #e2a06e !important;
+            flex-shrink: 0;
           }
           .print-header .print-logo {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
             color: #fff !important;
             letter-spacing: 2px;
           }
           .print-header .print-tagline {
-            font-size: 10px;
-            letter-spacing: 5px;
+            font-size: 9px;
+            letter-spacing: 4px;
             color: #e2a06e !important;
-            margin-top: 4px;
+            margin-top: 3px;
             font-weight: 600;
           }
 
           /* 2) 타이틀 + 매물번호 */
           .print-title-block {
-            padding: 4mm 8mm 2mm;
+            padding: 3mm 8mm 1mm;
+            flex-shrink: 0;
           }
           .print-title-block .print-title {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
             color: #000;
             margin: 0 0 2px 0;
-            line-height: 1.3;
+            line-height: 1.25;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
           }
           .print-title-block .print-pnum {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #888;
             font-weight: 500;
           }
 
-          /* 3) 사진 — 더 크게 */
+          /* 3) 사진 */
           .print-photos {
             padding: 0 8mm;
-            margin-bottom: 3mm;
+            margin-bottom: 2mm;
+            flex-shrink: 0;
           }
           .print-photo-main {
-            width: 100%; height: 310px; object-fit: cover;
+            width: 100%; height: 250px; object-fit: cover;
             display: block; border: 1px solid #ccc;
           }
           .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
           .print-photo-row img {
-            width: 50%; height: 165px; object-fit: cover;
+            width: 50%; height: 130px; object-fit: cover;
             border: 1px solid #ccc;
           }
 
           /* 4) 정보 표 — flex:1로 남은 공간 자동 확장 */
           .print-info-block {
-            flex: 1 1 auto !important;
-            padding: 0 8mm 3mm;
+            flex: 1 1 0 !important;
+            min-height: 0 !important;
+            padding: 0 8mm 2mm;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
           }
           .print-info-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #1a1a1a;
-            margin: 0 0 4px 0;
-            padding: 0 0 3px 0;
+            margin: 0 0 3px 0;
+            padding: 0 0 2px 0;
             border-bottom: 2px solid #e2a06e !important;
             letter-spacing: 0.3px;
+            flex-shrink: 0;
           }
           .print-info-table {
             width: 100%;
             height: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 11px;
             table-layout: fixed;
-            flex: 1;
+            flex: 1 1 auto;
           }
           .print-info-table th,
           .print-info-table td {
             border: 1px solid #d0d0d0;
-            padding: 7px 10px;
+            padding: 5px 9px;
             vertical-align: middle;
-            line-height: 1.4;
+            line-height: 1.35;
             word-break: keep-all;
             overflow-wrap: anywhere;
           }
@@ -1000,7 +1011,7 @@ export default function PropertyDetailPage() {
             background: #f3f3f3 !important;
             color: #555 !important;
             font-weight: 600;
-            font-size: 11px;
+            font-size: 10.5px;
             text-align: left;
           }
           .print-info-table td {
@@ -1014,28 +1025,29 @@ export default function PropertyDetailPage() {
             background: #1a1a1a !important;
             color: #fff !important;
             text-align: center;
-            padding: 6mm 10mm 8mm;
+            padding: 4mm 10mm 5mm;
             border-top: 3px solid #e2a06e !important;
             margin-top: auto !important;
-            line-height: 1.7;
+            line-height: 1.55;
             font-size: 10px;
+            flex-shrink: 0;
           }
           .print-footer .print-footer-line {
-            font-size: 16px;
+            font-size: 14px;
             color: #fff !important;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             letter-spacing: 0.3px;
           }
           .print-footer .print-footer-line strong { color: #e2a06e !important; }
           .print-footer > div:not(.print-footer-line):not(.print-date) {
             color: #ddd !important;
-            font-size: 10.5px;
+            font-size: 10px;
           }
           .print-footer .print-date {
             color: #888 !important;
-            font-size: 9.5px;
-            margin-top: 5px;
+            font-size: 9px;
+            margin-top: 3px;
           }
         }
       ` }} />
