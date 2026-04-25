@@ -909,19 +909,20 @@ export default function PropertyDetailPage() {
           /* 인쇄 전용 요소 표시 */
           .print-only { display: block !important; }
 
-          /* 1) 헤더 — 블랙 배경 + 골드 라인 */
+          /* 1) 헤더 — 흰 배경 + 골드 라인 (위 굵게, 아래 얇게) */
           .print-header {
-            background: #1a1a1a !important;
-            color: #fff !important;
+            background: #fff !important;
+            color: #000 !important;
             text-align: center;
             padding: 6mm 10mm 5mm;
-            border-bottom: 3px solid #e2a06e !important;
+            border-top: 3px solid #e2a06e !important;
+            border-bottom: 1px solid #e2a06e !important;
             flex-shrink: 0;
           }
           .print-header .print-logo {
             font-size: 22px;
             font-weight: 800;
-            color: #fff !important;
+            color: #000 !important;
             letter-spacing: 2px;
           }
           .print-header .print-tagline {
@@ -1017,34 +1018,51 @@ export default function PropertyDetailPage() {
             font-weight: 500;
           }
 
-          /* 5) 푸터 — 블랙 배경 + 골드 라인 (페이지 하단 고정) */
+          /* 5) 푸터 — 흰 배경 + 골드 라인 + 좌우 2단 레이아웃 (페이지 하단 고정) */
           .print-footer {
-            background: #1a1a1a !important;
-            color: #fff !important;
-            text-align: center;
-            padding: 4mm 10mm 5mm;
+            background: #fff !important;
+            color: #000 !important;
+            padding: 5mm 10mm 6mm;
             border-top: 3px solid #e2a06e !important;
             margin-top: auto !important;
-            line-height: 1.55;
-            font-size: 10px;
             flex-shrink: 0;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 10mm;
           }
-          .print-footer .print-footer-line {
-            font-size: 14px;
-            color: #fff !important;
-            font-weight: 700;
-            margin-bottom: 3px;
-            letter-spacing: 0.3px;
+          /* 좌측: 작은 정보 */
+          .print-footer-left {
+            text-align: left;
+            line-height: 1.6;
+            color: #999 !important;
+            font-size: 9.5px;
           }
-          .print-footer .print-footer-line strong { color: #e2a06e !important; }
-          .print-footer > div:not(.print-footer-line):not(.print-date) {
-            color: #ddd !important;
-            font-size: 10px;
+          .print-footer-left > div {
+            color: #999 !important;
           }
-          .print-footer .print-date {
-            color: #888 !important;
+          .print-footer-left .print-date {
+            color: #bbb !important;
+            margin-top: 2px;
             font-size: 9px;
-            margin-top: 3px;
+          }
+          /* 우측: 헤르만부동산 + 전화번호 강조 */
+          .print-footer-right {
+            text-align: right;
+            line-height: 1.25;
+          }
+          .print-footer-right .print-footer-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: #000 !important;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+          }
+          .print-footer-right .print-footer-phone {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1a1a1a !important;
+            letter-spacing: 0.5px;
           }
         }
       ` }} />
@@ -1698,10 +1716,15 @@ export default function PropertyDetailPage() {
 
       {/* ── 인쇄 전용 푸터 (화면에서는 숨김) ── */}
       <div className="print-only print-footer">
-        <div className="print-footer-line"><strong>헤르만부동산</strong> / 010-8680-8151</div>
-        <div>사무소: 부천시 신흥로 223 101동 712호</div>
-        <div>등록번호: 제41192-2024-00113호</div>
-        <div className="print-date">인쇄일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+        <div className="print-footer-left">
+          <div>사무소: 부천시 신흥로 223 101동 712호</div>
+          <div>등록번호: 제41192-2024-00113호</div>
+          <div className="print-date">인쇄일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+        </div>
+        <div className="print-footer-right">
+          <div className="print-footer-name">헤르만부동산</div>
+          <div className="print-footer-phone">010-8680-8151</div>
+        </div>
       </div>
 
       {/* 모바일 우측 하단 FAB (뒤로가기 + 위로이동) */}
