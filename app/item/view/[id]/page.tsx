@@ -614,6 +614,7 @@ export default function PropertyDetailPage() {
       {/* ── 인쇄 전용 매물 정보 표 (4-column 고정) ── */}
       {property && (
         <div className="print-only print-info-block">
+          <h2 className="print-info-title">📋 매물 정보</h2>
           <table className="print-info-table">
             <tbody>
               <tr>
@@ -946,18 +947,18 @@ export default function PropertyDetailPage() {
             font-weight: 500;
           }
 
-          /* 3) 사진 — 크게 */
+          /* 3) 사진 — 더 크게 */
           .print-photos {
             padding: 0 8mm;
             margin-bottom: 3mm;
           }
           .print-photo-main {
-            width: 100%; height: 260px; object-fit: cover;
+            width: 100%; height: 310px; object-fit: cover;
             display: block; border: 1px solid #ccc;
           }
           .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
           .print-photo-row img {
-            width: 50%; height: 130px; object-fit: cover;
+            width: 50%; height: 165px; object-fit: cover;
             border: 1px solid #ccc;
           }
 
@@ -968,18 +969,27 @@ export default function PropertyDetailPage() {
             display: flex;
             flex-direction: column;
           }
+          .print-info-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 4px 0;
+            padding: 0 0 3px 0;
+            border-bottom: 2px solid #e2a06e !important;
+            letter-spacing: 0.3px;
+          }
           .print-info-table {
             width: 100%;
             height: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 12px;
             table-layout: fixed;
             flex: 1;
           }
           .print-info-table th,
           .print-info-table td {
             border: 1px solid #d0d0d0;
-            padding: 7px 9px;
+            padding: 7px 10px;
             vertical-align: middle;
             line-height: 1.4;
             word-break: keep-all;
@@ -990,7 +1000,7 @@ export default function PropertyDetailPage() {
             background: #f3f3f3 !important;
             color: #555 !important;
             font-weight: 600;
-            font-size: 10px;
+            font-size: 11px;
             text-align: left;
           }
           .print-info-table td {
@@ -1011,20 +1021,21 @@ export default function PropertyDetailPage() {
             font-size: 10px;
           }
           .print-footer .print-footer-line {
-            font-size: 12px;
+            font-size: 16px;
             color: #fff !important;
-            font-weight: 600;
-            margin-bottom: 2px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
           }
           .print-footer .print-footer-line strong { color: #e2a06e !important; }
           .print-footer > div:not(.print-footer-line):not(.print-date) {
-            color: #ccc !important;
-            font-size: 10px;
+            color: #ddd !important;
+            font-size: 10.5px;
           }
           .print-footer .print-date {
             color: #888 !important;
-            font-size: 9px;
-            margin-top: 4px;
+            font-size: 9.5px;
+            margin-top: 5px;
           }
         }
       ` }} />
