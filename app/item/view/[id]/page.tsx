@@ -265,24 +265,48 @@ export default function PropertyDetailPage() {
     });
   }, []);
 
-  // 매물 조회수 +1 (localStorage 24시간 중복 방지)
+  // 매물 조회수 +1 (관리자 로그인 시 제외, localStorage 24시간 중복 방지)
   useEffect(() => {
-    if (!property?.id) return;
-    const STORAGE_KEY = `viewed_property_${property.id}`;
-    const TTL_MS = 24 * 60 * 60 * 1000;
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const last = parseInt(stored, 10);
-        if (!isNaN(last) && Date.now() - last < TTL_MS) return;
+    const propId = property?.id;
+    if (!propId) return;
+    let cancelled = false;
+
+    (async () => {
+      // 1) 로그인 사용자(관리자)는 카운트 제외 — localStorage도 건드리지 않음
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (data.user) {
+          console.log('[조회수] 관리자 로그인 — 카운트 제외');
+          return;
+        }
+      } catch (err) {
+        // auth 조회 실패 시 익명 사용자로 간주하고 계속 진행
+        console.warn('[조회수] auth 조회 실패 — 익명으로 진행:', err);
       }
-      localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    } catch {
-      // localStorage 접근 불가(사파리 프라이빗 모드 등) — 그대로 진행
-    }
-    supabase.rpc('increment_view_count', { p_property_id: property.id }).then(({ error }) => {
+      if (cancelled) return;
+
+      // 2) localStorage 24시간 중복 체크
+      const STORAGE_KEY = `viewed_property_${propId}`;
+      const TTL_MS = 24 * 60 * 60 * 1000;
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const last = parseInt(stored, 10);
+          if (!isNaN(last) && Date.now() - last < TTL_MS) return;
+        }
+        localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      } catch {
+        // localStorage 접근 불가(사파리 프라이빗 모드 등) — 그대로 진행
+      }
+      if (cancelled) return;
+
+      // 3) RPC로 원자적 +1
+      const { error } = await supabase.rpc('increment_view_count', { p_property_id: propId });
       if (error) console.warn('[조회수] 증가 실패:', error.message);
-    });
+    })();
+
+    return () => { cancelled = true; };
   }, [property?.id]);
 
   useEffect(() => {
