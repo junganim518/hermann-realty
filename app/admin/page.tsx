@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -147,6 +148,7 @@ export default function AdminDashboard() {
   const [filterPremium, setFilterPremium] = useState('전체');
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'latest' | 'views'>('latest');
+  const [topExpanded, setTopExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
@@ -702,27 +704,48 @@ export default function AdminDashboard() {
           {topByViews.length === 0 ? (
             <p style={{ color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '16px 0' }}>아직 조회 기록이 없습니다</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {topByViews.map((p, i) => {
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
-                return (
-                  <a
-                    key={p.id}
-                    href={`/item/view/${p.property_number}`}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 4px', borderBottom: '1px solid #f5f5f5', textDecoration: 'none', color: 'inherit' }}
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {(topExpanded ? topByViews : topByViews.slice(0, 3)).map((p, i) => {
+                  const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+                  return (
+                    <a
+                      key={p.id}
+                      href={`/item/view/${p.property_number}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 4px', borderBottom: '1px solid #f5f5f5', textDecoration: 'none', color: 'inherit' }}
+                    >
+                      <span style={{ minWidth: '30px', fontSize: i < 3 ? '18px' : '13px', fontWeight: 700, color: i < 3 ? '#1a1a1a' : '#888', textAlign: 'center' }}>{medal}</span>
+                      <span style={{ minWidth: '60px', fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{p.property_number}</span>
+                      <span style={{ flex: 1, fontSize: '13px', color: '#e2a06e', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title ?? ''}>
+                        {p.title || '(제목 없음)'}
+                      </span>
+                      <span style={{ minWidth: '70px', fontSize: '13px', color: '#1a1a1a', fontWeight: 700, textAlign: 'right' }}>
+                        {(p.view_count ?? 0).toLocaleString()}회
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+              {topByViews.length > 3 && (
+                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10px' }}>
+                  <button
+                    onClick={() => setTopExpanded(v => !v)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '12px', fontWeight: 500, color: '#888',
+                      padding: '4px 10px', borderRadius: '4px',
+                      transition: 'color 0.15s, background 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = '#f5f5f5'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <span style={{ minWidth: '30px', fontSize: i < 3 ? '18px' : '13px', fontWeight: 700, color: i < 3 ? '#1a1a1a' : '#888', textAlign: 'center' }}>{medal}</span>
-                    <span style={{ minWidth: '60px', fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{p.property_number}</span>
-                    <span style={{ flex: 1, fontSize: '13px', color: '#e2a06e', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title ?? ''}>
-                      {p.title || '(제목 없음)'}
-                    </span>
-                    <span style={{ minWidth: '70px', fontSize: '13px', color: '#1a1a1a', fontWeight: 700, textAlign: 'right' }}>
-                      {(p.view_count ?? 0).toLocaleString()}회
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
+                    {topExpanded ? '접기' : `더보기 (${topByViews.length - 3}개)`}
+                    {topExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
