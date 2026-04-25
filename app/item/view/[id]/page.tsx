@@ -961,12 +961,12 @@ export default function PropertyDetailPage() {
             flex-shrink: 0;
           }
           .print-photo-main {
-            width: 100%; height: 300px; object-fit: cover;
+            width: 100%; height: 280px; object-fit: cover;
             display: block; border: 1px solid #ccc;
           }
           .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
           .print-photo-row img {
-            width: 50%; height: 150px; object-fit: cover;
+            width: 50%; height: 140px; object-fit: cover;
             border: 1px solid #ccc;
           }
 
@@ -991,7 +991,7 @@ export default function PropertyDetailPage() {
           .print-info-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 14px !important;
             table-layout: fixed;
           }
           .print-info-table th,
@@ -1008,7 +1008,7 @@ export default function PropertyDetailPage() {
             background: #f3f3f3 !important;
             color: #555 !important;
             font-weight: 600;
-            font-size: 11.5px;
+            font-size: 13px !important;
             text-align: left;
           }
           .print-info-table td {
