@@ -844,14 +844,36 @@ export default function PropertyDetailPage() {
         /* ── 매물 문의하기 버튼 줄바꿈 방지 (모든 화면) ── */
         .cta-inquiry { white-space: nowrap !important; }
 
-        /* ── 모바일 전용: 매물 문의/공유 버튼 세로 배치 (PC/태블릿 영향 없음) ── */
+        /* ── 모바일 전용: 매물 문의(가로 대부분) + 공유(아이콘 정사각) 가로 배치 ── */
         @media (max-width: 767px) {
           aside.detail-aside > div.detail-aside-card { display: block !important; padding: 10px 12px !important; }
-          .aside-cta-row { display: flex !important; flex-direction: column !important; gap: 6px !important; margin-top: 8px !important; width: 100% !important; }
-          .aside-cta-row > .cta-inquiry { width: 100% !important; height: 44px !important; font-size: 15px !important; flex: none !important; }
-          .aside-cta-row > .cta-share { width: 100% !important; height: 36px !important; background: #f3f4f6 !important; color: #374151 !important; border: 1px solid #f3f4f6 !important; font-size: 13px !important; gap: 6px !important; }
-          .aside-cta-row > .cta-share svg { width: 16px !important; height: 16px !important; }
-          .cta-share-label { display: inline !important; }
+          .aside-cta-row {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 8px !important;
+            margin-top: 8px !important;
+            width: 100% !important;
+            align-items: stretch !important;
+          }
+          .aside-cta-row > .cta-inquiry {
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            height: 48px !important;
+            font-size: 15px !important;
+          }
+          .aside-cta-row > .cta-share {
+            flex: none !important;
+            width: 48px !important;
+            height: 48px !important;
+            padding: 0 !important;
+            background: #f3f4f6 !important;
+            color: #374151 !important;
+            border: 1px solid #f3f4f6 !important;
+            border-radius: 8px !important;
+            font-size: 0 !important;
+          }
+          .aside-cta-row > .cta-share svg { width: 20px !important; height: 20px !important; }
+          .cta-share-label { display: none !important; }
         }
 
         /* ── 태블릿 전용: 매물 문의하기 버튼 너비 확보 (글씨 잘림 방지) ── */
