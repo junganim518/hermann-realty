@@ -291,8 +291,40 @@ export default function Home() {
         @media (max-width: 767px) {
           .sidebar-left  { display: none !important; }
           .sidebar-right { display: none !important; }
-          .grid-type  { grid-template-columns: repeat(2, 1fr) !important; }
-          .grid-theme { grid-template-columns: repeat(2, 1fr) !important; }
+
+          /* 매물종류: 3열 그리드 (컴팩트) */
+          .grid-type  { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+          .grid-type .type-card { height: 130px !important; }
+          .grid-type .type-card h3 { font-size: 15px !important; }
+          .grid-type .type-card p { font-size: 9px !important; }
+          .grid-type .type-card > .absolute.top-2 { width: 22px !important; height: 22px !important; font-size: 10px !important; top: 4px !important; right: 4px !important; }
+          .grid-type .type-card > .absolute.bottom-0 { padding: 8px !important; }
+
+          /* 테마별 매물 검색: 가로 슬라이드 */
+          .grid-theme {
+            display: flex !important;
+            grid-template-columns: none !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            scroll-snap-type: x mandatory !important;
+            scroll-behavior: smooth !important;
+            gap: 10px !important;
+            padding: 0 4px 4px !important;
+            margin: 0 -4px !important;
+            scrollbar-width: none;
+          }
+          .grid-theme::-webkit-scrollbar { display: none; }
+          .grid-theme .theme-card {
+            flex: 0 0 40% !important;
+            min-width: 40% !important;
+            scroll-snap-align: start !important;
+            height: 200px !important;
+          }
+          .grid-theme .theme-card h3 { font-size: 16px !important; }
+          .grid-theme .theme-card p { font-size: 11px !important; }
+          .grid-theme .theme-card > .absolute.top-2 { width: 22px !important; height: 22px !important; font-size: 10px !important; top: 4px !important; right: 4px !important; }
+          .grid-theme .theme-card > .absolute.bottom-0 { padding: 8px !important; }
+
           .grid-recent { grid-template-columns: 1fr !important; gap: 8px !important; }
           .main-card-mobile { display: flex !important; flex-direction: column !important; }
           .main-card-mobile .main-card-header { display: flex !important; padding: 6px 10px !important; }
