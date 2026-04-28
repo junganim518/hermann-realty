@@ -343,6 +343,15 @@ export default function Home() {
           /* 모바일에서만 진행 바 + 힌트 표시 */
           .theme-progress-wrap { display: block !important; }
 
+          /* 전체매물 보기 버튼 컴팩트 */
+          .view-all-btn {
+            padding: 8px 18px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            gap: 4px !important;
+          }
+          .view-all-btn svg { width: 14px !important; height: 14px !important; }
+
           .grid-recent { grid-template-columns: 1fr !important; gap: 8px !important; }
           .main-card-mobile { display: flex !important; flex-direction: column !important; }
           .main-card-mobile .main-card-header { display: flex !important; padding: 6px 10px !important; }
@@ -770,6 +779,7 @@ export default function Home() {
             <div style={{ textAlign: 'center', marginTop: '24px' }}>
               <Link
                 href="/properties"
+                className="view-all-btn"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
