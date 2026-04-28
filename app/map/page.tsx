@@ -570,14 +570,17 @@ function MapPageInner() {
     markersRef.current = newMarkers;
     clustererRef.current?.addMarkers(newMarkers);
 
-    // 클러스터 클릭 → 해당 매물만 목록 표시 (+ 모바일 드로어 45vh)
+    // 클러스터 클릭 → 클러스터에 속한 매물만 목록 표시 (+ 모바일 드로어 45vh)
     const handleClusterClick = (cluster: any) => {
       console.log('[클러스터클릭] 실행됨');
-      const bounds = cluster.getBounds();
+      // 카카오 클러스터러 공식 API: getMarkers()로 클러스터에 속한 마커만 정확히 가져옴
+      // (getBounds()는 영역이 넓어서 다른 매물까지 포함되는 버그 있음)
+      const clusterMarkers: any[] = typeof cluster.getMarkers === 'function' ? cluster.getMarkers() : [];
       const ids = new Set<string>();
-      markersRef.current.forEach((m: any) => {
-        if (bounds.contain(m.getPosition()) && m._pnum) ids.add(m._pnum);
+      clusterMarkers.forEach((m: any) => {
+        if (m._pnum) ids.add(m._pnum);
       });
+      console.log('[클러스터클릭] 매물 수:', ids.size);
       if (ids.size > 0) setVisibleIds(ids);
 
       if (window.innerWidth < 768) {
@@ -860,7 +863,7 @@ function MapPageInner() {
           {/* 헤더 */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #eee', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
-              지도 내 매물&nbsp;<span style={{ color: '#e2a06e' }}>{displayList.length}</span>개
+              {visibleIds ? '선택한 위치 매물' : '지도 내 매물'}&nbsp;<span style={{ color: '#e2a06e' }}>{displayList.length}</span>개
             </span>
             {visibleIds && (
               <button
