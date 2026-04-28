@@ -385,14 +385,14 @@ function MapPageInner() {
       const defaultLng = 126.77522691726;
       const startLat = saved?.center?.lat ?? defaultLat;
       const startLng = saved?.center?.lng ?? defaultLng;
-      const startLevel = saved?.level ?? 7;
+      const startLevel = saved?.level ?? 8;
       console.log('[map] 초기 view — saved?', !!saved?.center, 'lat:', startLat, 'lng:', startLng, 'level:', startLevel);
 
       const center = new window.kakao.maps.LatLng(startLat, startLng);
       const map = new window.kakao.maps.Map(mapContainerRef.current, {
         center,
         level: startLevel,
-        minLevel: 4,
+        minLevel: 5,
       });
       mapObjRef.current = map;
 
