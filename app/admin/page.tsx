@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -149,7 +149,6 @@ export default function AdminDashboard() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'latest' | 'views'>('latest');
   const [topExpanded, setTopExpanded] = useState(false);
-  const [hideSold, setHideSold] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
@@ -451,7 +450,6 @@ export default function AdminDashboard() {
 
   // 필터링
   const filtered = properties.filter(p => {
-    if (hideSold && p.is_sold) return false;
     if (filterType !== '전체' && p.property_type !== filterType) return false;
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
     if (filterSold === '거래중' && p.is_sold) return false;
@@ -819,16 +817,27 @@ export default function AdminDashboard() {
                   );
                 })}
               </div>
-              {/* 거래완료 숨기기 */}
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', color: '#666', background: '#fff', cursor: 'pointer', userSelect: 'none' }}>
-                <input
-                  type="checkbox"
-                  checked={hideSold}
-                  onChange={e => { setHideSold(e.target.checked); setPage(1); }}
-                  style={{ cursor: 'pointer', margin: 0 }}
-                />
-                거래완료 숨기기
-              </label>
+              {/* 거래상태 토글 (전체/거래중/거래완료) */}
+              <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                {SOLD_TYPES.map(opt => {
+                  const active = filterSold === opt;
+                  const activeColor = opt === '거래중' ? '#4caf50' : opt === '거래완료' ? '#999' : '#1a1a1a';
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => { setFilterSold(opt); setPage(1); }}
+                      style={{
+                        padding: '5px 10px', fontSize: '12px', fontWeight: 600,
+                        background: active ? activeColor : '#fff',
+                        color: active ? '#fff' : '#666',
+                        border: 'none', cursor: active ? 'default' : 'pointer',
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
               <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
             </div>
           </div>
@@ -860,9 +869,6 @@ export default function AdminDashboard() {
               <select value={filterTx} onChange={e => { setFilterTx(e.target.value); resetPage(); }} style={selectFilterSt}>
                 {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
               </select>
-              <select value={filterSold} onChange={e => { setFilterSold(e.target.value); resetPage(); }} style={selectFilterSt}>
-                {SOLD_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래상태 전체' : t}</option>)}
-              </select>
               <select value={filterArea} onChange={e => { setFilterArea(e.target.value); resetPage(); }} style={selectFilterSt}>
                 {AREA_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '면적 전체' : t}</option>)}
               </select>
@@ -891,11 +897,16 @@ export default function AdminDashboard() {
                 return (
                   <div key={p.id} className="admin-prop-row" style={{ background: p.is_sold ? '#fafafa' : '#fff', opacity: p.is_sold ? 0.65 : 1 }}>
                     {/* 썸네일 */}
-                    <a href={`/item/view/${p.property_number}`} style={{ width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
+                    <a href={`/item/view/${p.property_number}`} style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
                         <img src={propImages[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#bbb' }}>없음</div>
+                      )}
+                      {p.is_sold && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                          <span style={{ color: '#e04a4a', fontSize: '9px', fontWeight: 900, letterSpacing: '0.5px', border: '1.5px solid #e04a4a', padding: '1px 4px', transform: 'rotate(-15deg)', background: 'transparent', whiteSpace: 'nowrap' }}>거래완료</span>
+                        </div>
                       )}
                     </a>
 
@@ -983,15 +994,20 @@ export default function AdminDashboard() {
 
             const goTo = (n: number) => {
               setPage(n);
-              document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' });
+              // 자동 스크롤 없음 — 사용자 위치 유지
             };
 
-            const navBtnSt = (disabled: boolean): React.CSSProperties => ({
-              minWidth: '60px', height: '36px', padding: '0 14px', borderRadius: '6px',
+            const navBtnSt = (disabled: boolean, square = false): React.CSSProperties => ({
+              minWidth: square ? '36px' : '52px',
+              height: '36px',
+              padding: square ? '0' : '0 12px',
+              borderRadius: '6px',
               border: `1px solid ${disabled ? '#e0e0e0' : '#1a1a1a'}`,
               background: disabled ? '#f5f5f5' : '#1a1a1a',
               color: disabled ? '#bbb' : '#e2a06e',
-              cursor: disabled ? 'default' : 'pointer', fontSize: '13px', fontWeight: 700,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              fontSize: '12px', fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '2px',
             });
 
             const numBtnSt = (active: boolean): React.CSSProperties => ({
@@ -1006,6 +1022,15 @@ export default function AdminDashboard() {
 
             return (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '20px', flexWrap: 'wrap' }}>
+                {/* 처음 */}
+                <button
+                  onClick={() => goTo(1)}
+                  disabled={safePage <= 1}
+                  style={navBtnSt(safePage <= 1, true)}
+                  title="처음 페이지"
+                  aria-label="처음 페이지"
+                ><ChevronsLeft size={14} /></button>
+                {/* 이전 */}
                 <button
                   onClick={() => goTo(Math.max(1, safePage - 1))}
                   disabled={safePage <= 1}
@@ -1020,11 +1045,20 @@ export default function AdminDashboard() {
                   >{n}</button>
                 ))}
 
+                {/* 다음 */}
                 <button
                   onClick={() => goTo(Math.min(totalPages, safePage + 1))}
                   disabled={safePage >= totalPages}
                   style={navBtnSt(safePage >= totalPages)}
                 >다음</button>
+                {/* 마지막 */}
+                <button
+                  onClick={() => goTo(totalPages)}
+                  disabled={safePage >= totalPages}
+                  style={navBtnSt(safePage >= totalPages, true)}
+                  title="마지막 페이지"
+                  aria-label="마지막 페이지"
+                ><ChevronsRight size={14} /></button>
               </div>
             );
           })()}

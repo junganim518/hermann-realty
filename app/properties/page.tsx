@@ -127,7 +127,7 @@ function PropertiesPageInner() {
   const [filterRent, setFilterRent] = useState(readParam('rent', '전체'));
   const [currentPage, setCurrentPage] = useState(parseInt(readParam('page', '1'), 10));
   const [searchInput, setSearchInput] = useState(readParam('search', ''));
-  const [hideSold, setHideSold] = useState(false);
+  const [soldFilter, setSoldFilter] = useState<'전체' | '거래중' | '거래완료'>('전체');
 
   const searchParam = readParam('search', '');
 
@@ -205,7 +205,8 @@ function PropertiesPageInner() {
   }, [searchParam]);
 
   const filtered = allProperties.filter(p => {
-    if (hideSold && p.is_sold) return false;
+    if (soldFilter === '거래중' && p.is_sold) return false;
+    if (soldFilter === '거래완료' && !p.is_sold) return false;
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
     if (filterType !== '전체' && p.property_type !== filterType) return false;
     if (filterTheme !== '전체' && !(p.theme_type ?? '').split(',').includes(filterTheme)) return false;
@@ -399,15 +400,27 @@ function PropertiesPageInner() {
             <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setCurrentPage(1); syncURL({ rent: e.target.value, page: '1' }); }} style={selectSt}>
               {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
             </select>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '40px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '13px', color: '#666', background: '#fff', cursor: 'pointer', userSelect: 'none' }}>
-              <input
-                type="checkbox"
-                checked={hideSold}
-                onChange={e => { setHideSold(e.target.checked); setCurrentPage(1); }}
-                style={{ cursor: 'pointer' }}
-              />
-              거래완료 숨기기
-            </label>
+            {/* 거래상태 토글 (전체/거래중/거래완료) */}
+            <div style={{ display: 'flex', height: '40px', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
+              {(['전체', '거래중', '거래완료'] as const).map(opt => {
+                const active = soldFilter === opt;
+                const activeColor = opt === '거래중' ? '#4caf50' : opt === '거래완료' ? '#999' : '#1a1a1a';
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => { setSoldFilter(opt); setCurrentPage(1); }}
+                    style={{
+                      padding: '0 14px', fontSize: '13px', fontWeight: 600,
+                      background: active ? activeColor : '#fff',
+                      color: active ? '#fff' : '#666',
+                      border: 'none', cursor: active ? 'default' : 'pointer',
+                    }}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
             {(filterTx !== '전체' || filterType !== '전체' || filterTheme !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체') && (
               <button
                 onClick={() => { setFilterTx('전체'); setFilterType('전체'); setFilterTheme('전체'); setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setCurrentPage(1); syncURL({ tx: '전체', type: '전체', theme: '전체', area: '전체', deposit: '전체', rent: '전체', page: '1' }); }}
