@@ -127,7 +127,6 @@ function PropertiesPageInner() {
   const [filterRent, setFilterRent] = useState(readParam('rent', '전체'));
   const [currentPage, setCurrentPage] = useState(parseInt(readParam('page', '1'), 10));
   const [searchInput, setSearchInput] = useState(readParam('search', ''));
-  const [soldFilter, setSoldFilter] = useState<'전체' | '거래중' | '거래완료'>('전체');
 
   const searchParam = readParam('search', '');
 
@@ -205,8 +204,6 @@ function PropertiesPageInner() {
   }, [searchParam]);
 
   const filtered = allProperties.filter(p => {
-    if (soldFilter === '거래중' && p.is_sold) return false;
-    if (soldFilter === '거래완료' && !p.is_sold) return false;
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
     if (filterType !== '전체' && p.property_type !== filterType) return false;
     if (filterTheme !== '전체' && !(p.theme_type ?? '').split(',').includes(filterTheme)) return false;
@@ -272,6 +269,11 @@ function PropertiesPageInner() {
           .prop-filter { display: grid !important; grid-template-columns: 1fr 1fr 1fr; gap: 6px !important; justify-content: stretch !important; }
           .prop-filter select { width: 100% !important; height: 36px !important; font-size: 12px !important; padding: 0 4px !important; }
           .prop-filter button { grid-column: 1 / -1; height: 36px !important; font-size: 13px !important; }
+          /* 페이지네이션 컴팩트 (모바일 한 줄 유지) */
+          .prop-pagination { gap: 2px !important; flex-wrap: nowrap !important; }
+          .prop-pagination .pg-nav { padding: 5px 7px !important; font-size: 11px !important; }
+          .prop-pagination .pg-num { width: 28px !important; height: 28px !important; font-size: 11px !important; }
+          .prop-pagination .pg-dot { padding: 0 1px !important; font-size: 11px !important; }
           .prop-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
           .prop-card-mobile { display: flex !important; flex-direction: column !important; }
           .prop-card-mobile .prop-card-header { display: flex !important; padding: 6px 10px !important; }
@@ -400,27 +402,6 @@ function PropertiesPageInner() {
             <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setCurrentPage(1); syncURL({ rent: e.target.value, page: '1' }); }} style={selectSt}>
               {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
             </select>
-            {/* 거래상태 토글 (전체/거래중/거래완료) */}
-            <div style={{ display: 'flex', height: '40px', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
-              {(['전체', '거래중', '거래완료'] as const).map(opt => {
-                const active = soldFilter === opt;
-                const activeColor = opt === '거래중' ? '#4caf50' : opt === '거래완료' ? '#999' : '#1a1a1a';
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => { setSoldFilter(opt); setCurrentPage(1); }}
-                    style={{
-                      padding: '0 14px', fontSize: '13px', fontWeight: 600,
-                      background: active ? activeColor : '#fff',
-                      color: active ? '#fff' : '#666',
-                      border: 'none', cursor: active ? 'default' : 'pointer',
-                    }}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
             {(filterTx !== '전체' || filterType !== '전체' || filterTheme !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체') && (
               <button
                 onClick={() => { setFilterTx('전체'); setFilterType('전체'); setFilterTheme('전체'); setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setCurrentPage(1); syncURL({ tx: '전체', type: '전체', theme: '전체', area: '전체', deposit: '전체', rent: '전체', page: '1' }); }}
@@ -541,19 +522,19 @@ function PropertiesPageInner() {
               </div>
 
               {/* 페이지네이션 */}
-              {/* 페이지네이션 */}
               {filtered.length > 0 && (
                 <div style={{ margin: '24px 0 40px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                  <div className="prop-pagination" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
                     <button
+                      className="pg-nav"
                       onClick={() => { const np = Math.max(1, safePage - 1); setCurrentPage(np); syncURL({ page: String(np) }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       disabled={safePage <= 1}
-                      style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer' }}
+                      style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage <= 1 ? '#ccc' : '#333', cursor: safePage <= 1 ? 'default' : 'pointer', whiteSpace: 'nowrap' }}
                     >
                       ‹ 이전
                     </button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= (isMobile ? 1 : 2))
                       .reduce<number[]>((acc, p) => {
                         if (acc.length > 0 && p - acc[acc.length - 1] > 1) acc.push(-1);
                         acc.push(p);
@@ -561,10 +542,11 @@ function PropertiesPageInner() {
                       }, [])
                       .map((p, i) =>
                         p === -1 ? (
-                          <span key={`dot-${i}`} style={{ padding: '8px 4px', color: '#999' }}>…</span>
+                          <span key={`dot-${i}`} className="pg-dot" style={{ padding: '8px 2px', color: '#999' }}>…</span>
                         ) : (
                           <button
                             key={p}
+                            className="pg-num"
                             onClick={() => { setCurrentPage(p); syncURL({ page: String(p) }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                             style={{
                               width: '36px', height: '36px', fontSize: '14px', fontWeight: p === safePage ? 700 : 400,
@@ -572,6 +554,7 @@ function PropertiesPageInner() {
                               borderRadius: '4px', cursor: 'pointer',
                               background: p === safePage ? '#e2a06e' : '#fff',
                               color: p === safePage ? '#fff' : '#333',
+                              flexShrink: 0,
                             }}
                           >
                             {p}
@@ -580,9 +563,10 @@ function PropertiesPageInner() {
                       )
                     }
                     <button
+                      className="pg-nav"
                       onClick={() => { const np = Math.min(totalPages, safePage + 1); setCurrentPage(np); syncURL({ page: String(np) }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       disabled={safePage >= totalPages}
-                      style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer' }}
+                      style={{ padding: '8px 14px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: safePage >= totalPages ? '#ccc' : '#333', cursor: safePage >= totalPages ? 'default' : 'pointer', whiteSpace: 'nowrap' }}
                     >
                       다음 ›
                     </button>
