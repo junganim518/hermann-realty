@@ -168,6 +168,24 @@ function MapPageInner() {
   const drawerDragRef = useRef(0);
 
 
+  // 새로고침이 아니라 다른 페이지에서 들어온 경우 → 지도 sessionStorage 초기화
+  // (이 effect는 다른 useEffect보다 먼저 선언되어 우선 실행됨)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      const navType = navEntries[0]?.type;
+      if (navType && navType !== 'reload') {
+        sessionStorage.removeItem(MAP_STATE_KEY);
+        console.log('[map] 일반 진입 감지 — 지도 상태 초기화');
+      } else {
+        console.log('[map] 새로고침 감지 — 지도 상태 유지');
+      }
+    } catch (err) {
+      console.warn('[map] navigation type 조회 실패:', err);
+    }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setIsAdmin(!!data.user));
   }, []);
@@ -385,7 +403,7 @@ function MapPageInner() {
       const defaultLng = 126.77522691726;
       const startLat = saved?.center?.lat ?? defaultLat;
       const startLng = saved?.center?.lng ?? defaultLng;
-      const startLevel = saved?.level ?? 8;
+      const startLevel = saved?.level ?? 7;
       console.log('[map] 초기 view — saved?', !!saved?.center, 'lat:', startLat, 'lng:', startLng, 'level:', startLevel);
 
       const center = new window.kakao.maps.LatLng(startLat, startLng);
