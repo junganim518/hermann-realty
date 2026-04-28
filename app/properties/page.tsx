@@ -245,8 +245,8 @@ function PropertiesPageInner() {
             max-width: clamp(160px, 15vw, 220px) !important;
           }
           .prop-sidebar-right {
-            min-width: clamp(160px, 15vw, 220px) !important;
-            max-width: clamp(160px, 15vw, 220px) !important;
+            min-width: clamp(240px, 20vw, 300px) !important;
+            max-width: clamp(240px, 20vw, 300px) !important;
           }
         }
 
