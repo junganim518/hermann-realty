@@ -342,6 +342,7 @@ export default function PropertyDetailPage() {
           .from('properties')
           .select('*')
           .eq('property_type', data.property_type)
+          .eq('is_sold', false)
           .neq('property_number', data.property_number)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -366,6 +367,7 @@ export default function PropertyDetailPage() {
             .from('properties')
             .select('*')
             .eq('property_type', data.property_type)
+            .eq('is_sold', false)
             .order('created_at', { ascending: false })
             .limit(10);
           const extra = (raw2 ?? []).filter((p: any) => !existIds.has(p.property_number));

@@ -118,6 +118,7 @@ export default function Home() {
         .from('properties')
         .select('*')
         .eq('property_type', activeTab)
+        .order('is_sold', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(8);
       if (data && data.length > 0) {

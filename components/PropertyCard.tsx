@@ -106,7 +106,7 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
   return (
     <Link
       href={`/item/view/${p.property_number}`}
-      style={{ textDecoration: 'none', display: 'block', transition: 'all 0.2s ease', cursor: 'pointer', backgroundColor: '#fff', color: '#1a1a1a' }}
+      style={{ textDecoration: 'none', display: 'block', transition: 'all 0.2s ease', cursor: 'pointer', backgroundColor: '#fff', color: '#1a1a1a', opacity: p.is_sold ? 0.7 : 1 }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
         (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
@@ -146,8 +146,8 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
               </div>
             )}
             {p.is_sold && (
-              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="prop-sold" style={{ color: '#fff', fontSize: '24px', fontWeight: 800, letterSpacing: '3px', border: '2px solid #fff', padding: '4px 16px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                <span className="prop-sold" style={{ color: '#e04a4a', fontSize: isMobile ? '16px' : '22px', fontWeight: 900, letterSpacing: '2px', border: `${isMobile ? 2 : 3}px solid #e04a4a`, padding: isMobile ? '4px 12px' : '6px 16px', transform: 'rotate(-15deg)', background: 'transparent' }}>거래완료</span>
               </div>
             )}
           </div>

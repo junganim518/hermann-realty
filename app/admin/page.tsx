@@ -149,6 +149,7 @@ export default function AdminDashboard() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'latest' | 'views'>('latest');
   const [topExpanded, setTopExpanded] = useState(false);
+  const [hideSold, setHideSold] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
@@ -450,6 +451,7 @@ export default function AdminDashboard() {
 
   // 필터링
   const filtered = properties.filter(p => {
+    if (hideSold && p.is_sold) return false;
     if (filterType !== '전체' && p.property_type !== filterType) return false;
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
     if (filterSold === '거래중' && p.is_sold) return false;
@@ -474,15 +476,19 @@ export default function AdminDashboard() {
     resetPage();
   };
 
-  const sortedFiltered = (() => {
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    // 1순위: 거래완료 매물은 항상 뒤로
+    const soldDiff = (a.is_sold ? 1 : 0) - (b.is_sold ? 1 : 0);
+    if (soldDiff !== 0) return soldDiff;
+    // 2순위: 사용자 선택 정렬
     if (sortBy === 'views') {
-      return [...filtered].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0));
+      return (b.view_count ?? 0) - (a.view_count ?? 0);
     }
-    return filtered; // 'latest' — fetchData가 created_at desc로 가져오므로 그대로
-  })();
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
   const topByViews = [...properties]
-    .filter(p => (p.view_count ?? 0) > 0)
+    .filter(p => (p.view_count ?? 0) > 0 && !p.is_sold)
     .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
     .slice(0, 10);
 
@@ -792,7 +798,7 @@ export default function AdminDashboard() {
         <div id="property-management-section" style={sectionSt}>
           <div style={sectionTitleSt}>
             <span>매물 관리 ({filtered.length})</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {/* 정렬 토글 */}
               <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
                 {(['latest', 'views'] as const).map(opt => {
@@ -813,6 +819,16 @@ export default function AdminDashboard() {
                   );
                 })}
               </div>
+              {/* 거래완료 숨기기 */}
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', color: '#666', background: '#fff', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={hideSold}
+                  onChange={e => { setHideSold(e.target.checked); setPage(1); }}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                />
+                거래완료 숨기기
+              </label>
               <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
             </div>
           </div>
