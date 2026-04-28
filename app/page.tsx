@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const formatAddress = (address: string) => {
@@ -35,12 +36,28 @@ const buildPriceStr = (p: any) => {
 };
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('상가');
   const [headerHeight, setHeaderHeight] = useState(200);
   const [heroIndex, setHeroIndex] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [visibleCount, setVisibleCount] = useState(8);
+  const themeSlideRef = useRef<HTMLDivElement | null>(null);
+  const [themeProgress, setThemeProgress] = useState(0);
+
+  useEffect(() => {
+    const el = themeSlideRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setThemeProgress(max <= 0 ? 0 : Math.max(0, Math.min(1, el.scrollLeft / max)));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [recentProperties, setRecentProperties] = useState<any[]>([]);
@@ -117,7 +134,6 @@ export default function Home() {
       const { data } = await supabase
         .from('properties')
         .select('*')
-        .eq('property_type', activeTab)
         .order('is_sold', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(8);
@@ -158,7 +174,7 @@ export default function Home() {
       }
     }
     fetchProperties();
-  }, [activeTab]);
+  }, []);
 
   const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
   const [themeCounts, setThemeCounts] = useState<Record<string, number>>({});
@@ -308,22 +324,24 @@ export default function Home() {
             -webkit-overflow-scrolling: touch !important;
             scroll-snap-type: x mandatory !important;
             scroll-behavior: smooth !important;
-            gap: 10px !important;
+            gap: 8px !important;
             padding: 0 4px 4px !important;
             margin: 0 -4px !important;
             scrollbar-width: none;
           }
           .grid-theme::-webkit-scrollbar { display: none; }
           .grid-theme .theme-card {
-            flex: 0 0 40% !important;
-            min-width: 40% !important;
+            flex: 0 0 35% !important;
+            min-width: 35% !important;
             scroll-snap-align: start !important;
-            height: 200px !important;
+            height: 150px !important;
           }
-          .grid-theme .theme-card h3 { font-size: 16px !important; }
-          .grid-theme .theme-card p { font-size: 11px !important; }
-          .grid-theme .theme-card > .absolute.top-2 { width: 22px !important; height: 22px !important; font-size: 10px !important; top: 4px !important; right: 4px !important; }
-          .grid-theme .theme-card > .absolute.bottom-0 { padding: 8px !important; }
+          .grid-theme .theme-card h3 { font-size: 14px !important; }
+          .grid-theme .theme-card p { font-size: 10px !important; }
+          .grid-theme .theme-card > .absolute.top-2 { width: 20px !important; height: 20px !important; font-size: 9px !important; top: 4px !important; right: 4px !important; }
+          .grid-theme .theme-card > .absolute.bottom-0 { padding: 6px 8px !important; }
+          /* 모바일에서만 진행 바 + 힌트 표시 */
+          .theme-progress-wrap { display: block !important; }
 
           .grid-recent { grid-template-columns: 1fr !important; gap: 8px !important; }
           .main-card-mobile { display: flex !important; flex-direction: column !important; }
@@ -613,7 +631,7 @@ export default function Home() {
           {/* 테마 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#f9f9f9' }}>
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>테마별 매물 검색</h2>
-            <div className="grid-theme gap-3">
+            <div ref={themeSlideRef} className="grid-theme gap-3">
               {themeTypes.map((theme, index) => (
                 <a
                   key={index}
@@ -641,40 +659,36 @@ export default function Home() {
                 </a>
               ))}
             </div>
+            {/* 모바일 슬라이드 진행 바 + 힌트 (모바일에서만 표시) */}
+            <div className="theme-progress-wrap" style={{ display: 'none', marginTop: '12px' }}>
+              <div style={{ position: 'relative', height: '3px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    height: '100%',
+                    width: '30%',
+                    background: '#e2a06e',
+                    borderRadius: '2px',
+                    left: `${themeProgress * 70}%`,
+                    transition: 'left 0.08s ease-out',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '3px', marginTop: '6px', fontSize: '10.5px', color: '#888' }}>
+                옆으로 넘겨보세요
+                <ChevronRight size={13} strokeWidth={2.2} />
+              </div>
+            </div>
           </section>
 
           {/* 최신매물 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>최신매물</h2>
 
-            {/* 탭 */}
-            <div style={{ marginBottom: '16px' }}>
-              <div className="tab-grid" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }}>
-                {['상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => { setActiveTab(tab); setVisibleCount(8); }}
-                    style={{
-                      fontSize: '14px', padding: '0',
-                      height: '44px', width: 'calc(33.33% - 4px)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                      borderRadius: '4px', border: '1px solid #ddd', cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      background: activeTab === tab ? '#e2a06e' : '#fff',
-                      color: activeTab === tab ? '#fff' : '#555',
-                      fontWeight: activeTab === tab ? 700 : 400,
-                      borderColor: activeTab === tab ? '#e2a06e' : '#ddd',
-                    }}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* 매물 그리드 */}
             <div className="grid-recent gap-2">
-              {recentProperties.slice(0, visibleCount).map((property) => (
+              {recentProperties.map((property) => (
                 <Link
                   key={property.id}
                   href={`/item/view/${property.id}`}
@@ -752,18 +766,39 @@ export default function Home() {
               ))}
             </div>
 
-            {/* 더보기 버튼 */}
-            {visibleCount < recentProperties.length && (
-              <div className="text-center mt-6">
-                <button
-                  onClick={() => setVisibleCount(prev => prev + 8)}
-                  className="border border-[#e2a06e] text-[#e2a06e] hover:bg-[#e2a06e] hover:text-white rounded-lg font-semibold transition"
-                  style={{ fontSize: '15px', padding: '8px 24px' }}
-                >
-                  매물 더보기 ∨
-                </button>
-              </div>
-            )}
+            {/* 전체매물 보기 버튼 */}
+            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              <Link
+                href="/properties"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '12px 28px',
+                  background: '#1a1a1a',
+                  color: '#e2a06e',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  border: '1px solid #1a1a1a',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = '#e2a06e';
+                  (e.currentTarget as HTMLElement).style.color = '#1a1a1a';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#e2a06e';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = '#1a1a1a';
+                  (e.currentTarget as HTMLElement).style.color = '#e2a06e';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#1a1a1a';
+                }}
+              >
+                전체매물 보기
+                <ChevronRight size={18} strokeWidth={2.2} />
+              </Link>
+            </div>
           </section>
 
         </div>
