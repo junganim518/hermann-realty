@@ -2,15 +2,36 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Home, Map, Building2, Newspaper, MessageSquarePlus, Info } from 'lucide-react';
+import { Home, Map, Building2, Newspaper, MessageSquarePlus, Info, Clock, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+
+  // 더보기 드롭업 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handler = (e: Event) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [moreOpen]);
+
+  // 라우트 변경 시 더보기 닫기
+  useEffect(() => { setMoreOpen(false); }, [pathname]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -50,6 +71,7 @@ export default function Header() {
     { label: '매물 의뢰하기', href: '/inquiry' },
     { label: '부동산 소식', href: '/news' },
     { label: '회사소개', href: '/about' },
+    { label: '최근 본 매물', href: '/recent' },
   ];
 
   return (
@@ -59,6 +81,10 @@ export default function Header() {
         .h-bottom-tab { display: none; }
         .h-bottom-tab-item:active { background: #f3f4f6 !important; }
         .h-bottom-tab-item:hover .h-bottom-tab-label { color: #b5814f; }
+        @keyframes dropup-fade {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @media (max-width: 767px) {
           .h-phone { display: none !important; }
           .h-auth-desktop { display: none !important; }
@@ -194,6 +220,7 @@ export default function Header() {
       {/* ── 하단 탭바 (모바일) ── */}
       <nav
         className="h-bottom-tab"
+        ref={moreMenuRef}
         style={{
           position: 'fixed',
           bottom: 0,
@@ -209,62 +236,133 @@ export default function Header() {
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
+        {/* 더보기 드롭업 메뉴 */}
+        {moreOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              right: '8px',
+              bottom: 'calc(100% + 8px)',
+              background: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              minWidth: '180px',
+              padding: '6px',
+              zIndex: 10000,
+              animation: 'dropup-fade 0.15s ease-out',
+            }}
+          >
+            {[
+              { Icon: MessageSquarePlus, label: '매물의뢰', href: '/inquiry' },
+              { Icon: Newspaper, label: '소식', href: '/news' },
+              { Icon: Info, label: '회사소개', href: '/about' },
+            ].map((m) => (
+              <a
+                key={m.href}
+                href={m.href}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  color: '#1a1a1a',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#f5f5f5')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+                onClick={() => setMoreOpen(false)}
+              >
+                <m.Icon size={18} strokeWidth={1.8} color="#6b7280" />
+                {m.label}
+              </a>
+            ))}
+          </div>
+        )}
+
         {[
           { Icon: Home, label: '홈', href: '/' },
           { Icon: Map, label: '지도검색', href: '/map' },
           { Icon: Building2, label: '매물', href: '/properties' },
-          { Icon: Newspaper, label: '소식', href: '/news' },
-          { Icon: MessageSquarePlus, label: '매물의뢰', href: '/inquiry' },
-          { Icon: Info, label: '회사소개', href: '/about' },
+          { Icon: Clock, label: '본매물', href: '/recent' },
+          { Icon: MoreHorizontal, label: '더보기', isMore: true },
         ].map((tab) => {
-          const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href));
-          const color = active ? '#e2a06e' : '#6b7280';
+          const isMore = (tab as any).isMore;
+          const href = (tab as any).href as string | undefined;
+          const active = !isMore && href && (pathname === href || (href !== '/' && pathname.startsWith(href)));
+          const isMoreActive = isMore && moreOpen;
+          const color = active || isMoreActive ? '#e2a06e' : '#6b7280';
+          const commonStyle: React.CSSProperties = {
+            flex: 1,
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            padding: '8px 2px',
+            textDecoration: 'none',
+            color,
+            transition: 'color 0.15s, background 0.15s',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          };
+          const indicator = (active || isMoreActive) ? (
+            <span style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '24px',
+              height: '3px',
+              background: '#e2a06e',
+              borderRadius: '0 0 3px 3px',
+            }} />
+          ) : null;
+          const labelEl = (
+            <span style={{
+              fontSize: '11px',
+              fontWeight: (active || isMoreActive) ? 700 : 500,
+              lineHeight: 1.15,
+              textAlign: 'center',
+              wordBreak: 'keep-all',
+              whiteSpace: 'normal',
+              color,
+            }}>
+              {tab.label}
+            </span>
+          );
+          if (isMore) {
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                className="h-bottom-tab-item"
+                style={commonStyle}
+                onClick={(e) => { e.stopPropagation(); setMoreOpen(v => !v); }}
+              >
+                {indicator}
+                <tab.Icon size={22} strokeWidth={isMoreActive ? 2.2 : 1.8} color={color} />
+                {labelEl}
+              </button>
+            );
+          }
           return (
             <a
               key={tab.label}
-              href={tab.href}
+              href={href}
               className="h-bottom-tab-item"
-              style={{
-                flex: 1,
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '8px 2px',
-                textDecoration: 'none',
-                color,
-                transition: 'color 0.15s, background 0.15s',
-              }}
+              style={commonStyle}
             >
-              {/* 활성 상태 인디케이터 (상단 짧은 골드 라인) */}
-              {active && (
-                <span style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '24px',
-                  height: '3px',
-                  background: '#e2a06e',
-                  borderRadius: '0 0 3px 3px',
-                }} />
-              )}
+              {indicator}
               <tab.Icon size={22} strokeWidth={active ? 2.2 : 1.8} color={color} />
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: active ? 700 : 500,
-                  lineHeight: 1.15,
-                  textAlign: 'center',
-                  wordBreak: 'keep-all',
-                  whiteSpace: 'normal',
-                  color,
-                }}
-              >
-                {tab.label}
-              </span>
+              {labelEl}
             </a>
           );
         })}

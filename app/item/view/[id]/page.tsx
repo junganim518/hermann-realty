@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Link as LinkIcon, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
+import { addRecentlyViewed } from '@/lib/recentlyViewed';
 
 declare global {
   interface Window { kakao: any; }
@@ -265,14 +266,14 @@ export default function PropertyDetailPage() {
     });
   }, []);
 
-  // 매물 조회수 +1 (관리자 로그인 시 제외, localStorage 24시간 중복 방지)
+  // 매물 조회수 +1 + 최근 본 매물 기록 (관리자 로그인 시 제외, localStorage 24시간 중복 방지)
   useEffect(() => {
     const propId = property?.id;
     if (!propId) return;
     let cancelled = false;
 
     (async () => {
-      // 1) 로그인 사용자(관리자)는 카운트 제외 — localStorage도 건드리지 않음
+      // 1) 로그인 사용자(관리자)는 카운트/기록 제외 — localStorage도 건드리지 않음
       try {
         const { data } = await supabase.auth.getUser();
         if (cancelled) return;
@@ -285,6 +286,9 @@ export default function PropertyDetailPage() {
         console.warn('[조회수] auth 조회 실패 — 익명으로 진행:', err);
       }
       if (cancelled) return;
+
+      // 최근 본 매물 기록 (조회수 24h 캐시와 별개로 매번 업데이트 — 순서 갱신용)
+      addRecentlyViewed(propId);
 
       // 2) localStorage 24시간 중복 체크
       const STORAGE_KEY = `viewed_property_${propId}`;
