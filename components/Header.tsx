@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Home, Map, Building2, Newspaper, MessageSquarePlus, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Header() {
@@ -56,6 +57,8 @@ export default function Header() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .h-bottom-tab { display: none; }
+        .h-bottom-tab-item:active { background: #f3f4f6 !important; }
+        .h-bottom-tab-item:hover .h-bottom-tab-label { color: #b5814f; }
         @media (max-width: 767px) {
           .h-phone { display: none !important; }
           .h-auth-desktop { display: none !important; }
@@ -67,7 +70,7 @@ export default function Header() {
           .h-logo-sub { display: none !important; }
           .h-mobile-login { display: flex !important; }
           .h-bottom-tab { display: flex !important; }
-          body { padding-bottom: 60px !important; }
+          body { padding-bottom: 64px !important; }
         }
         @media (min-width: 768px) and (max-width: 1199px) {
           .h-hamburger { display: none !important; }
@@ -196,41 +199,72 @@ export default function Header() {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '60px',
-          background: '#1a1a1a',
-          borderTop: '1px solid #333',
+          minHeight: '64px',
+          background: '#fff',
+          borderTop: '2px solid #e2a06e',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
           display: 'none',
-          alignItems: 'center',
+          alignItems: 'stretch',
           zIndex: 9999,
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
         {[
-          { icon: '🏠', label: '홈', href: '/' },
-          { icon: '🗺️', label: '지도', href: '/map' },
-          { icon: '🏢', label: '매물', href: '/properties' },
-          { icon: '📰', label: '소식', href: '/news' },
-          { icon: '📝', label: '의뢰', href: '/inquiry' },
-          { icon: 'ℹ️', label: '소개', href: '/about' },
+          { Icon: Home, label: '홈', href: '/' },
+          { Icon: Map, label: '지도검색', href: '/map' },
+          { Icon: Building2, label: '매물', href: '/properties' },
+          { Icon: Newspaper, label: '소식', href: '/news' },
+          { Icon: MessageSquarePlus, label: '매물의뢰', href: '/inquiry' },
+          { Icon: Info, label: '회사소개', href: '/about' },
         ].map((tab) => {
           const active = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href));
+          const color = active ? '#e2a06e' : '#6b7280';
           return (
             <a
               key={tab.label}
               href={tab.href}
+              className="h-bottom-tab-item"
               style={{
                 flex: 1,
+                position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '2px',
+                gap: '4px',
+                padding: '8px 2px',
                 textDecoration: 'none',
-                color: active ? '#e2a06e' : '#888',
+                color,
+                transition: 'color 0.15s, background 0.15s',
               }}
             >
-              <span style={{ fontSize: '20px', lineHeight: 1 }}>{tab.icon}</span>
-              <span style={{ fontSize: '9px', fontWeight: active ? 700 : 400 }}>{tab.label}</span>
+              {/* 활성 상태 인디케이터 (상단 짧은 골드 라인) */}
+              {active && (
+                <span style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '24px',
+                  height: '3px',
+                  background: '#e2a06e',
+                  borderRadius: '0 0 3px 3px',
+                }} />
+              )}
+              <tab.Icon size={22} strokeWidth={active ? 2.2 : 1.8} color={color} />
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: active ? 700 : 500,
+                  lineHeight: 1.15,
+                  textAlign: 'center',
+                  wordBreak: 'keep-all',
+                  whiteSpace: 'normal',
+                  color,
+                }}
+              >
+                {tab.label}
+              </span>
             </a>
           );
         })}
