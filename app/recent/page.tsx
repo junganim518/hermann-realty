@@ -161,7 +161,7 @@ export default function RecentPage() {
           .recent-grid { grid-template-columns: repeat(3, 1fr) !important; }
         }
         @media (max-width: 767px) {
-          .recent-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+          .recent-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
         }
       ` }} />
     </main>
