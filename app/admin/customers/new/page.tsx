@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { combineDateTime } from '@/lib/parseTime';
+import CustomerConditionsForm from '@/components/CustomerConditionsForm';
+import type { DesiredConditions } from '@/lib/matchProperties';
 
 const STATUSES = ['상담중', '방문예정', '방문완료', '계약진행', '계약완료', '보류'];
 const INTEREST_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
@@ -18,6 +20,7 @@ export default function NewCustomerPage() {
     visit_date: '', visit_time: '',
     memo: '', status: '상담중',
   });
+  const [conditions, setConditions] = useState<DesiredConditions>({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -47,6 +50,7 @@ export default function NewCustomerPage() {
       visit_date: visit.iso,
       memo: form.memo.trim() || null,
       status: form.status,
+      desired_conditions: conditions,
     };
     const { error } = await supabase.from('customers').insert(payload);
     setSaving(false);
@@ -133,6 +137,9 @@ export default function NewCustomerPage() {
             </div>
           </div>
         </div>
+
+        {/* 원하는 매물 조건 */}
+        <CustomerConditionsForm value={conditions} onChange={setConditions} defaultOpen={false} />
 
         {/* 메모 */}
         <div style={sectionSt}>

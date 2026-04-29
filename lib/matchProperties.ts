@@ -1,0 +1,140 @@
+// 손님 조건 ↔ 매물 매칭 로직
+
+export type DesiredConditions = {
+  property_types?: string[];
+  transaction_types?: string[];
+  deposit_min?: number | null;
+  deposit_max?: number | null;
+  monthly_rent_min?: number | null;
+  monthly_rent_max?: number | null;
+  sale_price_min?: number | null;
+  sale_price_max?: number | null;
+  area_min?: number | null;       // 평 단위
+  area_max?: number | null;
+  floor_min?: number | null;
+  floor_max?: number | null;
+  region?: string;
+  no_premium?: boolean;
+  additional_memo?: string;
+};
+
+export type MatchedProperty = {
+  property: any;
+  score: number; // 0~100
+};
+
+const PYEONG_PER_SQM = 1 / 3.3058;
+const TOLERANCE = 0.1; // ±10% 부분 점수 허용
+
+// 범위 내 여부 — 1점(완전일치) / 0.5점(±10%) / 0점(벗어남)
+function rangeScore(val: number, min?: number | null, max?: number | null): number {
+  if (val == null || isNaN(val)) return 0;
+  const hasMin = min != null;
+  const hasMax = max != null;
+  if (!hasMin && !hasMax) return 1;
+
+  if (hasMin && hasMax) {
+    if (val >= (min as number) && val <= (max as number)) return 1;
+    const lo = (min as number) * (1 - TOLERANCE);
+    const hi = (max as number) * (1 + TOLERANCE);
+    if (val >= lo && val <= hi) return 0.5;
+    return 0;
+  }
+  if (hasMin) {
+    if (val >= (min as number)) return 1;
+    if (val >= (min as number) * (1 - TOLERANCE)) return 0.5;
+    return 0;
+  }
+  // hasMax only
+  if (val <= (max as number)) return 1;
+  if (val <= (max as number) * (1 + TOLERANCE)) return 0.5;
+  return 0;
+}
+
+// 매물 1건 매칭률 계산 (0~100)
+export function matchProperty(p: any, c: DesiredConditions): number {
+  let total = 0;
+  let scored = 0;
+
+  if (c.property_types && c.property_types.length > 0) {
+    total++;
+    if (c.property_types.includes(p.property_type)) scored += 1;
+  }
+  if (c.transaction_types && c.transaction_types.length > 0) {
+    total++;
+    if (c.transaction_types.includes(p.transaction_type)) scored += 1;
+  }
+  // 보증금 (월세/전세 거래에 의미)
+  if ((c.deposit_min != null || c.deposit_max != null) && p.transaction_type !== '매매') {
+    total++;
+    scored += rangeScore(Number(p.deposit) || 0, c.deposit_min, c.deposit_max);
+  }
+  // 월세 (월세 거래에만)
+  if ((c.monthly_rent_min != null || c.monthly_rent_max != null) && p.transaction_type === '월세') {
+    total++;
+    scored += rangeScore(Number(p.monthly_rent) || 0, c.monthly_rent_min, c.monthly_rent_max);
+  }
+  // 매매가 (매매 거래에만)
+  if ((c.sale_price_min != null || c.sale_price_max != null) && p.transaction_type === '매매') {
+    total++;
+    scored += rangeScore(Number(p.sale_price) || 0, c.sale_price_min, c.sale_price_max);
+  }
+  // 면적 (평 단위)
+  if (c.area_min != null || c.area_max != null) {
+    total++;
+    const sqm = Number(p.exclusive_area) || 0;
+    const pyeong = sqm * PYEONG_PER_SQM;
+    scored += rangeScore(pyeong, c.area_min, c.area_max);
+  }
+  // 층수
+  if (c.floor_min != null || c.floor_max != null) {
+    total++;
+    const floor = parseInt(String(p.current_floor ?? ''), 10);
+    if (!isNaN(floor)) scored += rangeScore(floor, c.floor_min, c.floor_max);
+  }
+  // 지역
+  if (c.region && c.region.trim()) {
+    total++;
+    if (typeof p.address === 'string' && p.address.includes(c.region.trim())) scored += 1;
+  }
+  // 무권리
+  if (c.no_premium) {
+    total++;
+    const prem = Number(p.premium) || 0;
+    if (prem === 0) scored += 1;
+  }
+
+  if (total === 0) return 0;
+  return Math.round((scored / total) * 100);
+}
+
+// 전체 매물 목록에서 매칭 후 정렬된 결과 반환 (거래완료 제외, minScore 미만 제외)
+export function findMatches(
+  properties: any[],
+  conditions: DesiredConditions,
+  opts?: { minScore?: number }
+): MatchedProperty[] {
+  const minScore = opts?.minScore ?? 50;
+  return properties
+    .filter(p => !p.is_sold)
+    .map(p => ({ property: p, score: matchProperty(p, conditions) }))
+    .filter(m => m.score >= minScore)
+    .sort((a, b) => b.score - a.score);
+}
+
+// 조건이 비어있는지 (사용자가 어떤 조건도 입력하지 않음)
+export function hasConditions(c: DesiredConditions | null | undefined): boolean {
+  if (!c) return false;
+  return Boolean(
+    (c.property_types?.length ?? 0) > 0 ||
+    (c.transaction_types?.length ?? 0) > 0 ||
+    c.deposit_min != null || c.deposit_max != null ||
+    c.monthly_rent_min != null || c.monthly_rent_max != null ||
+    c.sale_price_min != null || c.sale_price_max != null ||
+    c.area_min != null || c.area_max != null ||
+    c.floor_min != null || c.floor_max != null ||
+    (c.region && c.region.trim()) ||
+    c.no_premium ||
+    (c.additional_memo && c.additional_memo.trim())
+  );
+}
