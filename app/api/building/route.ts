@@ -19,16 +19,24 @@ export async function GET(req: NextRequest) {
 
   const titleBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json`;
   const exposBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&dongNm=${encodeURIComponent(dong)}&hoNm=${encodeURIComponent(ho)}&_type=json`;
-  // 층별개요 (일반건축물 케이스 2 용)
   const flrUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrFlrOulnInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=100&pageNo=1`;
+  // 전유공용면적 일괄 조회 (호 없이) — 모든 호의 면적/용도 데이터 한번에
+  const exposPubuseAllUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=1000&pageNo=1`;
 
   const titleUrl = titleBaseUrl + '&numOfRows=1&pageNo=1';
   const firstExposUrl = exposBaseUrl + '&numOfRows=100&pageNo=1';
 
   try {
-    // 표제부 + 전유부 1페이지 + 층별개요 병렬 호출
-    const [titleRes, firstRes, flrRes] = await Promise.all([fetch(titleUrl), fetch(firstExposUrl), fetch(flrUrl)]);
-    const [titleData, firstData, flrData] = await Promise.all([titleRes.json(), firstRes.json(), flrRes.json()]);
+    // 표제부 + 전유부 1페이지 + 층별개요 + 전유공용면적 일괄 병렬 호출
+    const [titleRes, firstRes, flrRes, pubuseAllRes] = await Promise.all([
+      fetch(titleUrl),
+      fetch(firstExposUrl),
+      fetch(flrUrl),
+      fetch(exposPubuseAllUrl),
+    ]);
+    const [titleData, firstData, flrData, pubuseAllData] = await Promise.all([
+      titleRes.json(), firstRes.json(), flrRes.json(), pubuseAllRes.json()
+    ]);
 
     const firstItemsRaw = firstData?.response?.body?.items?.item;
     let allItems: any[] = Array.isArray(firstItemsRaw)
@@ -63,32 +71,59 @@ export async function GET(req: NextRequest) {
 
     const buildingName = title?.bldNm || title?.platPlcNm || allItems[0]?.dongNm || '';
 
-    // 디버깅: 전유부/층별 응답 필드 구조 확인 (각 행의 진짜 용도 필드 파악용)
-    if (allItems[0]) {
-      const sample = allItems[0];
-      console.log('[전유부 샘플 필드]', {
-        hoNm: sample.hoNm, dongNm: sample.dongNm,
-        mainPurpsCdNm: sample.mainPurpsCdNm, etcPurps: sample.etcPurps,
-        area: sample.area, flrNo: sample.flrNo,
+    // 전유공용면적 일괄 응답 → hoNm 기준 전유 항목 맵 (호별 면적/용도)
+    const pubuseAllRaw = pubuseAllData?.response?.body?.items?.item;
+    const pubuseAllItems: any[] = Array.isArray(pubuseAllRaw) ? pubuseAllRaw : (pubuseAllRaw ? [pubuseAllRaw] : []);
+    if (pubuseAllItems[0]) {
+      console.log('[전유공용면적 첫 항목 전체]', JSON.stringify(pubuseAllItems[0], null, 2));
+    }
+    // 전유 행만 추출하여 호 키별로 첫 항목을 사용 (대표 면적/용도)
+    const exclusiveByHo: Record<string, { area: string; mainPurpsCdNm: string; etcPurps: string; flrNo: string; dongNm: string }> = {};
+    pubuseAllItems
+      .filter((it: any) => it.exposPubuseGbCdNm === '전유')
+      .forEach((it: any) => {
+        const dongNm = it.dongNm || '';
+        const hoNm = it.hoNm || '';
+        const key = [dongNm, hoNm].filter(Boolean).join('|');
+        if (!exclusiveByHo[key]) {
+          exclusiveByHo[key] = {
+            area: it.area || '',
+            mainPurpsCdNm: it.mainPurpsCdNm || '',
+            etcPurps: it.etcPurps || '',
+            flrNo: it.flrNo || '',
+            dongNm,
+          };
+        }
       });
+    console.log('[전유공용면적] 일괄 조회 결과 — 전유 호:', Object.keys(exclusiveByHo).length, '개');
+
+    // 디버깅: 전유부 첫 항목 전체 (필드 파악)
+    if (allItems[0]) {
+      console.log('[전유부 첫 항목 전체]', JSON.stringify(allItems[0], null, 2));
     }
 
-    // 전유부(케이스 1: 집합건축물 호실) — hoNm 있는 항목만, 용도는 항목 자체 데이터만 사용 (표제부 fallback 제거)
+    // 전유부(케이스 1: 집합건축물 호실) — hoNm 있는 항목만
+    // 면적/용도는 전유공용면적 일괄 데이터 우선 → 전유부 자체 데이터로 fallback
     const hoList = allItems
       .filter((item: any) => !!item.hoNm)
       .map((item: any) => {
         const dongNm = item.dongNm || '';
         const hoNm = item.hoNm || '';
         const display = [dongNm, hoNm].filter(Boolean).join(' ');
-        // 호실별 용도만 사용 — 표제부 건물 전체 용도로 fallback하지 않음 (모든 호실이 같아 보이는 문제 방지)
-        const usage = item.etcPurps || item.mainPurpsCdNm || '';
+        const key = [dongNm, hoNm].filter(Boolean).join('|');
+        const merged = exclusiveByHo[key];
+        // 용도: 일괄 → 전유부 항목 → 빈값
+        const usage = merged?.etcPurps || merged?.mainPurpsCdNm || item.etcPurps || item.mainPurpsCdNm || '';
+        // 면적: 일괄(전유) → 전유부 항목 → 빈값
+        const area = merged?.area || item.area || '';
+        const flrNo = merged?.flrNo || item.flrNo || '';
         return {
           dongNm,
           hoNm,
           display,
-          area: item.area || '',
+          area,
           etcPurps: usage,
-          flrNo: item.flrNo || '',
+          flrNo,
         };
       });
 
