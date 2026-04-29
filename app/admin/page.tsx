@@ -16,6 +16,24 @@ const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = 
   '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
 };
 
+// 매물 등록일 기준 경과일 계산
+const getAgeDays = (createdAt: string | null | undefined): number => {
+  if (!createdAt) return 0;
+  const created = new Date(createdAt).getTime();
+  if (isNaN(created)) return 0;
+  return Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
+};
+
+// 경과일 뱃지 설정 — 거래완료 매물은 null 반환
+const getAgeBadge = (p: { is_sold?: boolean; created_at?: string }): { label: string; bg: string; color: string } | null => {
+  if (p.is_sold) return null;
+  const days = getAgeDays(p.created_at);
+  if (days >= 90) return { label: '90일+', bg: '#fee2e2', color: '#991b1b' };
+  if (days >= 60) return { label: '60일 경과', bg: '#fed7aa', color: '#9a3412' };
+  if (days >= 30) return { label: '30일 경과', bg: '#fef3c7', color: '#92400e' };
+  return null;
+};
+
 const PROP_TYPES = ['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const TX_TYPES = ['전체', '월세', '전세', '매매'];
 const SOLD_TYPES = ['전체', '거래중', '거래완료'];
@@ -147,7 +165,7 @@ export default function AdminDashboard() {
   const [filterFloor, setFilterFloor] = useState('전체');
   const [filterPremium, setFilterPremium] = useState('전체');
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<'latest' | 'views'>('latest');
+  const [sortBy, setSortBy] = useState<'latest' | 'views' | 'oldest'>('latest');
   const [topExpanded, setTopExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
@@ -482,6 +500,9 @@ export default function AdminDashboard() {
     if (sortBy === 'views') {
       return (b.view_count ?? 0) - (a.view_count ?? 0);
     }
+    if (sortBy === 'oldest') {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
@@ -691,6 +712,7 @@ export default function AdminDashboard() {
             { label: '전세', value: stats.jeonse, color: '#4a80e8' },
             { label: '매매', value: stats.maemae, color: '#e05050' },
             { label: '거래완료', value: stats.sold, color: '#999' },
+            { label: '30일+ 매물', value: properties.filter(p => !p.is_sold && getAgeDays(p.created_at) >= 30).length, color: '#d97706' },
           ].map(s => (
             <div key={s.label} style={cardSt}>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>{s.label}</p>
@@ -799,8 +821,9 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {/* 정렬 토글 */}
               <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                {(['latest', 'views'] as const).map(opt => {
+                {(['latest', 'views', 'oldest'] as const).map(opt => {
                   const active = sortBy === opt;
+                  const label = opt === 'latest' ? '최신순' : opt === 'views' ? '조회수순' : '오래된순';
                   return (
                     <button
                       key={opt}
@@ -812,7 +835,7 @@ export default function AdminDashboard() {
                         border: 'none', cursor: active ? 'default' : 'pointer',
                       }}
                     >
-                      {opt === 'latest' ? '최신순' : '조회수순'}
+                      {label}
                     </button>
                   );
                 })}
@@ -919,6 +942,17 @@ export default function AdminDashboard() {
                           <span style={{ fontSize: '11px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', background: '#f5f5f5', color: '#666', border: '1px solid #e0e0e0' }}>{p.property_type}</span>
                         )}
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: tx.bg, border: `1px solid ${tx.border}`, color: tx.text }}>{p.transaction_type}</span>
+                        {(() => {
+                          const ageBadge = getAgeBadge(p);
+                          return ageBadge ? (
+                            <span
+                              title={`등록 후 ${getAgeDays(p.created_at)}일 경과`}
+                              style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: '999px', background: ageBadge.bg, color: ageBadge.color }}
+                            >
+                              {ageBadge.label}
+                            </span>
+                          ) : null;
+                        })()}
                         {p.title && (
                           <span style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title}>{p.title}</span>
                         )}
@@ -1079,7 +1113,9 @@ export default function AdminDashboard() {
 
         @media (min-width: 768px) and (max-width: 1199px) {
           main > div { max-width: 100% !important; padding: 0 16px !important; }
-          .admin-stats { grid-template-columns: repeat(5, 1fr) !important; gap: 10px !important; }
+          .admin-stats { grid-template-columns: repeat(6, 1fr) !important; gap: 8px !important; }
+          .admin-stats > div { padding: 12px 8px !important; }
+          .admin-stats > div p:last-child { font-size: 24px !important; }
           .admin-shortcuts { grid-template-columns: repeat(4, 1fr) !important; }
         }
 
