@@ -787,11 +787,15 @@ export default function NewPropertyPage() {
                       outline: 'none',
                     }}
                   >
-                    {buildingExposList.map((e, idx) => (
-                      <option key={`${e.display}-${idx}`} value={e.display}>
-                        {e.display || '(호 없음)'}{e.etcPurps ? ` (${e.etcPurps})` : ''}
-                      </option>
-                    ))}
+                    {buildingExposList.map((e, idx) => {
+                      const sqm = parseFloat(e.area || '0');
+                      const areaStr = sqm > 0 ? ` - ${sqm.toFixed(1)}㎡ (${(sqm / 3.3058).toFixed(1)}평)` : '';
+                      return (
+                        <option key={`${e.display}-${idx}`} value={e.display}>
+                          {e.display || '(호 없음)'}{e.etcPurps ? ` (${e.etcPurps})` : ''}{areaStr}
+                        </option>
+                      );
+                    })}
                   </select>
                   {selectedBldHos.length > 0 && (
                     <p style={{ fontSize: '11px', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>

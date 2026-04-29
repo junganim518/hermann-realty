@@ -63,18 +63,25 @@ export async function GET(req: NextRequest) {
 
     const buildingName = title?.bldNm || title?.platPlcNm || allItems[0]?.dongNm || '';
 
-    // 표제부(건물 전체) 용도 — 호실/층 항목에 용도가 비어있을 때 fallback으로 사용
-    const titleUsage = title?.etcPurps || title?.mainPurpsCdNm || '';
+    // 디버깅: 전유부/층별 응답 필드 구조 확인 (각 행의 진짜 용도 필드 파악용)
+    if (allItems[0]) {
+      const sample = allItems[0];
+      console.log('[전유부 샘플 필드]', {
+        hoNm: sample.hoNm, dongNm: sample.dongNm,
+        mainPurpsCdNm: sample.mainPurpsCdNm, etcPurps: sample.etcPurps,
+        area: sample.area, flrNo: sample.flrNo,
+      });
+    }
 
-    // 전유부(케이스 1: 집합건축물 호실) — hoNm 있는 항목만
+    // 전유부(케이스 1: 집합건축물 호실) — hoNm 있는 항목만, 용도는 항목 자체 데이터만 사용 (표제부 fallback 제거)
     const hoList = allItems
       .filter((item: any) => !!item.hoNm)
       .map((item: any) => {
         const dongNm = item.dongNm || '';
         const hoNm = item.hoNm || '';
         const display = [dongNm, hoNm].filter(Boolean).join(' ');
-        // 호실별 용도가 비어있으면 표제부의 건물 전체 용도를 fallback으로 사용
-        const usage = item.etcPurps || item.mainPurpsCdNm || titleUsage || '';
+        // 호실별 용도만 사용 — 표제부 건물 전체 용도로 fallback하지 않음 (모든 호실이 같아 보이는 문제 방지)
+        const usage = item.etcPurps || item.mainPurpsCdNm || '';
         return {
           dongNm,
           hoNm,
@@ -85,17 +92,25 @@ export async function GET(req: NextRequest) {
         };
       });
 
-    // 층별개요(케이스 2: 일반건축물 다층) — flrList
+    // 층별개요(케이스 2: 일반건축물 다층) — flrList. 항목 자체 용도만 사용
     const flrItemsRaw = flrData?.response?.body?.items?.item;
     const flrItems: any[] = Array.isArray(flrItemsRaw) ? flrItemsRaw : (flrItemsRaw ? [flrItemsRaw] : []);
+    if (flrItems[0]) {
+      const sample = flrItems[0];
+      console.log('[층별개요 샘플 필드]', {
+        flrNo: sample.flrNo, flrGbCdNm: sample.flrGbCdNm,
+        mainPurpsCdNm: sample.mainPurpsCdNm, etcPurps: sample.etcPurps,
+        area: sample.area,
+      });
+    }
     const flrList: any[] = flrItems.map((item: any) => {
       const flrNoNum = Number(item.flrNo) || 0;
       const isUnder = item.flrGbCdNm === '지하';
       const baseDisplay = isUnder ? `지하${Math.abs(flrNoNum)}층` : `${flrNoNum}층`;
-      const usage = item.etcPurps || item.mainPurpsCdNm || titleUsage || '';
+      const usage = item.etcPurps || item.mainPurpsCdNm || '';
       return {
         dongNm: item.dongNm || '',
-        hoNm: '', // 층별개요엔 호 없음 — 케이스 2 식별자
+        hoNm: '',
         display: baseDisplay,
         area: item.area || '',
         etcPurps: usage,
@@ -104,28 +119,14 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // 같은 층이 여러 행으로 분리된 경우 (예: 1층 A동/B동, 같은 층 다른 구역) — 각 항목을 고유하게 식별
-    // base display(예: "1층") 중복 발견 시 면적 또는 #N 접미사로 disambiguation
+    // 같은 층 중복 disambiguation — display(value) unique 보장. 면적은 프론트가 별도로 표시하므로 단순히 #N만 부여
     const dispCounts: Record<string, number> = {};
     flrList.forEach(f => { dispCounts[f.display] = (dispCounts[f.display] ?? 0) + 1; });
     const dispIdx: Record<string, number> = {};
     flrList.forEach(f => {
       if (dispCounts[f.display] > 1) {
         dispIdx[f.display] = (dispIdx[f.display] ?? 0) + 1;
-        const i = dispIdx[f.display];
-        const areaNum = parseFloat(f.area || '0') || 0;
-        // 면적이 있으면 "1층 80㎡", 없으면 "1층 #1" 형태
-        f.display = areaNum > 0 ? `${f.display} ${areaNum}㎡` : `${f.display} #${i}`;
-      }
-    });
-    // 면적 suffix까지 동일한 경우를 대비한 2차 검사 — 그래도 중복이면 #N
-    const finalCounts: Record<string, number> = {};
-    flrList.forEach(f => { finalCounts[f.display] = (finalCounts[f.display] ?? 0) + 1; });
-    const finalIdx: Record<string, number> = {};
-    flrList.forEach(f => {
-      if (finalCounts[f.display] > 1) {
-        finalIdx[f.display] = (finalIdx[f.display] ?? 0) + 1;
-        f.display = `${f.display} #${finalIdx[f.display]}`;
+        f.display = `${f.display} #${dispIdx[f.display]}`;
       }
     });
 
