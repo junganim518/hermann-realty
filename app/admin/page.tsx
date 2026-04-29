@@ -167,7 +167,7 @@ export default function AdminDashboard() {
   const [filterFloor, setFilterFloor] = useState('전체');
   const [filterPremium, setFilterPremium] = useState('전체');
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<'latest' | 'views' | 'oldest'>('latest');
+  const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>('property_number');
   const [topExpanded, setTopExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
@@ -508,7 +508,13 @@ export default function AdminDashboard() {
       const bTs = new Date(b.updated_at ?? b.created_at).getTime();
       return aTs - bTs;
     }
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    // 'property_number' (기본값): 매물번호 내림차순 (최근 등록 큰 번호부터)
+    // property_number는 문자열 저장이지만 숫자 비교 필요
+    const aNum = parseInt(a.property_number, 10);
+    const bNum = parseInt(b.property_number, 10);
+    if (!isNaN(aNum) && !isNaN(bNum)) return bNum - aNum;
+    // 숫자 변환 실패 시 문자열 비교 폴백
+    return String(b.property_number ?? '').localeCompare(String(a.property_number ?? ''));
   });
 
   const topByViews = [...properties]
@@ -826,9 +832,9 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {/* 정렬 토글 */}
               <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                {(['latest', 'views', 'oldest'] as const).map(opt => {
+                {(['property_number', 'oldest', 'views'] as const).map(opt => {
                   const active = sortBy === opt;
-                  const label = opt === 'latest' ? '최신순' : opt === 'views' ? '조회수순' : '오래된순';
+                  const label = opt === 'property_number' ? '매물번호순' : opt === 'oldest' ? '오래된순' : '조회수순';
                   return (
                     <button
                       key={opt}
