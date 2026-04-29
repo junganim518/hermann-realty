@@ -435,39 +435,46 @@ export default function EditPropertyPage() {
     setSelectedBldHos(next);
     for (const display of added) {
       const match = buildingExposList.find(e => e.display === display);
-      if (match?.hoNm) {
+      if (!match) continue;
+      if (match.hoNm) {
         await fetchAreaForHo(match.hoNm);
       } else {
-        console.warn('[호실선택] hoNm 매칭 실패:', display);
+        // 호실 없음 (단독/단일 건물의 층별 정보) → exposList의 area 직접 사용
+        const exclusive = parseFloat(match.area || '0') || 0;
+        const currentFloor = match.flrNo ? String(match.flrNo) : undefined;
+        const usageType = match.etcPurps || undefined;
+        console.log('[층선택] exposList 직접 사용:', display, '→ 면적:', exclusive, '층:', currentFloor);
+        setAreaCache(prev => ({ ...prev, [display]: { exclusive, publicArea: 0, currentFloor, usageType } }));
       }
     }
-    console.log('[호실선택] 추가 호실 조회 완료');
+    console.log('[호실선택] 추가 조회 완료');
   };
 
-  // ── 선택된 호실 변경 시 면적/층/용도 합산·반영
+  // ── 선택된 호실/층 변경 시 면적/층/용도 합산·반영
   useEffect(() => {
     if (selectedBldHos.length === 0) return;
     let totalEx = 0;
     let totalPub = 0;
     let firstFloor: string | undefined;
     let firstUsage: string | undefined;
-    const rows: Array<{ display: string; hoNm: string; cached: boolean; exclusive: number; publicArea: number }> = [];
+    const rows: Array<{ display: string; cacheKey: string; cached: boolean; exclusive: number; publicArea: number }> = [];
     for (const display of selectedBldHos) {
       const match = buildingExposList.find(e => e.display === display);
-      if (!match?.hoNm) {
-        rows.push({ display, hoNm: '(없음)', cached: false, exclusive: 0, publicArea: 0 });
+      if (!match) {
+        rows.push({ display, cacheKey: '(없음)', cached: false, exclusive: 0, publicArea: 0 });
         continue;
       }
-      const cached = areaCache[match.hoNm];
+      const cacheKey = match.hoNm || match.display;
+      const cached = areaCache[cacheKey];
       if (!cached) {
-        rows.push({ display, hoNm: match.hoNm, cached: false, exclusive: 0, publicArea: 0 });
+        rows.push({ display, cacheKey, cached: false, exclusive: 0, publicArea: 0 });
         continue;
       }
       totalEx += cached.exclusive;
       totalPub += cached.publicArea;
       if (!firstFloor && cached.currentFloor) firstFloor = cached.currentFloor;
       if (!firstUsage && cached.usageType) firstUsage = cached.usageType;
-      rows.push({ display, hoNm: match.hoNm, cached: true, exclusive: cached.exclusive, publicArea: cached.publicArea });
+      rows.push({ display, cacheKey, cached: true, exclusive: cached.exclusive, publicArea: cached.publicArea });
     }
     const totalSupply = totalEx + totalPub;
     console.log('[면적합산] 선택된 호실:', selectedBldHos.length, '개 / 캐시된 호실:', rows.filter(r => r.cached).length, '개');
@@ -808,9 +815,10 @@ export default function EditPropertyPage() {
             <div style={{ fontSize: '12px', color: '#8a5a2a', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               🏢 건물명/호 정보
               {buildingLoading && <span style={{ color: '#e2a06e', fontWeight: 500 }}>· 건축물대장 조회 중...</span>}
-              {!buildingLoading && buildingExposList.length > 0 && (
-                <span style={{ color: '#888', fontWeight: 500 }}>· {buildingExposList.length}개 호실 조회됨</span>
-              )}
+              {!buildingLoading && buildingExposList.length > 0 && (() => {
+                const hasHo = buildingExposList.some(e => !!e.hoNm);
+                return <span style={{ color: '#888', fontWeight: 500 }}>· {buildingExposList.length}개 {hasHo ? '호실' : '층'} 조회됨</span>;
+              })()}
               {areaLoading && <span style={{ color: '#e2a06e', fontWeight: 500 }}>· 면적 조회 중...</span>}
             </div>
             <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
@@ -829,42 +837,46 @@ export default function EditPropertyPage() {
               </div>
             </div>
 
-            {buildingExposList.length > 0 && (
-              <div>
-                <label style={{ ...labelSt, fontSize: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  호실 선택 <span style={{ fontWeight: 400, color: '#888' }}>(Ctrl/Cmd+클릭으로 여러 호실 선택 — 전용/공급면적 자동 합산)</span>
+            {buildingExposList.length > 0 && (() => {
+              const hasHo = buildingExposList.some(e => !!e.hoNm);
+              const unit = hasHo ? '호실' : '층';
+              return (
+                <div>
+                  <label style={{ ...labelSt, fontSize: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                    {unit} 선택 <span style={{ fontWeight: 400, color: '#888' }}>(Ctrl/Cmd+클릭으로 여러 {unit} 선택 — 전용/공급면적 자동 합산)</span>
+                    {selectedBldHos.length > 0 && (
+                      <span style={{ color: '#e2a06e', fontWeight: 700 }}>· {selectedBldHos.length}개 선택</span>
+                    )}
+                  </label>
+                  <select
+                    multiple
+                    value={selectedBldHos}
+                    onChange={e => {
+                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                      handleMultiSelect(opts);
+                    }}
+                    disabled={buildingLoading}
+                    style={{
+                      width: '100%', minHeight: '140px',
+                      border: '1px solid #e0d4b8', borderRadius: '4px',
+                      padding: '6px', background: '#fff', fontSize: '13px',
+                      outline: 'none',
+                    }}
+                  >
+                    {buildingExposList.map((e, idx) => (
+                      <option key={`${e.display}-${idx}`} value={e.display}>
+                        {e.display || '(호 없음)'}{e.etcPurps ? ` (${e.etcPurps})` : ''}
+                      </option>
+                    ))}
+                  </select>
                   {selectedBldHos.length > 0 && (
-                    <span style={{ color: '#e2a06e', fontWeight: 700 }}>· {selectedBldHos.length}개 선택</span>
+                    <p style={{ fontSize: '11px', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
+                      선택된 {unit}: <strong style={{ color: '#8a5a2a' }}>{selectedBldHos.join(', ')}</strong> → 면적 자동 합산됨
+                    </p>
                   )}
-                </label>
-                <select
-                  multiple
-                  value={selectedBldHos}
-                  onChange={e => {
-                    const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                    handleMultiSelect(opts);
-                  }}
-                  disabled={buildingLoading}
-                  style={{
-                    width: '100%', minHeight: '140px',
-                    border: '1px solid #e0d4b8', borderRadius: '4px',
-                    padding: '6px', background: '#fff', fontSize: '13px',
-                    outline: 'none',
-                  }}
-                >
-                  {buildingExposList.map((e, idx) => (
-                    <option key={`${e.display}-${idx}`} value={e.display}>
-                      {e.display || '(호 없음)'}
-                    </option>
-                  ))}
-                </select>
-                {selectedBldHos.length > 0 && (
-                  <p style={{ fontSize: '11px', color: '#666', marginTop: '6px', lineHeight: 1.5 }}>
-                    선택된 호실: <strong style={{ color: '#8a5a2a' }}>{selectedBldHos.join(', ')}</strong> → 면적 자동 합산됨
-                  </p>
-                )}
-              </div>
-            )}
+                </div>
+              );
+            })()}
           </div>
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
             <div><label style={labelSt}>위도</label><input value={form.latitude} onChange={e => set('latitude', e.target.value)} style={{ ...inputSt, background: '#f9f9f9' }} /></div>
