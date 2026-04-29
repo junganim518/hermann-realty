@@ -56,7 +56,7 @@ export default function AboutPage() {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false';
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services';
     script.async = true;
     script.onload = () => window.kakao.maps.load(() => { if (!cancelled) createMap(); });
     document.head.appendChild(script);

@@ -213,7 +213,7 @@ export default function NewPropertyPage() {
         return;
       }
       // 스크립트 동적 삽입
-      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"]')) {
+      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"][src*="libraries=services"]')) {
         const s2 = document.createElement('script');
         s2.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services';
         s2.async = true;
@@ -241,6 +241,8 @@ export default function NewPropertyPage() {
 
   // ── 카카오 주소검색 + 좌표 변환
   const searchAddress = () => {
+    console.log('[주소검색] window.daum:', !!window.daum, 'Postcode:', !!window.daum?.Postcode);
+    console.log('[주소검색] window.kakao:', !!window.kakao, 'maps.services:', !!window.kakao?.maps?.services, 'Geocoder:', !!window.kakao?.maps?.services?.Geocoder);
     if (!window.daum?.Postcode) {
       alert('주소검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;

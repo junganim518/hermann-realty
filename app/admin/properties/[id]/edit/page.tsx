@@ -277,7 +277,7 @@ export default function EditPropertyPage() {
     const initKakao = () => {
       if (typeof window.kakao?.maps?.services?.Geocoder === 'function') { setKakaoReady(true); return; }
       if (window.kakao?.maps?.load) { window.kakao.maps.load(() => setKakaoReady(true)); return; }
-      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"]')) {
+      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"][src*="libraries=services"]')) {
         const s = document.createElement('script');
         s.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services';
         s.async = true;
@@ -294,6 +294,8 @@ export default function EditPropertyPage() {
   }, []);
 
   const searchAddress = () => {
+    console.log('[주소검색] window.daum:', !!window.daum, 'Postcode:', !!window.daum?.Postcode);
+    console.log('[주소검색] window.kakao:', !!window.kakao, 'maps.services:', !!window.kakao?.maps?.services, 'Geocoder:', !!window.kakao?.maps?.services?.Geocoder);
     if (!window.daum?.Postcode) { alert('주소검색 스크립트를 불러오는 중입니다.'); return; }
     new window.daum.Postcode({
       oncomplete: (data: any) => {

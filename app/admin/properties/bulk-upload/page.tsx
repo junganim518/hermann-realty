@@ -65,7 +65,7 @@ export default function BulkUploadPage() {
         window.kakao.maps.load(() => setKakaoReady(true));
         return;
       }
-      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"]')) {
+      if (!document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk"][src*="libraries=services"]')) {
         const s = document.createElement('script');
         s.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=8a478b4b6ea5e02722a33f6ac2fa34b6&autoload=false&libraries=services';
         s.async = true;
