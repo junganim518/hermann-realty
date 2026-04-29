@@ -19,14 +19,16 @@ export async function GET(req: NextRequest) {
 
   const titleBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json`;
   const exposBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&dongNm=${encodeURIComponent(dong)}&hoNm=${encodeURIComponent(ho)}&_type=json`;
+  // 층별개요 (일반건축물 케이스 2 용)
+  const flrUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrFlrOulnInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=100&pageNo=1`;
 
   const titleUrl = titleBaseUrl + '&numOfRows=1&pageNo=1';
   const firstExposUrl = exposBaseUrl + '&numOfRows=100&pageNo=1';
 
   try {
-    // 표제부 + 전유부 1페이지 병렬 호출
-    const [titleRes, firstRes] = await Promise.all([fetch(titleUrl), fetch(firstExposUrl)]);
-    const [titleData, firstData] = await Promise.all([titleRes.json(), firstRes.json()]);
+    // 표제부 + 전유부 1페이지 + 층별개요 병렬 호출
+    const [titleRes, firstRes, flrRes] = await Promise.all([fetch(titleUrl), fetch(firstExposUrl), fetch(flrUrl)]);
+    const [titleData, firstData, flrData] = await Promise.all([titleRes.json(), firstRes.json(), flrRes.json()]);
 
     const firstItemsRaw = firstData?.response?.body?.items?.item;
     let allItems: any[] = Array.isArray(firstItemsRaw)
@@ -61,17 +63,38 @@ export async function GET(req: NextRequest) {
 
     const buildingName = title?.bldNm || title?.platPlcNm || allItems[0]?.dongNm || '';
 
-    const hoList = allItems.map((item: any) => {
-      const dongNm = item.dongNm || '';
-      const hoNm = item.hoNm || '';
-      const display = hoNm || (item.flrNo ? `${item.flrNo}층` : '');
+    // 전유부(케이스 1: 집합건축물 호실) — hoNm 있는 항목만
+    const hoList = allItems
+      .filter((item: any) => !!item.hoNm)
+      .map((item: any) => {
+        const dongNm = item.dongNm || '';
+        const hoNm = item.hoNm || '';
+        const display = [dongNm, hoNm].filter(Boolean).join(' ');
+        return {
+          dongNm,
+          hoNm,
+          display,
+          area: item.area || '',
+          etcPurps: item.etcPurps || item.mainPurpsCdNm || '',
+          flrNo: item.flrNo || '',
+        };
+      });
+
+    // 층별개요(케이스 2: 일반건축물 다층) — flrList
+    const flrItemsRaw = flrData?.response?.body?.items?.item;
+    const flrItems: any[] = Array.isArray(flrItemsRaw) ? flrItemsRaw : (flrItemsRaw ? [flrItemsRaw] : []);
+    const flrList = flrItems.map((item: any) => {
+      const flrNoNum = Number(item.flrNo) || 0;
+      const isUnder = item.flrGbCdNm === '지하';
+      const display = isUnder ? `지하${Math.abs(flrNoNum)}층` : `${flrNoNum}층`;
       return {
-        dongNm,
-        hoNm,
+        dongNm: item.dongNm || '',
+        hoNm: '', // 층별개요엔 호 없음 — 케이스 2 식별자
         display,
         area: item.area || '',
-        etcPurps: item.etcPurps || '',
+        etcPurps: item.etcPurps || item.mainPurpsCdNm || '',
         flrNo: item.flrNo || '',
+        flrGbCdNm: item.flrGbCdNm || '',
       };
     });
 
@@ -86,7 +109,7 @@ export async function GET(req: NextRequest) {
       console.log('[전유공용면적 샘플]', JSON.stringify(areaItems[0], null, 2));
     }
 
-    return NextResponse.json({ title, expos, exposList: hoList, buildingName, areaItems });
+    return NextResponse.json({ title, expos, exposList: hoList, flrList, buildingName, areaItems });
   } catch (e: any) {
     console.error('[건축물대장] 에러:', e.message, e.name);
     return NextResponse.json({ error: e.message, name: e.name }, { status: 500 });

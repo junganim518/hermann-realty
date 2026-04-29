@@ -346,9 +346,18 @@ export default function EditPropertyPage() {
       }
 
       applyBuildingTitle(data.title, data.buildingName);
-      setBuildingExposList(data.exposList || []);
 
-      if (data.title || (data.exposList && data.exposList.length > 0)) {
+      // 케이스 분기:
+      // 1) 집합건축물(전유부 있음) → 호실 선택
+      // 2) 일반건축물 다층(층별개요 2개+) → 층 선택
+      // 3) 단층/단일 → 선택 영역 숨김 (자동입력만)
+      const expos: any[] = data.exposList || [];
+      const flrs: any[] = data.flrList || [];
+      const listToUse: any[] = expos.length > 0 ? expos : (flrs.length > 1 ? flrs : []);
+      console.log('[건축물대장] 케이스:', expos.length > 0 ? 1 : flrs.length > 1 ? 2 : 3, '/ 사용 목록:', listToUse.length, '개');
+      setBuildingExposList(listToUse);
+
+      if (data.title || listToUse.length > 0) {
         showToast('건축물대장 정보가 자동입력되었습니다');
       } else {
         showToast('건축물대장 정보를 찾을 수 없습니다');
@@ -843,7 +852,7 @@ export default function EditPropertyPage() {
               return (
                 <div>
                   <label style={{ ...labelSt, fontSize: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                    {unit} 선택 <span style={{ fontWeight: 400, color: '#888' }}>(Ctrl/Cmd+클릭으로 여러 {unit} 선택 — 전용/공급면적 자동 합산)</span>
+                    {unit} 선택 <span style={{ fontWeight: 400, color: '#888' }}>여러 {unit} 선택 가능 (Ctrl/Cmd+클릭)</span>
                     {selectedBldHos.length > 0 && (
                       <span style={{ color: '#e2a06e', fontWeight: 700 }}>· {selectedBldHos.length}개 선택</span>
                     )}
