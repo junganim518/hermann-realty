@@ -134,7 +134,7 @@ export default function CustomersPage() {
                     </td>
                     <td style={{ ...tdSt, textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                        <a href={`/admin/customers/${c.id}/edit`} style={{ padding: '4px 10px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>수정</a>
+                        <a href={`/admin/customers/${c.id}`} style={{ padding: '4px 10px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>상세</a>
                         <button onClick={() => handleDelete(c.id, c.name)} style={{ padding: '4px 10px', fontSize: '12px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>삭제</button>
                       </div>
                     </td>
@@ -175,7 +175,7 @@ export default function CustomersPage() {
               </div>
               {c.memo && <p style={{ fontSize: '11px', color: '#999', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.memo}</p>}
               <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }} onClick={e => e.stopPropagation()}>
-                <a href={`/admin/customers/${c.id}/edit`} style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>수정</a>
+                <a href={`/admin/customers/${c.id}`} style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>상세</a>
                 <button onClick={() => handleDelete(c.id, c.name)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>삭제</button>
               </div>
             </div>
