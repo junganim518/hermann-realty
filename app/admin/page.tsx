@@ -16,18 +16,20 @@ const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = 
   '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
 };
 
-// 매물 등록일 기준 경과일 계산
-const getAgeDays = (createdAt: string | null | undefined): number => {
-  if (!createdAt) return 0;
-  const created = new Date(createdAt).getTime();
-  if (isNaN(created)) return 0;
-  return Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
+// 매물 마지막 갱신(등록 또는 수정) 기준 경과일 계산
+// — updated_at은 트리거로 자동 갱신되므로 수정 시 경과일 리셋됨
+const getAgeDays = (updatedAt: string | null | undefined): number => {
+  if (!updatedAt) return 0;
+  const ts = new Date(updatedAt).getTime();
+  if (isNaN(ts)) return 0;
+  return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
 };
 
 // 경과일 뱃지 설정 — 거래완료 매물은 null 반환
-const getAgeBadge = (p: { is_sold?: boolean; created_at?: string }): { label: string; bg: string; color: string } | null => {
+const getAgeBadge = (p: { is_sold?: boolean; updated_at?: string; created_at?: string }): { label: string; bg: string; color: string } | null => {
   if (p.is_sold) return null;
-  const days = getAgeDays(p.created_at);
+  // updated_at 우선 사용, 없으면 created_at fallback (구 데이터 호환)
+  const days = getAgeDays(p.updated_at ?? p.created_at);
   if (days >= 90) return { label: '90일+', bg: '#fee2e2', color: '#991b1b' };
   if (days >= 60) return { label: '60일 경과', bg: '#fed7aa', color: '#9a3412' };
   if (days >= 30) return { label: '30일 경과', bg: '#fef3c7', color: '#92400e' };
@@ -501,7 +503,10 @@ export default function AdminDashboard() {
       return (b.view_count ?? 0) - (a.view_count ?? 0);
     }
     if (sortBy === 'oldest') {
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      // 마지막 갱신(updated_at) 기준 — 수정하면 다시 최신으로 리셋
+      const aTs = new Date(a.updated_at ?? a.created_at).getTime();
+      const bTs = new Date(b.updated_at ?? b.created_at).getTime();
+      return aTs - bTs;
     }
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
@@ -712,7 +717,7 @@ export default function AdminDashboard() {
             { label: '전세', value: stats.jeonse, color: '#4a80e8' },
             { label: '매매', value: stats.maemae, color: '#e05050' },
             { label: '거래완료', value: stats.sold, color: '#999' },
-            { label: '30일+ 매물', value: properties.filter(p => !p.is_sold && getAgeDays(p.created_at) >= 30).length, color: '#d97706' },
+            { label: '30일+ 매물', value: properties.filter(p => !p.is_sold && getAgeDays(p.updated_at ?? p.created_at) >= 30).length, color: '#d97706' },
           ].map(s => (
             <div key={s.label} style={cardSt}>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>{s.label}</p>
@@ -944,9 +949,10 @@ export default function AdminDashboard() {
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: tx.bg, border: `1px solid ${tx.border}`, color: tx.text }}>{p.transaction_type}</span>
                         {(() => {
                           const ageBadge = getAgeBadge(p);
+                          const ageDays = getAgeDays(p.updated_at ?? p.created_at);
                           return ageBadge ? (
                             <span
-                              title={`등록 후 ${getAgeDays(p.created_at)}일 경과`}
+                              title={`마지막 갱신 후 ${ageDays}일 경과`}
                               style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: '999px', background: ageBadge.bg, color: ageBadge.color }}
                             >
                               {ageBadge.label}
