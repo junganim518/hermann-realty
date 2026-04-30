@@ -249,7 +249,7 @@ export default function Home() {
     { id: '메인상권', name: '메인 상권', desc: '중심 상권 핵심 매물', image: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80' },
     { id: '즉시입주', name: '즉시 입주', desc: '바로 입주 가능', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
     { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80' },
-    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1582729069244-fe25f9d3a32f?w=400&q=80' },
+    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80' },
     { id: '인기매물', name: '인기 매물', desc: '문의 많은 핫한 매물', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&q=80' },
     { id: '음식점가능', name: '음식점 가능', desc: '음식점 운영 가능', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80' },
     { id: '카페추천', name: '카페 추천', desc: '카페 자리 추천', image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80' },
@@ -729,7 +729,8 @@ export default function Home() {
                     href={`/properties?theme=${encodeURIComponent(theme.id)}`}
                     className="theme-card relative rounded-[4px] overflow-hidden cursor-pointer group"
                     style={{
-                      backgroundImage: `url('${theme.image}')`,
+                      backgroundImage: `url('${theme.image}'), linear-gradient(135deg, #1a1a1a 0%, #e2a06e 100%)`,
+                      backgroundColor: '#1a1a1a',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       display: 'block', textDecoration: 'none',
