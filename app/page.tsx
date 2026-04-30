@@ -195,7 +195,8 @@ export default function Home() {
       const types  = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
       const themes = [
         '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가',
-        '역세권매물', '신축매물', '저렴한매물', '코너매물', '메인상권', '즉시입주', '대로변매물', '노출좋음', '인기매물', '음식점가능', '카페추천', '사무실추천',
+        '역세권매물', '신축매물', '저렴한매물', '코너매물', '메인상권', '즉시입주', '대로변매물', '노출좋음', '인기매물',
+        '카페', '사무실', '음식점', '병원', '학원', '뷰티', '편의점', '헬스장',
       ];
 
       const tc: Record<string, number> = {};
@@ -245,15 +246,20 @@ export default function Home() {
     { id: '역세권매물', name: '역세권 매물', desc: '지하철역 도보 5분 이내', image: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80' },
     { id: '신축매물', name: '신축 매물', desc: '신축·리모델링 매물', image: 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&q=80' },
     { id: '저렴한매물', name: '저렴한 매물', desc: '가성비 좋은 매물', image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80' },
-    { id: '코너매물', name: '코너 매물', desc: '모서리 노출 좋은 자리', image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&q=80' },
+    { id: '코너매물', name: '코너 매물', desc: '모서리 노출 좋은 자리', image: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=400&q=80' },
     { id: '메인상권', name: '메인 상권', desc: '중심 상권 핵심 매물', image: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80' },
     { id: '즉시입주', name: '즉시 입주', desc: '바로 입주 가능', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
-    { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80' },
-    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80' },
-    { id: '인기매물', name: '인기 매물', desc: '문의 많은 핫한 매물', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&q=80' },
-    { id: '음식점가능', name: '음식점 가능', desc: '음식점 운영 가능', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80' },
-    { id: '카페추천', name: '카페 추천', desc: '카페 자리 추천', image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80' },
-    { id: '사무실추천', name: '사무실 추천', desc: '사무실 추천 매물', image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400&q=80' },
+    { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&q=80' },
+    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1606220838315-056192d5e927?w=400&q=80' },
+    { id: '인기매물', name: '인기 매물', desc: '문의 많은 핫한 매물', image: 'https://images.unsplash.com/photo-1465379944081-7f47de8d74ac?w=400&q=80' },
+    { id: '카페', name: '카페', desc: '카페 자리 추천', image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80' },
+    { id: '사무실', name: '사무실', desc: '사무실 추천 매물', image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400&q=80' },
+    { id: '음식점', name: '음식점', desc: '음식점 운영 자리', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80' },
+    { id: '병원', name: '병원', desc: '병원·클리닉 자리', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&q=80' },
+    { id: '학원', name: '학원', desc: '학원·교육 시설', image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80' },
+    { id: '뷰티', name: '뷰티', desc: '미용실·네일샵·뷰티샵', image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&q=80' },
+    { id: '편의점', name: '편의점', desc: '편의점·미니마트 자리', image: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=400&q=80' },
+    { id: '헬스장', name: '헬스장', desc: '헬스장·피트니스', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80' },
   ];
 
   return (
