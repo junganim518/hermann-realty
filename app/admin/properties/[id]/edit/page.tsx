@@ -104,7 +104,10 @@ const deleteImageFromR2 = async (imageUrl: string): Promise<void> => {
 
 const TX_TYPES   = ['월세', '전세', '매매'];
 const PROP_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
-const THEME_TYPES = ['추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
+const THEME_TYPES = [
+  '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가',
+  '역세권매물', '신축매물', '저렴한매물', '코너매물', '메인상권', '즉시입주', '대로변매물', '노출좋음', '인기매물', '음식점가능', '카페추천', '사무실추천',
+];
 const DIRECTIONS = ['동', '서', '남', '북', '남동', '남서', '북동', '북서'];
 
 const labelSt: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#333', marginBottom: '4px' };

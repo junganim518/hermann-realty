@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const formatAddress = (address: string) => {
@@ -42,6 +42,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const themeSlideRef = useRef<HTMLDivElement | null>(null);
   const [themeProgress, setThemeProgress] = useState(0);
+  const [themeAtStart, setThemeAtStart] = useState(true);
+  const [themeAtEnd, setThemeAtEnd] = useState(false);
 
   useEffect(() => {
     const el = themeSlideRef.current;
@@ -49,6 +51,8 @@ export default function Home() {
     const update = () => {
       const max = el.scrollWidth - el.clientWidth;
       setThemeProgress(max <= 0 ? 0 : Math.max(0, Math.min(1, el.scrollLeft / max)));
+      setThemeAtStart(el.scrollLeft <= 1);
+      setThemeAtEnd(max <= 0 || el.scrollLeft >= max - 1);
     };
     update();
     el.addEventListener('scroll', update, { passive: true });
@@ -58,6 +62,13 @@ export default function Home() {
       window.removeEventListener('resize', update);
     };
   }, []);
+
+  const scrollTheme = (dir: 1 | -1) => {
+    const el = themeSlideRef.current;
+    if (!el) return;
+    const step = Math.max(280, el.clientWidth * 0.8);
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  };
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [recentProperties, setRecentProperties] = useState<any[]>([]);
@@ -182,7 +193,10 @@ export default function Home() {
   useEffect(() => {
     async function fetchCounts() {
       const types  = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
-      const themes = ['추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
+      const themes = [
+        '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가',
+        '역세권매물', '신축매물', '저렴한매물', '코너매물', '메인상권', '즉시입주', '대로변매물', '노출좋음', '인기매물', '음식점가능', '카페추천', '사무실추천',
+      ];
 
       const tc: Record<string, number> = {};
       const hc: Record<string, number> = {};
@@ -228,6 +242,18 @@ export default function Home() {
     { id: '프랜차이즈양도양수', name: '프랜차이즈 양도양수', desc: '프랜차이즈 양도양수 매물', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80' },
     { id: '1층상가', name: '1층 상가', desc: '1층에 위치한 상가 매물', image: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=400&q=80' },
     { id: '2층이상상가', name: '2층 이상 상가', desc: '2층 이상에 위치한 상가', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
+    { id: '역세권매물', name: '역세권 매물', desc: '지하철역 도보 5분 이내', image: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80' },
+    { id: '신축매물', name: '신축 매물', desc: '신축·리모델링 매물', image: 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&q=80' },
+    { id: '저렴한매물', name: '저렴한 매물', desc: '가성비 좋은 매물', image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80' },
+    { id: '코너매물', name: '코너 매물', desc: '모서리 노출 좋은 자리', image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&q=80' },
+    { id: '메인상권', name: '메인 상권', desc: '중심 상권 핵심 매물', image: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80' },
+    { id: '즉시입주', name: '즉시 입주', desc: '바로 입주 가능', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
+    { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80' },
+    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1582729069244-fe25f9d3a32f?w=400&q=80' },
+    { id: '인기매물', name: '인기 매물', desc: '문의 많은 핫한 매물', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&q=80' },
+    { id: '음식점가능', name: '음식점 가능', desc: '음식점 운영 가능', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80' },
+    { id: '카페추천', name: '카페 추천', desc: '카페 자리 추천', image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80' },
+    { id: '사무실추천', name: '사무실 추천', desc: '사무실 추천 매물', image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400&q=80' },
   ];
 
   return (
@@ -236,8 +262,50 @@ export default function Home() {
       <style dangerouslySetInnerHTML={{ __html: `
         /* ── 기본: 그리드 ── */
         .grid-type  { display: grid; grid-template-columns: repeat(6, 1fr); }
-        .grid-theme { display: grid; grid-template-columns: repeat(4, 1fr); }
         .grid-recent { display: grid; grid-template-columns: repeat(4, 1fr); }
+
+        /* ── 테마: 모든 화면에서 가로 슬라이드 ── */
+        .grid-theme {
+          display: flex;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scroll-snap-type: x mandatory;
+          scroll-behavior: smooth;
+          gap: 12px;
+          padding: 0 4px 4px;
+          margin: 0 -4px;
+          scrollbar-width: none;
+        }
+        .grid-theme::-webkit-scrollbar { display: none; }
+        .grid-theme .theme-card {
+          flex: 0 0 calc((100% - 48px) / 5);
+          min-width: calc((100% - 48px) / 5);
+          scroll-snap-align: start;
+          height: 280px;
+        }
+        .theme-slide-wrap { position: relative; }
+        .theme-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 5;
+          color: #1a1a1a;
+          transition: all 0.15s ease;
+        }
+        .theme-arrow:hover { background: #1a1a1a; color: #e2a06e; border-color: #1a1a1a; }
+        .theme-arrow:disabled { opacity: 0; pointer-events: none; }
+        .theme-arrow-left { left: -10px; }
+        .theme-arrow-right { right: -10px; }
         .sidebar-left  { display: block; }
         .sidebar-right { display: block; }
 
@@ -268,7 +336,11 @@ export default function Home() {
         @media (min-width: 768px) and (max-width: 1199px) {
           .sidebar-left { display: none !important; }
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; }
-          .grid-theme { grid-template-columns: repeat(3, 1fr) !important; }
+          .grid-theme .theme-card {
+            flex: 0 0 calc((100% - 24px) / 3) !important;
+            min-width: calc((100% - 24px) / 3) !important;
+            height: 240px !important;
+          }
           .grid-recent { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
           .card-img { height: 200px !important; }
           .center-content { padding-bottom: 80px !important; }
@@ -316,24 +388,13 @@ export default function Home() {
           .grid-type .type-card > .absolute.top-2 { width: 22px !important; height: 22px !important; font-size: 10px !important; top: 4px !important; right: 4px !important; }
           .grid-type .type-card > .absolute.bottom-0 { padding: 8px !important; }
 
-          /* 테마별 매물 검색: 가로 슬라이드 */
+          /* 테마별 매물 검색: 모바일은 작은 카드 + PC와 다른 gap */
           .grid-theme {
-            display: flex !important;
-            grid-template-columns: none !important;
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-            scroll-snap-type: x mandatory !important;
-            scroll-behavior: smooth !important;
             gap: 8px !important;
-            padding: 0 4px 4px !important;
-            margin: 0 -4px !important;
-            scrollbar-width: none;
           }
-          .grid-theme::-webkit-scrollbar { display: none; }
           .grid-theme .theme-card {
             flex: 0 0 35% !important;
             min-width: 35% !important;
-            scroll-snap-align: start !important;
             height: 150px !important;
           }
           .grid-theme .theme-card h3 { font-size: 14px !important; }
@@ -342,6 +403,8 @@ export default function Home() {
           .grid-theme .theme-card > .absolute.bottom-0 { padding: 6px 8px !important; }
           /* 모바일에서만 진행 바 + 힌트 표시 */
           .theme-progress-wrap { display: block !important; }
+          /* 모바일에서는 화살표 버튼 숨김 (스와이프로 대체) */
+          .theme-arrow { display: none !important; }
 
           /* 전체매물 보기 버튼 컴팩트 */
           .view-all-btn {
@@ -640,33 +703,52 @@ export default function Home() {
           {/* 테마 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#f9f9f9' }}>
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>테마별 매물 검색</h2>
-            <div ref={themeSlideRef} className="grid-theme gap-3">
-              {themeTypes.map((theme, index) => (
-                <a
-                  key={index}
-                  href={`/properties?theme=${encodeURIComponent(theme.id)}`}
-                  className="theme-card relative rounded-[4px] overflow-hidden cursor-pointer group"
-                  style={{
-                    height: '280px',
-                    backgroundImage: `url('${theme.image}')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    display: 'block', textDecoration: 'none',
-                  }}
-                >
-                  <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 transition-colors"></div>
-                  <div
-                    className="absolute top-2 right-2 bg-[#e2a06e] text-white font-bold rounded-full flex items-center justify-center"
-                    style={{ fontSize: '11px', width: '28px', height: '28px' }}
+            <div className="theme-slide-wrap">
+              <button
+                type="button"
+                className="theme-arrow theme-arrow-left"
+                onClick={() => scrollTheme(-1)}
+                disabled={themeAtStart}
+                aria-label="이전"
+              >
+                <ChevronLeft size={22} strokeWidth={2.2} />
+              </button>
+              <button
+                type="button"
+                className="theme-arrow theme-arrow-right"
+                onClick={() => scrollTheme(1)}
+                disabled={themeAtEnd}
+                aria-label="다음"
+              >
+                <ChevronRight size={22} strokeWidth={2.2} />
+              </button>
+              <div ref={themeSlideRef} className="grid-theme">
+                {themeTypes.map((theme, index) => (
+                  <a
+                    key={index}
+                    href={`/properties?theme=${encodeURIComponent(theme.id)}`}
+                    className="theme-card relative rounded-[4px] overflow-hidden cursor-pointer group"
+                    style={{
+                      backgroundImage: `url('${theme.image}')`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      display: 'block', textDecoration: 'none',
+                    }}
                   >
-                    {(themeCounts[theme.id] ?? 0).toLocaleString()}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                    <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '2px' }}>{theme.name}</h3>
-                    <p style={{ fontSize: '13px', opacity: 0.85 }}>{theme.desc}</p>
-                  </div>
-                </a>
-              ))}
+                    <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 transition-colors"></div>
+                    <div
+                      className="absolute top-2 right-2 bg-[#e2a06e] text-white font-bold rounded-full flex items-center justify-center"
+                      style={{ fontSize: '11px', width: '28px', height: '28px' }}
+                    >
+                      {(themeCounts[theme.id] ?? 0).toLocaleString()}
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                      <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '2px' }}>{theme.name}</h3>
+                      <p style={{ fontSize: '13px', opacity: 0.85 }}>{theme.desc}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
             {/* 모바일 슬라이드 진행 바 + 힌트 (모바일에서만 표시) */}
             <div className="theme-progress-wrap" style={{ display: 'none', marginTop: '12px' }}>
