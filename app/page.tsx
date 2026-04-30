@@ -234,7 +234,8 @@ export default function Home() {
     { id: '기타', name: '기타', eng: 'ETC', icon: '🏘', image: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&q=80' },
   ];
 
-  const themeTypes = [
+  type ThemeItem = { id: string; name: string; desc: string; image?: string; gradient?: string; emoji?: string };
+  const themeTypes: ThemeItem[] = [
     { id: '추천매물', name: '추천매물', desc: '헤르만 추천 베스트 매물', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
     { id: '사옥형및통임대', name: '사옥형 및 통임대', desc: '사옥형 건물 및 통임대 매물', image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&q=80' },
     { id: '대형상가', name: '대형 상가', desc: '대형 상가 매물', image: 'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=400&q=80' },
@@ -246,12 +247,12 @@ export default function Home() {
     { id: '역세권매물', name: '역세권 매물', desc: '지하철역 도보 5분 이내', image: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80' },
     { id: '신축매물', name: '신축 매물', desc: '신축·리모델링 매물', image: 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&q=80' },
     { id: '저렴한매물', name: '저렴한 매물', desc: '가성비 좋은 매물', image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80' },
-    { id: '코너매물', name: '코너 매물', desc: '모서리 노출 좋은 자리', image: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=400&q=80' },
+    { id: '코너매물', name: '코너 매물', desc: '모서리 노출 좋은 자리', gradient: 'linear-gradient(135deg, #434343 0%, #1a1a1a 100%)', emoji: '🏢' },
     { id: '메인상권', name: '메인 상권', desc: '중심 상권 핵심 매물', image: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80' },
     { id: '즉시입주', name: '즉시 입주', desc: '바로 입주 가능', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
-    { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&q=80' },
-    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1606220838315-056192d5e927?w=400&q=80' },
-    { id: '인기매물', name: '인기 매물', desc: '문의 많은 핫한 매물', image: 'https://images.unsplash.com/photo-1465379944081-7f47de8d74ac?w=400&q=80' },
+    { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', gradient: 'linear-gradient(135deg, #2980b9 0%, #6dd5fa 100%)', emoji: '🛣️' },
+    { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', gradient: 'linear-gradient(135deg, #00b09b 0%, #96c93d 100%)', emoji: '👀' },
+    { id: '인기매물', name: '인기 매물', desc: '문의 많은 핫한 매물', gradient: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)', emoji: '🔥' },
     { id: '카페', name: '카페', desc: '카페 자리 추천', image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80' },
     { id: '사무실', name: '사무실', desc: '사무실 추천 매물', image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400&q=80' },
     { id: '음식점', name: '음식점', desc: '음식점 운영 자리', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80' },
@@ -729,32 +730,55 @@ export default function Home() {
                 <ChevronRight size={22} strokeWidth={2.2} />
               </button>
               <div ref={themeSlideRef} className="grid-theme">
-                {themeTypes.map((theme, index) => (
-                  <a
-                    key={index}
-                    href={`/properties?theme=${encodeURIComponent(theme.id)}`}
-                    className="theme-card relative rounded-[4px] overflow-hidden cursor-pointer group"
-                    style={{
-                      backgroundImage: `url('${theme.image}'), linear-gradient(135deg, #1a1a1a 0%, #e2a06e 100%)`,
-                      backgroundColor: '#1a1a1a',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      display: 'block', textDecoration: 'none',
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 transition-colors"></div>
-                    <div
-                      className="absolute top-2 right-2 bg-[#e2a06e] text-white font-bold rounded-full flex items-center justify-center"
-                      style={{ fontSize: '11px', width: '28px', height: '28px' }}
+                {themeTypes.map((theme, index) => {
+                  const usesGradient = !!theme.gradient;
+                  return (
+                    <a
+                      key={index}
+                      href={`/properties?theme=${encodeURIComponent(theme.id)}`}
+                      className="theme-card relative rounded-[4px] overflow-hidden cursor-pointer group"
+                      style={{
+                        backgroundImage: usesGradient
+                          ? theme.gradient
+                          : `url('${theme.image}'), linear-gradient(135deg, #1a1a1a 0%, #e2a06e 100%)`,
+                        backgroundColor: '#1a1a1a',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        display: 'block', textDecoration: 'none',
+                      }}
                     >
-                      {(themeCounts[theme.id] ?? 0).toLocaleString()}
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                      <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '2px' }}>{theme.name}</h3>
-                      <p style={{ fontSize: '13px', opacity: 0.85 }}>{theme.desc}</p>
-                    </div>
-                  </a>
-                ))}
+                      {usesGradient ? (
+                        <>
+                          {/* 가벼운 호버 오버레이 + 텍스트 가독성용 하단 그라데이션 마스크 */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors"></div>
+                          <div className="absolute inset-x-0 bottom-0" style={{ height: '55%', background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)' }}></div>
+                          {/* 중앙 이모지 */}
+                          <div style={{
+                            position: 'absolute', top: '38%', left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: 'clamp(44px, 6vw, 72px)',
+                            textShadow: '0 4px 14px rgba(0,0,0,0.35)',
+                            lineHeight: 1,
+                          }}>
+                            {theme.emoji}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 transition-colors"></div>
+                      )}
+                      <div
+                        className="absolute top-2 right-2 bg-[#e2a06e] text-white font-bold rounded-full flex items-center justify-center"
+                        style={{ fontSize: '11px', width: '28px', height: '28px' }}
+                      >
+                        {(themeCounts[theme.id] ?? 0).toLocaleString()}
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                        <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '2px' }}>{theme.name}</h3>
+                        <p style={{ fontSize: '13px', opacity: 0.85 }}>{theme.desc}</p>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             </div>
             {/* 모바일 슬라이드 진행 바 + 힌트 (모바일에서만 표시) */}
