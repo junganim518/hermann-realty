@@ -248,7 +248,7 @@ export default function Home() {
     { id: '신축매물', name: '신축 매물', desc: '신축·리모델링 매물', image: 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&q=80' },
     { id: '저렴한매물', name: '저렴한 매물', desc: '가성비 좋은 매물', image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80' },
     { id: '코너매물', name: '코너 매물', desc: '모서리 노출 좋은 자리', image: 'https://images.unsplash.com/photo-1645717477377-dbd78b7f9065?w=800&auto=format&fit=crop' },
-    { id: '메인상권', name: '메인 상권', desc: '중심 상권 핵심 매물', image: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80' },
+    { id: '메인상권', name: '메인 상권', desc: '중심 상권 핵심 매물', image: 'https://images.unsplash.com/photo-1564241832494-0ccac22a072c?w=800&auto=format&fit=crop' },
     { id: '즉시입주', name: '즉시 입주', desc: '바로 입주 가능', image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
     { id: '대로변매물', name: '대로변 매물', desc: '대로변 위치 매물', image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800&auto=format&fit=crop' },
     { id: '노출좋음', name: '노출 좋음', desc: '가시성 우수한 매물', image: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=800&auto=format&fit=crop' },
