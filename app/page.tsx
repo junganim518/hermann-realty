@@ -4,38 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import ThemeBadges from '@/components/ThemeBadges';
-import { isNewProperty } from '@/lib/isNewProperty';
-
-const formatAddress = (address: string) => {
-  if (!address) return '';
-  const match = address.match(/(.+동)/);
-  return match ? match[1] : address;
-};
-
-const toPyeong = (sqm: number) => (sqm * 0.3025).toFixed(1);
-
-const formatPrice = (v: number) => {
-  if (!v) return '-';
-  const uk  = Math.floor(v / 10000);
-  const man = v % 10000;
-  if (uk > 0) {
-    return man > 0 ? `${uk}억 ${man.toLocaleString()}만원` : `${uk}억`;
-  }
-  return `${v.toLocaleString()}만원`;
-};
-
-const buildPriceStr = (p: any) => {
-  if (p.transaction_type === '매매') {
-    const v = p.sale_price || p.deposit;
-    return v ? `매매가 ${formatPrice(v)}` : '-';
-  }
-  const parts = [
-    p.deposit      ? `보증금 ${formatPrice(p.deposit)}` : null,
-    p.monthly_rent ? `월세 ${formatPrice(p.monthly_rent)}` : null,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(' / ') : '-';
-};
+import PropertyCard from '@/components/PropertyCard';
 
 export default function Home() {
   const [headerHeight, setHeaderHeight] = useState(200);
@@ -72,7 +41,6 @@ export default function Home() {
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
   };
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [recentProperties, setRecentProperties] = useState<any[]>([]);
   const contactRef = useRef<HTMLDivElement>(null);
 
@@ -122,13 +90,6 @@ export default function Home() {
     supabase.auth.getUser().then(({ data }) => setIsAdmin(!!data.user));
   }, []);
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
 
   useEffect(() => {
     const header = document.querySelector('header');
@@ -162,11 +123,10 @@ export default function Home() {
               .limit(1);
             return {
               id: p.property_number,
-              location: p.address,
-              area: p.exclusive_area,
+              address: p.address,
               exclusive_area: p.exclusive_area,
-              type: p.property_type,
-              floor: p.current_floor,
+              property_type: p.property_type,
+              current_floor: p.current_floor,
               deposit: p.deposit,
               monthly_rent: p.monthly_rent,
               sale_price: p.sale_price,
@@ -331,14 +291,6 @@ export default function Home() {
           }
         }
 
-        .main-card-mobile { display: block; }
-        .main-card-content-row { display: block; }
-        .card-header-text { font-size: 13px; }
-        .card-addr-text { font-size: 13px; }
-        .card-meta-text { font-size: 13px; }
-        .card-badge-text { font-size: 11px; }
-        .card-price-text { font-size: 14px; }
-        .card-sub-text { font-size: 14px; }
 
         /* ── PC (1200px 이상): 기본값 사용 ── */
 
@@ -377,12 +329,6 @@ export default function Home() {
           .sidebar-right > div > p:nth-child(2) { display: none !important; }
           .sidebar-right > div > div { flex-direction: row !important; gap: 8px !important; }
           .sidebar-right > div > div a { padding: 10px 12px !important; font-size: 13px !important; }
-          .card-header-text { font-size: 14px !important; }
-          .card-addr-text { font-size: 14px !important; }
-          .card-meta-text { font-size: 14px !important; }
-          .card-badge-text { font-size: 12px !important; }
-          .card-price-text { font-size: 15px !important; }
-          .card-sub-text { font-size: 14px !important; }
         }
 
         /* ── 모바일 (768px 미만) ── */
@@ -426,16 +372,6 @@ export default function Home() {
           .view-all-btn svg { width: 14px !important; height: 14px !important; }
 
           .grid-recent { grid-template-columns: 1fr !important; gap: 8px !important; }
-          .main-card-mobile { display: flex !important; flex-direction: column !important; }
-          .main-card-mobile .main-card-header { display: flex !important; padding: 6px 10px !important; }
-          .main-card-mobile .main-card-header span { font-size: 11px !important; }
-          .main-card-mobile .main-card-content-row { display: flex !important; flex-direction: row !important; }
-          .main-card-mobile .main-card-img-wrap { width: 120px !important; min-width: 120px !important; height: 120px !important; flex-shrink: 0 !important; }
-          .main-card-mobile .main-card-img { width: 100% !important; height: 120px !important; }
-          .main-card-mobile .main-card-body { flex: 1 !important; padding: 6px 10px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; line-height: 1.45 !important; }
-          .main-card-mobile .main-card-body > div { margin-top: 1px !important; margin-bottom: 1px !important; }
-          .main-card-mobile .main-card-body > p { margin: 1px 0 !important; line-height: 1.45 !important; }
-          .main-card-mobile .main-card-body span { line-height: 1.45 !important; }
           .price-nowrap { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
           .main-layout { width: 100% !important; margin: 0 !important; padding: 0 !important; }
           .center-content { padding-left: 0 !important; padding-right: 0 !important; }
@@ -814,88 +750,11 @@ export default function Home() {
             {/* 매물 그리드 */}
             <div className="grid-recent gap-2">
               {recentProperties.map((property) => (
-                <Link
-                  key={property.id}
-                  href={`/item/view/${property.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: 'auto', transition: 'all 0.2s ease', cursor: 'pointer' }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                  className="main-card-mobile border border-gray-200 overflow-hidden bg-white"
-                >
-                  <div className="main-card-header" style={{ padding: isMobile ? '2px 8px' : '8px 10px', background: '#e2a06e' }} />
-                  <div className="main-card-content-row">
-                    <div className="main-card-img-wrap">
-                      <div className="main-card-img relative" style={{ height: '260px', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(100,100,100,0.6)', color: '#fff', fontSize: isMobile ? '10px' : '12px', fontWeight: 600, padding: isMobile ? '1px 6px' : '3px 8px', borderRadius: '4px', zIndex: 2 }}>
-                          {property.property_number ?? property.id}
-                        </div>
-                        {isNewProperty(property.created_at) && (
-                          <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '44px' : '80px', height: isMobile ? '44px' : '80px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
-                            <div style={{ position: 'absolute', top: isMobile ? '7px' : '14px', right: isMobile ? '-14px' : '-24px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '1px 0' : '3px 0', width: isMobile ? '54px' : '100px', fontSize: isMobile ? '7px' : '11px', fontWeight: 700, letterSpacing: isMobile ? '0.5px' : '1px', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}>
-                              NEW
-                            </div>
-                          </div>
-                        )}
-                        {property.image ? (
-                          <>
-                            <img src={property.image} alt="매물 이미지" className="w-full h-full object-cover" />
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', overflow: 'hidden' }}>
-                              <span style={{ color: '#e2a06e', fontSize: isMobile ? '8px' : 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: isMobile ? '1px' : 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.45, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                              <span style={{ color: '#e2a06e', fontSize: isMobile ? '6px' : 'clamp(8px, 1.2vw, 10px)', letterSpacing: isMobile ? '0.5px' : 'clamp(1px, 0.3vw, 3px)', marginTop: isMobile ? '1px' : '4px', opacity: 0.45, whiteSpace: 'nowrap' }}>헤르만부동산</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
-                            <span style={{ color: '#e2a06e', fontSize: isMobile ? '8px' : 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: isMobile ? '1px' : 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                            <span style={{ color: '#e2a06e', fontSize: isMobile ? '6px' : 'clamp(8px, 1.2vw, 10px)', letterSpacing: isMobile ? '0.5px' : 'clamp(1px, 0.3vw, 3px)', marginTop: isMobile ? '1px' : '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
-                          </div>
-                        )}
-                        {property.is_sold && (
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ color: '#fff', fontSize: '16px', fontWeight: 800, border: '2px solid #fff', padding: '2px 10px', borderRadius: '4px', transform: 'rotate(-15deg)' }}>거래완료</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="main-card-body p-3">
-                      <ThemeBadges themeType={property.theme_type} variant="card" />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                        {property.transaction_type && (() => {
-                          const colors: Record<string, { bg: string; border: string; text: string }> = {
-                            '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
-                            '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
-                            '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
-                          };
-                          const c = colors[property.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
-                          return <span className="card-badge-text" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text, fontSize: '11px', fontWeight: 700, padding: isMobile ? '0px 4px' : '2px 8px', borderRadius: '3px', flexShrink: 0 }}>{property.transaction_type}</span>;
-                        })()}
-                        <span className="card-price-text" style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(property)}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '2px', marginBottom: '2px', flexWrap: 'wrap' }}>
-                        {property.premium ? (
-                          <span className="card-sub-text" style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>권리금 {isAdmin ? formatPrice(property.premium) : '협의'}</span>
-                        ) : (
-                          <span className="card-sub-text" style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>무권리</span>
-                        )}
-                        {property.maintenance_fee && property.maintenance_fee !== 0 ? (
-                          <span className="card-sub-text" style={{ fontSize: '13px', color: '#888' }}>관리비 {formatPrice(property.maintenance_fee)}</span>
-                        ) : (
-                          <span className="card-sub-text" style={{ fontSize: '13px', color: '#888' }}>관리비 -</span>
-                        )}
-                      </div>
-                      <p className="card-addr-text" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', whiteSpace: 'normal' }}>{formatAddress(property.location ?? '')}</p>
-                      <p className="card-meta-text" style={{ fontSize: '13px', color: '#666', marginBottom: isMobile ? '0' : '4px' }}>
-                        {[property.type, property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : null, property.floor ? `${String(property.floor).trim().endsWith('층') ? property.floor : property.floor + '층'}` : null].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
+                <PropertyCard
+                  key={property.property_number}
+                  property={property}
+                  isAdmin={isAdmin}
+                />
               ))}
             </div>
 
