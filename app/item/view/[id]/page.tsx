@@ -1320,8 +1320,7 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>주차</td><td style={valTd}>{parkingCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>엘리베이터</td><td style={valTd}>{elevatorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>용도</td><td style={valTd}>{property.usage_type ?? '-'}</td></tr>
-                          <tr style={rowSt}><td style={labelTd}>사용승인일</td><td style={valTd}>{property.approval_date ?? '-'}</td></tr>
-                          <tr><td style={labelTd}>테마종류</td><td style={valTd}>{property.theme_types ?? property.theme_type ?? '-'}</td></tr>
+                          <tr><td style={labelTd}>사용승인일</td><td style={valTd}>{property.approval_date ?? '-'}</td></tr>
                         </>
                       );
                     }
@@ -1393,11 +1392,6 @@ export default function PropertyDetailPage() {
                             </td>
                           </tr>
                         )}
-                        {/* 8행: 테마종류 */}
-                        <tr>
-                          <td style={labelTd}>테마종류</td>
-                          <td colSpan={3} style={valTd}>{property.theme_types ?? property.theme_type ?? '-'}</td>
-                        </tr>
                       </>
                     );
                   })()}
