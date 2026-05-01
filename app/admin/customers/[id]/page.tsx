@@ -138,7 +138,13 @@ export default function CustomerDetailPage() {
         {/* 헤더 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <Link href="/admin/customers" style={{ color: '#888', fontSize: '13px', textDecoration: 'none' }}>← 손님 목록</Link>
+            <button
+              onClick={() => {
+                if (window.history.length > 1) router.back();
+                else router.push('/admin/customers');
+              }}
+              style={{ color: '#888', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >← 손님 목록</button>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>{customer.name}</h1>
             <span style={{ fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', border: `1px solid ${statusColor}`, background: statusColor + '18', color: statusColor }}>
               {customer.status ?? '상담중'}

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 const STATUSES = ['전체', '상담중', '방문예정', '방문완료', '계약진행', '계약완료', '보류'];
@@ -11,12 +11,35 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function CustomersPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>}>
+      <CustomersPageInner />
+    </Suspense>
+  );
+}
+
+function CustomersPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [authChecked, setAuthChecked] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [filter, setFilter] = useState('전체');
+  const [filter, setFilter] = useState(searchParams.get('status') || '전체');
   const [loading, setLoading] = useState(true);
   const [modalCustomer, setModalCustomer] = useState<any>(null);
+
+  // 상태 필터 → URL ?status=... 동기화 (수정 후 router.back() 으로 돌아오면 필터 유지)
+  const setFilterAndURL = (s: string) => {
+    setFilter(s);
+    const params = new URLSearchParams();
+    if (s && s !== '전체') params.set('status', s);
+    const qs = params.toString();
+    router.replace(`/admin/customers${qs ? '?' + qs : ''}`, { scroll: false });
+  };
+
+  // 뒤로가기 등 외부 URL 변경 시 state 재동기화
+  useEffect(() => {
+    setFilter(searchParams.get('status') || '전체');
+  }, [searchParams]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -78,7 +101,7 @@ export default function CustomersPage() {
         {/* 필터 */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
           {STATUSES.map(s => (
-            <button key={s} onClick={() => setFilter(s)} style={{
+            <button key={s} onClick={() => setFilterAndURL(s)} style={{
               padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: filter === s ? 700 : 400, cursor: 'pointer',
               background: filter === s ? '#1a1a1a' : '#fff', color: filter === s ? '#e2a06e' : '#666',
               border: filter === s ? '1px solid #1a1a1a' : '1px solid #ddd',

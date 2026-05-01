@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -143,7 +143,17 @@ const formatAddr = (p: any) => {
 };
 
 export default function AdminDashboard() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>}>
+      <AdminDashboardInner />
+    </Suspense>
+  );
+}
+
+function AdminDashboardInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0 });
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
@@ -156,18 +166,18 @@ export default function AdminDashboard() {
   const [propImages, setPropImages] = useState<Record<string, string>>({});
   const [unreadInquiries, setUnreadInquiries] = useState(0);
 
-  // 검색 & 필터 & 페이지
-  const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState('전체');
-  const [filterTx, setFilterTx] = useState('전체');
-  const [filterSold, setFilterSold] = useState('전체');
-  const [filterArea, setFilterArea] = useState('전체');
-  const [filterDeposit, setFilterDeposit] = useState('전체');
-  const [filterRent, setFilterRent] = useState('전체');
-  const [filterFloor, setFilterFloor] = useState('전체');
-  const [filterPremium, setFilterPremium] = useState('전체');
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>('property_number');
+  // 검색 & 필터 & 페이지 (URL 쿼리에서 초기화 — 매물 수정 후 돌아왔을 때 위치 유지)
+  const [search, setSearch] = useState(readParam('q', ''));
+  const [filterType, setFilterType] = useState(readParam('type', '전체'));
+  const [filterTx, setFilterTx] = useState(readParam('tx', '전체'));
+  const [filterSold, setFilterSold] = useState(readParam('sold', '전체'));
+  const [filterArea, setFilterArea] = useState(readParam('area', '전체'));
+  const [filterDeposit, setFilterDeposit] = useState(readParam('deposit', '전체'));
+  const [filterRent, setFilterRent] = useState(readParam('rent', '전체'));
+  const [filterFloor, setFilterFloor] = useState(readParam('floor', '전체'));
+  const [filterPremium, setFilterPremium] = useState(readParam('premium', '전체'));
+  const [page, setPage] = useState(parseInt(readParam('page', '1'), 10) || 1);
+  const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>(readParam('sort', 'property_number') as any);
   const [topExpanded, setTopExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
@@ -488,10 +498,50 @@ export default function AdminDashboard() {
   });
 
   const hasActiveFilter = filterType !== '전체' || filterTx !== '전체' || filterSold !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체' || filterFloor !== '전체' || filterPremium !== '전체' || search;
+
+  // URL 쿼리 ↔ state 양방향 동기화 (매물 수정 후 router.back() 으로 돌아오면 같은 페이지/필터 유지)
+  const syncURL = useCallback((overrides: Record<string, string> = {}) => {
+    const vals: Record<string, string> = {
+      page: String(page), sort: sortBy, sold: filterSold, q: search,
+      type: filterType, tx: filterTx, area: filterArea,
+      deposit: filterDeposit, rent: filterRent, floor: filterFloor, premium: filterPremium,
+      ...overrides,
+    };
+    const defaults: Record<string, string> = {
+      page: '1', sort: 'property_number', sold: '전체', q: '',
+      type: '전체', tx: '전체', area: '전체', deposit: '전체', rent: '전체', floor: '전체', premium: '전체',
+    };
+    const params = new URLSearchParams();
+    Object.entries(vals).forEach(([k, v]) => {
+      if (!v) return;
+      if (defaults[k] === v) return;
+      params.set(k, v);
+    });
+    const qs = params.toString();
+    router.replace(`/admin${qs ? '?' + qs : ''}`, { scroll: false });
+  }, [page, sortBy, filterSold, search, filterType, filterTx, filterArea, filterDeposit, filterRent, filterFloor, filterPremium, router]);
+
+  // 뒤로가기/외부 URL 변경 시 state 재동기화
+  useEffect(() => {
+    setSearch(readParam('q', ''));
+    setFilterType(readParam('type', '전체'));
+    setFilterTx(readParam('tx', '전체'));
+    setFilterSold(readParam('sold', '전체'));
+    setFilterArea(readParam('area', '전체'));
+    setFilterDeposit(readParam('deposit', '전체'));
+    setFilterRent(readParam('rent', '전체'));
+    setFilterFloor(readParam('floor', '전체'));
+    setFilterPremium(readParam('premium', '전체'));
+    setPage(parseInt(readParam('page', '1'), 10) || 1);
+    setSortBy((readParam('sort', 'property_number') as any));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const resetAllFilters = () => {
     setSearch(''); setFilterType('전체'); setFilterTx('전체'); setFilterSold('전체');
     setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setFilterFloor('전체'); setFilterPremium('전체');
-    resetPage();
+    setPage(1);
+    syncURL({ q: '', type: '전체', tx: '전체', sold: '전체', area: '전체', deposit: '전체', rent: '전체', floor: '전체', premium: '전체', page: '1' });
   };
 
   const sortedFiltered = [...filtered].sort((a, b) => {
@@ -525,9 +575,6 @@ export default function AdminDashboard() {
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const displayed = sortedFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  // 필터 변경 시 페이지 리셋
-  const resetPage = () => setPage(1);
 
   if (!authChecked) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>;
 
@@ -838,7 +885,7 @@ export default function AdminDashboard() {
                   return (
                     <button
                       key={opt}
-                      onClick={() => { setSortBy(opt); setPage(1); }}
+                      onClick={() => { setSortBy(opt); setPage(1); syncURL({ sort: opt, page: '1' }); }}
                       style={{
                         padding: '5px 10px', fontSize: '12px', fontWeight: 600,
                         background: active ? '#1a1a1a' : '#fff',
@@ -859,7 +906,7 @@ export default function AdminDashboard() {
                   return (
                     <button
                       key={opt}
-                      onClick={() => { setFilterSold(opt); setPage(1); }}
+                      onClick={() => { setFilterSold(opt); setPage(1); syncURL({ sold: opt, page: '1' }); }}
                       style={{
                         padding: '5px 10px', fontSize: '12px', fontWeight: 600,
                         background: active ? activeColor : '#fff',
@@ -883,12 +930,12 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd', flex: 1, maxWidth: '500px' }}>
                 <input
                   value={search}
-                  onChange={e => { setSearch(e.target.value); resetPage(); }}
+                  onChange={e => { setSearch(e.target.value); setPage(1); syncURL({ q: e.target.value, page: '1' }); }}
                   placeholder="매물번호, 주소, 건물명 검색"
                   style={{ flex: 1, height: '36px', border: 'none', outline: 'none', fontSize: '13px', padding: '0 12px', background: '#fff' }}
                 />
                 {search && (
-                  <button onClick={() => { setSearch(''); resetPage(); }} style={{ padding: '0 10px', background: '#fff', border: 'none', color: '#999', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                  <button onClick={() => { setSearch(''); setPage(1); syncURL({ q: '', page: '1' }); }} style={{ padding: '0 10px', background: '#fff', border: 'none', color: '#999', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 )}
               </div>
               {hasActiveFilter && (
@@ -897,25 +944,25 @@ export default function AdminDashboard() {
             </div>
             {/* 드롭다운 필터 */}
             <div className="admin-filters" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-              <select value={filterType} onChange={e => { setFilterType(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); syncURL({ type: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {PROP_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '매물종류 전체' : t}</option>)}
               </select>
-              <select value={filterTx} onChange={e => { setFilterTx(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setPage(1); syncURL({ tx: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
               </select>
-              <select value={filterArea} onChange={e => { setFilterArea(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterArea} onChange={e => { setFilterArea(e.target.value); setPage(1); syncURL({ area: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {AREA_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '면적 전체' : t}</option>)}
               </select>
-              <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); setPage(1); syncURL({ deposit: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {DEPOSIT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '보증금 전체' : t}</option>)}
               </select>
-              <select value={filterRent} onChange={e => { setFilterRent(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setPage(1); syncURL({ rent: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
               </select>
-              <select value={filterPremium} onChange={e => { setFilterPremium(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterPremium} onChange={e => { setFilterPremium(e.target.value); setPage(1); syncURL({ premium: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {PREMIUM_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '권리금 전체' : t}</option>)}
               </select>
-              <select value={filterFloor} onChange={e => { setFilterFloor(e.target.value); resetPage(); }} style={selectFilterSt}>
+              <select value={filterFloor} onChange={e => { setFilterFloor(e.target.value); setPage(1); syncURL({ floor: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {FLOOR_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '층수 전체' : t}</option>)}
               </select>
             </div>
@@ -1040,6 +1087,7 @@ export default function AdminDashboard() {
 
             const goTo = (n: number) => {
               setPage(n);
+              syncURL({ page: String(n) });
               // 자동 스크롤 없음 — 사용자 위치 유지
             };
 

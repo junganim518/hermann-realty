@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { combineDateTime, isoToDateString, isoToTimeString } from '@/lib/parseTime';
 import CustomerConditionsForm from '@/components/CustomerConditionsForm';
@@ -84,7 +83,8 @@ export default function EditCustomerPage() {
     setSaving(false);
     if (error) { alert(`저장 실패: ${error.message}`); return; }
     alert('손님 정보가 수정되었습니다.');
-    router.push(`/admin/customers/${customerId}`);
+    if (window.history.length > 1) router.back();
+    else router.push(`/admin/customers/${customerId}`);
   };
 
   if (!authChecked || loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>;
@@ -99,7 +99,13 @@ export default function EditCustomerPage() {
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <div style={{ marginBottom: '12px' }}>
-          <Link href={`/admin/customers/${customerId}`} style={{ fontSize: '13px', color: '#888', textDecoration: 'none' }}>← 손님 정보로 돌아가기</Link>
+          <button
+            onClick={() => {
+              if (window.history.length > 1) router.back();
+              else router.push(`/admin/customers/${customerId}`);
+            }}
+            style={{ fontSize: '13px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >← 손님 정보로 돌아가기</button>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a1a' }}>손님 정보 수정</h1>
