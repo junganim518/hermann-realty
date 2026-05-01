@@ -530,14 +530,14 @@ export default function CustomerDetailPage() {
         return (
           <div
             onClick={() => setAddModalOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '16px' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '16px', overflow: 'auto' }}
           >
             <div
               onClick={e => e.stopPropagation()}
-              style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '760px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+              style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '760px', maxHeight: 'calc(100vh - 32px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 'auto' }}
             >
               {/* 헤더 */}
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                 <h3 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>
                   매물 추가 <span style={{ fontSize: '13px', fontWeight: 500, color: '#888' }}>({selectedIds.size}개 선택)</span>
                 </h3>
@@ -547,7 +547,7 @@ export default function CustomerDetailPage() {
               </div>
 
               {/* 검색/필터 */}
-              <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
                 <input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
@@ -572,7 +572,7 @@ export default function CustomerDetailPage() {
               </div>
 
               {/* 결과 */}
-              <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px' }}>
+              <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px', minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
                 {filteredResults.length === 0 ? (
                   <p style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: '13px' }}>일치하는 매물이 없습니다</p>
                 ) : (
@@ -642,7 +642,7 @@ export default function CustomerDetailPage() {
               </div>
 
               {/* 푸터 */}
-              <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexShrink: 0 }}>
                 <button
                   type="button"
                   onClick={() => { setAddModalOpen(false); setSelectedIds(new Set()); setAddMemos({}); }}
