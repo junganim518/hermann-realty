@@ -232,7 +232,7 @@ export default function Home() {
       <style dangerouslySetInnerHTML={{ __html: `
         /* ── 기본: 그리드 ── */
         .grid-type  { display: grid; grid-template-columns: repeat(6, 1fr); }
-        .grid-recent { display: grid; grid-template-columns: repeat(4, 1fr); }
+        .prop-grid { grid-template-columns: repeat(4, 1fr); }
 
         /* ── 테마: 모든 화면에서 가로 슬라이드 ── */
         .grid-theme {
@@ -303,7 +303,7 @@ export default function Home() {
             min-width: calc((100% - 24px) / 3) !important;
             height: 240px !important;
           }
-          .grid-recent { grid-template-columns: repeat(2, 1fr) !important; }
+          .prop-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .card-img { height: 200px !important; }
           .center-content { padding-bottom: 80px !important; }
           .sidebar-right {
@@ -371,7 +371,7 @@ export default function Home() {
           }
           .view-all-btn svg { width: 14px !important; height: 14px !important; }
 
-          .grid-recent { grid-template-columns: 1fr !important; gap: 8px !important; } /* /properties와 동일 */
+          .prop-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
           .price-nowrap { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
           .main-layout { width: 100% !important; margin: 0 !important; padding: 0 !important; }
           .center-content { padding-left: 0 !important; padding-right: 0 !important; }
@@ -748,7 +748,7 @@ export default function Home() {
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>최신매물</h2>
 
             {/* 매물 그리드 */}
-            <div className="grid-recent" style={{ gap: '16px' }}>
+            <div className="prop-grid" style={{ display: 'grid', gap: '16px' }}>
               {recentProperties.map((property) => (
                 <PropertyCard
                   key={property.property_number}
