@@ -836,8 +836,8 @@ export default function Home() {
                           {property.property_number ?? property.id}
                         </div>
                         {isNewProperty(property.created_at) && (
-                          <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '44px' : '80px', height: isMobile ? '44px' : '80px', overflow: 'hidden', pointerEvents: 'none', zIndex: 3 }}>
-                            <div style={{ position: 'absolute', top: isMobile ? '7px' : '14px', right: isMobile ? '-14px' : '-24px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '1px 0' : '3px 0', width: isMobile ? '54px' : '100px', fontSize: isMobile ? '7px' : '11px', fontWeight: 700, letterSpacing: isMobile ? '0.5px' : '1px', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}>
+                          <div style={{ position: 'absolute', top: 0, right: 0, width: isMobile ? '60px' : '120px', height: isMobile ? '60px' : '120px', overflow: 'hidden', pointerEvents: 'none', zIndex: 5 }}>
+                            <div style={{ position: 'absolute', top: isMobile ? '11px' : '22px', right: isMobile ? '-20px' : '-38px', transform: 'rotate(45deg)', background: '#e05050', color: '#fff', textAlign: 'center', padding: isMobile ? '2px 0' : '5px 0', width: isMobile ? '76px' : '160px', fontSize: isMobile ? '9px' : '14px', fontWeight: 800, letterSpacing: isMobile ? '0.8px' : '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
                               NEW
                             </div>
                           </div>
