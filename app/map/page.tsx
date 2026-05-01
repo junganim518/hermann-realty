@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { isNewProperty } from '@/lib/isNewProperty';
+import ThemeBadges from '@/components/ThemeBadges';
 
 declare global {
   interface Window { kakao: any; }
@@ -941,6 +942,7 @@ function MapPageInner() {
 
                       {/* 텍스트 */}
                       <div className="map-card-text" style={{ flex: 1, minWidth: 0 }}>
+                        <ThemeBadges themeType={p.theme_type} variant="card" />
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px', marginBottom: isMobile ? '2px' : '4px' }}>
                           <span className="map-card-pnum" style={{ fontSize: '11px', color: '#999' }}>{p.property_number}</span>
                           {p.transaction_type && (() => {
@@ -1094,6 +1096,7 @@ function MapPageInner() {
                       )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
+                      <ThemeBadges themeType={p.theme_type} variant="card" />
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px', marginBottom: '4px' }}>
                         <span style={{ fontSize: '11px', color: '#999' }}>{p.property_number}</span>
                         {p.transaction_type && (() => {

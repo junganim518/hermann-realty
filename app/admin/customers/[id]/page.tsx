@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Star, MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { findMatches, hasConditions, type DesiredConditions, type MatchedProperty } from '@/lib/matchProperties';
+import ThemeBadges from '@/components/ThemeBadges';
 
 const STATUS_COLORS: Record<string, string> = {
   '상담중': '#2196F3', '방문예정': '#e2a06e', '방문완료': '#4caf50',
@@ -263,6 +264,7 @@ export default function CustomerDetailPage() {
                         {p.property_type && <span style={{ fontSize: '10px', color: '#666', padding: '1px 6px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>}
                         {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
                       </div>
+                      <ThemeBadges themeType={(p as any).theme_type} variant="card" />
                       {p.title && <p style={{ fontSize: '12px', color: '#e2a06e', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.title}>{p.title}</p>}
                       <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.address ?? '-'}</p>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '11px', color: '#555' }}>

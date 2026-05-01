@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
+import ThemeBadges from '@/components/ThemeBadges';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -476,6 +477,7 @@ function PropertiesPageInner() {
                         </div>
                       </div>
                       <div className="prop-card-body p-3">
+                        <ThemeBadges themeType={p.theme_type} variant="card" />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                           {p.transaction_type && (() => {
                             const colors: Record<string, { bg: string; border: string; text: string }> = {

@@ -6,6 +6,7 @@ import { Link as LinkIcon, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
 import { addRecentlyViewed } from '@/lib/recentlyViewed';
+import ThemeBadges from '@/components/ThemeBadges';
 
 declare global {
   interface Window { kakao: any; }
@@ -1240,6 +1241,9 @@ export default function PropertyDetailPage() {
           {/* 🏠 매물 정보 */}
           <div id="section-info" className="detail-section" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '16px' }}>
             <SectionHeader icon="🏠" title="매물 정보" open={openInfo} onToggle={() => setOpenInfo(!openInfo)} />
+            {openInfo && (
+              <ThemeBadges themeType={property.theme_type ?? property.theme_types} variant="detail" />
+            )}
             {openInfo && property.title && (
               <p className="detail-info-title" style={{ color: '#e2a06e', fontSize: '15px', fontWeight: 700, margin: '4px 0 12px', lineHeight: 1.4 }}>
                 {property.title}
@@ -1535,6 +1539,7 @@ export default function PropertyDetailPage() {
                         )}
                       </div>
                       <div style={{ padding: '10px' }}>
+                        <ThemeBadges themeType={p.theme_type} variant="card" />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
                           {p.transaction_type && (() => {
                             const colors: Record<string, { bg: string; border: string; text: string }> = {

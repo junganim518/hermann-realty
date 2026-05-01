@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import ThemeBadges from '@/components/ThemeBadges';
 
 const formatAddress = (address: string) => {
   if (!address) return '';
@@ -176,6 +177,7 @@ export default function Home() {
               property_number: p.property_number ?? p.id,
               image: imgs?.[0]?.image_url ?? null,
               badges: p.badges ?? [],
+              theme_type: p.theme_type ?? '',
             };
           })
         );
@@ -854,6 +856,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="main-card-body p-3">
+                      <ThemeBadges themeType={property.theme_type} variant="card" />
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                         {property.transaction_type && (() => {
                           const colors: Record<string, { bg: string; border: string; text: string }> = {
