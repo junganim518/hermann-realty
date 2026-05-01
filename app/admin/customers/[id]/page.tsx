@@ -521,7 +521,7 @@ export default function CustomerDetailPage() {
           if (filterType !== '전체' && p.property_type !== filterType) return false;
           if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
           if (q) {
-            const hay = `${p.property_number ?? ''} ${p.address ?? ''} ${p.title ?? ''} ${p.theme_type ?? ''} ${p.building_name ?? ''}`.toLowerCase();
+            const hay = `${p.property_number ?? ''} ${p.address ?? ''} ${p.title ?? ''} ${p.theme_type ?? ''} ${p.building_name ?? ''} ${p.business_name ?? ''}`.toLowerCase();
             if (!hay.includes(q)) return false;
           }
           return true;

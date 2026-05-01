@@ -155,6 +155,20 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
         </div>
         <div className="prop-card-body p-3">
           <ThemeBadges themeType={p.theme_type} variant="card" />
+          {p.business_name && (p.business_name_public || isAdmin) && (
+            <div style={{ marginTop: '4px', marginBottom: '4px' }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '3px',
+                fontSize: '11px', fontWeight: 600,
+                padding: '2px 8px', borderRadius: '999px',
+                background: p.business_name_public ? '#f3f4f6' : '#fef3c7',
+                color: p.business_name_public ? '#374151' : '#92400e',
+              }}>
+                {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
+                {!p.business_name_public && isAdmin && <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 500 }}>비공개</span>}
+              </span>
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
             {p.transaction_type && (() => {
               const colors: Record<string, { bg: string; border: string; text: string }> = {

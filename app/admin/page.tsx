@@ -491,7 +491,7 @@ function AdminDashboardInner() {
     if (!matchPremium(p.premium, filterPremium)) return false;
     if (search) {
       const q = search.toLowerCase();
-      const target = [p.property_number, p.address, p.building_name, p.unit_number, p.admin_memo, p.land_number, p.title, p.description].filter(Boolean).join(' ').toLowerCase();
+      const target = [p.property_number, p.address, p.building_name, p.business_name, p.unit_number, p.admin_memo, p.land_number, p.title, p.description].filter(Boolean).join(' ').toLowerCase();
       if (!target.includes(q)) return false;
     }
     return true;
@@ -1018,6 +1018,21 @@ function AdminDashboardInner() {
                       </div>
                       {/* 2행: 주소 */}
                       <p style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4 }}>{formatAddr(p)}</p>
+                      {/* 상호명 (관리자는 공개 여부 무관 항상 표시) */}
+                      {p.business_name && (
+                        <p style={{ margin: '0 0 4px' }}>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '3px',
+                            fontSize: '11px', fontWeight: 600,
+                            padding: '2px 8px', borderRadius: '999px',
+                            background: p.business_name_public ? '#f3f4f6' : '#fef3c7',
+                            color: p.business_name_public ? '#374151' : '#92400e',
+                          }}>
+                            {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
+                            {!p.business_name_public && <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 500 }}>비공개</span>}
+                          </span>
+                        </p>
+                      )}
                       {/* 3행: 면적 + 금액 + 권리금 + 관리비 */}
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '13px', marginBottom: p.admin_memo ? '4px' : '0' }}>
                         {p.exclusive_area && <span style={{ color: '#555' }}>{p.exclusive_area}㎡ ({(parseFloat(p.exclusive_area) / 3.3058).toFixed(1)}평)</span>}

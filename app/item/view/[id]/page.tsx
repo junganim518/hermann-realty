@@ -143,6 +143,8 @@ interface Property {
   title?: string;
   address?: string;
   building_name?: string;
+  business_name?: string;
+  business_name_public?: boolean;
   unit_number?: string;
   transaction_type?: string;
   property_type?: string;
@@ -1299,6 +1301,12 @@ export default function PropertyDetailPage() {
                         <>
                           <tr style={rowSt}><td style={labelTd}>주소</td><td style={{ ...valTd, fontSize: '13px' }}>{addrCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>매물종류</td><td style={valTd}>{property.property_type ?? '-'}</td></tr>
+                          {property.business_name && (property.business_name_public || isAdmin) && (
+                            <tr style={rowSt}><td style={labelTd}>상호명</td><td style={valTd}>
+                              {property.business_name_public ? '🏪' : '🔒'} {property.business_name}
+                              {!property.business_name_public && isAdmin && <span style={{ fontSize: '11px', color: '#888', marginLeft: '6px', fontWeight: 500 }}>(비공개)</span>}
+                            </td></tr>
+                          )}
                           <tr style={rowSt}><td style={labelTd}>거래유형</td><td style={valTd}>{property.transaction_type ?? '-'}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>금액</td><td style={{ ...valTd, fontSize: '16px', color: '#e2a06e' }}>{priceCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>권리금</td><td style={{ ...valTd, fontSize: '16px', color: property.premium ? '#333' : '#E53935' }}>{premiumCell}</td></tr>
@@ -1375,6 +1383,16 @@ export default function PropertyDetailPage() {
                           <td style={labelTd}>사용승인일</td>
                           <td style={valTd}>{property.approval_date ?? '-'}</td>
                         </tr>
+                        {/* 상호명 (공개 OR 관리자) */}
+                        {property.business_name && (property.business_name_public || isAdmin) && (
+                          <tr style={rowSt}>
+                            <td style={labelTd}>상호명</td>
+                            <td colSpan={3} style={valTd}>
+                              {property.business_name_public ? '🏪' : '🔒'} {property.business_name}
+                              {!property.business_name_public && isAdmin && <span style={{ fontSize: '12px', color: '#888', marginLeft: '8px', fontWeight: 500 }}>(비공개 — 관리자만 표시)</span>}
+                            </td>
+                          </tr>
+                        )}
                         {/* 8행: 테마종류 */}
                         <tr>
                           <td style={labelTd}>테마종류</td>

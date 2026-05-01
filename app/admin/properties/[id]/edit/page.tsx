@@ -150,6 +150,8 @@ export default function EditPropertyPage() {
     current_floor: '',
     total_floor: '',
     building_name: '',
+    business_name: '',
+    business_name_public: false,
     unit_number: '',
     usage_type: '',
     direction: '',
@@ -236,6 +238,8 @@ export default function EditPropertyPage() {
         current_floor: data.current_floor ?? '',
         total_floor: data.total_floor ?? '',
         building_name: data.building_name ?? '',
+        business_name: data.business_name ?? '',
+        business_name_public: !!data.business_name_public,
         unit_number: data.unit_number ?? '',
         usage_type: data.usage_type ?? '',
         direction: data.direction ?? '',
@@ -617,6 +621,8 @@ export default function EditPropertyPage() {
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
         building_name: form.building_name || null,
+        business_name: form.business_name?.trim() || null,
+        business_name_public: !!form.business_name_public,
         unit_number: form.unit_number || null,
         direction: form.direction || null,
         parking: form.parking,
@@ -848,6 +854,27 @@ export default function EditPropertyPage() {
                   style={inputSt}
                 />
               </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ ...labelSt, fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <span>상호명 <span style={{ color: '#aaa', fontWeight: 400 }}>(선택)</span></span>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 500, color: '#555', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.business_name_public}
+                      onChange={e => set('business_name_public', e.target.checked)}
+                      style={{ width: '14px', height: '14px', accentColor: '#e2a06e', cursor: 'pointer' }}
+                    />
+                    손님에게 공개
+                  </label>
+                </label>
+                <input
+                  value={form.business_name}
+                  onChange={e => set('business_name', e.target.value)}
+                  placeholder="예: GS25, 스타벅스 부천중동점"
+                  style={inputSt}
+                />
+                <p style={{ fontSize: '11px', color: '#888', margin: '4px 0 0' }}>현재 운영 중인 상호명 (양도양수 매물 등에 활용). 비공개 시 관리자만 확인 가능.</p>
+              </div>
             </div>
 
             {buildingExposList.length > 0 && (() => {
@@ -1004,6 +1031,9 @@ export default function EditPropertyPage() {
         {/* ════════════ 관리자 메모 ════════════ */}
         <div className="admin-section" style={{ ...sectionSt, background: '#fffdf0', border: '1px solid #f0e6b8' }}>
           <h2 style={{ ...sectionTitle, borderBottom: '2px solid #d4a017' }}>🔒 관리자 메모</h2>
+          <p style={{ fontSize: '11px', color: '#9a7a17', margin: '0 0 8px', padding: '6px 10px', background: '#fff8d6', borderRadius: '4px', border: '1px solid #f0e6b8' }}>
+            💡 상호명은 위 <strong>기본 정보 → 상호명</strong> 칸을 사용해주세요. 메모는 영업 정보용입니다.
+          </p>
           <textarea value={form.admin_memo} onChange={e => set('admin_memo', e.target.value)} placeholder="관리자 전용 메모" style={{ width: '100%', minHeight: '120px', border: '1px solid #e0d8a8', borderRadius: '6px', padding: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', lineHeight: '1.8', fontFamily: 'inherit', background: '#fffef8' }} />
         </div>
 
