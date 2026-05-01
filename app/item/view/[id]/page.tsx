@@ -1301,8 +1301,11 @@ export default function PropertyDetailPage() {
                         <>
                           <tr style={rowSt}><td style={labelTd}>주소</td><td style={{ ...valTd, fontSize: '13px' }}>{addrCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>매물종류</td><td style={valTd}>{property.property_type ?? '-'}</td></tr>
-                          {property.business_name && property.business_name_public && (
-                            <tr style={rowSt}><td style={labelTd}>상호명</td><td style={valTd}>🏪 {property.business_name}</td></tr>
+                          {property.business_name && (property.business_name_public || isAdmin) && (
+                            <tr style={rowSt}><td style={labelTd}>상호명</td><td style={valTd}>
+                              {property.business_name_public ? '🏪' : '🔒'} {property.business_name}
+                              {!property.business_name_public && isAdmin && <span style={{ fontSize: '11px', color: '#888', marginLeft: '6px', fontWeight: 500 }}>(비공개)</span>}
+                            </td></tr>
                           )}
                           <tr style={rowSt}><td style={labelTd}>거래유형</td><td style={valTd}>{property.transaction_type ?? '-'}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>금액</td><td style={{ ...valTd, fontSize: '16px', color: '#e2a06e' }}>{priceCell}</td></tr>
@@ -1380,11 +1383,14 @@ export default function PropertyDetailPage() {
                           <td style={labelTd}>사용승인일</td>
                           <td style={valTd}>{property.approval_date ?? '-'}</td>
                         </tr>
-                        {/* 상호명 (공개일 때만) */}
-                        {property.business_name && property.business_name_public && (
+                        {/* 상호명 — 공개는 모두에게, 비공개는 관리자에게만 */}
+                        {property.business_name && (property.business_name_public || isAdmin) && (
                           <tr style={rowSt}>
                             <td style={labelTd}>상호명</td>
-                            <td colSpan={3} style={valTd}>🏪 {property.business_name}</td>
+                            <td colSpan={3} style={valTd}>
+                              {property.business_name_public ? '🏪' : '🔒'} {property.business_name}
+                              {!property.business_name_public && isAdmin && <span style={{ fontSize: '12px', color: '#888', marginLeft: '8px', fontWeight: 500 }}>(비공개 — 관리자만 표시)</span>}
+                            </td>
                           </tr>
                         )}
                         {/* 8행: 테마종류 */}
