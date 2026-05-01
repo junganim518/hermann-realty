@@ -68,6 +68,15 @@ export default function CustomerDetailPage() {
     });
   }, []);
 
+  // 모달 열릴 때 body 스크롤 잠금 (배경 페이지가 스크롤되지 않게)
+  useEffect(() => {
+    if (addModalOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [addModalOpen]);
+
   const fetchAll = async () => {
     setLoading(true);
     const { data } = await supabase.from('customers').select('*').eq('id', customerId).single();
@@ -530,11 +539,11 @@ export default function CustomerDetailPage() {
         return (
           <div
             onClick={() => setAddModalOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '16px', overflow: 'auto' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflow: 'auto' }}
           >
             <div
               onClick={e => e.stopPropagation()}
-              style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '760px', maxHeight: 'calc(100vh - 32px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 'auto' }}
+              style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '760px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 'auto' }}
             >
               {/* 헤더 */}
               <div style={{ padding: '14px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
