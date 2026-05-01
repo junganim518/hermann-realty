@@ -14,6 +14,7 @@ export type DesiredConditions = {
   floor_min?: number | null;
   floor_max?: number | null;
   region?: string;
+  /** @deprecated "무권리상가" 테마로 통합됨 — 기존 데이터 호환용으로만 유지 */
   no_premium?: boolean;
   desired_themes?: string[];      // 원하는 테마 (1개라도 일치하면 점수 가산)
   additional_memo?: string;
@@ -98,13 +99,8 @@ export function matchProperty(p: any, c: DesiredConditions): number {
     total++;
     if (typeof p.address === 'string' && p.address.includes(c.region.trim())) scored += 1;
   }
-  // 무권리
-  if (c.no_premium) {
-    total++;
-    const prem = Number(p.premium) || 0;
-    if (prem === 0) scored += 1;
-  }
   // 원하는 테마 (1개라도 일치하면 1점, 부분 일치는 0.5점) — 손님이 1개 이상 선택한 경우만 평가
+  // 참고: 과거 별도 항목이던 no_premium 은 이제 desired_themes 의 "무권리상가" 테마로 통합됨
   if (c.desired_themes && c.desired_themes.length > 0) {
     total++;
     const propThemes = String(p.theme_type ?? '').split(',').map(s => s.trim()).filter(Boolean);
@@ -145,7 +141,6 @@ export function hasConditions(c: DesiredConditions | null | undefined): boolean 
     c.area_min != null || c.area_max != null ||
     c.floor_min != null || c.floor_max != null ||
     (c.region && c.region.trim()) ||
-    c.no_premium ||
     (c.desired_themes?.length ?? 0) > 0 ||
     (c.additional_memo && c.additional_memo.trim())
   );

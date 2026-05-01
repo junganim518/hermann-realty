@@ -401,7 +401,6 @@ export default function CustomerDetailPage() {
               {(dc.area_min != null || dc.area_max != null) && (<div><div style={labelTextSt}>면적 (평)</div><div style={valueTextSt}>{dc.area_min ?? '∞'} ~ {dc.area_max ?? '∞'}</div></div>)}
               {(dc.floor_min != null || dc.floor_max != null) && (<div><div style={labelTextSt}>층수</div><div style={valueTextSt}>{dc.floor_min ?? '∞'} ~ {dc.floor_max ?? '∞'}</div></div>)}
               {dc.region && dc.region.trim() && (<div><div style={labelTextSt}>지역</div><div style={valueTextSt}>{dc.region}</div></div>)}
-              {dc.no_premium && (<div><div style={labelTextSt}>특이사항</div><div style={valueTextSt}>무권리 원함</div></div>)}
               {(dc.desired_themes?.length ?? 0) > 0 && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <div style={labelTextSt}>원하는 테마</div>

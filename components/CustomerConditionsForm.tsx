@@ -142,20 +142,7 @@ export default function CustomerConditionsForm({ value, onChange, defaultOpen = 
             />
           </div>
 
-          {/* 무권리 */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', fontSize: '13px', color: '#333', fontWeight: 600 }}>
-              <input
-                type="checkbox"
-                checked={!!value.no_premium}
-                onChange={e => set('no_premium', e.target.checked)}
-                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-              />
-              무권리 매물 원함
-            </label>
-          </div>
-
-          {/* 원하는 테마 */}
+          {/* 원하는 테마 (무권리는 "무권리상가" 테마로 통합됨) */}
           <div style={{ marginBottom: '16px' }}>
             <label style={labelSt}>
               원하는 테마 <span style={{ color: '#aaa', fontWeight: 400 }}>(다중 선택 — 1개라도 일치하면 매칭 점수 가산)</span>
