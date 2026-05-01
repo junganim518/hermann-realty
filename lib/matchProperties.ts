@@ -15,6 +15,7 @@ export type DesiredConditions = {
   floor_max?: number | null;
   region?: string;
   no_premium?: boolean;
+  desired_themes?: string[];      // 원하는 테마 (1개라도 일치하면 점수 가산)
   additional_memo?: string;
 };
 
@@ -103,6 +104,16 @@ export function matchProperty(p: any, c: DesiredConditions): number {
     const prem = Number(p.premium) || 0;
     if (prem === 0) scored += 1;
   }
+  // 원하는 테마 (1개라도 일치하면 1점, 부분 일치는 0.5점) — 손님이 1개 이상 선택한 경우만 평가
+  if (c.desired_themes && c.desired_themes.length > 0) {
+    total++;
+    const propThemes = String(p.theme_type ?? '').split(',').map(s => s.trim()).filter(Boolean);
+    if (propThemes.length > 0) {
+      const matchCount = c.desired_themes.filter(t => propThemes.includes(t)).length;
+      if (matchCount === c.desired_themes.length) scored += 1;          // 모두 일치
+      else if (matchCount > 0) scored += 0.5;                            // 일부 일치
+    }
+  }
 
   if (total === 0) return 0;
   return Math.round((scored / total) * 100);
@@ -135,6 +146,7 @@ export function hasConditions(c: DesiredConditions | null | undefined): boolean 
     c.floor_min != null || c.floor_max != null ||
     (c.region && c.region.trim()) ||
     c.no_premium ||
+    (c.desired_themes?.length ?? 0) > 0 ||
     (c.additional_memo && c.additional_memo.trim())
   );
 }

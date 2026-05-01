@@ -402,6 +402,12 @@ export default function CustomerDetailPage() {
               {(dc.floor_min != null || dc.floor_max != null) && (<div><div style={labelTextSt}>층수</div><div style={valueTextSt}>{dc.floor_min ?? '∞'} ~ {dc.floor_max ?? '∞'}</div></div>)}
               {dc.region && dc.region.trim() && (<div><div style={labelTextSt}>지역</div><div style={valueTextSt}>{dc.region}</div></div>)}
               {dc.no_premium && (<div><div style={labelTextSt}>특이사항</div><div style={valueTextSt}>무권리 원함</div></div>)}
+              {(dc.desired_themes?.length ?? 0) > 0 && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={labelTextSt}>원하는 테마</div>
+                  <ThemeBadges themeType={dc.desired_themes!} variant="detail" />
+                </div>
+              )}
               {dc.additional_memo && dc.additional_memo.trim() && (<div style={{ gridColumn: '1 / -1' }}><div style={labelTextSt}>추가 메모</div><div style={valueTextSt}>{dc.additional_memo}</div></div>)}
             </div>
           )}

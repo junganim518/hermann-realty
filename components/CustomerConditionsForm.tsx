@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { DesiredConditions } from '@/lib/matchProperties';
+import { ALL_THEMES, getThemeIcon } from '@/lib/themeUtils';
 
 const PROPERTY_TYPES = ['상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const TX_TYPES = ['월세', '전세', '매매'];
@@ -20,8 +21,8 @@ export default function CustomerConditionsForm({ value, onChange, defaultOpen = 
     onChange({ ...value, [key]: v });
   };
 
-  const toggleArrayValue = (key: 'property_types' | 'transaction_types', item: string) => {
-    const list = value[key] ?? [];
+  const toggleArrayValue = (key: 'property_types' | 'transaction_types' | 'desired_themes', item: string) => {
+    const list = (value[key] ?? []) as string[];
     const next = list.includes(item) ? list.filter(x => x !== item) : [...list, item];
     set(key, next as any);
   };
@@ -152,6 +153,29 @@ export default function CustomerConditionsForm({ value, onChange, defaultOpen = 
               />
               무권리 매물 원함
             </label>
+          </div>
+
+          {/* 원하는 테마 */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelSt}>
+              원하는 테마 <span style={{ color: '#aaa', fontWeight: 400 }}>(다중 선택 — 1개라도 일치하면 매칭 점수 가산)</span>
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {ALL_THEMES.map(t => {
+                const active = (value.desired_themes ?? []).includes(t);
+                const icon = getThemeIcon(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => toggleArrayValue('desired_themes', t)}
+                    style={chipBtn(active)}
+                  >
+                    {icon ? `${icon} ${t}` : t}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* 추가 메모 */}
