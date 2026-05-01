@@ -754,6 +754,7 @@ export default function Home() {
                   key={property.property_number}
                   property={property}
                   isAdmin={isAdmin}
+                  showNewBadge={false}
                 />
               ))}
             </div>
