@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { formatMaintenance } from '@/lib/formatProperty';
 
 const STATUS_COLORS: Record<string, string> = {
   '상담중': '#2196F3', '방문예정': '#e2a06e', '방문완료': '#4caf50',
@@ -1037,7 +1038,7 @@ function AdminDashboardInner() {
                         {p.current_floor && <span style={{ color: '#555' }}>{String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`}</span>}
                         <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                         <span style={{ color: '#e05050' }}>{p.premium ? `권리금 ${formatPrice(p.premium)}` : '무권리'}</span>
-                        <span style={{ color: '#888' }}>{p.maintenance_fee ? `관리비 ${formatPrice(p.maintenance_fee)}` : '관리비 없음'}</span>
+                        <span style={{ color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
                       </div>
                       {/* 4행: 메모 */}
                       {p.admin_memo && (

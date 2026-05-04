@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
 import { addRecentlyViewed } from '@/lib/recentlyViewed';
 import ThemeBadges from '@/components/ThemeBadges';
+import { formatMaintenance } from '@/lib/formatProperty';
 
 declare global {
   interface Window { kakao: any; }
@@ -647,7 +648,7 @@ export default function PropertyDetailPage() {
                 <th>권리금</th>
                 <td>{property.premium ? formatPrice(property.premium) : '무권리'}</td>
                 <th>관리비</th>
-                <td>{property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음'}</td>
+                <td>{formatMaintenance(property.maintenance_fee)}</td>
               </tr>
               <tr>
                 <th>면적</th>
@@ -1272,7 +1273,7 @@ export default function PropertyDetailPage() {
                     );
                     const priceCell = buildPriceStr(property);
                     const premiumCell = property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리';
-                    const maintCell = property.maintenance_fee ? formatPrice(property.maintenance_fee) : '없음';
+                    const maintCell = formatMaintenance(property.maintenance_fee);
                     const areaCell = (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {property.supply_area && (
@@ -1574,11 +1575,7 @@ export default function PropertyDetailPage() {
                           ) : (
                             <span style={{ fontSize: '12px', color: '#e05050', fontWeight: 600 }}>무권리</span>
                           )}
-                          {p.maintenance_fee && p.maintenance_fee !== 0 ? (
-                            <span style={{ fontSize: '12px', color: '#888' }}>관리비 {formatPrice(p.maintenance_fee)}</span>
-                          ) : (
-                            <span style={{ fontSize: '12px', color: '#888' }}>관리비 -</span>
-                          )}
+                          <span style={{ fontSize: '12px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
                         </div>
                         <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {isAdmin ? normalizeAddr(p.address ?? '') : formatAddressLong(p.address ?? '')}
@@ -1615,12 +1612,8 @@ export default function PropertyDetailPage() {
                   <span className="aside-sub-premium" style={{ fontSize: '13px', fontWeight: 700, color: '#e05050' }}>
                     {property.premium ? (isAdmin ? `권리금 ${formatPrice(property.premium)}` : '권리금 협의') : '무권리'}
                   </span>
-                  {property.maintenance_fee && (
-                    <>
-                      <span className="aside-sub-divider" style={{ color: '#ddd', fontSize: '13px' }}>|</span>
-                      <span className="aside-sub-maintenance" style={{ fontSize: '13px', color: '#999' }}>관리비 {formatPrice(property.maintenance_fee)}</span>
-                    </>
-                  )}
+                  <span className="aside-sub-divider" style={{ color: '#ddd', fontSize: '13px' }}>|</span>
+                  <span className="aside-sub-maintenance" style={{ fontSize: '13px', color: '#999' }}>관리비 {formatMaintenance(property.maintenance_fee)}</span>
                 </div>
               </div>
               <div className="aside-addr-row" style={{ marginBottom: 0, paddingBottom: 0 }}>

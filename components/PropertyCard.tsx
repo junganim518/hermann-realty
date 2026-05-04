@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
+import { formatMaintenance } from '@/lib/formatProperty';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -182,11 +183,7 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
             ) : (
               <span style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>무권리</span>
             )}
-            {p.maintenance_fee && p.maintenance_fee !== 0 ? (
-              <span style={{ fontSize: '13px', color: '#888' }}>관리비 {formatPrice(p.maintenance_fee)}</span>
-            ) : (
-              <span style={{ fontSize: '13px', color: '#888' }}>관리비 -</span>
-            )}
+            <span style={{ fontSize: '13px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
           </div>
           <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', whiteSpace: 'normal' }}>
             {isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '')}

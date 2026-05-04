@@ -151,7 +151,9 @@ export function generateTitle(form: TitleForm): string {
   const benefit = dealBenefit(form);
   const sizeDesc = sizeDescription(pyeongNum);
   const propType = (form.property_type ?? '').trim();
-  const txType = (form.transaction_type ?? '').trim();
+  // 거래유형: 월세/전세 → "임대" 통합, 매매는 그대로
+  const rawTx = (form.transaction_type ?? '').trim();
+  const txType = (rawTx === '월세' || rawTx === '전세') ? '임대' : rawTx;
 
   const idx = pickTemplateIndex(form.property_number ?? '');
   const template = TEMPLATES[idx];
