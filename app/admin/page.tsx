@@ -380,14 +380,15 @@ function AdminDashboardInner() {
       });
       const nextNumber = String(maxNum + 1);
 
-      // 제외 필드 제거
-      const { id: _id, property_number: _pn, created_at: _ca, updated_at: _ua, ...rest } = p;
+      // 제외 필드 제거 (id/매물번호/타임스탬프는 새로 생성, view_count는 0부터 시작)
+      const { id: _id, property_number: _pn, created_at: _ca, updated_at: _ua, view_count: _vc, ...rest } = p;
 
       const payload = {
         ...rest,
         property_number: nextNumber,
         title: p.title ? `(복사) ${p.title}` : '(복사)',
         is_sold: false,
+        view_count: 0,  // 신규 매물처럼 시작 (인기 TOP10 등에 부적절히 노출되는 문제 방지)
       };
 
       const { data: inserted, error } = await supabase
