@@ -37,27 +37,51 @@ export default function LandlordDetailPage() {
   useEffect(() => {
     if (!authChecked) return;
     (async () => {
-      const propertyCols = 'id, property_number, address, building_name, property_type, transaction_type, deposit, monthly_rent, sale_price, premium, is_sold';
-      const [{ data: l }, { data: cs }, { data: directProps }] = await Promise.all([
+      console.log('[임대인상세] 시작 — landlordId:', landlordId);
+      const propertyCols = 'id, property_number, address, building_name, property_type, transaction_type, deposit, monthly_rent, sale_price, premium, is_sold, landlord_id';
+
+      // 1) 임대인 + 계약 조회
+      const [landlordResp, contractsResp] = await Promise.all([
         supabase.from('landlords').select('*').eq('id', landlordId).single(),
         supabase.from('contracts').select('*').eq('landlord_id', landlordId).order('created_at', { ascending: false }),
-        // properties.landlord_id로도 직접 연결된 매물 조회 (계약 없이도 등록된 매물)
-        supabase.from('properties').select(propertyCols).eq('landlord_id', landlordId).order('property_number', { ascending: false }),
       ]);
+      const { data: l } = landlordResp;
+      const { data: cs, error: contractsErr } = contractsResp;
+      if (contractsErr) console.error('[임대인상세] contracts 조회 에러:', contractsErr);
       if (!l) { alert('임대인을 찾을 수 없습니다.'); router.push('/admin/landlords'); return; }
       setLandlord(l);
       setContracts(cs ?? []);
 
-      // 계약에서 참조된 매물 + 직접 연결된 매물 합치기 (중복 제거)
+      // 2) properties.landlord_id로 직접 연결된 매물
+      const { data: directProps, error: directErr } = await supabase
+        .from('properties')
+        .select(propertyCols)
+        .eq('landlord_id', landlordId);
+      if (directErr) console.error('[임대인상세] direct properties 조회 에러:', directErr);
+      console.log('[임대인상세] direct properties:', directProps);
+
+      // 3) 계약에서 참조된 매물
       const map: Record<string, any> = {};
       const contractPropIds = Array.from(new Set((cs ?? []).map(c => c.property_id).filter(Boolean)));
       if (contractPropIds.length > 0) {
-        const { data: contractProps } = await supabase.from('properties').select(propertyCols).in('id', contractPropIds);
+        const { data: contractProps, error: contractPropsErr } = await supabase
+          .from('properties')
+          .select(propertyCols)
+          .in('id', contractPropIds);
+        if (contractPropsErr) console.error('[임대인상세] contract properties 조회 에러:', contractPropsErr);
+        console.log('[임대인상세] contract properties:', contractProps);
         (contractProps ?? []).forEach(p => { map[p.id] = p; });
       }
+
+      // 4) 직접 연결 매물 합치기 (중복 제거)
       (directProps ?? []).forEach(p => { if (!map[p.id]) map[p.id] = p; });
+
+      const directIds = new Set((directProps ?? []).map(p => p.id));
+      console.log('[임대인상세] propertyMap:', map);
+      console.log('[임대인상세] directPropIds:', Array.from(directIds));
+
       setPropertyMap(map);
-      setDirectPropIds(new Set((directProps ?? []).map(p => p.id)));
+      setDirectPropIds(directIds);
       setLoading(false);
     })();
   }, [authChecked]);
