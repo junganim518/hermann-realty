@@ -762,6 +762,12 @@ function AdminDashboardInner() {
           >
             📊 유입 경로 보기
           </button>
+          <button
+            onClick={() => router.push('/admin/analytics')}
+            style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', background: '#fff', color: '#e2a06e', cursor: 'pointer' }}
+          >
+            📊 통계 보기
+          </button>
         </h1>
 
         {/* 통계 카드 */}
