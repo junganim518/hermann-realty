@@ -37,11 +37,12 @@ export default function LandlordDetailPage() {
   useEffect(() => {
     if (!authChecked) return;
     (async () => {
+      const propertyCols = 'id, property_number, address, building_name, property_type, transaction_type, deposit, monthly_rent, sale_price, premium, is_sold';
       const [{ data: l }, { data: cs }, { data: directProps }] = await Promise.all([
         supabase.from('landlords').select('*').eq('id', landlordId).single(),
         supabase.from('contracts').select('*').eq('landlord_id', landlordId).order('created_at', { ascending: false }),
         // properties.landlord_id로도 직접 연결된 매물 조회 (계약 없이도 등록된 매물)
-        supabase.from('properties').select('id, property_number, address, building_name').eq('landlord_id', landlordId).order('property_number', { ascending: false }),
+        supabase.from('properties').select(propertyCols).eq('landlord_id', landlordId).order('property_number', { ascending: false }),
       ]);
       if (!l) { alert('임대인을 찾을 수 없습니다.'); router.push('/admin/landlords'); return; }
       setLandlord(l);
@@ -51,7 +52,7 @@ export default function LandlordDetailPage() {
       const map: Record<string, any> = {};
       const contractPropIds = Array.from(new Set((cs ?? []).map(c => c.property_id).filter(Boolean)));
       if (contractPropIds.length > 0) {
-        const { data: contractProps } = await supabase.from('properties').select('id, property_number, address, building_name').in('id', contractPropIds);
+        const { data: contractProps } = await supabase.from('properties').select(propertyCols).in('id', contractPropIds);
         (contractProps ?? []).forEach(p => { map[p.id] = p; });
       }
       (directProps ?? []).forEach(p => { if (!map[p.id]) map[p.id] = p; });
@@ -130,21 +131,61 @@ export default function LandlordDetailPage() {
         <div style={sectionSt}>
           <h2 style={sectionTitleSt}>
             <span>🏢 보유 매물 ({propertiesHeld.length})</span>
-            <span style={{ fontSize: '12px', color: '#888', fontWeight: 500 }}>진행중 계약 기준</span>
+            <span style={{ fontSize: '12px', color: '#888', fontWeight: 500 }}>매물 직접 연결 + 진행중 계약</span>
           </h2>
           {propertiesHeld.length === 0 ? (
-            <p style={{ color: '#888', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>진행중인 계약 매물이 없습니다.</p>
+            <p style={{ color: '#888', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>보유 매물이 없습니다.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {propertiesHeld.map(p => (
-                <a key={p.id} href={`/item/view/${p.property_number}`} target="_blank" rel="noreferrer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f9f9f9', borderRadius: '6px', textDecoration: 'none', color: '#1a1a1a' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700 }}>{p.property_number}</span>
-                  <span style={{ fontSize: '12px', color: '#666', flex: 1, marginLeft: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.address}{p.building_name ? ` · ${p.building_name}` : ''}
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#e2a06e', fontWeight: 600 }}>매물 보기 →</span>
-                </a>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {propertiesHeld.map(p => {
+                // 가격 표시
+                const priceStr = (() => {
+                  if (p.transaction_type === '매매') {
+                    const v = p.sale_price || p.deposit;
+                    return v ? `매매 ${v.toLocaleString()}만` : '-';
+                  }
+                  if (p.transaction_type === '전세') {
+                    return p.deposit ? `전세 ${p.deposit.toLocaleString()}만` : '-';
+                  }
+                  const parts: string[] = [];
+                  if (p.deposit) parts.push(`보 ${p.deposit.toLocaleString()}`);
+                  if (p.monthly_rent) parts.push(`월 ${p.monthly_rent.toLocaleString()}`);
+                  return parts.length > 0 ? parts.join(' / ') : '-';
+                })();
+                const txColors: Record<string, { bg: string; color: string }> = {
+                  '월세': { bg: '#fff8f2', color: '#e2a06e' },
+                  '전세': { bg: '#eef4ff', color: '#4a80e8' },
+                  '매매': { bg: '#fff0f0', color: '#e05050' },
+                };
+                const tx = p.transaction_type ? (txColors[p.transaction_type] ?? { bg: '#f5f5f5', color: '#999' }) : null;
+                return (
+                  <a
+                    key={p.id}
+                    href={`/item/view/${p.property_number}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: 'block', padding: '12px 14px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '6px', textDecoration: 'none', color: '#1a1a1a', opacity: p.is_sold ? 0.65 : 1 }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{p.property_number ?? '-'}</span>
+                      {p.property_type && (
+                        <span style={{ fontSize: '10px', color: '#666', padding: '1px 6px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>
+                      )}
+                      {tx && p.transaction_type && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: tx.bg, color: tx.color }}>{p.transaction_type}</span>
+                      )}
+                      {p.is_sold && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: '#fef0ee', color: '#e04a4a', border: '1px solid #f5c2bd' }}>거래완료</span>
+                      )}
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#e2a06e', fontWeight: 600 }}>매물 보기 →</span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.address ?? '-'}{p.building_name ? ` · ${p.building_name}` : ''}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#1a1a1a', fontWeight: 700, margin: 0 }}>{priceStr}</p>
+                  </a>
+                );
+              })}
             </div>
           )}
         </div>
