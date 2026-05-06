@@ -38,7 +38,8 @@ export default function LandlordDetailPage() {
     if (!authChecked) return;
     (async () => {
       console.log('[임대인상세] 시작 — landlordId:', landlordId);
-      const propertyCols = 'id, property_number, address, building_name, property_type, transaction_type, deposit, monthly_rent, sale_price, premium, is_sold, landlord_id';
+      // properties 테이블 실제 컬럼만: deposit/monthly_rent/premium (sale_price 컬럼 없음 — 매매가는 deposit에 저장)
+      const propertyCols = 'id, property_number, address, building_name, property_type, transaction_type, deposit, monthly_rent, premium, is_sold, landlord_id';
 
       // 1) 임대인 + 계약 조회
       const [landlordResp, contractsResp] = await Promise.all([
@@ -164,9 +165,9 @@ export default function LandlordDetailPage() {
               {propertiesHeld.map(p => {
                 // 가격 표시
                 const priceStr = (() => {
+                  // properties 테이블엔 sale_price 컬럼 없음 — 매매가는 deposit에 저장됨
                   if (p.transaction_type === '매매') {
-                    const v = p.sale_price || p.deposit;
-                    return v ? `매매 ${v.toLocaleString()}만` : '-';
+                    return p.deposit ? `매매 ${p.deposit.toLocaleString()}만` : '-';
                   }
                   if (p.transaction_type === '전세') {
                     return p.deposit ? `전세 ${p.deposit.toLocaleString()}만` : '-';
