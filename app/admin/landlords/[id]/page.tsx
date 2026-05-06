@@ -25,6 +25,7 @@ export default function LandlordDetailPage() {
   const [landlord, setLandlord] = useState<any>(null);
   const [contracts, setContracts] = useState<any[]>([]);
   const [propertyMap, setPropertyMap] = useState<Record<string, any>>({});
+  const [directPropIds, setDirectPropIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -36,21 +37,26 @@ export default function LandlordDetailPage() {
   useEffect(() => {
     if (!authChecked) return;
     (async () => {
-      const [{ data: l }, { data: cs }] = await Promise.all([
+      const [{ data: l }, { data: cs }, { data: directProps }] = await Promise.all([
         supabase.from('landlords').select('*').eq('id', landlordId).single(),
         supabase.from('contracts').select('*').eq('landlord_id', landlordId).order('created_at', { ascending: false }),
+        // properties.landlord_id로도 직접 연결된 매물 조회 (계약 없이도 등록된 매물)
+        supabase.from('properties').select('id, property_number, address, building_name').eq('landlord_id', landlordId).order('property_number', { ascending: false }),
       ]);
       if (!l) { alert('임대인을 찾을 수 없습니다.'); router.push('/admin/landlords'); return; }
       setLandlord(l);
       setContracts(cs ?? []);
 
-      const propIds = Array.from(new Set((cs ?? []).map(c => c.property_id).filter(Boolean)));
-      if (propIds.length > 0) {
-        const { data: props } = await supabase.from('properties').select('id, property_number, address, building_name').in('id', propIds);
-        const map: Record<string, any> = {};
-        (props ?? []).forEach(p => { map[p.id] = p; });
-        setPropertyMap(map);
+      // 계약에서 참조된 매물 + 직접 연결된 매물 합치기 (중복 제거)
+      const map: Record<string, any> = {};
+      const contractPropIds = Array.from(new Set((cs ?? []).map(c => c.property_id).filter(Boolean)));
+      if (contractPropIds.length > 0) {
+        const { data: contractProps } = await supabase.from('properties').select('id, property_number, address, building_name').in('id', contractPropIds);
+        (contractProps ?? []).forEach(p => { map[p.id] = p; });
       }
+      (directProps ?? []).forEach(p => { if (!map[p.id]) map[p.id] = p; });
+      setPropertyMap(map);
+      setDirectPropIds(new Set((directProps ?? []).map(p => p.id)));
       setLoading(false);
     })();
   }, [authChecked]);
@@ -71,12 +77,16 @@ export default function LandlordDetailPage() {
   const sectionSt: React.CSSProperties = { background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', marginBottom: '16px' };
   const sectionTitleSt: React.CSSProperties = { fontSize: '17px', fontWeight: 700, color: '#1a1a1a', marginBottom: '14px', paddingBottom: '8px', borderBottom: '2px solid #e2a06e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 
-  // 진행중 계약의 매물(중복 제거)
-  const propertiesHeld = Array.from(new Set(
-    contracts
-      .filter(c => c.property_id && c.status !== '종료' && c.status !== '재계약')
-      .map(c => c.property_id)
-  )).map(pid => propertyMap[pid]).filter(Boolean);
+  // 보유 매물:
+  // 1) 진행중 계약(종료/재계약 제외)에 연결된 매물
+  // 2) properties.landlord_id로 직접 연결된 매물
+  // 두 경로를 합쳐 중복 제거 — 종료된 계약의 매물은 제외
+  const heldIds = new Set<string>();
+  contracts
+    .filter(c => c.property_id && c.status !== '종료' && c.status !== '재계약')
+    .forEach(c => heldIds.add(c.property_id));
+  directPropIds.forEach(id => heldIds.add(id));
+  const propertiesHeld = Array.from(heldIds).map(id => propertyMap[id]).filter(Boolean);
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px 16px 60px' }}>

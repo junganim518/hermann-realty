@@ -189,6 +189,7 @@ export default function PropertyDetailPage() {
   const id = params?.id as string;
 
   const [property, setProperty] = useState<Property | null>(null);
+  const [linkedLandlord, setLinkedLandlord] = useState<{ id: string; name: string; phone: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [similarProperties, setSimilarProperties] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -342,6 +343,16 @@ export default function PropertyDetailPage() {
 
       setProperty(data);
       setLoading(false);
+
+      // 임대인 연결 정보 (있을 때만)
+      if ((data as any)?.landlord_id) {
+        const { data: landlordData } = await supabase
+          .from('landlords')
+          .select('id, name, phone')
+          .eq('id', (data as any).landlord_id)
+          .single();
+        if (landlordData) setLinkedLandlord(landlordData);
+      }
 
       if (data?.property_type) {
         // 1차: 같은 property_type + transaction_type + 면적 ±50%
@@ -1427,17 +1438,30 @@ export default function PropertyDetailPage() {
           )}
 
           {/* 🔒 연락처 (관리자 전용) */}
-          {isAdmin && (property?.landlord_name || property?.landlord_phone || property?.tenant_name || property?.tenant_phone || (property?.extra_contacts && property.extra_contacts.length > 0)) && (
+          {isAdmin && (linkedLandlord || property?.landlord_name || property?.landlord_phone || property?.tenant_name || property?.tenant_phone || (property?.extra_contacts && property.extra_contacts.length > 0)) && (
             <div className="print-hide" style={{ background: '#f0f6ff', border: '1px solid #c6dcf3', padding: '16px', borderRadius: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                 <span style={{ fontSize: '16px' }}>🔒</span>
                 <span style={{ fontSize: '16px', fontWeight: 700, color: '#2c4f8c' }}>연락처</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {(property.landlord_name || property.landlord_phone) && (
+                {/* 임대인: landlord_id 연결 우선, 없으면 텍스트 fallback */}
+                {linkedLandlord ? (
+                  <a href={`/admin/landlords/${linkedLandlord.id}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', borderRadius: '4px', border: '1px solid #dce7f5', textDecoration: 'none', color: 'inherit' }}>
+                    <span style={{ fontSize: '12px', color: '#fff', background: '#4a7cdc', padding: '3px 10px', borderRadius: '3px', fontWeight: 700, flexShrink: 0 }}>임대인</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a' }}>{linkedLandlord.name}</span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '999px', background: '#dcfce7', color: '#166534' }}>연결됨</span>
+                    {linkedLandlord.phone && (
+                      <span onClick={e => { e.stopPropagation(); window.location.href = `tel:${linkedLandlord.phone}`; }} style={{ marginLeft: 'auto', fontSize: '14px', fontWeight: 700, color: '#4a7cdc', cursor: 'pointer' }}>
+                        📞 {linkedLandlord.phone}
+                      </span>
+                    )}
+                  </a>
+                ) : (property.landlord_name || property.landlord_phone) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: '#fff', borderRadius: '4px', border: '1px solid #dce7f5' }}>
                     <span style={{ fontSize: '12px', color: '#fff', background: '#4a7cdc', padding: '3px 10px', borderRadius: '3px', fontWeight: 700, flexShrink: 0 }}>임대인</span>
                     {property.landlord_name && <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a' }}>{property.landlord_name}</span>}
+                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '999px', background: '#fef3c7', color: '#92400e' }}>미연결</span>
                     {property.landlord_phone && (
                       <a href={`tel:${property.landlord_phone}`} style={{ marginLeft: 'auto', fontSize: '14px', fontWeight: 700, color: '#4a7cdc', textDecoration: 'none' }}>
                         📞 {property.landlord_phone}

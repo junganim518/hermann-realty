@@ -7,6 +7,7 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSe
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { generateTitle } from '@/lib/generateTitle';
+import LandlordPicker from '@/components/LandlordPicker';
 
 declare global {
   interface Window { daum: any; }
@@ -150,6 +151,7 @@ export default function NewPropertyPage() {
     approval_date: '',
     description: '',
     admin_memo: '',
+    landlord_id: '',
     landlord_name: '',
     landlord_phone: '',
     tenant_name: '',
@@ -579,6 +581,7 @@ export default function NewPropertyPage() {
         approval_date: form.approval_date || null,
         description: form.description || null,
         admin_memo: form.admin_memo || null,
+        landlord_id: form.landlord_id || null,
         landlord_name: form.landlord_name || null,
         landlord_phone: form.landlord_phone || null,
         tenant_name: form.tenant_name || null,
@@ -1017,15 +1020,25 @@ export default function NewPropertyPage() {
         <div className="admin-section" style={{ ...sectionSt, background: '#f0f6ff', border: '1px solid #c6dcf3' }}>
           <h2 style={{ ...sectionTitle, borderBottom: '2px solid #4a7cdc' }}>🔒 연락처 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(관리자 전용)</span></h2>
 
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelSt}>임대인 <span style={{ fontSize: '11px', color: '#888', fontWeight: 400 }}>· 임대인 관리에 등록된 정보 연결 (선택사항)</span></label>
+            <LandlordPicker
+              value={form.landlord_id}
+              onChange={(id, l) => {
+                set('landlord_id', id);
+                // 선택 시 텍스트 필드도 자동 채움(하위호환 + 표시 일관성)
+                if (l) {
+                  set('landlord_name', l.name ?? '');
+                  set('landlord_phone', l.phone ?? '');
+                } else if (!id) {
+                  // 연결 해제 시 텍스트는 그대로 유지(사용자가 직접 지움)
+                }
+              }}
+              fallbackName={form.landlord_name}
+              fallbackPhone={form.landlord_phone}
+            />
+          </div>
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-            <div>
-              <label style={labelSt}>임대인 이름</label>
-              <input value={form.landlord_name} onChange={e => set('landlord_name', e.target.value)} placeholder="예: 홍길동" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>임대인 전화번호</label>
-              <input value={form.landlord_phone} onChange={e => set('landlord_phone', e.target.value)} placeholder="예: 010-1234-5678" style={inputSt} />
-            </div>
             <div>
               <label style={labelSt}>임차인 이름</label>
               <input value={form.tenant_name} onChange={e => set('tenant_name', e.target.value)} placeholder="예: 김철수" style={inputSt} />
