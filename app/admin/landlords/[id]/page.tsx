@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Pencil, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Pencil, Trash2, Plus, ArrowLeft, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
   effectiveStatus,
@@ -14,6 +14,7 @@ import {
   type ContractType,
   type ContractStatus,
 } from '@/lib/contracts';
+import { formatPropertyTitle } from '@/lib/landlordDisplay';
 
 export default function LandlordDetailPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function LandlordDetailPage() {
     (async () => {
       console.log('[임대인상세] 시작 — landlordId:', landlordId);
       // properties 테이블 실제 컬럼만: deposit/monthly_rent/premium (sale_price 컬럼 없음 — 매매가는 deposit에 저장)
-      const propertyCols = 'id, property_number, address, building_name, property_type, transaction_type, deposit, monthly_rent, premium, is_sold, landlord_id';
+      const propertyCols = 'id, property_number, address, building_name, unit_number, property_type, transaction_type, deposit, monthly_rent, premium, is_sold, landlord_id';
 
       // 1) 임대인 + 계약 조회
       const [landlordResp, contractsResp] = await Promise.all([
@@ -119,11 +120,12 @@ export default function LandlordDetailPage() {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         {/* 헤더 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <button onClick={() => router.push('/admin/landlords')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#666', fontSize: '13px', cursor: 'pointer', padding: 0 }}>
               <ArrowLeft size={14} /> 임대인 목록
             </button>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>{landlord.name}</h1>
+            <h1 style={{ fontSize: '17px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>👤 {landlord.name}</h1>
+            {landlord.phone && <span style={{ fontSize: '13px', color: '#666' }}>{landlord.phone}</span>}
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <Link href={`/admin/landlords/${landlordId}/edit`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '8px 14px', background: '#1a1a1a', color: '#e2a06e', borderRadius: '6px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>
@@ -135,27 +137,29 @@ export default function LandlordDetailPage() {
           </div>
         </div>
 
-        {/* 기본 정보 */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitleSt}><span>👤 기본 정보</span></h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px' }}>
-            <div><div style={labelTextSt}>연락처</div><div style={valueTextSt}>{landlord.phone || '-'}</div></div>
-            <div><div style={labelTextSt}>이메일</div><div style={valueTextSt}>{landlord.email || '-'}</div></div>
-            <div><div style={labelTextSt}>사업자번호</div><div style={valueTextSt}>{landlord.business_number || '-'}</div></div>
-            <div style={{ gridColumn: '1 / -1' }}><div style={labelTextSt}>주소</div><div style={valueTextSt}>{landlord.address || '-'}</div></div>
+        {/* 기본 정보 — 부가 정보로 축소 (이메일/사업자번호 row 제거) */}
+        {(landlord.address || landlord.memo) && (
+          <div style={sectionSt}>
+            <h2 style={sectionTitleSt}><span>👤 기본 정보</span></h2>
+            {landlord.address && (
+              <div style={{ marginBottom: landlord.memo ? '12px' : 0 }}>
+                <div style={labelTextSt}>주소</div>
+                <div style={valueTextSt}>{landlord.address}</div>
+              </div>
+            )}
+            {landlord.memo && (
+              <div style={{ paddingTop: landlord.address ? '12px' : 0, borderTop: landlord.address ? '1px solid #f0f0f0' : 'none' }}>
+                <div style={labelTextSt}>메모</div>
+                <p style={{ fontSize: '13px', color: '#333', whiteSpace: 'pre-line', margin: '4px 0 0', lineHeight: 1.6 }}>{landlord.memo}</p>
+              </div>
+            )}
           </div>
-          {landlord.memo && (
-            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
-              <div style={labelTextSt}>메모</div>
-              <p style={{ fontSize: '13px', color: '#333', whiteSpace: 'pre-line', margin: '4px 0 0', lineHeight: 1.6 }}>{landlord.memo}</p>
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* 보유 매물 */}
-        <div style={sectionSt}>
-          <h2 style={sectionTitleSt}>
-            <span>🏢 보유 매물 ({propertiesHeld.length})</span>
+        {/* 보유 매물 — 메인 콘텐츠로 강조 */}
+        <div style={{ ...sectionSt, padding: '24px', border: '2px solid #e2a06e' }}>
+          <h2 style={{ ...sectionTitleSt, fontSize: '20px' }}>
+            <span>📍 보유 매물 ({propertiesHeld.length})</span>
             <span style={{ fontSize: '12px', color: '#888', fontWeight: 500 }}>매물 직접 연결 + 진행중 계약</span>
           </h2>
           {propertiesHeld.length === 0 ? (
@@ -183,31 +187,35 @@ export default function LandlordDetailPage() {
                   '매매': { bg: '#fff0f0', color: '#e05050' },
                 };
                 const tx = p.transaction_type ? (txColors[p.transaction_type] ?? { bg: '#f5f5f5', color: '#999' }) : null;
+                const propTitle = formatPropertyTitle(p);
                 return (
                   <a
                     key={p.id}
                     href={`/item/view/${p.property_number}`}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ display: 'block', padding: '12px 14px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '6px', textDecoration: 'none', color: '#1a1a1a', opacity: p.is_sold ? 0.65 : 1 }}
+                    style={{ display: 'block', padding: '14px 16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '6px', textDecoration: 'none', color: '#1a1a1a', opacity: p.is_sold ? 0.65 : 1 }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{p.property_number ?? '-'}</span>
+                    {/* 메인: 매물 식별 정보 (주소 + 건물명 + 호수) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                      <MapPin size={14} color="#e2a06e" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{propTitle || '-'}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#e2a06e', fontWeight: 600 }}>매물 보기 →</span>
+                    </div>
+                    {/* 부가: 매물번호 + 거래유형 + 가격 + 상태 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '11px', color: '#888' }}>#{p.property_number ?? '-'}</span>
                       {p.property_type && (
                         <span style={{ fontSize: '10px', color: '#666', padding: '1px 6px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>
                       )}
                       {tx && p.transaction_type && (
                         <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: tx.bg, color: tx.color }}>{p.transaction_type}</span>
                       )}
+                      <span style={{ fontSize: '12px', color: '#1a1a1a', fontWeight: 700 }}>{priceStr}</span>
                       {p.is_sold && (
                         <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', background: '#fef0ee', color: '#e04a4a', border: '1px solid #f5c2bd' }}>거래완료</span>
                       )}
-                      <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#e2a06e', fontWeight: 600 }}>매물 보기 →</span>
                     </div>
-                    <p style={{ fontSize: '12px', color: '#666', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.address ?? '-'}{p.building_name ? ` · ${p.building_name}` : ''}
-                    </p>
-                    <p style={{ fontSize: '12px', color: '#1a1a1a', fontWeight: 700, margin: 0 }}>{priceStr}</p>
                   </a>
                 );
               })}

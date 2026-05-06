@@ -13,6 +13,7 @@ export default function EditLandlordPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showExtras, setShowExtras] = useState(false);
   const [form, setForm] = useState({
     name: '', phone: '', email: '', address: '', business_number: '', memo: '',
   });
@@ -37,6 +38,8 @@ export default function EditLandlordPage() {
         business_number: data.business_number ?? '',
         memo: data.memo ?? '',
       });
+      // 기존에 이메일/사업자번호 입력값이 있으면 자동으로 펼침
+      if ((data.email ?? '').trim() || (data.business_number ?? '').trim()) setShowExtras(true);
       setLoading(false);
     })();
   }, [authChecked]);
@@ -89,14 +92,6 @@ export default function EditLandlordPage() {
               <label style={labelSt}>연락처</label>
               <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="010-0000-0000" style={inputSt} />
             </div>
-            <div>
-              <label style={labelSt}>이메일</label>
-              <input value={form.email} onChange={e => set('email', e.target.value)} placeholder="example@email.com" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>사업자번호</label>
-              <input value={form.business_number} onChange={e => set('business_number', e.target.value)} placeholder="000-00-00000" style={inputSt} />
-            </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>주소</label>
               <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="실거주지 또는 사무실 주소" style={inputSt} />
@@ -106,6 +101,29 @@ export default function EditLandlordPage() {
               <textarea value={form.memo} onChange={e => set('memo', e.target.value)} placeholder="특이사항, 협의 내용" rows={4}
                 style={{ width: '100%', border: '1px solid #ddd', borderRadius: '6px', padding: '10px 12px', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
             </div>
+          </div>
+
+          {/* 추가 정보 토글 (이메일 / 사업자번호) */}
+          <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px dashed #eee' }}>
+            <button
+              type="button"
+              onClick={() => setShowExtras(s => !s)}
+              style={{ background: 'none', border: 'none', color: '#666', fontSize: '12px', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+            >
+              {showExtras ? '▲ 추가 정보 접기' : '▼ 추가 정보 (이메일 / 사업자번호)'}
+            </button>
+            {showExtras && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '12px' }}>
+                <div>
+                  <label style={labelSt}>이메일</label>
+                  <input value={form.email} onChange={e => set('email', e.target.value)} placeholder="example@email.com" style={inputSt} />
+                </div>
+                <div>
+                  <label style={labelSt}>사업자번호</label>
+                  <input value={form.business_number} onChange={e => set('business_number', e.target.value)} placeholder="000-00-00000" style={inputSt} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

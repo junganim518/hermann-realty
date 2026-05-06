@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Plus, Search, Phone, User } from 'lucide-react';
+import { X, Plus, Search, Phone, User, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { formatPropertyTitle, propertyMatchesQuery, type MinimalProperty } from '@/lib/landlordDisplay';
 
 type Landlord = {
   id: string;
@@ -24,9 +25,11 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
   const [modalOpen, setModalOpen] = useState(false);
   const [landlord, setLandlord] = useState<Landlord | null>(null);
   const [allLandlords, setAllLandlords] = useState<Landlord[]>([]);
+  const [propsByLandlord, setPropsByLandlord] = useState<Record<string, MinimalProperty[]>>({});
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', phone: '', email: '', business_number: '' });
+  const [showCreateExtras, setShowCreateExtras] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // 선택된 임대인 정보 fetch
@@ -41,12 +44,24 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
     })();
   }, [value]);
 
-  // 모달 열림 시 임대인 목록 + body scroll lock
+  // 모달 열림 시 임대인 목록 + 보유 매물 + body scroll lock
   useEffect(() => {
     if (!modalOpen) return;
     (async () => {
-      const { data } = await supabase.from('landlords').select('id, name, phone, email, business_number').order('name');
-      setAllLandlords(data ?? []);
+      const [{ data: lands }, { data: props }] = await Promise.all([
+        supabase.from('landlords').select('id, name, phone, email, business_number').order('name'),
+        supabase.from('properties').select('id, property_number, address, building_name, unit_number, landlord_id').not('landlord_id', 'is', null),
+      ]);
+      setAllLandlords(lands ?? []);
+      const grouped: Record<string, MinimalProperty[]> = {};
+      (props ?? []).forEach((p: any) => {
+        if (!p.landlord_id) return;
+        if (!grouped[p.landlord_id]) grouped[p.landlord_id] = [];
+        grouped[p.landlord_id].push({
+          property_number: p.property_number, address: p.address, building_name: p.building_name, unit_number: p.unit_number,
+        });
+      });
+      setPropsByLandlord(grouped);
     })();
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -56,6 +71,7 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
   const openModal = () => {
     setModalOpen(true);
     setCreating(false);
+    setShowCreateExtras(false);
     setSearch(fallbackName || '');
     setCreateForm({
       name: fallbackName || '',
@@ -98,7 +114,10 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
   const filtered = allLandlords.filter(l => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
-    return (l.name ?? '').toLowerCase().includes(q) || (l.phone ?? '').toLowerCase().includes(q);
+    if ((l.name ?? '').toLowerCase().includes(q) || (l.phone ?? '').toLowerCase().includes(q)) return true;
+    // 보유 매물 주소·건물명·호수·매물번호로도 검색
+    const props = propsByLandlord[l.id] ?? [];
+    return props.some(p => propertyMatchesQuery(p, q));
   });
 
   // 표시 — 선택된 임대인 또는 fallback 텍스트 또는 빈 상태
@@ -170,7 +189,7 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
                   <input
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="이름 또는 전화번호 검색"
+                    placeholder="매물 주소·건물명·호수 / 이름·전화"
                     autoFocus
                     style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
                   />
@@ -191,25 +210,46 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
                     </p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {filtered.map(l => (
-                        <button
-                          key={l.id}
-                          type="button"
-                          onClick={() => handleSelect(l)}
-                          style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '10px 12px', textAlign: 'left', background: '#fff', border: '1px solid #eee', borderRadius: '6px', cursor: 'pointer' }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <User size={12} color="#666" />
-                            <strong style={{ fontSize: '13px' }}>{l.name}</strong>
-                          </div>
-                          {l.phone && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '18px' }}>
-                              <Phone size={11} color="#888" />
-                              <span style={{ fontSize: '12px', color: '#666' }}>{l.phone}</span>
+                      {filtered.map(l => {
+                        const props = propsByLandlord[l.id] ?? [];
+                        const firstProp = props[0];
+                        const overflow = Math.max(0, props.length - 1);
+                        const propTitle = firstProp ? formatPropertyTitle(firstProp) : '';
+                        return (
+                          <button
+                            key={l.id}
+                            type="button"
+                            onClick={() => handleSelect(l)}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '10px 12px', textAlign: 'left', background: '#fff', border: '1px solid #eee', borderRadius: '6px', cursor: 'pointer' }}
+                          >
+                            {/* 메인: 매물 식별 정보 */}
+                            {firstProp && propTitle ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <MapPin size={13} color="#e2a06e" style={{ flexShrink: 0 }} />
+                                <strong style={{ fontSize: '13px', color: '#1a1a1a' }}>{propTitle}</strong>
+                                {overflow > 0 && (
+                                  <span style={{ fontSize: '10px', color: '#888', fontWeight: 600 }}>외 {overflow}건</span>
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '11px', color: '#aaa', fontStyle: 'italic' }}>등록 매물 없음</span>
+                              </div>
+                            )}
+                            {/* 부가: 임대인 이름 + 전화 */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: firstProp && propTitle ? '19px' : 0, flexWrap: 'wrap' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                <User size={11} color="#888" /> {l.name}
+                              </span>
+                              {l.phone && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#888' }}>
+                                  <Phone size={10} color="#888" /> {l.phone}
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -227,13 +267,27 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px' }}>전화번호</label>
                       <input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} placeholder="010-0000-0000" style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }} />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px' }}>이메일</label>
-                      <input value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} placeholder="example@email.com" style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px' }}>사업자번호</label>
-                      <input value={createForm.business_number} onChange={e => setCreateForm(f => ({ ...f, business_number: e.target.value }))} placeholder="000-00-00000" style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }} />
+                    {/* 추가 정보 토글 (이메일 / 사업자번호) */}
+                    <div style={{ paddingTop: '4px', borderTop: '1px dashed #eee' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateExtras(s => !s)}
+                        style={{ background: 'none', border: 'none', color: '#666', fontSize: '12px', cursor: 'pointer', padding: '6px 0 0', fontWeight: 600 }}
+                      >
+                        {showCreateExtras ? '▲ 추가 정보 접기' : '▼ 추가 정보 (이메일 / 사업자번호)'}
+                      </button>
+                      {showCreateExtras && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px' }}>이메일</label>
+                            <input value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} placeholder="example@email.com" style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }} />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px' }}>사업자번호</label>
+                            <input value={createForm.business_number} onChange={e => setCreateForm(f => ({ ...f, business_number: e.target.value }))} placeholder="000-00-00000" style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>주소·메모 등 추가 정보는 <a href="/admin/landlords" target="_blank" rel="noreferrer" style={{ color: '#e2a06e' }}>임대인 관리</a>에서 수정 가능합니다.</p>
                   </div>
