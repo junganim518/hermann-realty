@@ -66,6 +66,7 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
   };
 
   const handleSelect = (l: Landlord) => {
+    console.log('[LandlordPicker] handleSelect — 선택:', { id: l.id, name: l.name, phone: l.phone });
     onChange(l.id, l);
     setLandlord(l);
     setModalOpen(false);
@@ -74,6 +75,7 @@ export default function LandlordPicker({ value, onChange, fallbackName, fallback
 
   const handleClear = () => {
     if (!confirm('임대인 연결을 해제하시겠습니까? (임대인 정보 자체는 삭제되지 않습니다)')) return;
+    console.log('[LandlordPicker] handleClear — 연결 해제');
     onChange('');
     setLandlord(null);
   };

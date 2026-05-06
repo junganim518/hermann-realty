@@ -602,6 +602,18 @@ export default function EditPropertyPage() {
 
   // ── 저장 (UPDATE)
   const handleSave = async () => {
+    console.log('[수정] handleSave 시작 — landlord_id:', form.landlord_id, '| name:', form.landlord_name, '| phone:', form.landlord_phone);
+
+    // 텍스트만 있고 임대인 미연결인 경우 사용자 확인
+    if (!form.landlord_id && (form.landlord_name?.trim() || form.landlord_phone?.trim())) {
+      const ok = confirm(
+        '⚠️ 임대인이 텍스트로만 저장됩니다.\n\n' +
+        '임대인 관리에 연결되지 않으면 임대인 상세 페이지의 "보유 매물"에 이 매물이 표시되지 않습니다.\n\n' +
+        '그래도 저장하시겠습니까?'
+      );
+      if (!ok) return;
+    }
+
     setSaving(true);
 
     try {
@@ -1047,9 +1059,15 @@ export default function EditPropertyPage() {
 
           <div style={{ marginBottom: '16px' }}>
             <label style={labelSt}>임대인 <span style={{ fontSize: '11px', color: '#888', fontWeight: 400 }}>· 임대인 관리에 등록된 정보 연결 (선택사항)</span></label>
+            {!form.landlord_id && (form.landlord_name?.trim() || form.landlord_phone?.trim()) && (
+              <div style={{ padding: '8px 12px', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '6px', fontSize: '12px', color: '#92400e', marginBottom: '8px', lineHeight: 1.5 }}>
+                ⚠️ <strong>임대인이 텍스트로만 저장되어 있습니다.</strong> 아래 <strong>[선택]</strong> 버튼을 눌러 임대인 관리에 연결해주세요. 연결하지 않으면 임대인 상세 페이지의 "보유 매물"에 표시되지 않습니다.
+              </div>
+            )}
             <LandlordPicker
               value={form.landlord_id}
               onChange={(id, l) => {
+                console.log('[매물수정] LandlordPicker onChange:', { id, landlord: l });
                 set('landlord_id', id);
                 if (l) {
                   set('landlord_name', l.name ?? '');
