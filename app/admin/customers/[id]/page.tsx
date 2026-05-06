@@ -306,9 +306,18 @@ export default function CustomerDetailPage() {
               </button>
               <button
                 type="button"
-                disabled
-                title="3단계에서 구현 예정"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#fff', color: '#aaa', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'not-allowed' }}
+                onClick={() => router.push(`/admin/customers/${customerId}/print`)}
+                disabled={picked.length === 0}
+                title={picked.length === 0 ? '픽한 매물이 없습니다' : '픽 매물 리스트를 가로 표로 인쇄'}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  padding: '6px 12px',
+                  background: '#fff',
+                  color: picked.length === 0 ? '#bbb' : '#1a1a1a',
+                  border: `1px solid ${picked.length === 0 ? '#ddd' : '#1a1a1a'}`,
+                  borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+                  cursor: picked.length === 0 ? 'not-allowed' : 'pointer',
+                }}
               >
                 <Printer size={14} /> 리스트 인쇄
               </button>
