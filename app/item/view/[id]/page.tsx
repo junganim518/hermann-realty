@@ -1718,6 +1718,12 @@ export default function PropertyDetailPage() {
               >
                 매물 수정
               </a>
+              <a
+                href={`/admin/contracts/new?property_id=${property.id}`}
+                style={{ flex: 1, minWidth: '90px', display: 'block', textAlign: 'center', padding: '12px', background: '#fff', border: '1px solid #16a34a', borderRadius: '4px', color: '#16a34a', fontSize: '15px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+              >
+                📋 계약 등록
+              </a>
               <button
                 onClick={() => window.print()}
                 style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}

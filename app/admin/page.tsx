@@ -166,6 +166,7 @@ function AdminDashboardInner() {
   const [properties, setProperties] = useState<any[]>([]);
   const [propImages, setPropImages] = useState<Record<string, string>>({});
   const [unreadInquiries, setUnreadInquiries] = useState(0);
+  const [expiringContracts, setExpiringContracts] = useState(0);
 
   // 검색 & 필터 & 페이지 (URL 쿼리에서 초기화 — 매물 수정 후 돌아왔을 때 위치 유지)
   const [search, setSearch] = useState(readParam('q', ''));
@@ -356,6 +357,19 @@ function AdminDashboardInner() {
         total: buildRows(views),
       });
     }
+
+    // 만기 임박 계약 (60일 이내, 임대 계약, 종료/재계약 제외)
+    const sixtyDaysLater = new Date(); sixtyDaysLater.setDate(sixtyDaysLater.getDate() + 60); sixtyDaysLater.setHours(23, 59, 59, 999);
+    const todayDateOnly = new Date(); todayDateOnly.setHours(0, 0, 0, 0);
+    const { data: expContracts } = await supabase
+      .from('contracts')
+      .select('id, status, contract_type, end_date')
+      .neq('contract_type', '매매')
+      .not('status', 'in', '("종료","재계약")')
+      .not('end_date', 'is', null)
+      .gte('end_date', todayDateOnly.toISOString().slice(0, 10))
+      .lte('end_date', sixtyDaysLater.toISOString().slice(0, 10));
+    setExpiringContracts((expContracts ?? []).length);
   };
 
   const toggleSold = async (id: string, currentSold: boolean) => {
@@ -767,6 +781,15 @@ function AdminDashboardInner() {
             style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', background: '#fff', color: '#e2a06e', cursor: 'pointer' }}
           >
             📊 통계 보기
+          </button>
+          <button
+            onClick={() => router.push('/admin/contracts')}
+            style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #1a1a1a', background: '#fff', color: '#1a1a1a', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          >
+            📋 계약 관리
+            {expiringContracts > 0 && (
+              <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '999px', background: '#dc2626', color: '#fff' }}>만기 임박 {expiringContracts}</span>
+            )}
           </button>
         </h1>
 
