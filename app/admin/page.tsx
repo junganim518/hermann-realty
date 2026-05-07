@@ -1049,14 +1049,15 @@ function AdminDashboardInner() {
                             style={{
                               fontSize: '12px', fontWeight: 600,
                               color: p.business_name_public ? '#374151' : '#92400e',
-                              whiteSpace: 'nowrap',
+                              wordBreak: 'keep-all',
+                              overflowWrap: 'break-word',
                             }}
                           >
                             {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
                           </span>
                         )}
                         {p.title && (
-                          <span style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title}>{p.title}</span>
+                          <span style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, wordBreak: 'keep-all', overflowWrap: 'break-word', minWidth: 0 }} title={p.title}>{p.title}</span>
                         )}
                       </div>
                       {/* 2행: 주소 */}
@@ -1211,7 +1212,7 @@ function AdminDashboardInner() {
         .admin-prop-info { flex: 1; min-width: 0; overflow: hidden; }
         .admin-prop-info p,
         .admin-prop-info span,
-        .admin-prop-info div { overflow-wrap: break-word; word-break: break-all; }
+        .admin-prop-info div { overflow-wrap: break-word; word-break: keep-all; }
         .admin-prop-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
 
         @media (min-width: 768px) and (max-width: 1199px) {

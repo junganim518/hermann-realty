@@ -971,7 +971,7 @@ function MapPageInner() {
                           )}
                           <span style={{ fontSize: '11px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
                         </div>
-                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', ...(isMobile ? { whiteSpace: 'normal' as const, wordBreak: 'keep-all' as const, overflowWrap: 'break-word' as const } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }) }}>
                           {addr}
                           {isAdmin && (p.building_name || p.unit_number) && (
                             <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
@@ -1121,7 +1121,7 @@ function MapPageInner() {
                         )}
                         <span style={{ fontSize: '11px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
                       </div>
-                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', whiteSpace: 'normal', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
                         {isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '')}
                         {isAdmin && (p.building_name || p.unit_number) && (
                           <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>

@@ -503,7 +503,7 @@ function PropertiesPageInner() {
                           )}
                           <span style={{ fontSize: '13px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
                         </div>
-                        <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', ...(isMobile ? { whiteSpace: 'normal' as const, wordBreak: 'keep-all' as const, overflowWrap: 'break-word' as const } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }) }}>
                           {isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '')}
                           {isAdmin && (p.building_name || p.unit_number) && (
                             <span style={{ fontSize: '11px', color: '#e2a06e', marginLeft: '4px' }}>
