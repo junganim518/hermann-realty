@@ -5,11 +5,12 @@ export default function Footer() {
     <footer style={{ background: '#111', color: '#fff' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .footer-inner { max-width: 900px; margin: 0 auto; padding: 48px 32px; }
-        .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 32px; }
+        .footer-inner { max-width: 1000px; margin: 0 auto; padding: 48px 32px; }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
         .footer-right { text-align: right; }
         .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
         .footer-hours-mobile { display: none; }
+        .footer-info-addr { white-space: nowrap; }
 
         @media (max-width: 767px) {
           .footer-inner { padding: 24px 16px !important; }
@@ -20,6 +21,7 @@ export default function Footer() {
           .footer-logo-img { width: 30px !important; height: 30px !important; }
           .footer-info { line-height: 1.6 !important; }
           .footer-info p { font-size: 11px !important; margin: 0 !important; }
+          .footer-info-addr { white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }
           .footer-call-title { display: none !important; }
           .footer-phone-big { display: none !important; }
           .footer-hours-desktop { display: none !important; }
@@ -44,7 +46,7 @@ export default function Footer() {
             <div className="footer-info" style={{ fontSize: '13px', color: '#bbb', lineHeight: 1.8 }}>
               <p>상호: 헤르만공인중개사사무소</p>
               <p>대표자: 황정아</p>
-              <p>주소: 경기도 부천시 신흥로 223 신중동역 랜드마크 푸르지오시티 101동 712호</p>
+              <p className="footer-info-addr">주소: 경기도 부천시 신흥로 223 신중동역 랜드마크 푸르지오시티 101동 712호</p>
               <p>등록번호: 제41192-2024-00113호</p>
               <p>전화: <span className="footer-call-num">010-8680-8151</span></p>
               <p>이메일: hermann2024@naver.com</p>
