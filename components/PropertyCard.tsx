@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
+import { getPropertyStatus } from '@/lib/propertyStatus';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -95,6 +96,7 @@ interface PropertyCardProps {
 
 export default function PropertyCard({ property, isAdmin = false, showNewBadge = true }: PropertyCardProps) {
   const p = property;
+  const status = getPropertyStatus(p);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
   return (
     <Link
       href={`/item/view/${p.property_number}`}
-      style={{ textDecoration: 'none', display: 'block', transition: 'all 0.2s ease', cursor: 'pointer', backgroundColor: '#fff', color: '#1a1a1a', opacity: p.is_sold ? 0.7 : 1 }}
+      style={{ textDecoration: 'none', display: 'block', transition: 'all 0.2s ease', cursor: 'pointer', backgroundColor: '#fff', color: '#1a1a1a', opacity: status === '거래완료' ? 0.7 : status === '보류' ? 0.85 : 1 }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
         (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
@@ -147,9 +149,14 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
                 <span style={{ color: '#e2a06e', fontSize: isMobile ? '6px' : 'clamp(8px, 1.2vw, 10px)', letterSpacing: isMobile ? '0.5px' : 'clamp(1px, 0.3vw, 3px)', marginTop: isMobile ? '1px' : '4px', opacity: 0.5, whiteSpace: 'nowrap' }}>헤르만부동산</span>
               </div>
             )}
-            {p.is_sold && (
+            {status === '거래완료' && (
               <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
                 <span className="prop-sold" style={{ color: '#e04a4a', fontSize: isMobile ? '16px' : '22px', fontWeight: 900, letterSpacing: '2px', border: `${isMobile ? 2 : 3}px solid #e04a4a`, padding: isMobile ? '4px 12px' : '6px 16px', transform: 'rotate(-15deg)', background: 'transparent' }}>거래완료</span>
+              </div>
+            )}
+            {status === '보류' && (
+              <div style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 10, background: '#f59e0b', color: '#fff', fontSize: isMobile ? '10px' : '12px', fontWeight: 700, padding: isMobile ? '2px 7px' : '3px 10px', borderRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }}>
+                🟡 보류
               </div>
             )}
           </div>

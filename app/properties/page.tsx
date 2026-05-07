@@ -183,7 +183,12 @@ function PropertiesPageInner() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      let query = supabase.from('properties').select('*').order('is_sold', { ascending: true }).order('created_at', { ascending: false });
+      let query = supabase
+        .from('properties')
+        .select('*')
+        .neq('status', '보류') // 보류 매물은 사이트에서 숨김
+        .order('is_sold', { ascending: true })
+        .order('created_at', { ascending: false });
       if (searchParam) {
         query = query.or(`address.ilike.%${searchParam}%,property_number.ilike.%${searchParam}%,property_type.ilike.%${searchParam}%,transaction_type.ilike.%${searchParam}%,theme_type.ilike.%${searchParam}%,description.ilike.%${searchParam}%`);
       }

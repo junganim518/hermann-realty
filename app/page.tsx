@@ -108,6 +108,7 @@ export default function Home() {
       const { data } = await supabase
         .from('properties')
         .select('*')
+        .neq('status', '보류') // 보류 매물은 사이트에서 숨김
         .order('is_sold', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(8);

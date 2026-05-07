@@ -149,6 +149,7 @@ export default function NewPropertyPage() {
     available_immediate: false,
     available_negotiable: false,
     approval_date: '',
+    status: '거래중' as '거래중' | '보류' | '거래완료',
     description: '',
     admin_memo: '',
     landlord_id: '',
@@ -591,6 +592,8 @@ export default function NewPropertyPage() {
           return parts.length > 0 ? parts.join('/') : null;
         })(),
         approval_date: form.approval_date || null,
+        status: form.status,
+        is_sold: form.status === '거래완료', // 하위호환
         description: form.description || null,
         admin_memo: form.admin_memo || null,
         landlord_id: form.landlord_id || null,
@@ -698,6 +701,46 @@ export default function NewPropertyPage() {
           <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#1a1a1a', marginBottom: '4px' }}>매물 등록</h1>
           <p style={{ fontSize: '14px', color: '#888' }}>새 매물 정보를 입력하고 저장하세요.</p>
         </div>
+
+        {/* ════════════ 매물 상태 ════════════ */}
+        {(() => {
+          const statusInfo: Record<'거래중' | '보류' | '거래완료', { bg: string; border: string; text: string; desc: string }> = {
+            '거래중':   { bg: '#fff', border: '#e0e0e0', text: '#333',     desc: '사이트에 정상 노출됩니다.' },
+            '보류':     { bg: '#fffbeb', border: '#fcd34d', text: '#92400e', desc: '사이트에서 숨겨집니다 (관리자만 볼 수 있음).' },
+            '거래완료': { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a', desc: '매물 카드에 "거래완료" 도장이 표시됩니다.' },
+          };
+          const cur = statusInfo[form.status];
+          return (
+            <div className="admin-sold-row" style={{ background: cur.bg, border: `2px solid ${cur.border}`, borderRadius: '8px', padding: '16px 24px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: cur.text }}>매물 상태: {form.status}</span>
+                  <p style={{ fontSize: '13px', color: '#888', marginTop: '2px' }}>{cur.desc}</p>
+                </div>
+                <div style={{ display: 'inline-flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd', flexShrink: 0 }}>
+                  {(['거래중', '보류', '거래완료'] as const).map((s, i) => {
+                    const active = form.status === s;
+                    const info = statusInfo[s];
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => set('status', s)}
+                        style={{
+                          padding: '8px 16px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                          background: active ? info.text : '#fff',
+                          color: active ? '#fff' : '#666',
+                          border: 'none',
+                          borderLeft: i === 0 ? 'none' : '1px solid #ddd',
+                        }}
+                      >{s}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ════════════ 기본 정보 ════════════ */}
         <div className="admin-section" style={sectionSt}>

@@ -28,7 +28,8 @@ export default function RecentPage() {
     const { data: props } = await supabase
       .from('properties')
       .select('*')
-      .in('id', ids);
+      .in('id', ids)
+      .neq('status', '보류'); // 보류 매물은 사이트에서 숨김
 
     const found = props ?? [];
 

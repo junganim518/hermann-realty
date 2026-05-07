@@ -361,7 +361,7 @@ export default function PropertyDetailPage() {
           .from('properties')
           .select('*')
           .eq('property_type', data.property_type)
-          .eq('is_sold', false)
+          .eq('status', '거래중') // 추천 매물엔 거래중만
           .neq('property_number', data.property_number)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -386,7 +386,7 @@ export default function PropertyDetailPage() {
             .from('properties')
             .select('*')
             .eq('property_type', data.property_type)
-            .eq('is_sold', false)
+            .eq('status', '거래중') // 추천 매물엔 거래중만
             .order('created_at', { ascending: false })
             .limit(10);
           const extra = (raw2 ?? []).filter((p: any) => !existIds.has(p.property_number));

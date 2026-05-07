@@ -507,6 +507,8 @@ function MapPageInner() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return properties.filter(p => {
+      // 보류 매물은 사이트에서 숨김 (관리자는 /admin에서 확인)
+      if (p.status === '보류') return false;
       if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
       if (filterType && p.property_type !== filterType) return false;
       if (!matchArea(p.exclusive_area, filterArea)) return false;

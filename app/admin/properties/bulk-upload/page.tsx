@@ -199,6 +199,7 @@ export default function BulkUploadPage() {
           latitude,
           longitude,
           is_sold: false,
+          status: '거래중',
         };
 
         const { error } = await supabase.from('properties').insert(insertRow);

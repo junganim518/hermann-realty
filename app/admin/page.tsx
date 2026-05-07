@@ -26,9 +26,9 @@ const getAgeDays = (updatedAt: string | null | undefined): number => {
   return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
 };
 
-// 경과일 뱃지 설정 — 거래완료 매물은 null 반환
-const getAgeBadge = (p: { is_sold?: boolean; updated_at?: string; created_at?: string }): { label: string; bg: string; color: string } | null => {
-  if (p.is_sold) return null;
+// 경과일 뱃지 설정 — 거래완료/보류 매물은 null 반환
+const getAgeBadge = (p: { is_sold?: boolean; status?: string; updated_at?: string; created_at?: string }): { label: string; bg: string; color: string } | null => {
+  if (p.is_sold || p.status === '거래완료' || p.status === '보류') return null;
   // updated_at 우선 사용, 없으면 created_at fallback (구 데이터 호환)
   const days = getAgeDays(p.updated_at ?? p.created_at);
   if (days >= 90) return { label: '90일+', bg: '#fee2e2', color: '#991b1b' };
@@ -39,7 +39,7 @@ const getAgeBadge = (p: { is_sold?: boolean; updated_at?: string; created_at?: s
 
 const PROP_TYPES = ['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const TX_TYPES = ['전체', '월세', '전세', '매매'];
-const SOLD_TYPES = ['전체', '거래중', '거래완료'];
+const SOLD_TYPES = ['전체', '거래중', '보류', '거래완료'];
 const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~50평', '50평 이상'];
 const DEPOSIT_RANGES = ['전체', '1000만 이하', '1000만~2000만', '2000만~3000만', '3000만~4000만', '4000만~5000만', '5000만 이상'];
 const RENT_RANGES = ['전체', '50만 이하', '50만~100만', '100만~150만', '150만~200만', '200만~300만', '300만~400만', '400만~500만', '500만 이상'];
@@ -156,7 +156,7 @@ function AdminDashboardInner() {
   const searchParams = useSearchParams();
   const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
   const [authChecked, setAuthChecked] = useState(false);
-  const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0 });
+  const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0, hold: 0 });
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
   type RefTableRow = { referrer: string; page: string; count: number };
   const [referralTable, setReferralTable] = useState<{ today: RefTableRow[]; total: RefTableRow[] }>({ today: [], total: [] });
@@ -275,7 +275,8 @@ function AdminDashboardInner() {
       wolse: allProps.filter(p => p.transaction_type === '월세').length,
       jeonse: allProps.filter(p => p.transaction_type === '전세').length,
       maemae: allProps.filter(p => p.transaction_type === '매매').length,
-      sold: allProps.filter(p => p.is_sold).length,
+      sold: allProps.filter(p => p.is_sold || p.status === '거래완료').length,
+      hold: allProps.filter(p => p.status === '보류').length,
     });
 
     const ids = allProps.map(p => p.id);
@@ -372,10 +373,17 @@ function AdminDashboardInner() {
     setExpiringContracts((expContracts ?? []).length);
   };
 
-  const toggleSold = async (id: string, currentSold: boolean) => {
-    await supabase.from('properties').update({ is_sold: !currentSold }).eq('id', id);
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, is_sold: !currentSold } : p));
-    setStats(prev => ({ ...prev, sold: prev.sold + (currentSold ? -1 : 1) }));
+  // 상태 순환: 거래중 → 보류 → 거래완료 → 거래중
+  const cycleStatus = async (id: string, current: any) => {
+    const cur: '거래중' | '보류' | '거래완료' =
+      current?.status === '보류' || current?.status === '거래완료' || current?.status === '거래중'
+        ? current.status
+        : (current?.is_sold ? '거래완료' : '거래중');
+    const next = cur === '거래중' ? '보류' : cur === '보류' ? '거래완료' : '거래중';
+    const nextIsSold = next === '거래완료';
+    await supabase.from('properties').update({ status: next, is_sold: nextIsSold }).eq('id', id);
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, status: next, is_sold: nextIsSold } : p));
+    setStats(prev => ({ ...prev, sold: prev.sold + (cur === '거래완료' ? -1 : 0) + (next === '거래완료' ? 1 : 0) }));
   };
 
   const copyProperty = async (p: any) => {
@@ -403,6 +411,7 @@ function AdminDashboardInner() {
         property_number: nextNumber,
         title: p.title ? `(복사) ${p.title}` : '(복사)',
         is_sold: false,
+        status: '거래중', // 복사본은 거래중으로 시작
         view_count: 0,  // 신규 매물처럼 시작 (인기 TOP10 등에 부적절히 노출되는 문제 방지)
       };
 
@@ -490,7 +499,8 @@ function AdminDashboardInner() {
       wolse: prev.wolse - (p.transaction_type === '월세' ? 1 : 0),
       jeonse: prev.jeonse - (p.transaction_type === '전세' ? 1 : 0),
       maemae: prev.maemae - (p.transaction_type === '매매' ? 1 : 0),
-      sold: prev.sold - (p.is_sold ? 1 : 0),
+      sold: prev.sold - ((p.is_sold || p.status === '거래완료') ? 1 : 0),
+      hold: prev.hold - (p.status === '보류' ? 1 : 0),
     }));
   };
 
@@ -498,8 +508,11 @@ function AdminDashboardInner() {
   const filtered = properties.filter(p => {
     if (filterType !== '전체' && p.property_type !== filterType) return false;
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
-    if (filterSold === '거래중' && p.is_sold) return false;
-    if (filterSold === '거래완료' && !p.is_sold) return false;
+    // 매물 상태 필터 (status 우선, fallback to is_sold)
+    const ps = p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
+      ? p.status
+      : (p.is_sold ? '거래완료' : '거래중');
+    if (filterSold !== '전체' && filterSold !== ps) return false;
     if (!matchArea(p.exclusive_area, p.supply_area, filterArea)) return false;
     if (!matchDeposit(p.deposit, filterDeposit)) return false;
     if (!matchRent(p.monthly_rent, filterRent)) return false;
@@ -561,9 +574,15 @@ function AdminDashboardInner() {
   };
 
   const sortedFiltered = [...filtered].sort((a, b) => {
-    // 1순위: 거래완료 매물은 항상 뒤로
-    const soldDiff = (a.is_sold ? 1 : 0) - (b.is_sold ? 1 : 0);
-    if (soldDiff !== 0) return soldDiff;
+    // 1순위: 거래중(0) → 보류(1) → 거래완료(2) 순으로 정렬
+    const rank = (p: any) => {
+      const s = p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
+        ? p.status
+        : (p.is_sold ? '거래완료' : '거래중');
+      return s === '거래중' ? 0 : s === '보류' ? 1 : 2;
+    };
+    const statusDiff = rank(a) - rank(b);
+    if (statusDiff !== 0) return statusDiff;
     // 2순위: 사용자 선택 정렬
     if (sortBy === 'views') {
       return (b.view_count ?? 0) - (a.view_count ?? 0);
@@ -584,7 +603,7 @@ function AdminDashboardInner() {
   });
 
   const topByViews = [...properties]
-    .filter(p => (p.view_count ?? 0) > 0 && !p.is_sold)
+    .filter(p => (p.view_count ?? 0) > 0 && !p.is_sold && p.status !== '거래완료' && p.status !== '보류')
     .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
     .slice(0, 10);
 
@@ -800,8 +819,9 @@ function AdminDashboardInner() {
             { label: '월세', value: stats.wolse, color: '#e2a06e' },
             { label: '전세', value: stats.jeonse, color: '#4a80e8' },
             { label: '매매', value: stats.maemae, color: '#e05050' },
+            { label: '보류', value: stats.hold, color: '#f59e0b' },
             { label: '거래완료', value: stats.sold, color: '#999' },
-            { label: '30일+ 매물', value: properties.filter(p => !p.is_sold && getAgeDays(p.updated_at ?? p.created_at) >= 30).length, color: '#d97706' },
+            { label: '30일+ 매물', value: properties.filter(p => !p.is_sold && p.status !== '거래완료' && p.status !== '보류' && getAgeDays(p.updated_at ?? p.created_at) >= 30).length, color: '#d97706' },
           ].map(s => (
             <div key={s.label} style={cardSt}>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>{s.label}</p>
@@ -933,7 +953,7 @@ function AdminDashboardInner() {
               <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
                 {SOLD_TYPES.map(opt => {
                   const active = filterSold === opt;
-                  const activeColor = opt === '거래중' ? '#4caf50' : opt === '거래완료' ? '#999' : '#1a1a1a';
+                  const activeColor = opt === '거래중' ? '#4caf50' : opt === '보류' ? '#f59e0b' : opt === '거래완료' ? '#999' : '#1a1a1a';
                   return (
                     <button
                       key={opt}
@@ -1007,7 +1027,7 @@ function AdminDashboardInner() {
               {displayed.map(p => {
                 const tx = TX_COLORS[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                 return (
-                  <div key={p.id} className="admin-prop-row" style={{ background: p.is_sold ? '#fafafa' : '#fff', opacity: p.is_sold ? 0.65 : 1 }}>
+                  <div key={p.id} className="admin-prop-row" style={{ background: (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : 1 }}>
                     {/* 썸네일 */}
                     <a href={`/item/view/${p.property_number}`} style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
@@ -1015,10 +1035,13 @@ function AdminDashboardInner() {
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#bbb' }}>없음</div>
                       )}
-                      {p.is_sold && (
+                      {(p.is_sold || p.status === '거래완료') && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
                           <span style={{ color: '#e04a4a', fontSize: '9px', fontWeight: 900, letterSpacing: '0.5px', border: '1.5px solid #e04a4a', padding: '1px 4px', transform: 'rotate(-15deg)', background: 'transparent', whiteSpace: 'nowrap' }}>거래완료</span>
                         </div>
+                      )}
+                      {p.status === '보류' && !p.is_sold && (
+                        <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#f59e0b', color: '#fff', fontSize: '8px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', zIndex: 2 }}>보류</div>
                       )}
                     </a>
 
@@ -1085,21 +1108,27 @@ function AdminDashboardInner() {
 
                     {/* 액션 영역 */}
                     <div className="admin-prop-actions">
-                      {/* 토글 스위치 */}
-                      <div
-                        onClick={() => toggleSold(p.id, p.is_sold)}
-                        title={p.is_sold ? '거래완료 → 거래중' : '거래중 → 거래완료'}
-                        style={{
-                          width: '52px', height: '26px', borderRadius: '13px', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
-                          background: p.is_sold ? '#999' : '#4caf50',
-                        }}
-                      >
-                        <div style={{
-                          width: '22px', height: '22px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px',
-                          left: p.is_sold ? '28px' : '2px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                        }} />
-                      </div>
-                      <span style={{ fontSize: '10px', color: p.is_sold ? '#999' : '#4caf50', fontWeight: 600 }}>{p.is_sold ? '거래완료' : '거래중'}</span>
+                      {/* 상태 순환 버튼 (거래중 → 보류 → 거래완료 → 거래중) */}
+                      {(() => {
+                        const ps: '거래중' | '보류' | '거래완료' =
+                          p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
+                            ? p.status
+                            : (p.is_sold ? '거래완료' : '거래중');
+                        const pillColor = ps === '거래중' ? { bg: '#dcfce7', color: '#166534', border: '#86efac' }
+                          : ps === '보류' ? { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' }
+                          : { bg: '#fef0ee', color: '#e04a4a', border: '#f5c2bd' };
+                        const next = ps === '거래중' ? '보류' : ps === '보류' ? '거래완료' : '거래중';
+                        return (
+                          <button
+                            onClick={() => cycleStatus(p.id, p)}
+                            title={`${ps} → ${next} (클릭 시 순환)`}
+                            style={{
+                              padding: '4px 12px', borderRadius: '999px', cursor: 'pointer', fontSize: '11px', fontWeight: 700,
+                              background: pillColor.bg, color: pillColor.color, border: `1px solid ${pillColor.border}`,
+                            }}
+                          >{ps}</button>
+                        );
+                      })()}
 
                       {/* 복사/블로그/수정/삭제 */}
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
