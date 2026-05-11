@@ -131,6 +131,7 @@ export default function EditPropertyPage() {
   }, []);
 
   const [propertyId, setPropertyId] = useState<string>('');
+  const origLandlordRef = useRef<{ id: string; name: string; phone: string }>({ id: '', name: '', phone: '' });
   const [form, setForm] = useState({
     property_number: '',
     title: '',
@@ -217,6 +218,11 @@ export default function EditPropertyPage() {
       if (!data) { alert('매물을 찾을 수 없습니다.'); router.back(); return; }
 
       setPropertyId(data.id);
+      origLandlordRef.current = {
+        id: data.landlord_id ?? '',
+        name: data.landlord_name ?? '',
+        phone: data.landlord_phone ?? '',
+      };
 
       const avail = data.available_date ?? '';
       const availParts = avail.split('/').map((s: string) => s.trim()).filter(Boolean);
@@ -603,23 +609,133 @@ export default function EditPropertyPage() {
     if (e.dataTransfer.files.length > 0) addImageFiles(Array.from(e.dataTransfer.files));
   };
 
+  const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
+
+  const resolveLandlord = async (params: {
+    name: string; phone: string; address: string;
+    buildingName: string; unitNumber: string; currentPropertyId?: string;
+  }): Promise<{ landlord_id: string | null; landlord_name: string; landlord_phone: string; matchMsg?: string }> => {
+    const { name, phone, address, buildingName, unitNumber, currentPropertyId } = params;
+    const nameStr = name.trim();
+    const phoneStr = phone.trim();
+
+    console.log('[임대인매칭] 시작', params);
+
+    if (!nameStr && !phoneStr) {
+      const result = { landlord_id: null, landlord_name: '', landlord_phone: '' };
+      console.log('[임대인매칭] 최종 결과', result);
+      return result;
+    }
+
+    // 1순위: 주소+동호수 매칭
+    if (address.trim() && unitNumber.trim()) {
+      let q = supabase.from('properties').select('landlord_id')
+        .eq('address', address.trim()).eq('unit_number', unitNumber.trim())
+        .not('landlord_id', 'is', null);
+      if (currentPropertyId) q = q.neq('id', currentPropertyId);
+      const { data: matchedProps } = await q.limit(1);
+      console.log('[임대인매칭] 1순위 검색 결과', matchedProps);
+
+      if (matchedProps && matchedProps.length > 0) {
+        const matchedLandlordId = matchedProps[0].landlord_id as string;
+        const { data: landlord } = await supabase.from('landlords').select('id, name, phone')
+          .eq('id', matchedLandlordId).single();
+
+        const unitLabel = [buildingName.trim(), unitNumber.trim()].filter(Boolean).join(' ');
+        const addrLine = [address.trim(), unitLabel].filter(Boolean).join(' ');
+        const infoLine = [addrLine || null, landlord?.phone || null].filter(Boolean).join(' / ');
+        const ok = confirm(`${infoLine}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
+        console.log('[임대인매칭] 1순위 confirm 응답', ok);
+
+        if (ok) {
+          const result = landlord
+            ? { landlord_id: landlord.id, landlord_name: landlord.name ?? nameStr, landlord_phone: landlord.phone ?? phoneStr, matchMsg: `기존 임대인 ${landlord.name}에 연결되었습니다.` }
+            : { landlord_id: matchedLandlordId, landlord_name: nameStr, landlord_phone: phoneStr, matchMsg: '기존 임대인에 연결되었습니다.' };
+          console.log('[임대인매칭] 최종 결과', result);
+          return result;
+        }
+        // [취소] → 2순위로
+      }
+    }
+
+    // 2순위: 전화번호 매칭
+    if (phoneStr) {
+      const normalizedInput = normalizePhone(phoneStr);
+      if (normalizedInput.length >= 9) {
+        const { data: allLandlords } = await supabase.from('landlords').select('id, name, phone').not('phone', 'is', null);
+        const matched = (allLandlords ?? []).find(l => normalizePhone(l.phone ?? '') === normalizedInput);
+        console.log('[임대인매칭] 2순위 검색 결과', matched ?? '없음');
+
+        if (matched) {
+          const infoLine = [matched.phone].filter(Boolean).join(' / ');
+          const ok = confirm(`${infoLine}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
+          console.log('[임대인매칭] 2순위 confirm 응답', ok);
+
+          if (ok) {
+            const result = { landlord_id: matched.id, landlord_name: nameStr, landlord_phone: phoneStr, matchMsg: `기존 임대인 ${matched.name}에 연결되었습니다.` };
+            console.log('[임대인매칭] 최종 결과', result);
+            return result;
+          }
+          // [취소] → 신규 등록
+        }
+      }
+    }
+
+    // 신규 등록
+    if (phoneStr) {
+      const { data: newLandlord, error: insertErr } = await supabase.from('landlords')
+        .insert({ name: nameStr || null, phone: phoneStr }).select('id, name, phone').single();
+      if (insertErr || !newLandlord) {
+        console.error('[임대인매칭] 신규 등록 실패:', insertErr);
+        const result = { landlord_id: null, landlord_name: nameStr, landlord_phone: phoneStr };
+        console.log('[임대인매칭] 최종 결과', result);
+        return result;
+      }
+      console.log('[임대인매칭] 신규 등록', newLandlord.id);
+      const result = { landlord_id: newLandlord.id, landlord_name: nameStr, landlord_phone: phoneStr, matchMsg: `임대인 ${nameStr || phoneStr}이(가) 새로 등록되었습니다.` };
+      console.log('[임대인매칭] 최종 결과', result);
+      return result;
+    }
+
+    // 전화번호 없이 이름만 → 텍스트만 저장
+    const result = { landlord_id: null, landlord_name: nameStr, landlord_phone: '' };
+    console.log('[임대인매칭] 최종 결과', result);
+    return result;
+  };
+
   // ── 저장 (UPDATE)
   const handleSave = async () => {
-    console.log('[수정] handleSave 시작 — landlord_id:', form.landlord_id, '| name:', form.landlord_name, '| phone:', form.landlord_phone);
-
-    // 텍스트만 있고 임대인 미연결인 경우 사용자 확인
-    if (!form.landlord_id && (form.landlord_name?.trim() || form.landlord_phone?.trim())) {
-      const ok = confirm(
-        '⚠️ 임대인이 텍스트로만 저장됩니다.\n\n' +
-        '임대인 관리에 연결되지 않으면 임대인 상세 페이지의 "보유 매물"에 이 매물이 표시되지 않습니다.\n\n' +
-        '그래도 저장하시겠습니까?'
-      );
-      if (!ok) return;
-    }
+    console.log('[수정] handleSave 시작 — landlord_name:', form.landlord_name, '| phone:', form.landlord_phone);
 
     setSaving(true);
 
     try {
+      // 임대인 변경 여부 확인
+      const orig = origLandlordRef.current;
+      const landlordChanged = form.landlord_name !== orig.name || form.landlord_phone !== orig.phone;
+
+      let resolvedLandlordId: string | null = form.landlord_id || null;
+      let resolvedLandlordName = form.landlord_name;
+      let resolvedLandlordPhone = form.landlord_phone;
+      let landlordMatchMsg: string | undefined;
+
+      if (!landlordChanged && orig.id) {
+        console.log('[임대인매칭] 변경 없음 → 기존 ID 유지:', orig.id);
+      } else {
+        const resolved = await resolveLandlord({
+          name: form.landlord_name,
+          phone: form.landlord_phone,
+          address: form.address,
+          buildingName: form.building_name,
+          unitNumber: form.unit_number,
+          currentPropertyId: propertyId,
+        });
+        resolvedLandlordId = resolved.landlord_id;
+        resolvedLandlordName = resolved.landlord_name;
+        resolvedLandlordPhone = resolved.landlord_phone;
+        landlordMatchMsg = resolved.matchMsg;
+      }
+
       const row: any = {
         transaction_type: form.transaction_type,
         property_type: form.property_type,
@@ -661,9 +777,9 @@ export default function EditPropertyPage() {
         is_sold: form.status === '거래완료', // 하위호환: status === '거래완료'일 때 true
         description: form.description || null,
         admin_memo: form.admin_memo || null,
-        landlord_id: form.landlord_id || null,
-        landlord_name: form.landlord_name || null,
-        landlord_phone: form.landlord_phone || null,
+        landlord_id: resolvedLandlordId,
+        landlord_name: resolvedLandlordName || null,
+        landlord_phone: resolvedLandlordPhone || null,
         tenant_name: form.tenant_name || null,
         tenant_phone: form.tenant_phone || null,
         extra_contacts: form.extra_contacts.length > 0 ? form.extra_contacts : null,
@@ -710,6 +826,7 @@ export default function EditPropertyPage() {
         await supabase.from('property_images').insert(insertRows);
       }
 
+      if (landlordMatchMsg) showToast(landlordMatchMsg);
       alert('매물이 수정되었습니다.');
       if (window.history.length > 1) {
         router.back();
