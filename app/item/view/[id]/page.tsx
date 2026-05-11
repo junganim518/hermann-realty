@@ -8,6 +8,7 @@ import { isNewProperty } from '@/lib/isNewProperty';
 import { addRecentlyViewed } from '@/lib/recentlyViewed';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
+import FavoriteButton from '@/components/FavoriteButton';
 
 declare global {
   interface Window { kakao: any; }
@@ -1709,6 +1710,13 @@ export default function PropertyDetailPage() {
                 <LinkIcon size={22} strokeWidth={2.2} />
                 <span className="cta-share-label" style={{ display: 'none' }}>링크 복사</span>
               </button>
+              {property?.id && (
+                <FavoriteButton
+                  property={{ id: property.id, property_number: property.property_number ?? null }}
+                  size="lg"
+                  style={{ width: '52px', height: '52px', borderRadius: '4px', border: '1px solid #f3f4f6', background: '#f3f4f6' }}
+                />
+              )}
             </div>
           </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Home, Map, Building2, Newspaper, MessageSquarePlus, Info, Clock, MoreHorizontal } from 'lucide-react';
+import { Home, Map, Building2, Newspaper, MessageSquarePlus, Info, Clock, Heart, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Header() {
@@ -71,6 +71,7 @@ export default function Header() {
     { label: '매물 의뢰하기', href: '/inquiry' },
     { label: '부동산 소식', href: '/news' },
     { label: '회사소개', href: '/about' },
+    { label: '즐겨찾기', href: '/favorites' },
     { label: '최근 본 매물', href: '/recent' },
   ];
 
@@ -254,6 +255,7 @@ export default function Header() {
             }}
           >
             {[
+              { Icon: Heart, label: '즐겨찾기', href: '/favorites' },
               { Icon: MessageSquarePlus, label: '매물의뢰', href: '/inquiry' },
               { Icon: Newspaper, label: '소식', href: '/news' },
               { Icon: Info, label: '회사소개', href: '/about' },

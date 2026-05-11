@@ -6,6 +6,7 @@ import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
 import { getPropertyStatus } from '@/lib/propertyStatus';
+import FavoriteButton from '@/components/FavoriteButton';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -159,6 +160,9 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
                 🟡 보류
               </div>
             )}
+            <div style={{ position: 'absolute', bottom: '6px', right: '6px', zIndex: 5 }}>
+              <FavoriteButton property={p} size={isMobile ? 'sm' : 'md'} overlay />
+            </div>
           </div>
         </div>
         <div className="prop-card-body p-3">
