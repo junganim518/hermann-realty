@@ -7,6 +7,7 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSe
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { generateTitle } from '@/lib/generateTitle';
+import { formatPhone } from '@/lib/phoneFormat';
 
 declare global {
   interface Window { daum: any; }
@@ -1206,7 +1207,7 @@ export default function EditPropertyPage() {
             </div>
             <div>
               <label style={labelSt}>임대인 전화번호</label>
-              <input value={form.landlord_phone} onChange={e => set('landlord_phone', e.target.value)} placeholder="예: 010-1234-5678" style={inputSt} />
+              <input value={form.landlord_phone} onChange={e => set('landlord_phone', formatPhone(e.target.value))} placeholder="예: 010-1234-5678" style={inputSt} maxLength={13} />
             </div>
           </div>
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -1216,7 +1217,7 @@ export default function EditPropertyPage() {
             </div>
             <div>
               <label style={labelSt}>임차인 전화번호</label>
-              <input value={form.tenant_phone} onChange={e => set('tenant_phone', e.target.value)} placeholder="예: 010-9876-5432" style={inputSt} />
+              <input value={form.tenant_phone} onChange={e => set('tenant_phone', formatPhone(e.target.value))} placeholder="예: 010-9876-5432" style={inputSt} maxLength={13} />
             </div>
           </div>
 
@@ -1247,8 +1248,8 @@ export default function EditPropertyPage() {
                 />
                 <input
                   value={c.phone}
-                  onChange={e => { const arr = [...form.extra_contacts]; arr[i] = { ...arr[i], phone: e.target.value }; set('extra_contacts', arr); }}
-                  placeholder="전화번호" style={inputSt}
+                  onChange={e => { const arr = [...form.extra_contacts]; arr[i] = { ...arr[i], phone: formatPhone(e.target.value) }; set('extra_contacts', arr); }}
+                  placeholder="전화번호" style={inputSt} maxLength={13}
                 />
                 <button
                   type="button"

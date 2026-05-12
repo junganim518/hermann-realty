@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { formatPhone } from '@/lib/phoneFormat';
 
 declare global {
   interface Window { daum: any; }
@@ -102,7 +103,7 @@ export default function NewLandlordPage() {
             </div>
             <div>
               <label style={labelSt}>연락처</label>
-              <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="010-0000-0000" style={inputSt} />
+              <input value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputSt} maxLength={13} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>주소 (임대 건물)</label>
