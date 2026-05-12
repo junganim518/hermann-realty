@@ -6,6 +6,7 @@ import { Link as LinkIcon, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
 import { addRecentlyViewed } from '@/lib/recentlyViewed';
+import { isBot } from '@/lib/isBot';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -272,13 +273,16 @@ export default function PropertyDetailPage() {
     });
   }, []);
 
-  // 매물 조회수 +1 + 최근 본 매물 기록 (관리자 로그인 시 제외, localStorage 24시간 중복 방지)
+  // 매물 조회수 +1 + 최근 본 매물 기록 (봇/관리자 제외, localStorage 24시간 중복 방지)
   useEffect(() => {
     const propId = property?.id;
     if (!propId) return;
     let cancelled = false;
 
     (async () => {
+      // 0) 봇이면 즉시 제외
+      if (typeof navigator !== 'undefined' && isBot(navigator.userAgent)) return;
+
       // 1) 로그인 사용자(관리자)는 카운트/기록 제외 — localStorage도 건드리지 않음
       try {
         const { data } = await supabase.auth.getUser();
