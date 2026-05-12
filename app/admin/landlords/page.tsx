@@ -118,10 +118,12 @@ export default function LandlordsPage() {
   const filtered = landlords.filter(l => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
+    const qDigits = q.replace(/\D/g, '');
     // 1) 임대인 본인 정보
     if (
       (l.name ?? '').toLowerCase().includes(q) ||
       (l.phone ?? '').toLowerCase().includes(q) ||
+      (qDigits.length >= 4 && (l.phone ?? '').replace(/\D/g, '').includes(qDigits)) ||
       (l.business_number ?? '').toLowerCase().includes(q) ||
       (l.property_address ?? '').toLowerCase().includes(q) ||
       (l.property_building_name ?? '').toLowerCase().includes(q) ||
@@ -140,6 +142,15 @@ export default function LandlordsPage() {
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px 16px 60px' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .ll-addr { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+        .ll-phone { color: #c47c30; text-decoration: none; padding: 4px 2px; font-size: 12px; }
+        .ll-phone:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+          .ll-addr { font-size: 13px !important; color: #888 !important; font-weight: 500 !important; }
+          .ll-phone { font-size: 17px !important; font-weight: 700 !important; color: #c47c30 !important; padding: 6px 2px !important; }
+        }
+      ` }} />
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         {/* 헤더 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
@@ -185,10 +196,10 @@ export default function LandlordsPage() {
               const landlordAddrParts = [l.property_address, l.property_building_name, l.property_dong_ho].filter(Boolean);
               const landlordAddrStr = landlordAddrParts.join(' ');
               return (
-                <Link
+                <div
                   key={l.id}
-                  href={`/admin/landlords/${l.id}`}
-                  style={{ display: 'block', padding: '14px 18px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', textDecoration: 'none', color: '#1a1a1a' }}
+                  onClick={() => router.push(`/admin/landlords/${l.id}`)}
+                  style={{ display: 'block', padding: '14px 18px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', color: '#1a1a1a', cursor: 'pointer' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -196,7 +207,7 @@ export default function LandlordsPage() {
                       {firstProp && primaryTitle ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                           <MapPin size={15} color="#e2a06e" style={{ flexShrink: 0 }} />
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{primaryTitle}</span>
+                          <span className="ll-addr">{primaryTitle}</span>
                           {overflow > 0 && (
                             <span style={{ fontSize: '11px', color: '#888', fontWeight: 600 }}>외 {overflow}건</span>
                           )}
@@ -204,13 +215,22 @@ export default function LandlordsPage() {
                       ) : landlordAddrStr ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                           <MapPin size={15} color="#e2a06e" style={{ flexShrink: 0 }} />
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{landlordAddrStr}</span>
+                          <span className="ll-addr">{landlordAddrStr}</span>
                         </div>
                       ) : null}
                       {/* 부가 정보: 임대인 이름 + 전화 */}
                       <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#666', flexWrap: 'wrap', alignItems: 'center' }}>
                         <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{l.name}</span>
-                        {l.phone && <span>· {l.phone}</span>}
+                        {l.phone && (
+                          <>
+                            <span>·</span>
+                            <a
+                              href={`tel:${l.phone.replace(/\D/g, '')}`}
+                              onClick={e => e.stopPropagation()}
+                              className="ll-phone"
+                            >{l.phone}</a>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
@@ -223,12 +243,12 @@ export default function LandlordsPage() {
                         진행중 {cnt.active}
                       </span>
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(l.id, l.name); }}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(l.id, l.name); }}
                         style={{ fontSize: '11px', padding: '4px 10px', background: '#fff', color: '#e05050', border: '1px solid #e05050', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                       >삭제</button>
                     </div>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
