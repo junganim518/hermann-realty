@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+declare global {
+  interface Window { daum: any; }
+}
+
 export default function NewLandlordPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
@@ -23,7 +27,37 @@ export default function NewLandlordPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!document.getElementById('daum-postcode-script')) {
+      const s = document.createElement('script');
+      s.id = 'daum-postcode-script';
+      s.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+  }, []);
+
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+
+  const searchPropertyAddress = () => {
+    if (!window.daum?.Postcode) {
+      alert('주소검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    new window.daum.Postcode({
+      oncomplete: (data: any) => {
+        const addr = data.userSelectedType === 'J'
+          ? (data.jibunAddress || data.autoJibunAddress)
+          : (data.roadAddress || data.autoRoadAddress);
+        const buildingName = data.buildingName || '';
+        setForm(prev => ({
+          ...prev,
+          property_address: addr,
+          property_building_name: buildingName || prev.property_building_name,
+        }));
+      },
+    }).open();
+  };
 
   const handleSave = async () => {
     if (!form.name.trim() && !form.phone.trim()) { alert('이름 또는 전화번호를 입력해주세요.'); return; }
@@ -72,7 +106,10 @@ export default function NewLandlordPage() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>주소 (임대 건물)</label>
-              <input value={form.property_address} onChange={e => set('property_address', e.target.value)} placeholder="예: 경기 부천시 원미구 중동 1059" style={inputSt} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input value={form.property_address} readOnly placeholder="주소를 검색하세요" style={{ ...inputSt, flex: 1 }} />
+                <button type="button" onClick={searchPropertyAddress} style={{ height: '40px', padding: '0 16px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>주소 검색</button>
+              </div>
             </div>
             <div>
               <label style={labelSt}>건물명</label>
