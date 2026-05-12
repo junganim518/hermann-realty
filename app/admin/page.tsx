@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -159,9 +159,11 @@ function AdminDashboardInner() {
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0, hold: 0 });
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
   type RefTableRow = { referrer: string; page: string; count: number };
-  const [referralTable, setReferralTable] = useState<{ today: RefTableRow[]; total: RefTableRow[] }>({ today: [], total: [] });
+  type RawView = { referrer: string | null; page: string | null; created_at: string };
+  const [rawViews, setRawViews] = useState<RawView[]>([]);
   const [referralModalOpen, setReferralModalOpen] = useState(false);
-  const [referralTab, setReferralTab] = useState<'today' | 'total'>('today');
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [showAll, setShowAll] = useState(false);
   const [todayVisitors, setTodayVisitors] = useState<any[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [propImages, setPropImages] = useState<Record<string, string>>({});
@@ -183,6 +185,44 @@ function AdminDashboardInner() {
   const [topExpanded, setTopExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
+
+  const referralRows = useMemo((): RefTableRow[] => {
+    if (rawViews.length === 0) return [];
+    const categorize = (ref: string | null | undefined): string => {
+      if (!ref || ref === 'direct') return '직접접속';
+      const lower = ref.toLowerCase();
+      if (lower.includes('naver')) return '네이버';
+      if (lower.includes('google')) return '구글';
+      if (lower.includes('kakao')) return '카카오';
+      if (lower.includes('daum')) return '다음';
+      return ref;
+    };
+    const buildRows = (rows: RawView[]): RefTableRow[] => {
+      const nested: Record<string, Record<string, number>> = {};
+      for (const v of rows) {
+        const referrer = categorize(v.referrer);
+        const page = v.page ?? '(unknown)';
+        if (!nested[referrer]) nested[referrer] = {};
+        nested[referrer][page] = (nested[referrer][page] ?? 0) + 1;
+      }
+      const out: RefTableRow[] = [];
+      Object.keys(nested).forEach(ref => {
+        Object.keys(nested[ref]).forEach(pg => {
+          out.push({ referrer: ref, page: pg, count: nested[ref][pg] });
+        });
+      });
+      out.sort((a, b) => b.count - a.count);
+      return out;
+    };
+    if (showAll) return buildRows(rawViews);
+    const dayStart = new Date(`${selectedDate}T00:00:00`).getTime();
+    const dayEnd = new Date(`${selectedDate}T23:59:59.999`).getTime();
+    const filtered = rawViews.filter(v => {
+      const ts = new Date(v.created_at).getTime();
+      return ts >= dayStart && ts <= dayEnd;
+    });
+    return buildRows(filtered);
+  }, [rawViews, selectedDate, showAll]);
 
   // 블로그 프롬프트 생성 모달
   const [blogOpen, setBlogOpen] = useState(false);
@@ -318,45 +358,12 @@ function AdminDashboardInner() {
       total: totalRes.count ?? 0,
     });
 
-    // 유입 경로 통계
+    // 유입 경로 원본 데이터 보관 (useMemo에서 날짜별 필터링)
     const { data: views } = await supabase
       .from('page_views')
       .select('referrer, page, created_at');
     if (views) {
-      const categorize = (ref: string | null | undefined): string => {
-        if (!ref || ref === 'direct') return '직접접속';
-        const lower = ref.toLowerCase();
-        if (lower.includes('naver')) return '네이버';
-        if (lower.includes('google')) return '구글';
-        if (lower.includes('kakao')) return '카카오';
-        if (lower.includes('daum')) return '다음';
-        return ref;
-      };
-
-      const buildRows = (rows: typeof views): RefTableRow[] => {
-        const nested: Record<string, Record<string, number>> = {};
-        for (const v of rows) {
-          const referrer = categorize(v.referrer);
-          const page = v.page ?? '(unknown)';
-          if (!nested[referrer]) nested[referrer] = {};
-          nested[referrer][page] = (nested[referrer][page] ?? 0) + 1;
-        }
-        const out: RefTableRow[] = [];
-        Object.keys(nested).forEach(referrer => {
-          Object.keys(nested[referrer]).forEach(page => {
-            out.push({ referrer, page, count: nested[referrer][page] });
-          });
-        });
-        out.sort((a, b) => b.count - a.count);
-        return out;
-      };
-
-      const todayTs = todayStart.getTime();
-      const todayViews = views.filter(v => new Date(v.created_at).getTime() >= todayTs);
-      setReferralTable({
-        today: buildRows(todayViews),
-        total: buildRows(views),
-      });
+      setRawViews(views as RawView[]);
     }
 
     // 만기 임박 계약 (60일 이내, 임대 계약, 종료/재계약 제외)
@@ -658,36 +665,44 @@ function AdminDashboardInner() {
               <button onClick={() => setReferralModalOpen(false)} style={{ background: 'none', border: 'none', color: '#e2a06e', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>×</button>
             </div>
 
-            {/* 탭 */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #e0e0e0', background: '#fafafa' }}>
-              {(['today', 'total'] as const).map(tab => {
-                const active = referralTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setReferralTab(tab)}
-                    style={{
-                      flex: 1, padding: '12px 20px', fontSize: '14px', fontWeight: 700,
-                      background: active ? '#fff' : 'transparent',
-                      color: active ? '#e2a06e' : '#888',
-                      border: 'none',
-                      borderBottom: active ? '3px solid #e2a06e' : '3px solid transparent',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {tab === 'today' ? '오늘' : '전체'}
-                  </button>
-                );
-              })}
+            {/* 날짜 선택 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderBottom: '1px solid #e0e0e0', background: '#fafafa', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => { const d = new Date(`${selectedDate}T00:00:00`); d.setDate(d.getDate() - 1); setSelectedDate(d.toLocaleDateString('en-CA')); setShowAll(false); }}
+                disabled={showAll}
+                style={{ padding: '5px 10px', background: '#fff', border: '1px solid #ddd', borderRadius: '4px', cursor: showAll ? 'not-allowed' : 'pointer', color: showAll ? '#ccc' : '#333', fontSize: '13px', fontWeight: 700 }}
+              >◀</button>
+              <input
+                type="date"
+                value={selectedDate}
+                max={new Date().toLocaleDateString('en-CA')}
+                disabled={showAll}
+                onChange={e => { if (e.target.value) { setSelectedDate(e.target.value); setShowAll(false); } }}
+                style={{ height: '34px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 8px', fontSize: '13px', color: showAll ? '#aaa' : '#333', background: showAll ? '#f5f5f5' : '#fff', cursor: showAll ? 'not-allowed' : 'pointer', outline: 'none' }}
+              />
+              <button
+                onClick={() => { const today = new Date().toLocaleDateString('en-CA'); if (selectedDate < today) { const d = new Date(`${selectedDate}T00:00:00`); d.setDate(d.getDate() + 1); setSelectedDate(d.toLocaleDateString('en-CA')); setShowAll(false); } }}
+                disabled={showAll || selectedDate >= new Date().toLocaleDateString('en-CA')}
+                style={{ padding: '5px 10px', background: '#fff', border: '1px solid #ddd', borderRadius: '4px', cursor: (showAll || selectedDate >= new Date().toLocaleDateString('en-CA')) ? 'not-allowed' : 'pointer', color: (showAll || selectedDate >= new Date().toLocaleDateString('en-CA')) ? '#ccc' : '#333', fontSize: '13px', fontWeight: 700 }}
+              >▶</button>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', color: showAll ? '#e2a06e' : '#555', fontWeight: 600, marginLeft: '4px', userSelect: 'none' as const }}>
+                <input
+                  type="checkbox"
+                  checked={showAll}
+                  onChange={e => setShowAll(e.target.checked)}
+                  style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#e2a06e' }}
+                />
+                전체 보기
+              </label>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
               {(() => {
-                const rows = referralTable[referralTab];
+                const rows = referralRows;
                 if (rows.length === 0) {
                   return (
                     <p style={{ color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
-                      {referralTab === 'today' ? '오늘 방문 기록이 없습니다' : '방문 기록이 없습니다'}
+                      {showAll ? '방문 기록이 없습니다' : `${selectedDate} 방문 기록이 없습니다`}
                     </p>
                   );
                 }
