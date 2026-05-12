@@ -14,6 +14,8 @@ type Landlord = {
   email: string | null;
   business_number: string | null;
   property_address: string | null;
+  property_building_name: string | null;
+  property_dong_ho: string | null;
   memo: string | null;
   created_at: string;
 };
@@ -120,7 +122,10 @@ export default function LandlordsPage() {
     if (
       (l.name ?? '').toLowerCase().includes(q) ||
       (l.phone ?? '').toLowerCase().includes(q) ||
-      (l.business_number ?? '').toLowerCase().includes(q)
+      (l.business_number ?? '').toLowerCase().includes(q) ||
+      (l.property_address ?? '').toLowerCase().includes(q) ||
+      (l.property_building_name ?? '').toLowerCase().includes(q) ||
+      (l.property_dong_ho ?? '').toLowerCase().includes(q)
     ) return true;
     // 2) 보유 매물 주소/건물명/호수/매물번호
     const props = propertiesByLandlord[l.id] ?? [];
@@ -177,6 +182,8 @@ export default function LandlordsPage() {
               const firstProp = props[0];
               const overflow = Math.max(0, props.length - 1);
               const primaryTitle = firstProp ? formatPropertyTitle(firstProp) : '';
+              const landlordAddrParts = [l.property_address, l.property_building_name, l.property_dong_ho].filter(Boolean);
+              const landlordAddrStr = landlordAddrParts.join(' ');
               return (
                 <Link
                   key={l.id}
@@ -194,16 +201,12 @@ export default function LandlordsPage() {
                             <span style={{ fontSize: '11px', color: '#888', fontWeight: 600 }}>외 {overflow}건</span>
                           )}
                         </div>
-                      ) : l.property_address ? (
+                      ) : landlordAddrStr ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                           <MapPin size={15} color="#e2a06e" style={{ flexShrink: 0 }} />
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{l.property_address}</span>
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{landlordAddrStr}</span>
                         </div>
-                      ) : (
-                        <div style={{ marginBottom: '4px' }}>
-                          <span style={{ fontSize: '13px', color: '#aaa', fontStyle: 'italic' }}>등록된 매물 없음</span>
-                        </div>
-                      )}
+                      ) : null}
                       {/* 부가 정보: 임대인 이름 + 전화 */}
                       <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#666', flexWrap: 'wrap', alignItems: 'center' }}>
                         <span style={{ color: '#1a1a1a', fontWeight: 600 }}>{l.name}</span>
@@ -211,9 +214,11 @@ export default function LandlordsPage() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '999px', background: props.length > 0 ? '#fff8f2' : '#f3f4f6', color: props.length > 0 ? '#9a4a17' : '#888' }}>
-                        매물 {props.length}
-                      </span>
+                      {props.length > 0 && (
+                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '999px', background: '#fff8f2', color: '#9a4a17' }}>
+                          매물 {props.length}
+                        </span>
+                      )}
                       <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '999px', background: cnt.active > 0 ? '#dcfce7' : '#f3f4f6', color: cnt.active > 0 ? '#166534' : '#888' }}>
                         진행중 {cnt.active}
                       </span>

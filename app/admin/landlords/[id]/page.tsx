@@ -138,29 +138,35 @@ export default function LandlordDetailPage() {
         </div>
 
         {/* 기본 정보 — 부가 정보로 축소 (이메일/사업자번호 row 제거) */}
-        {(landlord.property_address || landlord.address || landlord.memo) && (
+        {(() => {
+          const propAddrParts = [landlord.property_address, landlord.property_building_name, landlord.property_dong_ho].filter(Boolean);
+          const propAddrStr = propAddrParts.join(' ');
+          const hasBasic = propAddrStr || landlord.address || landlord.memo;
+          if (!hasBasic) return null;
+          return (
           <div style={sectionSt}>
             <h2 style={sectionTitleSt}><span>👤 기본 정보</span></h2>
-            {landlord.property_address && (
+            {propAddrStr && (
               <div style={{ marginBottom: (landlord.address || landlord.memo) ? '12px' : 0 }}>
-                <div style={labelTextSt}>건물/호수</div>
-                <div style={valueTextSt}>{landlord.property_address}</div>
+                <div style={labelTextSt}>임대 건물</div>
+                <div style={valueTextSt}>{propAddrStr}</div>
               </div>
             )}
             {landlord.address && (
-              <div style={{ paddingTop: landlord.property_address ? '12px' : 0, borderTop: landlord.property_address ? '1px solid #f0f0f0' : 'none', marginBottom: landlord.memo ? '12px' : 0 }}>
+              <div style={{ paddingTop: propAddrStr ? '12px' : 0, borderTop: propAddrStr ? '1px solid #f0f0f0' : 'none', marginBottom: landlord.memo ? '12px' : 0 }}>
                 <div style={labelTextSt}>주소</div>
                 <div style={valueTextSt}>{landlord.address}</div>
               </div>
             )}
             {landlord.memo && (
-              <div style={{ paddingTop: (landlord.property_address || landlord.address) ? '12px' : 0, borderTop: (landlord.property_address || landlord.address) ? '1px solid #f0f0f0' : 'none' }}>
+              <div style={{ paddingTop: (propAddrStr || landlord.address) ? '12px' : 0, borderTop: (propAddrStr || landlord.address) ? '1px solid #f0f0f0' : 'none' }}>
                 <div style={labelTextSt}>메모</div>
                 <p style={{ fontSize: '13px', color: '#333', whiteSpace: 'pre-line', margin: '4px 0 0', lineHeight: 1.6 }}>{landlord.memo}</p>
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* 보유 매물 — 메인 콘텐츠로 강조 */}
         <div style={{ ...sectionSt, padding: '24px', border: '2px solid #e2a06e' }}>

@@ -15,7 +15,9 @@ export default function EditLandlordPage() {
   const [saving, setSaving] = useState(false);
   const [showExtras, setShowExtras] = useState(false);
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '', property_address: '', business_number: '', memo: '',
+    name: '', phone: '', email: '', address: '',
+    property_address: '', property_building_name: '', property_dong_ho: '',
+    business_number: '', memo: '',
   });
 
   useEffect(() => {
@@ -36,6 +38,8 @@ export default function EditLandlordPage() {
         email: data.email ?? '',
         address: data.address ?? '',
         property_address: data.property_address ?? '',
+        property_building_name: data.property_building_name ?? '',
+        property_dong_ho: data.property_dong_ho ?? '',
         business_number: data.business_number ?? '',
         memo: data.memo ?? '',
       });
@@ -48,14 +52,16 @@ export default function EditLandlordPage() {
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert('이름은 필수입니다.'); return; }
+    if (!form.name.trim() && !form.phone.trim()) { alert('이름 또는 전화번호를 입력해주세요.'); return; }
     setSaving(true);
     const payload = {
-      name: form.name.trim(),
+      name: form.name.trim() || null,
       phone: form.phone.trim() || null,
       email: form.email.trim() || null,
       address: form.address.trim() || null,
       property_address: form.property_address.trim() || null,
+      property_building_name: form.property_building_name.trim() || null,
+      property_dong_ho: form.property_dong_ho.trim() || null,
       business_number: form.business_number.trim() || null,
       memo: form.memo.trim() || null,
     };
@@ -87,7 +93,7 @@ export default function EditLandlordPage() {
         <div style={sectionSt}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
-              <label style={labelSt}>이름 *</label>
+              <label style={labelSt}>이름</label>
               <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="홍길동" style={inputSt} />
             </div>
             <div>
@@ -95,12 +101,20 @@ export default function EditLandlordPage() {
               <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="010-0000-0000" style={inputSt} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelSt}>주소</label>
-              <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="실거주지 또는 사무실 주소" style={inputSt} />
+              <label style={labelSt}>주소 (임대 건물)</label>
+              <input value={form.property_address} onChange={e => set('property_address', e.target.value)} placeholder="예: 경기 부천시 원미구 중동 1059" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>건물명</label>
+              <input value={form.property_building_name} onChange={e => set('property_building_name', e.target.value)} placeholder="예: 신중동역 랜드마크 푸르지오시티" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>동호수</label>
+              <input value={form.property_dong_ho} onChange={e => set('property_dong_ho', e.target.value)} placeholder="예: 101동 711호" style={inputSt} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelSt}>건물/호수 (임대 건물 주소 및 호수)</label>
-              <input value={form.property_address} onChange={e => set('property_address', e.target.value)} placeholder="예: 신중동역 랜드마크 푸르지오 시티 201호" style={inputSt} />
+              <label style={labelSt}>주소 (실거주지/사무실)</label>
+              <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="실거주지 또는 사무실 주소" style={inputSt} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>메모</label>
