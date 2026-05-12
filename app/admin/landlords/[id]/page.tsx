@@ -138,17 +138,23 @@ export default function LandlordDetailPage() {
         </div>
 
         {/* 기본 정보 — 부가 정보로 축소 (이메일/사업자번호 row 제거) */}
-        {(landlord.address || landlord.memo) && (
+        {(landlord.property_address || landlord.address || landlord.memo) && (
           <div style={sectionSt}>
             <h2 style={sectionTitleSt}><span>👤 기본 정보</span></h2>
+            {landlord.property_address && (
+              <div style={{ marginBottom: (landlord.address || landlord.memo) ? '12px' : 0 }}>
+                <div style={labelTextSt}>건물/호수</div>
+                <div style={valueTextSt}>{landlord.property_address}</div>
+              </div>
+            )}
             {landlord.address && (
-              <div style={{ marginBottom: landlord.memo ? '12px' : 0 }}>
+              <div style={{ paddingTop: landlord.property_address ? '12px' : 0, borderTop: landlord.property_address ? '1px solid #f0f0f0' : 'none', marginBottom: landlord.memo ? '12px' : 0 }}>
                 <div style={labelTextSt}>주소</div>
                 <div style={valueTextSt}>{landlord.address}</div>
               </div>
             )}
             {landlord.memo && (
-              <div style={{ paddingTop: landlord.address ? '12px' : 0, borderTop: landlord.address ? '1px solid #f0f0f0' : 'none' }}>
+              <div style={{ paddingTop: (landlord.property_address || landlord.address) ? '12px' : 0, borderTop: (landlord.property_address || landlord.address) ? '1px solid #f0f0f0' : 'none' }}>
                 <div style={labelTextSt}>메모</div>
                 <p style={{ fontSize: '13px', color: '#333', whiteSpace: 'pre-line', margin: '4px 0 0', lineHeight: 1.6 }}>{landlord.memo}</p>
               </div>

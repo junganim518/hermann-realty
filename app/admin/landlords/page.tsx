@@ -13,6 +13,7 @@ type Landlord = {
   phone: string | null;
   email: string | null;
   business_number: string | null;
+  property_address: string | null;
   memo: string | null;
   created_at: string;
 };
@@ -192,6 +193,11 @@ export default function LandlordsPage() {
                           {overflow > 0 && (
                             <span style={{ fontSize: '11px', color: '#888', fontWeight: 600 }}>외 {overflow}건</span>
                           )}
+                        </div>
+                      ) : l.property_address ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <MapPin size={15} color="#e2a06e" style={{ flexShrink: 0 }} />
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{l.property_address}</span>
                         </div>
                       ) : (
                         <div style={{ marginBottom: '4px' }}>

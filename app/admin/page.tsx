@@ -403,8 +403,11 @@ function AdminDashboardInner() {
       });
       const nextNumber = String(maxNum + 1);
 
-      // 제외 필드 제거 (id/매물번호/타임스탬프는 새로 생성, view_count는 0부터 시작)
-      const { id: _id, property_number: _pn, created_at: _ca, updated_at: _ua, view_count: _vc, ...rest } = p;
+      // 제외 필드 제거 (id/매물번호/타임스탬프는 새로 생성, view_count는 0부터 시작, 임대인/임차인은 초기화)
+      const { id: _id, property_number: _pn, created_at: _ca, updated_at: _ua, view_count: _vc,
+        landlord_id: _lid, landlord_name: _ln, landlord_phone: _lp,
+        tenant_name: _tn, tenant_phone: _tp, extra_contacts: _ec,
+        ...rest } = p;
 
       const payload = {
         ...rest,
@@ -413,6 +416,12 @@ function AdminDashboardInner() {
         is_sold: false,
         status: '거래중', // 복사본은 거래중으로 시작
         view_count: 0,  // 신규 매물처럼 시작 (인기 TOP10 등에 부적절히 노출되는 문제 방지)
+        landlord_id: null,
+        landlord_name: '',
+        landlord_phone: '',
+        tenant_name: '',
+        tenant_phone: '',
+        extra_contacts: [],
       };
 
       const { data: inserted, error } = await supabase
@@ -464,6 +473,8 @@ function AdminDashboardInner() {
       }));
       setPage(1);
       showToast('복사완료!');
+
+      alert('매물이 복사되었습니다.\n임대인/임차인 정보는 초기화되었으니, 새 매물에서 임대인을 새로 등록해주세요.');
 
       // 복사된 매물의 수정페이지로 이동
       router.push(`/admin/properties/${inserted.property_number}/edit`);

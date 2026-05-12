@@ -15,7 +15,7 @@ export default function EditLandlordPage() {
   const [saving, setSaving] = useState(false);
   const [showExtras, setShowExtras] = useState(false);
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '', business_number: '', memo: '',
+    name: '', phone: '', email: '', address: '', property_address: '', business_number: '', memo: '',
   });
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function EditLandlordPage() {
         phone: data.phone ?? '',
         email: data.email ?? '',
         address: data.address ?? '',
+        property_address: data.property_address ?? '',
         business_number: data.business_number ?? '',
         memo: data.memo ?? '',
       });
@@ -54,6 +55,7 @@ export default function EditLandlordPage() {
       phone: form.phone.trim() || null,
       email: form.email.trim() || null,
       address: form.address.trim() || null,
+      property_address: form.property_address.trim() || null,
       business_number: form.business_number.trim() || null,
       memo: form.memo.trim() || null,
     };
@@ -95,6 +97,10 @@ export default function EditLandlordPage() {
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>주소</label>
               <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="실거주지 또는 사무실 주소" style={inputSt} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelSt}>건물/호수 (임대 건물 주소 및 호수)</label>
+              <input value={form.property_address} onChange={e => set('property_address', e.target.value)} placeholder="예: 신중동역 랜드마크 푸르지오 시티 201호" style={inputSt} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>메모</label>
