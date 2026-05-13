@@ -178,8 +178,11 @@ function AdminDashboardInner() {
   const [filterPremium, setFilterPremium] = useState(readParam('premium', '전체'));
   const [page, setPage] = useState(parseInt(readParam('page', '1'), 10) || 1);
   const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>(readParam('sort', 'property_number') as any);
+  const [filterCallOld, setFilterCallOld] = useState(readParam('callOld', '') === '1');
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
+  const [callModalProp, setCallModalProp] = useState<any>(null);
+  const [callModalDate, setCallModalDate] = useState('');
 
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
@@ -564,10 +567,14 @@ function AdminDashboardInner() {
       const target = [p.property_number, p.address, p.building_name, p.business_name, p.unit_number, p.admin_memo, p.land_number, p.title, p.description].filter(Boolean).join(' ').toLowerCase();
       if (!target.includes(q)) return false;
     }
+    if (filterCallOld) {
+      if (p.status === '거래완료' || p.is_sold) return false;
+      if (p.last_contacted_at && getAgeDays(p.last_contacted_at) < 30) return false;
+    }
     return true;
   });
 
-  const hasActiveFilter = filterType !== '전체' || filterTx !== '전체' || filterSold !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체' || filterFloor !== '전체' || filterPremium !== '전체' || search;
+  const hasActiveFilter = filterType !== '전체' || filterTx !== '전체' || filterSold !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체' || filterFloor !== '전체' || filterPremium !== '전체' || filterCallOld || search;
 
   // URL 쿼리 ↔ state 양방향 동기화 (매물 수정 후 router.back() 으로 돌아오면 같은 페이지/필터 유지)
   const syncURL = useCallback((overrides: Record<string, string> = {}) => {
@@ -575,6 +582,7 @@ function AdminDashboardInner() {
       page: String(page), sort: sortBy, sold: filterSold, q: search,
       type: filterType, tx: filterTx, area: filterArea,
       deposit: filterDeposit, rent: filterRent, floor: filterFloor, premium: filterPremium,
+      callOld: filterCallOld ? '1' : '',
       ...overrides,
     };
     const defaults: Record<string, string> = {
@@ -589,7 +597,7 @@ function AdminDashboardInner() {
     });
     const qs = params.toString();
     router.replace(`/admin${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [page, sortBy, filterSold, search, filterType, filterTx, filterArea, filterDeposit, filterRent, filterFloor, filterPremium, router]);
+  }, [page, sortBy, filterSold, search, filterType, filterTx, filterArea, filterDeposit, filterRent, filterFloor, filterPremium, filterCallOld, router]);
 
   // 뒤로가기/외부 URL 변경 시 state 재동기화
   useEffect(() => {
@@ -602,6 +610,7 @@ function AdminDashboardInner() {
     setFilterRent(readParam('rent', '전체'));
     setFilterFloor(readParam('floor', '전체'));
     setFilterPremium(readParam('premium', '전체'));
+    setFilterCallOld(readParam('callOld', '') === '1');
     setPage(parseInt(readParam('page', '1'), 10) || 1);
     setSortBy((readParam('sort', 'property_number') as any));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -610,8 +619,19 @@ function AdminDashboardInner() {
   const resetAllFilters = () => {
     setSearch(''); setFilterType('전체'); setFilterTx('전체'); setFilterSold('전체');
     setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setFilterFloor('전체'); setFilterPremium('전체');
+    setFilterCallOld(false);
     setPage(1);
-    syncURL({ q: '', type: '전체', tx: '전체', sold: '전체', area: '전체', deposit: '전체', rent: '전체', floor: '전체', premium: '전체', page: '1' });
+    syncURL({ q: '', type: '전체', tx: '전체', sold: '전체', area: '전체', deposit: '전체', rent: '전체', floor: '전체', premium: '전체', callOld: '', page: '1' });
+  };
+
+  const handleCallSave = async () => {
+    if (!callModalProp || !callModalDate) return;
+    const iso = `${callModalDate}T00:00:00Z`;
+    const { error } = await supabase.from('properties').update({ last_contacted_at: iso }).eq('id', callModalProp.id);
+    if (error) { showToast('저장 실패'); return; }
+    setProperties(prev => prev.map(p => p.id === callModalProp.id ? { ...p, last_contacted_at: iso } : p));
+    showToast(`통화 기록 완료 (${callModalDate})`);
+    setCallModalProp(null);
   };
 
   const sortedFiltered = [...filtered].sort((a, b) => {
@@ -649,6 +669,11 @@ function AdminDashboardInner() {
   const displayed = sortedFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (!authChecked) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>;
+
+  const countCallOld = properties.filter(p => {
+    if (p.status === '거래완료' || p.is_sold) return false;
+    return !p.last_contacted_at || getAgeDays(p.last_contacted_at) >= 30;
+  }).length;
 
   const sectionSt: React.CSSProperties = { background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '24px', marginBottom: '20px' };
   const sectionTitleSt: React.CSSProperties = { fontSize: '18px', fontWeight: 700, color: '#1a1a1a', marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e2a06e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
@@ -827,6 +852,35 @@ function AdminDashboardInner() {
         </div>
       )}
 
+      {/* 통화 체크 모달 */}
+      {callModalProp && (
+        <div
+          onClick={() => setCallModalProp(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '12px', padding: '24px', maxWidth: '360px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          >
+            <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px', color: '#1a1a1a' }}>📞 통화 체크</h3>
+            <p style={{ fontSize: '13px', color: '#555', marginBottom: '16px' }}>
+              {callModalProp.property_number} · {formatAddr(callModalProp)}
+            </p>
+            <input
+              type="date"
+              value={callModalDate}
+              max={new Date().toLocaleDateString('en-CA')}
+              onChange={e => setCallModalDate(e.target.value)}
+              style={{ width: '100%', height: '40px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 12px', fontSize: '14px', marginBottom: '20px', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setCallModalProp(null)} style={{ padding: '8px 18px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+              <button onClick={handleCallSave} style={{ padding: '8px 18px', border: 'none', borderRadius: '6px', background: '#1a1a1a', color: '#e2a06e', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a', display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
           관리자 대시보드
@@ -842,6 +896,7 @@ function AdminDashboardInner() {
                 { label: '매매', value: stats.maemae, action: () => { setFilterTx('매매'); setFilterSold('전체'); setPage(1); syncURL({ tx: '매매', sold: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
                 { label: '보류', value: stats.hold, action: () => { setFilterSold('보류'); setFilterTx('전체'); setPage(1); syncURL({ sold: '보류', tx: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
                 { label: '거래완료', value: stats.sold, action: () => { setFilterSold('거래완료'); setFilterTx('전체'); setPage(1); syncURL({ sold: '거래완료', tx: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                ...(countCallOld > 0 ? [{ label: '통화30일+', value: countCallOld, action: () => { setFilterCallOld(true); setPage(1); syncURL({ callOld: '1', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } }] : []),
               ] as { label: string; value: number; action: () => void }[]).map((item, i) => (
                 <span key={item.label}>
                   {i > 0 && <span style={{ color: '#ccc', margin: '0 4px' }}>·</span>}
@@ -965,6 +1020,10 @@ function AdminDashboardInner() {
                   );
                 })}
               </div>
+              <button
+                onClick={() => { const v = !filterCallOld; setFilterCallOld(v); setPage(1); syncURL({ callOld: v ? '1' : '', page: '1' }); }}
+                style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, background: filterCallOld ? '#e2a06e' : '#fff', color: filterCallOld ? '#fff' : '#666', border: `1px solid ${filterCallOld ? '#e2a06e' : '#ddd'}`, borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >📞 통화 30일+</button>
               <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
             </div>
           </div>
@@ -1131,6 +1190,20 @@ function AdminDashboardInner() {
                           {copying === p.id ? '복사중...' : '복사'}
                         </button>
                         <button onClick={() => openBlogModal(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #9c27b0', color: '#9c27b0', background: '#fff', cursor: 'pointer' }}>블로그 글</button>
+                        {(() => {
+                          const lc = p.last_contacted_at;
+                          const isOld = !lc || getAgeDays(lc) >= 30;
+                          const label = lc
+                            ? `📞 ${new Date(lc).getMonth() + 1}/${new Date(lc).getDate()}`
+                            : '📞 미기록';
+                          return (
+                            <button
+                              onClick={() => { setCallModalProp(p); setCallModalDate(new Date().toLocaleDateString('en-CA')); }}
+                              title={lc ? `마지막 통화: ${formatDate(lc)}` : '통화 기록 없음'}
+                              style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', background: '#fff', cursor: 'pointer', border: `1px solid ${isOld ? '#e2a06e' : '#ccc'}`, color: isOld ? '#e2a06e' : '#999' }}
+                            >{label}</button>
+                          );
+                        })()}
                         <a href={`/admin/properties/${p.property_number}/edit`} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', textDecoration: 'none' }}>수정</a>
                         <button onClick={() => deleteProperty(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e05050', color: '#e05050', background: '#fff', cursor: 'pointer' }}>삭제</button>
                       </div>

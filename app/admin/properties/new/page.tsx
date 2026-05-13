@@ -695,6 +695,7 @@ export default function NewPropertyPage() {
         tenant_name: form.tenant_name || null,
         tenant_phone: form.tenant_phone || null,
         extra_contacts: form.extra_contacts.length > 0 ? form.extra_contacts : null,
+        last_contacted_at: new Date().toISOString(),
       };
 
       console.log('[1] properties INSERT 시작:', propertyNumber);
