@@ -6,10 +6,6 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
 
-const STATUS_COLORS: Record<string, string> = {
-  '상담중': '#2196F3', '방문예정': '#e2a06e', '방문완료': '#4caf50',
-  '계약진행': '#ff9800', '계약완료': '#9c27b0', '보류': '#999',
-};
 
 const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#e2a06e' },
@@ -654,7 +650,6 @@ function AdminDashboardInner() {
 
   if (!authChecked) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>;
 
-  const cardSt: React.CSSProperties = { background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', textAlign: 'center' };
   const sectionSt: React.CSSProperties = { background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '24px', marginBottom: '20px' };
   const sectionTitleSt: React.CSSProperties = { fontSize: '18px', fontWeight: 700, color: '#1a1a1a', marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e2a06e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
   const selectFilterSt: React.CSSProperties = { height: '36px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 8px', fontSize: '13px', color: '#555', background: '#fff', cursor: 'pointer', outline: 'none', minWidth: '100px' };
@@ -835,9 +830,33 @@ function AdminDashboardInner() {
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a', display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
           관리자 대시보드
-          <span style={{ fontSize: '12px', fontWeight: 500, color: '#C8A96E' }}>
-            👁 오늘 {visitors.today.toLocaleString()} · 이번주 {visitors.week.toLocaleString()} · 전체 {visitors.total.toLocaleString()}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: '#C8A96E' }}>
+              👁 오늘 {visitors.today.toLocaleString()} · 이번주 {visitors.week.toLocaleString()} · 전체 {visitors.total.toLocaleString()}
+            </span>
+            <span style={{ fontSize: '11px', display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
+              {([
+                { label: '총', value: stats.total, action: () => { resetAllFilters(); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                { label: '월세', value: stats.wolse, action: () => { setFilterTx('월세'); setFilterSold('전체'); setPage(1); syncURL({ tx: '월세', sold: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                { label: '전세', value: stats.jeonse, action: () => { setFilterTx('전세'); setFilterSold('전체'); setPage(1); syncURL({ tx: '전세', sold: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                { label: '매매', value: stats.maemae, action: () => { setFilterTx('매매'); setFilterSold('전체'); setPage(1); syncURL({ tx: '매매', sold: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                { label: '보류', value: stats.hold, action: () => { setFilterSold('보류'); setFilterTx('전체'); setPage(1); syncURL({ sold: '보류', tx: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                { label: '거래완료', value: stats.sold, action: () => { setFilterSold('거래완료'); setFilterTx('전체'); setPage(1); syncURL({ sold: '거래완료', tx: '전체', page: '1' }); document.getElementById('property-management-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+              ] as { label: string; value: number; action: () => void }[]).map((item, i) => (
+                <span key={item.label}>
+                  {i > 0 && <span style={{ color: '#ccc', margin: '0 4px' }}>·</span>}
+                  <span
+                    onClick={item.action}
+                    style={{ cursor: 'pointer', color: '#888', fontWeight: 500 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#e2a06e'; e.currentTarget.style.textDecoration = 'underline'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.textDecoration = 'none'; }}
+                  >
+                    {item.label} {item.value}
+                  </span>
+                </span>
+              ))}
+            </span>
+          </div>
           <button
             onClick={() => setReferralModalOpen(true)}
             style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #1a1a1a', background: '#1a1a1a', color: '#e2a06e', cursor: 'pointer' }}
@@ -860,24 +879,6 @@ function AdminDashboardInner() {
             )}
           </button>
         </h1>
-
-        {/* 통계 카드 */}
-        <div className="admin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          {[
-            { label: '총 매물', value: stats.total, color: '#1a1a1a' },
-            { label: '월세', value: stats.wolse, color: '#e2a06e' },
-            { label: '전세', value: stats.jeonse, color: '#4a80e8' },
-            { label: '매매', value: stats.maemae, color: '#e05050' },
-            { label: '보류', value: stats.hold, color: '#f59e0b' },
-            { label: '거래완료', value: stats.sold, color: '#999' },
-            { label: '30일+ 매물', value: properties.filter(p => !p.is_sold && p.status !== '거래완료' && p.status !== '보류' && getAgeDays(p.updated_at ?? p.created_at) >= 30).length, color: '#d97706' },
-          ].map(s => (
-            <div key={s.label} style={cardSt}>
-              <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>{s.label}</p>
-              <p style={{ fontSize: '32px', fontWeight: 800, color: s.color }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
 
         {/* 오늘 방문 예정 (축소) */}
         <div style={{ ...sectionSt, padding: '16px 20px' }}>
