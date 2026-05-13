@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronDown, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
 
@@ -182,7 +182,6 @@ function AdminDashboardInner() {
   const [filterPremium, setFilterPremium] = useState(readParam('premium', '전체'));
   const [page, setPage] = useState(parseInt(readParam('page', '1'), 10) || 1);
   const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>(readParam('sort', 'property_number') as any);
-  const [topExpanded, setTopExpanded] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
 
@@ -648,10 +647,6 @@ function AdminDashboardInner() {
     return String(b.property_number ?? '').localeCompare(String(a.property_number ?? ''));
   });
 
-  const topByViews = [...properties]
-    .filter(p => (p.view_count ?? 0) > 0 && !p.is_sold && p.status !== '거래완료' && p.status !== '보류')
-    .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
-    .slice(0, 10);
 
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -883,61 +878,6 @@ function AdminDashboardInner() {
             </div>
           ))}
         </div>
-
-        {/* 🔥 인기 매물 TOP 10 */}
-        <div style={{ ...sectionSt, padding: '16px 20px', marginBottom: '24px' }}>
-          <div style={{ ...sectionTitleSt, marginBottom: '10px', paddingBottom: '8px' }}>
-            <span style={{ fontSize: '15px' }}>🔥 인기 매물 TOP 10</span>
-            <span style={{ fontSize: '11px', color: '#888', fontWeight: 500 }}>조회수 기준</span>
-          </div>
-          {topByViews.length === 0 ? (
-            <p style={{ color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '16px 0' }}>아직 조회 기록이 없습니다</p>
-          ) : (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {(topExpanded ? topByViews : topByViews.slice(0, 3)).map((p, i) => {
-                  const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
-                  return (
-                    <a
-                      key={p.id}
-                      href={`/item/view/${p.property_number}`}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 4px', borderBottom: '1px solid #f5f5f5', textDecoration: 'none', color: 'inherit' }}
-                    >
-                      <span style={{ minWidth: '30px', fontSize: i < 3 ? '18px' : '13px', fontWeight: 700, color: i < 3 ? '#1a1a1a' : '#888', textAlign: 'center' }}>{medal}</span>
-                      <span style={{ minWidth: '60px', fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{p.property_number}</span>
-                      <span style={{ flex: 1, fontSize: '13px', color: '#e2a06e', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={p.title ?? ''}>
-                        {p.title || '(제목 없음)'}
-                      </span>
-                      <span style={{ minWidth: '70px', fontSize: '13px', color: '#1a1a1a', fontWeight: 700, textAlign: 'right' }}>
-                        {(p.view_count ?? 0).toLocaleString()}회
-                      </span>
-                    </a>
-                  );
-                })}
-              </div>
-              {topByViews.length > 3 && (
-                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10px' }}>
-                  <button
-                    onClick={() => setTopExpanded(v => !v)}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '4px',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontWeight: 500, color: '#888',
-                      padding: '4px 10px', borderRadius: '4px',
-                      transition: 'color 0.15s, background 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = '#f5f5f5'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    {topExpanded ? '접기' : `더보기 (${topByViews.length - 3}개)`}
-                    {topExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
 
         {/* 오늘 방문 예정 (축소) */}
         <div style={{ ...sectionSt, padding: '16px 20px' }}>
