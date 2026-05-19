@@ -105,9 +105,10 @@ lib/
      (AI가 답변에 utm_source=chatgpt.com 붙여서 링크 제공하는 경우 처리)
   2. utm_source 없고 referrer가 자기 도메인(hermann-realty.com/vercel.app/localhost)이면 → 직접접속
   3. 그 외 referrer 키워드로 분류
-  - 저장 라벨: `direct` / `naver` / `google` / `kakao` / `daum` / `ai` / 원본URL(기타)
+  - 저장 라벨: `direct` / `naver` / `google` / `kakao` / `daum` / `ai:chatgpt` / `ai:gemini` / `ai:perplexity` / `ai:copilot` / `ai:claude` / `ai:기타` / 원본URL(기타)
   - 표시 라벨 (analyticsUtils.ts): 직접접속 / 네이버 / 구글 / 카카오 / 다음 / AI 검색 / 기타
-  - AI 검색 키워드: chatgpt, openai, gemini, bard, perplexity, copilot, claude (google보다 먼저 체크)
+  - AI 검색 세부: analyticsUtils.getReferrerDetail() → ChatGPT / Gemini / Perplexity / Copilot / Claude
+    대시보드 유입경로 모달에서 "AI 검색 · ChatGPT" 형태로 표시. analytics 파이차트는 "AI 검색"으로 묶음
   - 분류 함수 단일화: `categorizeReferrer` (lib/analyticsUtils.ts) → analytics 페이지 + 대시보드 모달 공용
 
 ## 임대인 매칭 룰 (중요)

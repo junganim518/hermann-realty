@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
-import { categorizeReferrer } from '@/lib/analyticsUtils';
+import { categorizeReferrer, getReferrerDetail } from '@/lib/analyticsUtils';
 
 
 const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -155,7 +155,7 @@ function AdminDashboardInner() {
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0, hold: 0 });
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
-  type RefTableRow = { referrer: string; page: string; count: number };
+  type RefTableRow = { referrer: string; detail: string; page: string; count: number };
   type RawView = { referrer: string | null; page: string | null; created_at: string };
   const [rawViews, setRawViews] = useState<RawView[]>([]);
   const [referralModalOpen, setReferralModalOpen] = useState(false);
@@ -188,17 +188,21 @@ function AdminDashboardInner() {
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
     const buildRows = (rows: RawView[]): RefTableRow[] => {
+      // outerKey = "referrer\0detail" (null byte는 라벨에 등장 불가)
       const nested: Record<string, Record<string, number>> = {};
       for (const v of rows) {
         const referrer = categorizeReferrer(v.referrer);
+        const detail = getReferrerDetail(v.referrer);
+        const outerKey = `${referrer}\0${detail}`;
         const page = v.page ?? '(unknown)';
-        if (!nested[referrer]) nested[referrer] = {};
-        nested[referrer][page] = (nested[referrer][page] ?? 0) + 1;
+        if (!nested[outerKey]) nested[outerKey] = {};
+        nested[outerKey][page] = (nested[outerKey][page] ?? 0) + 1;
       }
       const out: RefTableRow[] = [];
-      Object.keys(nested).forEach(ref => {
-        Object.keys(nested[ref]).forEach(pg => {
-          out.push({ referrer: ref, page: pg, count: nested[ref][pg] });
+      Object.keys(nested).forEach(outerKey => {
+        const [referrer, detail] = outerKey.split('\0');
+        Object.keys(nested[outerKey]).forEach(pg => {
+          out.push({ referrer, detail, page: pg, count: nested[outerKey][pg] });
         });
       });
       out.sort((a, b) => b.count - a.count);
@@ -773,7 +777,7 @@ function AdminDashboardInner() {
                         <tr key={`${r.referrer}-${r.page}-${i}`} style={{ borderBottom: '1px solid #f0f0f0' }}>
                           <td style={{ padding: '10px 8px' }}>
                             <span style={badgeStyle(r.referrer)} title={r.referrer}>
-                              {r.referrer}
+                              {r.referrer}{r.detail ? ` · ${r.detail}` : ''}
                             </span>
                           </td>
                           <td style={{ padding: '10px 8px', color: '#333', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '12px', wordBreak: 'break-all' }}>

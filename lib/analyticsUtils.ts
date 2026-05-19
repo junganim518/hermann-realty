@@ -71,15 +71,22 @@ export function groupByDevice(views: PageView[]): { mobile: number; pc: number; 
 const AI_KEYWORDS = ['chatgpt', 'openai', 'gemini', 'bard', 'perplexity', 'copilot', 'claude'];
 const OWN_HOSTS = ['hermann-realty.com', 'vercel.app', 'localhost'];
 
+const AI_DETAIL_LABELS: Record<string, string> = {
+  'ai:chatgpt': 'ChatGPT',
+  'ai:gemini': 'Gemini',
+  'ai:perplexity': 'Perplexity',
+  'ai:copilot': 'Copilot',
+  'ai:claude': 'Claude',
+};
+
 // DB에 저장된 referrer 값을 표시 라벨로 변환
-// 저장 값은 라벨('direct','naver','ai' 등) 또는 원본 URL(기타 경우)
-// 원본 URL 안에 utm_source 파라미터가 있으면 그걸 최우선 적용
+// 저장 값: 라벨('direct','naver','ai:chatgpt' 등) 또는 원본 URL(기타 경우)
 export function categorizeReferrer(ref: string | null | undefined): string {
   if (!ref || ref === 'direct') return '직접접속';
   const lower = ref.toLowerCase();
 
   // 이미 분류된 라벨인 경우
-  if (lower === 'ai') return 'AI 검색';
+  if (lower === 'ai' || lower.startsWith('ai:')) return 'AI 검색';
   if (lower === 'naver') return '네이버';
   if (lower === 'google') return '구글';
   if (lower === 'kakao') return '카카오';
@@ -107,6 +114,36 @@ export function categorizeReferrer(ref: string | null | undefined): string {
   if (lower.includes('kakao')) return '카카오';
   if (lower.includes('daum')) return '다음';
   return '기타';
+}
+
+// AI 유입의 세부 서비스명 반환. AI가 아니거나 미상이면 빈 문자열
+export function getReferrerDetail(ref: string | null | undefined): string {
+  if (!ref) return '';
+  const lower = ref.toLowerCase();
+
+  // 저장된 'ai:xxx' 라벨
+  if (lower.startsWith('ai:') && lower !== 'ai:기타') {
+    return AI_DETAIL_LABELS[lower] ?? '';
+  }
+  if (lower === 'ai') return ''; // 구 형태 — 세부 정보 없음
+
+  // 원본 URL에서 추출 (하위호환)
+  try {
+    const url = new URL(ref.startsWith('http') ? ref : `https://${ref}`);
+    const src = (url.searchParams.get('utm_source') ?? url.hostname).toLowerCase();
+    if (src.includes('chatgpt') || src.includes('openai')) return 'ChatGPT';
+    if (src.includes('gemini') || src.includes('bard')) return 'Gemini';
+    if (src.includes('perplexity')) return 'Perplexity';
+    if (src.includes('copilot')) return 'Copilot';
+    if (src.includes('claude')) return 'Claude';
+  } catch { /* 키워드 매칭으로 폴백 */ }
+
+  if (lower.includes('chatgpt') || lower.includes('openai')) return 'ChatGPT';
+  if (lower.includes('gemini') || lower.includes('bard')) return 'Gemini';
+  if (lower.includes('perplexity')) return 'Perplexity';
+  if (lower.includes('copilot')) return 'Copilot';
+  if (lower.includes('claude')) return 'Claude';
+  return '';
 }
 
 export function groupByReferrer(views: PageView[]): Array<{ label: string; count: number }> {

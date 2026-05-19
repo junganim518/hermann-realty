@@ -15,9 +15,18 @@ function detectDevice(): 'mobile' | 'pc' {
 const AI_KEYWORDS = ['chatgpt', 'openai', 'gemini', 'bard', 'perplexity', 'copilot', 'claude'];
 const OWN_HOSTS = ['hermann-realty.com', 'vercel.app', 'localhost'];
 
+function classifyAI(lower: string): string {
+  if (lower.includes('chatgpt') || lower.includes('openai')) return 'ai:chatgpt';
+  if (lower.includes('gemini') || lower.includes('bard')) return 'ai:gemini';
+  if (lower.includes('perplexity')) return 'ai:perplexity';
+  if (lower.includes('copilot')) return 'ai:copilot';
+  if (lower.includes('claude')) return 'ai:claude';
+  return 'ai:기타';
+}
+
 function classifySource(src: string): string {
   const lower = src.toLowerCase();
-  if (AI_KEYWORDS.some(k => lower.includes(k))) return 'ai';
+  if (AI_KEYWORDS.some(k => lower.includes(k))) return classifyAI(lower);
   if (lower.includes('naver')) return 'naver';
   if (lower.includes('google')) return 'google';
   if (lower.includes('kakao')) return 'kakao';
