@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 
 const PROPERTY_SELECT =
-  'id, property_number, title, address, building_name, dong_ho, transaction_type, ' +
+  'id, property_number, title, address, building_name, unit_number, transaction_type, ' +
   'deposit, monthly_rent, maintenance_fee, premium, supply_area, exclusive_area, ' +
   'current_floor, total_floor, description, property_type, latitude, longitude, created_at';
 
@@ -99,7 +99,7 @@ export default async function ItemViewLayout({
     if (images.length > 0) ld.image = images;
     if (property.created_at) ld.datePosted = property.created_at;
 
-    const streetParts = [property.address, property.building_name, property.dong_ho].filter(Boolean);
+    const streetParts = [property.address, property.building_name, property.unit_number].filter(Boolean);
     if (streetParts.length > 0) {
       ld.address = {
         '@type': 'PostalAddress',
