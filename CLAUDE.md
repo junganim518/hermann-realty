@@ -100,6 +100,11 @@ lib/
 
 - PageViewTracker.tsx로 자동 기록
 - 봇 필터링: lib/isBot.ts 사용
+- referrer 분류 로직: utm_source 우선 → document.referrer 순서로 확인
+  - 저장 라벨: `direct` / `naver` / `google` / `kakao` / `daum` / `ai` / 원본URL(기타)
+  - 표시 라벨 (analyticsUtils.ts): 직접접속 / 네이버 / 구글 / 카카오 / 다음 / AI 검색 / 기타
+  - AI 검색: chatgpt, openai, gemini, bard, perplexity, copilot, claude 키워드 (google보다 먼저 체크)
+  - 분류 함수 단일화: `categorizeReferrer` (lib/analyticsUtils.ts) → analytics 페이지 + 대시보드 모달 공용
 
 ## 임대인 매칭 룰 (중요)
 

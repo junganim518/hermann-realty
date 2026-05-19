@@ -68,10 +68,14 @@ export function groupByDevice(views: PageView[]): { mobile: number; pc: number; 
   return { mobile, pc, unknown };
 }
 
+const AI_KEYWORDS = ['chatgpt', 'openai', 'gemini', 'bard', 'perplexity', 'copilot', 'claude'];
+
 // referrer를 라벨로 카테고리화 (PageViewTracker와 일관성)
-function categorizeReferrer(ref: string | null | undefined): string {
+// AI 체크를 google보다 먼저 (gemini가 google 도메인이므로)
+export function categorizeReferrer(ref: string | null | undefined): string {
   if (!ref || ref === 'direct') return '직접접속';
   const lower = ref.toLowerCase();
+  if (lower === 'ai' || AI_KEYWORDS.some(k => lower.includes(k))) return 'AI 검색';
   if (lower.includes('naver')) return '네이버';
   if (lower.includes('google')) return '구글';
   if (lower.includes('kakao')) return '카카오';
@@ -85,8 +89,8 @@ export function groupByReferrer(views: PageView[]): Array<{ label: string; count
     const k = categorizeReferrer(v.referrer);
     counts[k] = (counts[k] ?? 0) + 1;
   }
-  // 표시 순서: 직접접속 → 네이버 → 구글 → 카카오 → 다음 → 기타
-  const order = ['직접접속', '네이버', '구글', '카카오', '다음', '기타'];
+  // 표시 순서: 직접접속 → 네이버 → 구글 → 카카오 → 다음 → AI 검색 → 기타
+  const order = ['직접접속', '네이버', '구글', '카카오', '다음', 'AI 검색', '기타'];
   return order.filter(k => counts[k] > 0).map(k => ({ label: k, count: counts[k] }));
 }
 

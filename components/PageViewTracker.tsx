@@ -12,15 +12,23 @@ function detectDevice(): 'mobile' | 'pc' {
     : 'pc';
 }
 
+const AI_KEYWORDS = ['chatgpt', 'openai', 'gemini', 'bard', 'perplexity', 'copilot', 'claude'];
+
 function categorizeReferrer(): string {
   if (typeof document === 'undefined') return 'direct';
+
+  // utm_source 우선 확인
+  const utmSource = new URLSearchParams(window.location.search).get('utm_source')?.toLowerCase() ?? '';
   const ref = document.referrer;
-  if (!ref) return 'direct';
-  const lower = ref.toLowerCase();
+  const lower = (utmSource || ref).toLowerCase();
+
+  if (!utmSource && !ref) return 'direct';
+  if (AI_KEYWORDS.some(k => lower.includes(k))) return 'ai';
   if (lower.includes('naver')) return 'naver';
   if (lower.includes('google')) return 'google';
   if (lower.includes('kakao')) return 'kakao';
-  return ref;
+  if (lower.includes('daum')) return 'daum';
+  return ref || utmSource;
 }
 
 export default function PageViewTracker() {

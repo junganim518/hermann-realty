@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
+import { categorizeReferrer } from '@/lib/analyticsUtils';
 
 
 const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -186,19 +187,10 @@ function AdminDashboardInner() {
 
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
-    const categorize = (ref: string | null | undefined): string => {
-      if (!ref || ref === 'direct') return '직접접속';
-      const lower = ref.toLowerCase();
-      if (lower.includes('naver')) return '네이버';
-      if (lower.includes('google')) return '구글';
-      if (lower.includes('kakao')) return '카카오';
-      if (lower.includes('daum')) return '다음';
-      return ref;
-    };
     const buildRows = (rows: RawView[]): RefTableRow[] => {
       const nested: Record<string, Record<string, number>> = {};
       for (const v of rows) {
-        const referrer = categorize(v.referrer);
+        const referrer = categorizeReferrer(v.referrer);
         const page = v.page ?? '(unknown)';
         if (!nested[referrer]) nested[referrer] = {};
         nested[referrer][page] = (nested[referrer][page] ?? 0) + 1;
@@ -751,7 +743,6 @@ function AdminDashboardInner() {
                     </p>
                   );
                 }
-                const KNOWN = new Set(['네이버', '구글', '카카오', '다음', '직접접속']);
                 const badgeStyle = (ref: string): React.CSSProperties => {
                   const map: Record<string, { bg: string; color: string }> = {
                     '네이버': { bg: '#03c75a', color: '#fff' },
@@ -759,6 +750,7 @@ function AdminDashboardInner() {
                     '카카오': { bg: '#fee500', color: '#3c1e1e' },
                     '다음': { bg: '#0066ff', color: '#fff' },
                     '직접접속': { bg: '#888', color: '#fff' },
+                    'AI 검색': { bg: '#7c3aed', color: '#fff' },
                   };
                   const c = map[ref] ?? { bg: '#f5f5f5', color: '#555' };
                   return {
@@ -781,7 +773,7 @@ function AdminDashboardInner() {
                         <tr key={`${r.referrer}-${r.page}-${i}`} style={{ borderBottom: '1px solid #f0f0f0' }}>
                           <td style={{ padding: '10px 8px' }}>
                             <span style={badgeStyle(r.referrer)} title={r.referrer}>
-                              {KNOWN.has(r.referrer) ? r.referrer : r.referrer}
+                              {r.referrer}
                             </span>
                           </td>
                           <td style={{ padding: '10px 8px', color: '#333', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '12px', wordBreak: 'break-all' }}>
