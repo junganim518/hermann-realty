@@ -440,6 +440,7 @@ function AdminDashboardInner() {
       const { id: _id, property_number: _pn, created_at: _ca, updated_at: _ua, view_count: _vc,
         landlord_id: _lid, landlord_name: _ln, landlord_phone: _lp,
         tenant_name: _tn, tenant_phone: _tp, extra_contacts: _ec,
+        last_contacted_at: _lca,
         ...rest } = p;
 
       const payload = {
@@ -455,6 +456,7 @@ function AdminDashboardInner() {
         tenant_name: '',
         tenant_phone: '',
         extra_contacts: [],
+        last_contacted_at: new Date().toISOString(),
       };
 
       const { data: inserted, error } = await supabase
