@@ -69,13 +69,39 @@ export function groupByDevice(views: PageView[]): { mobile: number; pc: number; 
 }
 
 const AI_KEYWORDS = ['chatgpt', 'openai', 'gemini', 'bard', 'perplexity', 'copilot', 'claude'];
+const OWN_HOSTS = ['hermann-realty.com', 'vercel.app', 'localhost'];
 
-// referrer를 라벨로 카테고리화 (PageViewTracker와 일관성)
-// AI 체크를 google보다 먼저 (gemini가 google 도메인이므로)
+// DB에 저장된 referrer 값을 표시 라벨로 변환
+// 저장 값은 라벨('direct','naver','ai' 등) 또는 원본 URL(기타 경우)
+// 원본 URL 안에 utm_source 파라미터가 있으면 그걸 최우선 적용
 export function categorizeReferrer(ref: string | null | undefined): string {
   if (!ref || ref === 'direct') return '직접접속';
   const lower = ref.toLowerCase();
-  if (lower === 'ai' || AI_KEYWORDS.some(k => lower.includes(k))) return 'AI 검색';
+
+  // 이미 분류된 라벨인 경우
+  if (lower === 'ai') return 'AI 검색';
+  if (lower === 'naver') return '네이버';
+  if (lower === 'google') return '구글';
+  if (lower === 'kakao') return '카카오';
+  if (lower === 'daum') return '다음';
+
+  // 원본 URL인 경우: utm_source 파라미터를 최우선 확인
+  try {
+    const url = new URL(ref.startsWith('http') ? ref : `https://${ref}`);
+    const utm = url.searchParams.get('utm_source')?.toLowerCase() ?? '';
+    if (utm) {
+      if (AI_KEYWORDS.some(k => utm.includes(k))) return 'AI 검색';
+      if (utm.includes('naver')) return '네이버';
+      if (utm.includes('google')) return '구글';
+      if (utm.includes('kakao')) return '카카오';
+      if (utm.includes('daum')) return '다음';
+    }
+    // utm 없고 자기 도메인이면 직접접속
+    if (OWN_HOSTS.some(h => url.hostname.includes(h))) return '직접접속';
+  } catch { /* URL 파싱 불가 — 키워드 매칭으로 진행 */ }
+
+  // 키워드 매칭 (AI 체크를 google보다 먼저 — gemini가 google 도메인이므로)
+  if (AI_KEYWORDS.some(k => lower.includes(k))) return 'AI 검색';
   if (lower.includes('naver')) return '네이버';
   if (lower.includes('google')) return '구글';
   if (lower.includes('kakao')) return '카카오';

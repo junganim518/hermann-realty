@@ -13,22 +13,36 @@ function detectDevice(): 'mobile' | 'pc' {
 }
 
 const AI_KEYWORDS = ['chatgpt', 'openai', 'gemini', 'bard', 'perplexity', 'copilot', 'claude'];
+const OWN_HOSTS = ['hermann-realty.com', 'vercel.app', 'localhost'];
 
-function categorizeReferrer(): string {
-  if (typeof document === 'undefined') return 'direct';
-
-  // utm_source 우선 확인
-  const utmSource = new URLSearchParams(window.location.search).get('utm_source')?.toLowerCase() ?? '';
-  const ref = document.referrer;
-  const lower = (utmSource || ref).toLowerCase();
-
-  if (!utmSource && !ref) return 'direct';
+function classifySource(src: string): string {
+  const lower = src.toLowerCase();
   if (AI_KEYWORDS.some(k => lower.includes(k))) return 'ai';
   if (lower.includes('naver')) return 'naver';
   if (lower.includes('google')) return 'google';
   if (lower.includes('kakao')) return 'kakao';
   if (lower.includes('daum')) return 'daum';
-  return ref || utmSource;
+  return src;
+}
+
+function categorizeReferrer(): string {
+  if (typeof document === 'undefined') return 'direct';
+
+  // 1) utm_source 최우선 — 자기 도메인이어도 utm_source 있으면 그걸로 분류
+  const utmSource = new URLSearchParams(window.location.search).get('utm_source') ?? '';
+  if (utmSource) return classifySource(utmSource);
+
+  // 2) utm_source 없을 때만 referrer 확인
+  const ref = document.referrer;
+  if (!ref) return 'direct';
+
+  // 3) referrer가 자기 도메인이면 직접접속(내부 이동)
+  try {
+    const host = new URL(ref).hostname;
+    if (OWN_HOSTS.some(h => host.includes(h))) return 'direct';
+  } catch { /* URL 파싱 실패 시 아래로 */ }
+
+  return classifySource(ref);
 }
 
 export default function PageViewTracker() {
