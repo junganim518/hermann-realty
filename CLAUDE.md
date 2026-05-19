@@ -25,7 +25,8 @@ app/
 ├── page.tsx                          # 메인
 ├── properties/page.tsx               # 전체매물
 ├── map/page.tsx                      # 지도검색
-├── item/view/[id]/page.tsx           # 매물 상세
+├── item/view/[id]/page.tsx           # 매물 상세 (클라이언트 컴포넌트)
+├── item/view/[id]/layout.tsx         # 매물 상세 레이아웃 — generateMetadata + schema.org JSON-LD (RealEstateListing)
 ├── recent/page.tsx                   # 최근 본 매물
 ├── favorites/page.tsx                # 즐겨찾기
 └── admin/
