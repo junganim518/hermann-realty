@@ -1,43 +1,47 @@
 import type { Metadata } from 'next';
-import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
+
+const PROPERTY_SELECT =
+  'id, property_number, title, address, building_name, dong_ho, transaction_type, ' +
+  'deposit, monthly_rent, maintenance_fee, premium, supply_area, exclusive_area, ' +
+  'current_floor, total_floor, description, property_type, latitude, longitude, created_at';
 
 // XSS 방지: JSON-LD 내 < 를 유니코드 이스케이프
 function safeJsonLd(obj: object): string {
   return JSON.stringify(obj).replace(/</g, '\\u003c');
 }
 
-// generateMetadata와 레이아웃 컴포넌트 간 Supabase 요청 중복 제거
-const fetchPageData = cache(async (id: string) => {
-  const { data: raw } = await supabase
+async function fetchProperty(propertyNumber: string) {
+  const { data: raw, error } = await supabase
     .from('properties')
-    // eslint-disable-next-line max-len
-    .select('id, property_number, title, address, building_name, dong_ho, transaction_type, deposit, monthly_rent, maintenance_fee, premium, supply_area, exclusive_area, current_floor, total_floor, description, property_type, latitude, longitude, created_at')
-    .eq('property_number', id)
+    .select(PROPERTY_SELECT)
+    .eq('property_number', propertyNumber)
     .single();
-  const property = raw as Record<string, any> | null;
+  if (error) console.error('[JSON-LD] property fetch error:', error.message);
+  return (raw as Record<string, any>) ?? null;
+}
 
-  if (!property) return { property: null, imgs: [] as { image_url: string }[] };
-
-  const { data: imgs } = await supabase
+async function fetchImages(propertyId: string, limit = 5) {
+  const { data } = await supabase
     .from('property_images')
     .select('image_url, order_index')
-    .eq('property_id', property.id)
+    .eq('property_id', propertyId)
     .order('order_index', { ascending: true })
-    .limit(5);
-
-  return { property, imgs: (imgs ?? []) as { image_url: string }[] };
-});
+    .limit(limit);
+  return (data ?? []) as { image_url: string }[];
+}
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ): Promise<Metadata> {
-  const { id } = await params;
-  const { property, imgs } = await fetchPageData(id);
+  const { id } = await Promise.resolve(params);
+  const property = await fetchProperty(id);
 
   if (!property) {
     return { title: { absolute: '매물 정보 없음 | 헤르만부동산' } };
   }
+
+  const imgs = await fetchImages(property.id, 1);
 
   const propertyNumber = property.property_number || '';
   const customTitle = (property.title || '').trim();
@@ -46,12 +50,10 @@ export async function generateMetadata(
   const exclusiveArea = property.exclusive_area || '';
 
   const firstImage = (imgs[0]?.image_url || '').trim() || 'https://hermann-realty.com/og-image.png';
-
   const headline = customTitle || [propertyType, transactionType].filter(Boolean).join(' ');
   const title = `${[propertyNumber, headline].filter(Boolean).join(' ')} - 헤르만부동산`;
   const description = ['부천시', propertyType, transactionType, exclusiveArea ? `${exclusiveArea}㎡` : '']
-    .filter(Boolean)
-    .join(' ');
+    .filter(Boolean).join(' ');
 
   return {
     title: { absolute: title },
@@ -68,12 +70,16 @@ export default async function ItemViewLayout({
   children: React.ReactNode;
   params: Promise<{ id: string }> | { id: string };
 }) {
-  const { id } = await params;
-  const { property, imgs } = await fetchPageData(id);
+  const { id } = await Promise.resolve(params);
 
-  let jsonLd: object | null = null;
+  const property = await fetchProperty(id);
+  console.log('[JSON-LD] layout id:', id, '/ property:', property?.property_number ?? 'null');
+
+  let jsonLdStr: string | null = null;
 
   if (property) {
+    const imgs = await fetchImages(property.id, 5);
+
     const customTitle = (property.title || '').trim();
     const headline = customTitle || [property.property_type, property.transaction_type].filter(Boolean).join(' ');
     const name = [property.property_number, headline].filter(Boolean).join(' ');
@@ -93,7 +99,6 @@ export default async function ItemViewLayout({
     if (images.length > 0) ld.image = images;
     if (property.created_at) ld.datePosted = property.created_at;
 
-    // PostalAddress
     const streetParts = [property.address, property.building_name, property.dong_ho].filter(Boolean);
     if (streetParts.length > 0) {
       ld.address = {
@@ -105,20 +110,17 @@ export default async function ItemViewLayout({
       };
     }
 
-    // GeoCoordinates (좌표 있을 때만)
     const lat = parseFloat(String(property.latitude ?? ''));
     const lng = parseFloat(String(property.longitude ?? ''));
     if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
       ld.geo = { '@type': 'GeoCoordinates', latitude: lat, longitude: lng };
     }
 
-    // floorSize — 전용면적 (㎡)
     const area = parseFloat(String(property.exclusive_area ?? ''));
     if (!isNaN(area) && area > 0) {
       ld.floorSize = { '@type': 'QuantitativeValue', value: area, unitCode: 'MTK' };
     }
 
-    // Offer — 거래유형별 가격
     const tx = property.transaction_type;
     if (tx === '월세' && property.monthly_rent) {
       const priceDesc = [
@@ -132,15 +134,16 @@ export default async function ItemViewLayout({
       ld.offers = { '@type': 'Offer', price: property.deposit, priceCurrency: 'KRW' };
     }
 
-    jsonLd = ld;
+    jsonLdStr = safeJsonLd(ld);
+    console.log('[JSON-LD] built, length:', jsonLdStr.length);
   }
 
   return (
     <>
-      {jsonLd && (
+      {jsonLdStr && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdStr }}
         />
       )}
       {children}
