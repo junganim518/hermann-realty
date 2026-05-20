@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -184,6 +184,8 @@ function AdminDashboardInner() {
   const [copying, setCopying] = useState<string | null>(null);
   const [callModalProp, setCallModalProp] = useState<any>(null);
   const [callModalDate, setCallModalDate] = useState('');
+  const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
@@ -402,18 +404,24 @@ function AdminDashboardInner() {
     setExpiringContracts((expContracts ?? []).length);
   };
 
-  // 상태 순환: 거래중 → 보류 → 거래완료 → 거래중
-  const cycleStatus = async (id: string, current: any) => {
-    const cur: '거래중' | '보류' | '거래완료' =
-      current?.status === '보류' || current?.status === '거래완료' || current?.status === '거래중'
-        ? current.status
-        : (current?.is_sold ? '거래완료' : '거래중');
-    const next = cur === '거래중' ? '보류' : cur === '보류' ? '거래완료' : '거래중';
+  const changeStatus = async (id: string, next: '거래중' | '보류' | '거래완료', cur: '거래중' | '보류' | '거래완료') => {
+    if (next === cur) return;
     const nextIsSold = next === '거래완료';
     await supabase.from('properties').update({ status: next, is_sold: nextIsSold }).eq('id', id);
     setProperties(prev => prev.map(p => p.id === id ? { ...p, status: next, is_sold: nextIsSold } : p));
     setStats(prev => ({ ...prev, sold: prev.sold + (cur === '거래완료' ? -1 : 0) + (next === '거래완료' ? 1 : 0) }));
   };
+
+  useEffect(() => {
+    if (!openStatusDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setOpenStatusDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openStatusDropdown]);
 
   const copyProperty = async (p: any) => {
     if (copying) return;
@@ -1160,7 +1168,7 @@ function AdminDashboardInner() {
 
                     {/* 액션 영역 */}
                     <div className="admin-prop-actions">
-                      {/* 상태 순환 버튼 (거래중 → 보류 → 거래완료 → 거래중) */}
+                      {/* 상태 드롭다운 */}
                       {(() => {
                         const ps: '거래중' | '보류' | '거래완료' =
                           p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
@@ -1169,16 +1177,55 @@ function AdminDashboardInner() {
                         const pillColor = ps === '거래중' ? { bg: '#dcfce7', color: '#166534', border: '#86efac' }
                           : ps === '보류' ? { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' }
                           : { bg: '#fef0ee', color: '#e04a4a', border: '#f5c2bd' };
-                        const next = ps === '거래중' ? '보류' : ps === '보류' ? '거래완료' : '거래중';
+                        const isOpen = openStatusDropdown === p.id;
+                        const STATUS_OPTIONS: Array<'거래중' | '보류' | '거래완료'> = ['거래중', '보류', '거래완료'];
+                        const OPTION_COLORS = {
+                          '거래중': { dot: '#22c55e', text: '#166534' },
+                          '보류':   { dot: '#f59e0b', text: '#92400e' },
+                          '거래완료': { dot: '#f87171', text: '#e04a4a' },
+                        };
                         return (
-                          <button
-                            onClick={() => cycleStatus(p.id, p)}
-                            title={`${ps} → ${next} (클릭 시 순환)`}
-                            style={{
-                              padding: '4px 12px', borderRadius: '999px', cursor: 'pointer', fontSize: '11px', fontWeight: 700,
-                              background: pillColor.bg, color: pillColor.color, border: `1px solid ${pillColor.border}`,
-                            }}
-                          >{ps}</button>
+                          <div ref={isOpen ? statusDropdownRef : undefined} style={{ position: 'relative' }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setOpenStatusDropdown(isOpen ? null : p.id); }}
+                              style={{
+                                padding: '4px 8px 4px 12px', borderRadius: '999px', cursor: 'pointer',
+                                fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px',
+                                background: pillColor.bg, color: pillColor.color, border: `1px solid ${pillColor.border}`,
+                              }}
+                            >
+                              {ps}
+                              <span style={{ fontSize: '9px', opacity: 0.7 }}>▼</span>
+                            </button>
+                            {isOpen && (
+                              <div style={{
+                                position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 200,
+                                background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.12)', minWidth: '96px', overflow: 'hidden',
+                              }}>
+                                {STATUS_OPTIONS.map(opt => {
+                                  const oc = OPTION_COLORS[opt];
+                                  const isCurrent = opt === ps;
+                                  return (
+                                    <button
+                                      key={opt}
+                                      onClick={(e) => { e.stopPropagation(); changeStatus(p.id, opt, ps); setOpenStatusDropdown(null); }}
+                                      style={{
+                                        width: '100%', textAlign: 'left', padding: '7px 10px', cursor: 'pointer',
+                                        fontSize: '12px', fontWeight: isCurrent ? 700 : 400,
+                                        background: isCurrent ? '#f9fafb' : '#fff',
+                                        color: oc.text, border: 'none', display: 'flex', alignItems: 'center', gap: '6px',
+                                      }}
+                                    >
+                                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: oc.dot, flexShrink: 0, display: 'inline-block' }} />
+                                      {opt}
+                                      {isCurrent && <span style={{ marginLeft: 'auto', fontSize: '11px' }}>✓</span>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         );
                       })()}
 
