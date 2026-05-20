@@ -58,7 +58,7 @@ export default function EditCustomerPage() {
   const set = (key: string, val: string) => setForm(prev => ({ ...prev, [key]: val }));
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert('이름을 입력해주세요.'); return; }
+    if (!form.name.trim()) { alert('찾는 매물을 입력해주세요.'); return; }
 
     const consult = combineDateTime(form.consultation_date, form.consultation_time);
     if (consult.error) { alert(`상담 시간: ${consult.error}\n예) 14:00, 오후 2시`); return; }
@@ -117,8 +117,8 @@ export default function EditCustomerPage() {
           <h2 style={sectionTitle}>기본 정보</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={labelSt}>이름 *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="손님 이름" style={inputSt} />
+              <label style={labelSt}>찾는 매물 *</label>
+              <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="예: 중동 카페자리 찾는 분" style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>연락처</label>

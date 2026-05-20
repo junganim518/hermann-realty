@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { formatPhone } from '@/lib/phoneFormat';
 
 const STATUSES = ['전체', '상담중', '방문예정', '방문완료', '계약진행', '계약완료', '보류'];
 const STATUS_COLORS: Record<string, string> = {
@@ -27,7 +28,6 @@ function CustomersPageInner() {
   const [loading, setLoading] = useState(true);
   const [modalCustomer, setModalCustomer] = useState<any>(null);
 
-  // 상태 필터 → URL ?status=... 동기화 (수정 후 router.back() 으로 돌아오면 필터 유지)
   const setFilterAndURL = (s: string) => {
     setFilter(s);
     const params = new URLSearchParams();
@@ -36,7 +36,6 @@ function CustomersPageInner() {
     router.replace(`/admin/customers${qs ? '?' + qs : ''}`, { scroll: false });
   };
 
-  // 뒤로가기 등 외부 URL 변경 시 state 재동기화
   useEffect(() => {
     setFilter(searchParams.get('status') || '전체');
   }, [searchParams]);
@@ -73,7 +72,7 @@ function CustomersPageInner() {
   if (!authChecked) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</div>;
 
   const thSt: React.CSSProperties = { padding: '12px 10px', fontSize: '13px', fontWeight: 600, color: '#888', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '2px solid #e2a06e' };
-  const tdSt: React.CSSProperties = { padding: '12px 10px', fontSize: '14px', borderBottom: '1px solid #f0f0f0' };
+  const tdSt: React.CSSProperties = { padding: '12px 10px', fontSize: '13px', color: '#666', borderBottom: '1px solid #f0f0f0' };
 
   const formatDate = (d: string | null) => {
     if (!d) return '-';
@@ -81,11 +80,8 @@ function CustomersPageInner() {
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${dt.getFullYear()}.${pad(dt.getMonth() + 1)}.${pad(dt.getDate())}`;
   };
-  const formatDateTime = (d: string | null) => {
-    if (!d) return '-';
-    const dt = new Date(d);
-    return `${dt.toLocaleDateString('ko-KR')} ${dt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
-  };
+
+  const phoneDigits = (phone: string) => phone.replace(/\D/g, '');
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
@@ -120,7 +116,7 @@ function CustomersPageInner() {
               <thead>
                 <tr>
                   <th style={thSt}>상담날짜</th>
-                  <th style={thSt}>이름</th>
+                  <th style={thSt}>찾는 매물</th>
                   <th style={thSt}>연락처</th>
                   <th style={thSt}>관심매물</th>
                   <th style={thSt}>예산</th>
@@ -134,17 +130,23 @@ function CustomersPageInner() {
               <tbody>
                 {filtered.map(c => (
                   <tr key={c.id} style={{ transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#fafafa')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                    <td style={{ ...tdSt, fontSize: '13px', whiteSpace: 'nowrap' }}>{formatDate(c.consultation_date)}</td>
-                    <td style={{ ...tdSt, fontWeight: 700 }}>{c.name}</td>
-                    <td style={tdSt}>{c.phone || '-'}</td>
+                    <td style={{ ...tdSt, whiteSpace: 'nowrap' }}>{formatDate(c.consultation_date)}</td>
+                    <td style={{ ...tdSt, fontSize: '16px', fontWeight: 700, color: '#1a1a1a' }}>{c.name}</td>
+                    <td style={{ ...tdSt, whiteSpace: 'nowrap' }}>
+                      {c.phone ? (
+                        <a href={`tel:${phoneDigits(c.phone)}`} className="phone-link" style={{ color: '#c47c30', fontWeight: 600, textDecoration: 'none' }}>
+                          {formatPhone(c.phone)}
+                        </a>
+                      ) : '-'}
+                    </td>
                     <td style={tdSt}>{c.interest_type || '-'}</td>
                     <td style={tdSt}>{c.budget || '-'}</td>
                     <td style={tdSt}>{c.region || '-'}</td>
-                    <td style={{ ...tdSt, fontSize: '13px', whiteSpace: 'nowrap' }}>{formatDate(c.visit_date)}</td>
-                    <td style={{ ...tdSt, maxWidth: '200px' }}>
+                    <td style={{ ...tdSt, whiteSpace: 'nowrap' }}>{formatDate(c.visit_date)}</td>
+                    <td style={{ ...tdSt, maxWidth: '200px', fontSize: '14px', color: '#444' }}>
                       {c.memo ? (
-                        <span onClick={() => setModalCustomer(c)} style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', whiteSpace: 'pre-line', lineHeight: 1.4, fontSize: '12px', color: '#666', cursor: 'pointer' }} title="클릭하여 전체 보기">{c.memo}</span>
-                      ) : <span style={{ color: '#ccc', fontSize: '12px' }}>-</span>}
+                        <span onClick={() => setModalCustomer(c)} style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', whiteSpace: 'pre-line', lineHeight: 1.4, cursor: 'pointer' }} title="클릭하여 전체 보기">{c.memo}</span>
+                      ) : <span style={{ color: '#ccc', fontSize: '13px' }}>-</span>}
                     </td>
                     <td style={{ ...tdSt, whiteSpace: 'nowrap' }}>
                       <select
@@ -152,13 +154,13 @@ function CustomersPageInner() {
                         onChange={e => updateStatus(c.id, e.target.value)}
                         style={{ padding: '4px 8px', fontSize: '12px', fontWeight: 700, borderRadius: '4px', cursor: 'pointer', border: `1px solid ${STATUS_COLORS[c.status] ?? '#999'}`, background: (STATUS_COLORS[c.status] ?? '#999') + '18', color: STATUS_COLORS[c.status] ?? '#999' }}
                       >
-                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        {STATUSES.slice(1).map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </td>
                     <td style={{ ...tdSt, textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                        <a href={`/admin/customers/${c.id}`} style={{ padding: '4px 10px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>상세</a>
-                        <button onClick={() => handleDelete(c.id, c.name)} style={{ padding: '4px 10px', fontSize: '12px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>삭제</button>
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                        <a href={`/admin/customers/${c.id}`} style={{ padding: '4px 8px', fontSize: '11px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>상세</a>
+                        <button onClick={() => handleDelete(c.id, c.name)} style={{ padding: '4px 8px', fontSize: '11px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>삭제</button>
                       </div>
                     </td>
                   </tr>
@@ -169,41 +171,55 @@ function CustomersPageInner() {
         </div>
       </div>
 
-        {/* 모바일 카드 */}
-        <div className="cust-cards" style={{ display: 'none', flexDirection: 'column', gap: '10px' }}>
-          {loading ? (
-            <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
-          ) : filtered.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>등록된 손님이 없습니다</p>
-          ) : filtered.map(c => (
-            <div key={c.id} onClick={() => setModalCustomer(c)} style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '14px', cursor: 'pointer' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontWeight: 700, fontSize: '15px' }}>{c.name}</span>
-                  <span style={{ fontSize: '13px', color: '#888' }}>{c.phone || ''}</span>
-                </div>
-                <select value={c.status} onClick={e => e.stopPropagation()} onChange={e => updateStatus(c.id, e.target.value)}
-                  style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '4px', cursor: 'pointer', border: `1px solid ${STATUS_COLORS[c.status] ?? '#999'}`, background: (STATUS_COLORS[c.status] ?? '#999') + '18', color: STATUS_COLORS[c.status] ?? '#999' }}>
-                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+      {/* 모바일 카드 */}
+      <div className="cust-cards" style={{ display: 'none', flexDirection: 'column', gap: '10px' }}>
+        {loading ? (
+          <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
+        ) : filtered.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>등록된 손님이 없습니다</p>
+        ) : filtered.map(c => (
+          <div key={c.id} style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '14px' }}>
+            {/* 1줄: 찾는 매물 + 상태 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ fontWeight: 700, fontSize: '16px', color: '#1a1a1a', flex: 1, marginRight: '8px' }}>{c.name}</span>
+              <select value={c.status} onChange={e => updateStatus(c.id, e.target.value)}
+                style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '4px', cursor: 'pointer', border: `1px solid ${STATUS_COLORS[c.status] ?? '#999'}`, background: (STATUS_COLORS[c.status] ?? '#999') + '18', color: STATUS_COLORS[c.status] ?? '#999', flexShrink: 0 }}>
+                {STATUSES.slice(1).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            {/* 2줄: 전화번호 */}
+            {c.phone && (
+              <div style={{ marginBottom: '6px' }}>
+                <a href={`tel:${phoneDigits(c.phone)}`} style={{ fontSize: '15px', fontWeight: 700, color: '#c47c30', textDecoration: 'none' }}>
+                  {formatPhone(c.phone)}
+                </a>
               </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '12px', color: '#666', marginBottom: '6px' }}>
+            )}
+            {/* 3줄: 메모 */}
+            {c.memo && (
+              <p onClick={() => setModalCustomer(c)} style={{ fontSize: '14px', color: '#444', margin: '0 0 6px', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', cursor: 'pointer' }}>{c.memo}</p>
+            )}
+            {/* 4줄: 관심매물 · 예산 · 지역 */}
+            {(c.interest_type || c.budget || c.region) && (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', fontSize: '12px', color: '#666', marginBottom: '4px' }}>
                 {c.interest_type && <span>{c.interest_type}</span>}
                 {c.budget && <span>· {c.budget}</span>}
                 {c.region && <span>· {c.region}</span>}
               </div>
-              <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#888', marginBottom: c.memo ? '6px' : '0' }}>
-                <span>상담 {formatDate(c.consultation_date)}</span>
-                <span>방문 {formatDate(c.visit_date)}</span>
-              </div>
-              {c.memo && <p style={{ fontSize: '11px', color: '#999', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.memo}</p>}
-              <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }} onClick={e => e.stopPropagation()}>
-                <a href={`/admin/customers/${c.id}`} style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>상세</a>
-                <button onClick={() => handleDelete(c.id, c.name)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>삭제</button>
-              </div>
+            )}
+            {/* 5줄: 날짜 */}
+            <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>
+              {c.consultation_date && <span>상담 {formatDate(c.consultation_date)}</span>}
+              {c.visit_date && <span>방문 {formatDate(c.visit_date)}</span>}
             </div>
-          ))}
-        </div>
+            {/* 액션 버튼 */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <a href={`/admin/customers/${c.id}`} style={{ flex: 1, textAlign: 'center', padding: '6px', fontSize: '12px', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>상세</a>
+              <button onClick={() => handleDelete(c.id, c.name)} style={{ flex: 1, padding: '6px', fontSize: '12px', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>삭제</button>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 767px) {
@@ -215,6 +231,7 @@ function CustomersPageInner() {
         @media (min-width: 768px) {
           .cust-cards { display: none !important; }
         }
+        .phone-link:hover { text-decoration: underline !important; }
       ` }} />
 
       {/* 메모 모달 */}
@@ -227,10 +244,16 @@ function CustomersPageInner() {
             </div>
             <div style={{ padding: '20px 24px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '10px 12px', fontSize: '14px', marginBottom: '20px' }}>
-                <span style={{ color: '#888', fontWeight: 500 }}>이름</span>
+                <span style={{ color: '#888', fontWeight: 500 }}>찾는 매물</span>
                 <span style={{ color: '#1a1a1a', fontWeight: 700 }}>{modalCustomer.name}</span>
                 <span style={{ color: '#888', fontWeight: 500 }}>연락처</span>
-                <span>{modalCustomer.phone || '-'}</span>
+                <span>
+                  {modalCustomer.phone ? (
+                    <a href={`tel:${phoneDigits(modalCustomer.phone)}`} style={{ color: '#c47c30', fontWeight: 600, textDecoration: 'none' }}>
+                      {formatPhone(modalCustomer.phone)}
+                    </a>
+                  ) : '-'}
+                </span>
                 <span style={{ color: '#888', fontWeight: 500 }}>관심매물</span>
                 <span>{modalCustomer.interest_type || '-'}</span>
                 <span style={{ color: '#888', fontWeight: 500 }}>예산</span>
