@@ -118,8 +118,10 @@ const formatPrice = (v: number) => {
 
 const buildPriceStr = (p: any) => {
   if (p.transaction_type === '매매') {
-    const v = p.sale_price || p.deposit;
-    return v ? formatPrice(v) : '-';
+    return p.sale_price ? formatPrice(p.sale_price) : '-';
+  }
+  if (p.transaction_type === '전세') {
+    return p.deposit ? formatPrice(p.deposit) : '-';
   }
   const parts = [
     p.deposit ? `보 ${formatPrice(p.deposit)}` : null,

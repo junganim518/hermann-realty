@@ -72,7 +72,11 @@ lib/
 - extra_contacts (JSONB)
 - created_at, updated_at (TIMESTAMPTZ)
 
-**참고**: properties에 sale_price 컬럼 없음. 가격 컬럼은 deposit, monthly_rent, maintenance_fee, premium 4개.
+**가격 컬럼**: deposit, monthly_rent, sale_price, maintenance_fee, premium
+- **매매**: `sale_price` 사용 (deposit/monthly_rent는 null)
+- **전세**: `deposit` 사용 (monthly_rent는 null, sale_price는 null)
+- **월세**: `deposit` + `monthly_rent` 사용 (sale_price는 null)
+- 등록/수정 폼에서 거래유형 변경 시 입력 칸 즉시 분기 (조건부 렌더링)
 
 ### landlords (임대인)
 

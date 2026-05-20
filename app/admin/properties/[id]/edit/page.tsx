@@ -145,6 +145,7 @@ export default function EditPropertyPage() {
     longitude: '',
     deposit: '',
     monthly_rent: '',
+    sale_price: '',
     maintenance_fee: '',
     premium: '',
     supply_area: '',
@@ -240,6 +241,7 @@ export default function EditPropertyPage() {
         longitude: data.longitude ? String(data.longitude) : '',
         deposit: data.deposit ? String(data.deposit) : '',
         monthly_rent: data.monthly_rent ? String(data.monthly_rent) : '',
+        sale_price: data.sale_price ? String(data.sale_price) : '',
         maintenance_fee: data.maintenance_fee ? String(data.maintenance_fee) : '',
         premium: data.premium ? String(data.premium) : '',
         supply_area: data.supply_area ?? '',
@@ -747,8 +749,9 @@ export default function EditPropertyPage() {
         land_number: form.land_number || null,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
-        deposit: form.deposit ? parseInt(form.deposit) : null,
-        monthly_rent: form.monthly_rent ? parseInt(form.monthly_rent) : null,
+        sale_price: form.transaction_type === '매매' ? (form.sale_price ? parseInt(form.sale_price) : null) : null,
+        deposit: form.transaction_type !== '매매' ? (form.deposit ? parseInt(form.deposit) : null) : null,
+        monthly_rent: form.transaction_type === '월세' ? (form.monthly_rent ? parseInt(form.monthly_rent) : null) : null,
         maintenance_fee: form.maintenance_fee ? parseInt(form.maintenance_fee) : null,
         premium: form.premium ? parseInt(form.premium) : null,
         supply_area: form.supply_area || null,
@@ -1091,8 +1094,25 @@ export default function EditPropertyPage() {
         <div className="admin-section" style={sectionSt}>
           <h2 className="admin-section-title" style={sectionTitle}>금액 정보 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(만원 단위)</span></h2>
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div><label style={labelSt}>보증금</label><input type="number" value={form.deposit} onChange={e => set('deposit', e.target.value)} style={inputSt} /></div>
-            <div><label style={labelSt}>월세</label><input type="number" value={form.monthly_rent} onChange={e => set('monthly_rent', e.target.value)} style={inputSt} /></div>
+            {form.transaction_type === '매매' ? (
+              <div>
+                <label style={labelSt}>매매가</label>
+                <input type="number" value={form.sale_price} onChange={e => set('sale_price', e.target.value)} placeholder="예: 50000" style={inputSt} />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label style={labelSt}>{form.transaction_type === '전세' ? '전세금' : '보증금'}</label>
+                  <input type="number" value={form.deposit} onChange={e => set('deposit', e.target.value)} style={inputSt} />
+                </div>
+                {form.transaction_type === '월세' && (
+                  <div>
+                    <label style={labelSt}>월세</label>
+                    <input type="number" value={form.monthly_rent} onChange={e => set('monthly_rent', e.target.value)} style={inputSt} />
+                  </div>
+                )}
+              </>
+            )}
             <div><label style={labelSt}>관리비</label><input type="number" value={form.maintenance_fee} onChange={e => set('maintenance_fee', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>권리금</label><input type="number" value={form.premium} onChange={e => set('premium', e.target.value)} placeholder="0 입력 시 무권리" style={inputSt} /></div>
           </div>

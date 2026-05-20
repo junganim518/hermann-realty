@@ -117,8 +117,10 @@ const formatPrice = (v: number) => {
 
 const buildPriceStr = (p: any) => {
   if (p.transaction_type === '매매') {
-    const v = p.sale_price || p.deposit;
-    return v ? `매매가 ${formatPrice(v)}` : '-';
+    return p.sale_price ? `매매가 ${formatPrice(p.sale_price)}` : '-';
+  }
+  if (p.transaction_type === '전세') {
+    return p.deposit ? `보증금 ${formatPrice(p.deposit)}` : '-';
   }
   const parts = [
     p.deposit      ? `보증금 ${formatPrice(p.deposit)}` : null,
@@ -177,11 +179,11 @@ interface Property {
   tenant_name?: string;
   tenant_phone?: string;
   extra_contacts?: { name: string; phone: string; role: string }[];
+  sale_price?: number;
   is_sold?: boolean;
   created_at?: string;
   latitude?: number | string;
   longitude?: number | string;
-  sale_price?: number;
   property_images?: { image_url: string; thumbnail_url?: string }[];
 }
 
