@@ -173,6 +173,14 @@ lib/
 - **모바일 우선** — 사장님 실무는 주로 모바일에서
 - 푸터 좌우 비율: 2:1 (주소 한 줄 표시)
 
+### 관리자 매물 카드 (app/admin/page.tsx)
+
+- **모바일**: 썸네일(`admin-prop-thumbnail`) + 매물제목(`admin-prop-title`) 숨김, 가로 컴팩트 레이아웃
+- **액션 버튼**: 데스크톱은 전체 노출(`admin-prop-desktop-btns`), 모바일은 통화 체크 + ⋮ 더보기(`admin-prop-mobile-btns`)
+- **⋮ 더보기 메뉴**: 복사/블로그 글/수정/삭제 — Portal(`createPortal`)로 body에 렌더링 (드롭업/다운 자동)
+- **상태 드롭다운**(`거래중 ▼`): 마찬가지로 Portal로 렌더링 — overflow:hidden 부모에 가려지지 않음
+- **매물번호/주소 클릭**: `router.push`로 상세 페이지 이동 (cursor: pointer)
+
 ## 자주 발생하는 이슈
 
 ### 400 에러 (column does not exist)

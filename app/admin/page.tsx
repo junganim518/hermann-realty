@@ -188,6 +188,9 @@ function AdminDashboardInner() {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null);
+  const [moreMenuPos, setMoreMenuPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
+  const moreMenuRef = useRef<HTMLDivElement | null>(null);
 
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
@@ -425,6 +428,18 @@ function AdminDashboardInner() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [openStatusDropdown]);
+
+  useEffect(() => {
+    if (!openMoreMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setOpenMoreMenu(null);
+        setMoreMenuPos(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMoreMenu]);
 
   const copyProperty = async (p: any) => {
     if (copying) return;
@@ -1092,7 +1107,7 @@ function AdminDashboardInner() {
                 return (
                   <div key={p.id} className="admin-prop-row" style={{ background: (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : 1 }}>
                     {/* 썸네일 */}
-                    <a href={`/item/view/${p.property_number}`} style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
+                    <a href={`/item/view/${p.property_number}`} className="admin-prop-thumbnail" style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
                         <img src={propImages[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
@@ -1112,7 +1127,7 @@ function AdminDashboardInner() {
                     <div className="admin-prop-info">
                       {/* 1행: 매물번호 + 뱃지 + 타이틀 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a' }}>{p.property_number}</span>
+                        <span onClick={() => router.push(`/item/view/${p.property_number}`)} style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a', cursor: 'pointer' }}>{p.property_number}</span>
                         {p.property_type && (
                           <span style={{ fontSize: '11px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', background: '#f5f5f5', color: '#666', border: '1px solid #e0e0e0' }}>{p.property_type}</span>
                         )}
@@ -1143,11 +1158,11 @@ function AdminDashboardInner() {
                           </span>
                         )}
                         {p.title && (
-                          <span style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, wordBreak: 'keep-all', overflowWrap: 'break-word', minWidth: 0 }} title={p.title}>{p.title}</span>
+                          <span className="admin-prop-title" style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, wordBreak: 'keep-all', overflowWrap: 'break-word', minWidth: 0 }} title={p.title}>{p.title}</span>
                         )}
                       </div>
                       {/* 2행: 주소 */}
-                      <p style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4 }}>{formatAddr(p)}</p>
+                      <p onClick={() => router.push(`/item/view/${p.property_number}`)} style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4, cursor: 'pointer' }}>{formatAddr(p)}</p>
                       {/* 3행: 면적 + 금액 + 권리금 + 관리비 */}
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '13px', marginBottom: p.admin_memo ? '4px' : '0' }}>
                         {p.exclusive_area && <span style={{ color: '#555' }}>{p.exclusive_area}㎡ ({(parseFloat(p.exclusive_area) / 3.3058).toFixed(1)}평)</span>}
@@ -1207,8 +1222,8 @@ function AdminDashboardInner() {
                         );
                       })()}
 
-                      {/* 복사/블로그/수정/삭제 */}
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {/* 데스크톱 전용 버튼 (모바일에서 숨김) */}
+                      <div className="admin-prop-desktop-btns">
                         <button onClick={() => copyProperty(p)} disabled={copying === p.id} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #4a80e8', color: '#4a80e8', background: '#fff', cursor: copying === p.id ? 'wait' : 'pointer', opacity: copying === p.id ? 0.6 : 1 }}>
                           {copying === p.id ? '복사중...' : '복사'}
                         </button>
@@ -1216,19 +1231,37 @@ function AdminDashboardInner() {
                         {(() => {
                           const lc = p.last_contacted_at;
                           const isOld = !lc || getAgeDays(lc) >= 30;
-                          const label = lc
-                            ? `📞 ${new Date(lc).getMonth() + 1}/${new Date(lc).getDate()}`
-                            : '📞 미기록';
+                          const label = lc ? `📞 ${new Date(lc).getMonth() + 1}/${new Date(lc).getDate()}` : '📞 미기록';
                           return (
-                            <button
-                              onClick={() => { setCallModalProp(p); setCallModalDate(new Date().toLocaleDateString('en-CA')); }}
-                              title={lc ? `마지막 통화: ${formatDate(lc)}` : '통화 기록 없음'}
-                              style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', background: '#fff', cursor: 'pointer', border: `1px solid ${isOld ? '#e2a06e' : '#ccc'}`, color: isOld ? '#e2a06e' : '#999' }}
-                            >{label}</button>
+                            <button onClick={() => { setCallModalProp(p); setCallModalDate(new Date().toLocaleDateString('en-CA')); }} title={lc ? `마지막 통화: ${formatDate(lc)}` : '통화 기록 없음'} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', background: '#fff', cursor: 'pointer', border: `1px solid ${isOld ? '#e2a06e' : '#ccc'}`, color: isOld ? '#e2a06e' : '#999' }}>{label}</button>
                           );
                         })()}
                         <a href={`/admin/properties/${p.property_number}/edit`} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', textDecoration: 'none' }}>수정</a>
                         <button onClick={() => deleteProperty(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e05050', color: '#e05050', background: '#fff', cursor: 'pointer' }}>삭제</button>
+                      </div>
+
+                      {/* 모바일 전용: 통화 체크 + ⋮ 더보기 */}
+                      <div className="admin-prop-mobile-btns">
+                        {(() => {
+                          const lc = p.last_contacted_at;
+                          const isOld = !lc || getAgeDays(lc) >= 30;
+                          const label = lc ? `📞 ${new Date(lc).getMonth() + 1}/${new Date(lc).getDate()}` : '📞 미기록';
+                          return (
+                            <button onClick={() => { setCallModalProp(p); setCallModalDate(new Date().toLocaleDateString('en-CA')); }} title={lc ? `마지막 통화: ${formatDate(lc)}` : '통화 기록 없음'} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', background: '#fff', cursor: 'pointer', border: `1px solid ${isOld ? '#e2a06e' : '#ccc'}`, color: isOld ? '#e2a06e' : '#999', whiteSpace: 'nowrap' }}>{label}</button>
+                          );
+                        })()}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (openMoreMenu === p.id) { setOpenMoreMenu(null); setMoreMenuPos(null); }
+                            else {
+                              const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                              setOpenMoreMenu(p.id);
+                              setMoreMenuPos({ top: rect.top, left: rect.left, buttonBottom: rect.bottom });
+                            }
+                          }}
+                          style={{ fontSize: '14px', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc', color: '#555', background: '#fff', cursor: 'pointer', lineHeight: 1 }}
+                        >⋮</button>
                       </div>
                     </div>
                   </div>
@@ -1334,6 +1367,8 @@ function AdminDashboardInner() {
         .admin-prop-info span,
         .admin-prop-info div { overflow-wrap: break-word; word-break: keep-all; }
         .admin-prop-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
+        .admin-prop-desktop-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+        .admin-prop-mobile-btns { display: none; gap: 4px; }
 
         @media (min-width: 768px) and (max-width: 1199px) {
           main > div { max-width: 100% !important; padding: 0 16px !important; }
@@ -1352,11 +1387,14 @@ function AdminDashboardInner() {
           .admin-filters select { min-width: 110px !important; font-size: 12px !important; }
           .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
           .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
-          .admin-prop-row { flex-direction: column !important; gap: 8px !important; padding: 10px !important; }
-          .admin-prop-row > a:first-child,
-          .admin-prop-row > div:first-child { display: flex; gap: 10px; width: 100%; }
-          .admin-prop-actions { flex-direction: row !important; width: 100% !important; justify-content: space-between !important; align-items: center !important; }
-          .admin-prop-actions > div { display: flex; gap: 4px; }
+          /* 모바일 매물 카드: 썸네일/제목 숨기고 가로 컴팩트 레이아웃 */
+          .admin-prop-thumbnail { display: none !important; }
+          .admin-prop-title { display: none !important; }
+          .admin-prop-row { gap: 6px !important; padding: 8px !important; }
+          .admin-prop-info p { font-size: 12px !important; margin-bottom: 2px !important; }
+          .admin-prop-actions { gap: 4px !important; }
+          .admin-prop-desktop-btns { display: none !important; }
+          .admin-prop-mobile-btns { display: flex !important; }
         }
       ` }} />
 
@@ -1420,6 +1458,58 @@ function AdminDashboardInner() {
                 </button>
               );
             })}
+          </div>,
+          document.body
+        );
+      })()}
+
+      {/* ⋮ 더보기 메뉴 Portal */}
+      {openMoreMenu && moreMenuPos && (() => {
+        const mp = properties.find(pr => pr.id === openMoreMenu);
+        if (!mp) return null;
+        const above = moreMenuPos.top > window.innerHeight * 0.6;
+        const left = Math.min(moreMenuPos.left, window.innerWidth - 112);
+        const btnStyle: React.CSSProperties = {
+          width: '100%', textAlign: 'left', padding: '9px 14px', cursor: 'pointer',
+          fontSize: '13px', fontWeight: 500, background: '#fff', border: 'none',
+          display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap',
+        };
+        const close = () => { setOpenMoreMenu(null); setMoreMenuPos(null); };
+        return createPortal(
+          <div
+            ref={moreMenuRef}
+            style={{
+              position: 'fixed',
+              ...(above
+                ? { bottom: window.innerHeight - moreMenuPos.top + 4 }
+                : { top: moreMenuPos.buttonBottom + 4 }),
+              left,
+              zIndex: 9999,
+              background: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
+              minWidth: '108px',
+              overflow: 'hidden',
+            }}
+          >
+            <button onClick={() => { copyProperty(mp); close(); }} disabled={copying === mp.id}
+              style={{ ...btnStyle, color: '#4a80e8', opacity: copying === mp.id ? 0.5 : 1 }}>
+              복사
+            </button>
+            <button onClick={() => { openBlogModal(mp); close(); }}
+              style={{ ...btnStyle, color: '#9c27b0' }}>
+              블로그 글
+            </button>
+            <a href={`/admin/properties/${mp.property_number}/edit`}
+              style={{ ...btnStyle, color: '#e2a06e', textDecoration: 'none' }}
+              onClick={close}>
+              수정
+            </a>
+            <button onClick={() => { deleteProperty(mp); close(); }}
+              style={{ ...btnStyle, color: '#e05050', borderTop: '1px solid #f3f4f6' }}>
+              삭제
+            </button>
           </div>,
           document.body
         );
