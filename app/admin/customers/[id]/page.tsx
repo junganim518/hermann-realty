@@ -476,7 +476,7 @@ export default function CustomerDetailPage() {
                         {p.property_type && <span style={{ fontSize: '10px', color: '#666', padding: '1px 6px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>}
                         {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
                         {p.business_name && (
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#999', whiteSpace: 'nowrap' }}>
+                          <span title={p.business_name_public ? '공개' : '비공개 (관리자만 표시)'} style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#92400e', whiteSpace: 'nowrap' }}>
                             {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
                           </span>
                         )}
@@ -645,7 +645,7 @@ export default function CustomerDetailPage() {
                               {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
                               {p.property_type && <span style={{ fontSize: '10px', color: '#666', padding: '1px 5px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>}
                               {p.business_name && (
-                                <span style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#999', whiteSpace: 'nowrap' }}>
+                                <span title={p.business_name_public ? '공개' : '비공개 (관리자만 표시)'} style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#92400e', whiteSpace: 'nowrap' }}>
                                   {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
                                 </span>
                               )}
