@@ -999,11 +999,16 @@ function AdminDashboardInner() {
 
         {/* ═══ 매물 관리 리스트 ═══ */}
         <div id="property-management-section" style={sectionSt}>
-          <div style={sectionTitleSt}>
-            <span>매물 관리 ({filtered.length})</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={sectionTitleSt} className="prop-mgmt-header">
+            {/* 제목 행: 데스크톱=제목만, 모바일=제목+등록버튼 */}
+            <div className="prop-mgmt-title-row">
+              <span>매물 관리 ({filtered.length})</span>
+              <a href="/admin/properties/new" className="prop-mgmt-register-m" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
+            </div>
+            {/* 컨트롤 그룹 */}
+            <div className="prop-mgmt-controls">
               {/* 정렬 토글 */}
-              <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
+              <div className="prop-mgmt-sort" style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd', flexShrink: 0 }}>
                 {(['property_number', 'oldest', 'views'] as const).map(opt => {
                   const active = sortBy === opt;
                   const label = opt === 'property_number' ? '매물번호순' : opt === 'oldest' ? '오래된순' : '조회수순';
@@ -1015,7 +1020,7 @@ function AdminDashboardInner() {
                         padding: '5px 10px', fontSize: '12px', fontWeight: 600,
                         background: active ? '#1a1a1a' : '#fff',
                         color: active ? '#e2a06e' : '#666',
-                        border: 'none', cursor: active ? 'default' : 'pointer',
+                        border: 'none', cursor: active ? 'default' : 'pointer', whiteSpace: 'nowrap',
                       }}
                     >
                       {label}
@@ -1023,32 +1028,35 @@ function AdminDashboardInner() {
                   );
                 })}
               </div>
-              {/* 거래상태 토글 (전체/거래중/거래완료) */}
-              <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                {SOLD_TYPES.map(opt => {
-                  const active = filterSold === opt;
-                  const activeColor = opt === '거래중' ? '#4caf50' : opt === '보류' ? '#f59e0b' : opt === '거래완료' ? '#999' : '#1a1a1a';
-                  return (
-                    <button
-                      key={opt}
-                      onClick={() => { setFilterSold(opt); setPage(1); syncURL({ sold: opt, page: '1' }); }}
-                      style={{
-                        padding: '5px 10px', fontSize: '12px', fontWeight: 600,
-                        background: active ? activeColor : '#fff',
-                        color: active ? '#fff' : '#666',
-                        border: 'none', cursor: active ? 'default' : 'pointer',
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  );
-                })}
+              {/* 거래상태 토글 + 통화30일+ */}
+              <div className="prop-mgmt-filter-row">
+                <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd', flexShrink: 0 }}>
+                  {SOLD_TYPES.map(opt => {
+                    const active = filterSold === opt;
+                    const activeColor = opt === '거래중' ? '#4caf50' : opt === '보류' ? '#f59e0b' : opt === '거래완료' ? '#999' : '#1a1a1a';
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => { setFilterSold(opt); setPage(1); syncURL({ sold: opt, page: '1' }); }}
+                        style={{
+                          padding: '5px 10px', fontSize: '12px', fontWeight: 600,
+                          background: active ? activeColor : '#fff',
+                          color: active ? '#fff' : '#666',
+                          border: 'none', cursor: active ? 'default' : 'pointer', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => { const v = !filterCallOld; setFilterCallOld(v); setPage(1); syncURL({ callOld: v ? '1' : '', page: '1' }); }}
+                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, background: filterCallOld ? '#e2a06e' : '#fff', color: filterCallOld ? '#fff' : '#666', border: `1px solid ${filterCallOld ? '#e2a06e' : '#ddd'}`, borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                >📞 통화 30일+</button>
               </div>
-              <button
-                onClick={() => { const v = !filterCallOld; setFilterCallOld(v); setPage(1); syncURL({ callOld: v ? '1' : '', page: '1' }); }}
-                style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, background: filterCallOld ? '#e2a06e' : '#fff', color: filterCallOld ? '#fff' : '#666', border: `1px solid ${filterCallOld ? '#e2a06e' : '#ddd'}`, borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-              >📞 통화 30일+</button>
-              <a href="/admin/properties/new" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
+              {/* 데스크톱 전용 등록 버튼 */}
+              <a href="/admin/properties/new" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>+ 매물 등록</a>
             </div>
           </div>
 
@@ -1369,6 +1377,10 @@ function AdminDashboardInner() {
         .admin-prop-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
         .admin-prop-desktop-btns { display: flex; gap: 4px; flex-wrap: wrap; }
         .admin-prop-mobile-btns { display: none; gap: 4px; }
+        .prop-mgmt-title-row { display: flex; align-items: center; }
+        .prop-mgmt-register-m { display: none; }
+        .prop-mgmt-controls { display: flex; align-items: center; gap: 8px; }
+        .prop-mgmt-filter-row { display: flex; align-items: center; gap: 8px; }
 
         @media (min-width: 768px) and (max-width: 1199px) {
           main > div { max-width: 100% !important; padding: 0 16px !important; }
@@ -1387,14 +1399,22 @@ function AdminDashboardInner() {
           .admin-filters select { min-width: 110px !important; font-size: 12px !important; }
           .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
           .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
-          /* 모바일 매물 카드: 썸네일/제목 숨기고 가로 컴팩트 레이아웃 */
+          /* 모바일 매물 카드: 썸네일/제목 숨기고, 정보+액션 세로 컴팩트 레이아웃 */
           .admin-prop-thumbnail { display: none !important; }
           .admin-prop-title { display: none !important; }
-          .admin-prop-row { gap: 6px !important; padding: 8px !important; }
+          .admin-prop-row { flex-direction: column !important; gap: 4px !important; padding: 8px !important; }
           .admin-prop-info p { font-size: 12px !important; margin-bottom: 2px !important; }
-          .admin-prop-actions { gap: 4px !important; }
+          .admin-prop-actions { flex-direction: row !important; width: 100% !important; justify-content: flex-start !important; align-items: center !important; flex-shrink: unset !important; gap: 6px !important; }
           .admin-prop-desktop-btns { display: none !important; }
           .admin-prop-mobile-btns { display: flex !important; }
+          /* 헤더 영역 */
+          .prop-mgmt-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+          .prop-mgmt-title-row { width: 100%; justify-content: space-between; }
+          .prop-mgmt-register-m { display: block !important; }
+          .prop-mgmt-controls { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100% !important; }
+          .prop-mgmt-sort { overflow-x: auto; }
+          .prop-mgmt-filter-row { overflow-x: auto; flex-wrap: nowrap !important; }
+          .prop-mgmt-register-d { display: none !important; }
         }
       ` }} />
 
