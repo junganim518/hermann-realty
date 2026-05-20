@@ -38,7 +38,7 @@ app/
     └── landlords/[new|edit|page]     # 임대인 관리
 
 components/
-├── PropertyCard.tsx                  # 매물 카드 (즐겨찾기 하트)
+├── PropertyCard.tsx                  # 매물 카드 (즐겨찾기 하트) — showPrivateBusinessName prop: 관리자 화면에서 비공개 상호명도 🔒 회색으로 표시
 ├── FavoriteButton.tsx
 ├── PageViewTracker.tsx               # 방문자 추적 (봇 필터)
 └── MobileTabBar.tsx                  # 모바일 하단 탭
@@ -180,6 +180,14 @@ lib/
 - **⋮ 더보기 메뉴**: 복사/블로그 글/수정/삭제 — Portal(`createPortal`)로 body에 렌더링 (드롭업/다운 자동)
 - **상태 드롭다운**(`거래중 ▼`): 마찬가지로 Portal로 렌더링 — overflow:hidden 부모에 가려지지 않음
 - **매물번호/주소 클릭**: `router.push`로 상세 페이지 이동 (cursor: pointer)
+
+### 상호명(business_name) 표시 정책
+
+- **외부(손님용) PropertyCard**: `business_name_public === true`일 때만 🏪 표시
+- **관리자 화면(손님 상세 페이지)**: 공개/비공개 무관 항상 표시
+  - 공개: 🏪 상호명 (진한 색)
+  - 비공개: 🔒 상호명 (회색 #999)
+  - 적용 위치: 매물 추가 모달 / 맞춤 매물 섹션 / 픽 매물(PropertyCard에 `showPrivateBusinessName` prop)
 
 ## 자주 발생하는 이슈
 

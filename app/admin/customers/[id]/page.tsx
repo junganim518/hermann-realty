@@ -342,7 +342,7 @@ export default function CustomerDetailPage() {
                 const propWithImage = { ...p, image: pickedImages[p.id] };
                 return (
                   <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <PropertyCard property={propWithImage} isAdmin showNewBadge={false} />
+                    <PropertyCard property={propWithImage} isAdmin showNewBadge={false} showPrivateBusinessName />
                     <div style={{ padding: '8px 10px', background: '#fff8f2', borderRadius: '6px', border: '1px solid #f3d4b8' }}>
                       {isEditing ? (
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -475,6 +475,11 @@ export default function CustomerDetailPage() {
                         </span>
                         {p.property_type && <span style={{ fontSize: '10px', color: '#666', padding: '1px 6px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>}
                         {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
+                        {p.business_name && (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#999', whiteSpace: 'nowrap' }}>
+                            {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
+                          </span>
+                        )}
                       </div>
                       <ThemeBadges themeType={(p as any).theme_type} variant="card" />
                       {p.title && <p style={{ fontSize: '12px', color: '#e2a06e', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.title}>{p.title}</p>}
@@ -639,6 +644,11 @@ export default function CustomerDetailPage() {
                               <span style={{ fontSize: '12px', fontWeight: 700 }}>{p.property_number}</span>
                               {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
                               {p.property_type && <span style={{ fontSize: '10px', color: '#666', padding: '1px 5px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>}
+                              {p.business_name && (
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#999', whiteSpace: 'nowrap' }}>
+                                  {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
+                                </span>
+                              )}
                               <span style={{ fontSize: '11px', fontWeight: 600 }}>{priceStr}</span>
                               {p.is_sold && <span style={{ fontSize: '10px', color: '#e05050', fontWeight: 700 }}>거래완료</span>}
                               {isAlreadyPicked && <span style={{ fontSize: '10px', color: '#888', fontWeight: 700, padding: '1px 5px', background: '#f0f0f0', borderRadius: '3px' }}>이미 추가됨</span>}

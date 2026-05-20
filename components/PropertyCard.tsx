@@ -93,9 +93,10 @@ interface PropertyCardProps {
   property: any;
   isAdmin?: boolean;
   showNewBadge?: boolean;
+  showPrivateBusinessName?: boolean;
 }
 
-export default function PropertyCard({ property, isAdmin = false, showNewBadge = true }: PropertyCardProps) {
+export default function PropertyCard({ property, isAdmin = false, showNewBadge = true, showPrivateBusinessName = false }: PropertyCardProps) {
   const p = property;
   const status = getPropertyStatus(p);
   const [isMobile, setIsMobile] = useState(false);
@@ -185,6 +186,11 @@ export default function PropertyCard({ property, isAdmin = false, showNewBadge =
             {p.business_name && p.business_name_public && (
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
                 🏪 {p.business_name}
+              </span>
+            )}
+            {p.business_name && !p.business_name_public && showPrivateBusinessName && (
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#999', whiteSpace: 'nowrap' }}>
+                🔒 {p.business_name}
               </span>
             )}
           </div>
