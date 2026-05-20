@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const dynamicEntries: MetadataRoute.Sitemap = (properties ?? []).map((p: any) => ({
     url: `${BASE_URL}/item/view/${p.property_number}`,
-    lastModified: p.updated_at ? new Date(p.updated_at) : now,
+    lastModified: p.updated_at ? new Date(p.updated_at) : SITE_UPDATED,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
