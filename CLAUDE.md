@@ -62,6 +62,8 @@ lib/
 - transaction_type (TEXT) — 월세/전세/매매
 - deposit, monthly_rent, maintenance_fee, premium (BIGINT)
 - theme_type (TEXT) — 콤마 구분 (26개: 추천매물·사옥형및통임대·대형상가·대형사무실·무권리상가·프랜차이즈양도양수·1층상가·2층이상상가·역세권매물·신축매물·저렴한매물·코너매물·메인상권·즉시입주·대로변매물·노출좋음·인기매물·카페·사무실·음식점·병원·학원·뷰티·편의점·헬스장·유흥/주류)
+  - 검색 필터 목록(17개): `FILTER_THEMES` 상수 (lib/themeUtils.ts) — properties/map 페이지 공용
+  - 새 테마 추가 시 `ALL_THEMES` + `FILTER_THEMES` 둘 다 확인 필요
 - status (TEXT) — 거래중/보류/거래완료
 - is_sold (BOOLEAN) — 하위호환용
 - view_count (INTEGER)

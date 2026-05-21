@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
+import { FILTER_THEMES } from '@/lib/themeUtils';
 
 declare global {
   interface Window { kakao: any; }
@@ -96,7 +97,6 @@ const matchRent = (rent: any, range: string) => {
 };
 const PROP_TYPES  = ['', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~40평', '40~50평', '50평 이상'];
-const THEME_TYPES = ['전체', '추천매물', '사옥형및통임대', '대형상가', '대형사무실', '무권리상가', '프랜차이즈양도양수', '1층상가', '2층이상상가'];
 
 // ── 지도 상태 sessionStorage 복원 ─────────────────────────────
 const MAP_STATE_KEY = 'hermann-map-state-v1';
@@ -784,7 +784,8 @@ function MapPageInner() {
 
         {/* 테마 */}
         <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); syncURL({ theme: e.target.value }); }} style={selectSt}>
-          {THEME_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '테마 전체' : t}</option>)}
+          <option value="전체">테마 전체</option>
+          {FILTER_THEMES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
 
         {/* 보증금 */}

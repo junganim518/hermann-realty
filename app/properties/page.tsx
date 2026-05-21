@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
+import { FILTER_THEMES } from '@/lib/themeUtils';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -54,11 +55,6 @@ const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~40평
 const PROP_TYPES = [
   { id: '상가', name: '상가' }, { id: '사무실', name: '사무실' }, { id: '오피스텔', name: '오피스텔' },
   { id: '아파트', name: '아파트' }, { id: '건물', name: '건물' }, { id: '기타', name: '기타' },
-];
-const THEME_TYPES = [
-  { id: '추천매물', name: '추천매물' }, { id: '사옥형및통임대', name: '사옥형 및 통임대' }, { id: '대형상가', name: '대형 상가' },
-  { id: '대형사무실', name: '대형사무실' }, { id: '무권리상가', name: '무권리 상가' }, { id: '프랜차이즈양도양수', name: '프랜차이즈 양도양수' },
-  { id: '1층상가', name: '1층 상가' }, { id: '2층이상상가', name: '2층 이상 상가' },
 ];
 
 const matchArea = (exclusive_area: any, range: string) => {
@@ -339,7 +335,7 @@ function PropertiesPageInner() {
               테마 종류
             </div>
             <ul>
-              {THEME_TYPES.map((theme) => (
+              {FILTER_THEMES.map((theme) => (
                 <li key={theme.id}>
                   <a
                     href={`/properties?theme=${encodeURIComponent(theme.id)}`}
@@ -395,7 +391,7 @@ function PropertiesPageInner() {
             </select>
             <select value={filterTheme} onChange={e => { setFilterTheme(e.target.value); setCurrentPage(1); syncURL({ theme: e.target.value, page: '1' }); }} style={selectSt}>
               <option value="전체">테마 전체</option>
-              {THEME_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {FILTER_THEMES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setCurrentPage(1); syncURL({ tx: e.target.value, page: '1' }); }} style={selectSt}>
               {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}

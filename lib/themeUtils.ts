@@ -1,3 +1,24 @@
+// 검색/필터 페이지 공용 테마 목록 (properties/map 페이지 import해서 사용)
+export const FILTER_THEMES: { id: string; name: string }[] = [
+  { id: '추천매물', name: '추천매물' },
+  { id: '사옥형및통임대', name: '사옥형 및 통임대' },
+  { id: '대형상가', name: '대형 상가' },
+  { id: '대형사무실', name: '대형사무실' },
+  { id: '무권리상가', name: '무권리 상가' },
+  { id: '프랜차이즈양도양수', name: '프랜차이즈 양도양수' },
+  { id: '1층상가', name: '1층 상가' },
+  { id: '2층이상상가', name: '2층 이상 상가' },
+  { id: '카페', name: '카페' },
+  { id: '사무실', name: '사무실' },
+  { id: '음식점', name: '음식점' },
+  { id: '병원', name: '병원' },
+  { id: '학원', name: '학원' },
+  { id: '뷰티', name: '뷰티' },
+  { id: '편의점', name: '편의점' },
+  { id: '헬스장', name: '헬스장' },
+  { id: '유흥/주류', name: '유흥/주류' },
+];
+
 // 모든 테마 ID — 매물 등록/손님 조건 폼에서 체크박스로 표시할 순서
 // (매물 등록 페이지의 THEME_TYPES와 동일 순서로 일관성 유지)
 export const ALL_THEMES: string[] = [
