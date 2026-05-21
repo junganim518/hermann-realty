@@ -194,6 +194,7 @@ lib/
 - 저장 항목: 지도 중심/줌, 드로어 상태, 필터, **클러스터 visibleIds**
 - navigation type `'navigate'`(새 진입)일 때만 초기화 — `'back_forward'`(뒤로가기)/`'reload'`(새로고침)은 유지
 - 클러스터 선택 상태(`visibleIds`): 매물 데이터 로드 후 `savedVisibleIdsRef`로 복원
+- 매물 목록 스크롤: `listRef`(데스크톱) + `mobileListRef`(모바일) sessionStorage 저장/복원, `back_forward` 진입 시에만 복원
 
 ### 상호명(business_name) 표시 정책
 

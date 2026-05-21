@@ -170,6 +170,9 @@ function MapPageInner() {
   const drawerStartY = useRef(0);
   const drawerDragRef = useRef(0);
   const savedVisibleIdsRef = useRef<string[] | null>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
+  const isBackForwardRef = useRef(false);
+  const scrollRestoredRef = useRef(false);
 
 
   // 처음 진입(navigate)일 때만 sessionStorage 초기화 — 뒤로가기(back_forward)/새로고침(reload)은 유지
@@ -183,6 +186,7 @@ function MapPageInner() {
         console.log('[map] 새 진입 감지 — 지도 상태 초기화');
       } else {
         console.log('[map] 뒤로가기/새로고침 감지 — 지도 상태 유지 (type:', navType, ')');
+        if (navType === 'back_forward') isBackForwardRef.current = true;
       }
     } catch (err) {
       console.warn('[map] navigation type 조회 실패:', err);
@@ -387,6 +391,25 @@ function MapPageInner() {
   useEffect(() => {
     saveMapState({ visibleIds: visibleIds ? Array.from(visibleIds) : null });
   }, [visibleIds]);
+
+  // ── 매물 목록 스크롤 복원 (back_forward 진입 시, 클러스터 적용 후)
+  useEffect(() => {
+    if (!isBackForwardRef.current || scrollRestoredRef.current) return;
+    if (loading || properties.length === 0) return;
+    const desktopScroll = sessionStorage.getItem('map_list_scroll');
+    const mobileScroll = sessionStorage.getItem('map_mobile_list_scroll');
+    if (!desktopScroll && !mobileScroll) return;
+    // visibleIds 변경 후 DOM이 그려질 때까지 대기 후 복원
+    // (클러스터 복원 시 visibleIds 변경 → 이 effect 재실행 → timer 재시작)
+    const t = setTimeout(() => {
+      if (desktopScroll && listRef.current) listRef.current.scrollTop = parseInt(desktopScroll, 10);
+      if (mobileScroll && mobileListRef.current) mobileListRef.current.scrollTop = parseInt(mobileScroll, 10);
+      sessionStorage.removeItem('map_list_scroll');
+      sessionStorage.removeItem('map_mobile_list_scroll');
+      scrollRestoredRef.current = true;
+    }, 150);
+    return () => clearTimeout(t);
+  }, [visibleIds, properties, loading]);
 
   // ── sessionStorage: 드로어/상단매물 저장
   useEffect(() => {
@@ -927,6 +950,10 @@ function MapPageInner() {
                   >
                     <Link
                       href={`/item/view/${p.property_number}`}
+                      onClick={() => {
+                        if (listRef.current) sessionStorage.setItem('map_list_scroll', String(listRef.current.scrollTop));
+                        if (mobileListRef.current) sessionStorage.setItem('map_mobile_list_scroll', String(mobileListRef.current.scrollTop));
+                      }}
                       style={{ display: 'flex', gap: isMobile ? '6px' : '14px', padding: isMobile ? '10px 4px 4px 10px' : '16px 20px', textDecoration: 'none', color: 'inherit', borderRadius: isMobile ? '8px' : '0', border: isMobile ? '1px solid #eee' : 'none', marginBottom: isMobile ? '1px' : '0' }}
                     >
                       {/* 썸네일 */}
@@ -1062,7 +1089,7 @@ function MapPageInner() {
               <div style={{ width: '40px', height: '4px', background: '#ddd', borderRadius: '2px', margin: '0 auto' }} />
             </div>
             {/* 카드 리스트 */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div ref={mobileListRef} style={{ flex: 1, overflowY: 'auto' }}>
               {drawerList.map(p => {
                 const thumb = p.property_images?.[0]?.image_url ?? null;
                 const pyeong = p.exclusive_area ? toPyeong(p.exclusive_area) : null;
@@ -1085,6 +1112,10 @@ function MapPageInner() {
                       background: isTop ? '#fff8f2' : 'transparent',
                       borderRadius: isTop ? '8px' : 0,
                       margin: isTop ? '8px 12px' : 0,
+                    }}
+                    onClick={() => {
+                      if (listRef.current) sessionStorage.setItem('map_list_scroll', String(listRef.current.scrollTop));
+                      if (mobileListRef.current) sessionStorage.setItem('map_mobile_list_scroll', String(mobileListRef.current.scrollTop));
                     }}
                   >
                     <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
