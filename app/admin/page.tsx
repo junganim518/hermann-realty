@@ -323,10 +323,6 @@ function AdminDashboardInner() {
   };
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login?redirect=/admin'); return; }
       setAuthChecked(true);
