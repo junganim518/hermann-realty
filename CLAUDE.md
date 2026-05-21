@@ -186,6 +186,7 @@ lib/
 - **⋮ 더보기 메뉴**: 복사/블로그 글/수정/삭제 — Portal(`createPortal`)로 body에 렌더링 (드롭업/다운 자동)
 - **상태 드롭다운**(`거래중 ▼`): 마찬가지로 Portal로 렌더링 — overflow:hidden 부모에 가려지지 않음
 - **매물번호/주소 클릭**: `router.push`로 상세 페이지 이동 (cursor: pointer)
+- **매물 수정 후 스크롤 복원**: 수정 링크 클릭 시 `sessionStorage.setItem('admin_scroll_position', scrollY)` 저장, 돌아온 후 `properties` + `propImages` 로드 완료 시 복원 (50ms setTimeout)
 
 ### 상호명(business_name) 표시 정책
 

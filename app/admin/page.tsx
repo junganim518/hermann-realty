@@ -407,6 +407,16 @@ function AdminDashboardInner() {
     setExpiringContracts((expContracts ?? []).length);
   };
 
+  // 매물 수정 후 돌아왔을 때 스크롤 위치 복원
+  useEffect(() => {
+    const saved = sessionStorage.getItem('admin_scroll_position');
+    if (!saved || properties.length === 0) return;
+    const y = parseInt(saved, 10);
+    sessionStorage.removeItem('admin_scroll_position');
+    const t = setTimeout(() => window.scrollTo(0, y), 50);
+    return () => clearTimeout(t);
+  }, [properties, propImages]);
+
   const changeStatus = async (id: string, next: '거래중' | '보류' | '거래완료', cur: '거래중' | '보류' | '거래완료') => {
     if (next === cur) return;
     const nextIsSold = next === '거래완료';
@@ -1242,7 +1252,7 @@ function AdminDashboardInner() {
                             <button onClick={() => { setCallModalProp(p); setCallModalDate(new Date().toLocaleDateString('en-CA')); }} title={lc ? `마지막 통화: ${formatDate(lc)}` : '통화 기록 없음'} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', background: '#fff', cursor: 'pointer', border: `1px solid ${isOld ? '#e2a06e' : '#ccc'}`, color: isOld ? '#e2a06e' : '#999' }}>{label}</button>
                           );
                         })()}
-                        <a href={`/admin/properties/${p.property_number}/edit`} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', textDecoration: 'none' }}>수정</a>
+                        <a href={`/admin/properties/${p.property_number}/edit`} onClick={() => sessionStorage.setItem('admin_scroll_position', String(window.scrollY))} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e2a06e', color: '#e2a06e', textDecoration: 'none' }}>수정</a>
                         <button onClick={() => deleteProperty(p)} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #e05050', color: '#e05050', background: '#fff', cursor: 'pointer' }}>삭제</button>
                       </div>
 
@@ -1521,7 +1531,7 @@ function AdminDashboardInner() {
             </button>
             <a href={`/admin/properties/${mp.property_number}/edit`}
               style={{ ...btnStyle, color: '#e2a06e', textDecoration: 'none' }}
-              onClick={close}>
+              onClick={() => { sessionStorage.setItem('admin_scroll_position', String(window.scrollY)); close(); }}>
               수정
             </a>
             <button onClick={() => { deleteProperty(mp); close(); }}
