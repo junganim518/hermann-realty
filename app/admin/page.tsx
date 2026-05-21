@@ -1407,10 +1407,10 @@ function AdminDashboardInner() {
           .admin-filters select { min-width: 110px !important; font-size: 12px !important; }
           .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
           .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
-          /* 모바일 매물 카드: 썸네일/제목 숨기고, 정보+액션 세로 컴팩트 레이아웃 */
-          .admin-prop-thumbnail { display: none !important; }
+          /* 모바일 매물 카드: 썸네일(64px) 좌측 + 정보 우측 가로 배치, 액션 하단 전체 너비 */
+          .admin-prop-thumbnail { display: block !important; width: 64px !important; height: 64px !important; flex-shrink: 0 !important; }
           .admin-prop-title { display: none !important; }
-          .admin-prop-row { flex-direction: column !important; gap: 4px !important; padding: 8px !important; }
+          .admin-prop-row { flex-direction: row !important; flex-wrap: wrap !important; align-items: flex-start !important; gap: 8px !important; padding: 8px !important; }
           .admin-prop-info p { font-size: 12px !important; margin-bottom: 2px !important; }
           .admin-prop-actions { flex-direction: row !important; width: 100% !important; justify-content: flex-start !important; align-items: center !important; flex-shrink: unset !important; gap: 6px !important; }
           .admin-prop-desktop-btns { display: none !important; }
