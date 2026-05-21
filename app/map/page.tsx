@@ -108,6 +108,7 @@ type SavedMapState = {
   drawerHeight?: number;
   topPropertyNumber?: string | null;
   filters?: Record<string, string>;
+  visibleIds?: string[] | null;
 };
 
 function readMapState(): SavedMapState | null {
@@ -168,20 +169,20 @@ function MapPageInner() {
   const [topPropertyNumber, setTopPropertyNumber] = useState<string | null>(null);
   const drawerStartY = useRef(0);
   const drawerDragRef = useRef(0);
+  const savedVisibleIdsRef = useRef<string[] | null>(null);
 
 
-  // 새로고침이 아니라 다른 페이지에서 들어온 경우 → 지도 sessionStorage 초기화
-  // (이 effect는 다른 useEffect보다 먼저 선언되어 우선 실행됨)
+  // 처음 진입(navigate)일 때만 sessionStorage 초기화 — 뒤로가기(back_forward)/새로고침(reload)은 유지
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       const navType = navEntries[0]?.type;
-      if (navType && navType !== 'reload') {
+      if (navType === 'navigate') {
         sessionStorage.removeItem(MAP_STATE_KEY);
-        console.log('[map] 일반 진입 감지 — 지도 상태 초기화');
+        console.log('[map] 새 진입 감지 — 지도 상태 초기화');
       } else {
-        console.log('[map] 새로고침 감지 — 지도 상태 유지');
+        console.log('[map] 뒤로가기/새로고침 감지 — 지도 상태 유지 (type:', navType, ')');
       }
     } catch (err) {
       console.warn('[map] navigation type 조회 실패:', err);
@@ -351,13 +352,14 @@ function MapPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // ── sessionStorage: 마운트 시 드로어/상단매물/필터 복원
+  // ── sessionStorage: 마운트 시 드로어/상단매물/필터/클러스터 복원
   useEffect(() => {
     const s = readMapState();
     if (!s) return;
     if (s.drawerOpen !== undefined) setDrawerOpen(s.drawerOpen);
     if (s.drawerHeight !== undefined) setDrawerHeight(s.drawerHeight);
     if (s.topPropertyNumber !== undefined) setTopPropertyNumber(s.topPropertyNumber);
+    if (s.visibleIds && s.visibleIds.length > 0) savedVisibleIdsRef.current = s.visibleIds;
 
     // 필터: URL 파라미터가 없을 때만 sessionStorage 복원
     const hasUrlParams = Array.from(searchParams?.keys() ?? []).length > 0;
@@ -372,6 +374,19 @@ function MapPageInner() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── 매물 데이터 로드 후 클러스터 선택 상태 복원
+  useEffect(() => {
+    if (savedVisibleIdsRef.current && properties.length > 0) {
+      setVisibleIds(new Set(savedVisibleIdsRef.current));
+      savedVisibleIdsRef.current = null;
+    }
+  }, [properties]);
+
+  // ── sessionStorage: 클러스터 선택 상태 저장
+  useEffect(() => {
+    saveMapState({ visibleIds: visibleIds ? Array.from(visibleIds) : null });
+  }, [visibleIds]);
 
   // ── sessionStorage: 드로어/상단매물 저장
   useEffect(() => {

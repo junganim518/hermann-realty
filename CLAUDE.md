@@ -188,6 +188,13 @@ lib/
 - **매물번호/주소 클릭**: `router.push`로 상세 페이지 이동 (cursor: pointer)
 - **매물 수정 후 스크롤 복원**: 수정 링크 클릭 시 `sessionStorage.setItem('admin_scroll_position', scrollY)` 저장, 돌아온 후 `properties` + `propImages` 로드 완료 시 복원 (50ms setTimeout)
 
+### 지도 페이지 뒤로가기 상태 복원 (app/map/page.tsx)
+
+- sessionStorage 키: `MAP_STATE_KEY = 'hermann-map-state-v1'`
+- 저장 항목: 지도 중심/줌, 드로어 상태, 필터, **클러스터 visibleIds**
+- navigation type `'navigate'`(새 진입)일 때만 초기화 — `'back_forward'`(뒤로가기)/`'reload'`(새로고침)은 유지
+- 클러스터 선택 상태(`visibleIds`): 매물 데이터 로드 후 `savedVisibleIdsRef`로 복원
+
 ### 상호명(business_name) 표시 정책
 
 - **외부(손님용) PropertyCard**: `business_name_public === true`일 때만 🏪 표시
