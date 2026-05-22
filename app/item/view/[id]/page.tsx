@@ -930,7 +930,7 @@ export default function PropertyDetailPage() {
         /* ── 관리자 도구 섹션 — 본문 최하단, 모바일 전용 ── */
         .admin-mobile-tools { display: none; }
         @media (max-width: 767px) {
-          .admin-mobile-tools { display: block !important; }
+          .admin-mobile-tools { display: flex !important; justify-content: flex-end; padding-right: 16px; }
         }
 
         /* ════════════ 인쇄 전용 ════════════ */
@@ -1639,7 +1639,7 @@ export default function PropertyDetailPage() {
 
           {/* ── 관리자 도구 (모바일 전용 ⋮ 메뉴, PC/태블릿은 aside에서 표시) ── */}
           {isAdmin && (
-            <div className="admin-mobile-tools print-hide" style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: '8px', paddingRight: '16px' }}>
+            <div className="admin-mobile-tools print-hide" style={{ paddingBottom: '8px' }}>
               <button
                 ref={adminMenuBtnRef}
                 onClick={() => {
