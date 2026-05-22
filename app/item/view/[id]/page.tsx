@@ -829,13 +829,12 @@ export default function PropertyDetailPage() {
 
         /* ── 모바일 (768px 미만) ── */
         @media (max-width: 767px) {
-          .tab-bar { top: 96px !important; }
-          .mobile-prop-num-bar { display: flex !important; }
+          .tab-bar { top: 64px !important; }
           .detail-tab-inner { padding: 0 8px !important; }
           .detail-tab-inner .detail-tab-btns { overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
           .detail-tab-inner .detail-tab-btns::-webkit-scrollbar { display: none; }
           .detail-tab-inner .detail-tab-btns button { font-size: 13px !important; padding: 9px 10px !important; }
-          .detail-body { padding-top: 82px !important; padding-left: 4px !important; padding-right: 4px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
+          .detail-body { padding-top: 50px !important; padding-left: 4px !important; padding-right: 4px !important; margin-top: 0 !important; flex-direction: column !important; gap: 10px !important; overflow-x: hidden !important; }
           .detail-main { order: 2; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
@@ -928,8 +927,11 @@ export default function PropertyDetailPage() {
           .aside-cta-row > .cta-inquiry { min-width: 160px !important; padding: 0 18px !important; }
         }
 
-        /* ── 모바일 전용: 매물번호 고정 띠 ── */
-        .mobile-prop-num-bar { display: none; }
+        /* ── 모바일 전용: 액션 바 안 매물번호 ── */
+        .mobile-aside-pnum { display: none; }
+        @media (max-width: 767px) {
+          .mobile-aside-pnum { display: block !important; font-size: 12px !important; color: #c47c30 !important; font-weight: 700 !important; padding-bottom: 6px !important; margin-bottom: 2px !important; border-bottom: 1px solid #f0f0f0 !important; }
+        }
 
         /* ── 관리자 도구 섹션 — 본문 최하단, 모바일 전용 ── */
         .admin-mobile-tools { display: none; }
@@ -1145,11 +1147,6 @@ export default function PropertyDetailPage() {
         }
       ` }} />
 
-      {/* ── 모바일 전용: 매물번호 고정 띠 ── */}
-      <div className="mobile-prop-num-bar print-hide" style={{ position: 'fixed', top: 64, left: 0, right: 0, height: 32, zIndex: 101, background: '#1a1a1a', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: '13px', color: '#e2a06e', fontWeight: 600, letterSpacing: '0.03em' }}>매물번호 {property.property_number ?? id}</span>
-      </div>
-
       {/* ── 상단 탭 바 ── */}
       <div className="tab-bar" style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'fixed', left: 0, right: 0, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
         <div className="detail-tab-inner" style={{ width: '100%', maxWidth: '100%', padding: '0 350px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1195,7 +1192,7 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* ── 2열 본문 ── */}
-      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: isMobile ? '80px' : isTablet ? (isAdmin ? '140px' : '104px') : 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: isMobile ? '108px' : isTablet ? (isAdmin ? '140px' : '104px') : 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
 
         {/* ── 좌측 본문 ── */}
         <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1728,6 +1725,7 @@ export default function PropertyDetailPage() {
                 </p>
               </div>
             </div>
+            <div className="mobile-aside-pnum print-hide">매물번호 {property.property_number ?? id}</div>
             <div className="aside-cta-row" style={{ display: 'flex', gap: '8px' }}>
               <button
                 className="cta-inquiry"
