@@ -200,9 +200,10 @@ lib/
 
 - **PC/태블릿**: `detail-aside`가 우측 sticky 패널 — 매물정보+CTA+관리자버튼 모두 표시
 - **모바일**: `detail-aside`가 하단 fixed 바 — **문의하기/공유/즐겨찾기 3개만** (매물정보는 본문에 있으므로 숨김)
-- **관리자 버튼 4개** (매물수정/계약등록/인쇄/삭제): 모바일에서는 aside 숨기고 본문 최하단 `admin-mobile-tools` 섹션으로 이동
+- **관리자 버튼 4개** (매물수정/계약등록/인쇄/삭제): 모바일에서는 aside 숨기고 본문 최하단 `admin-mobile-tools`에 ⋮ 드롭업 메뉴로 표시
   - PC/태블릿은 기존 aside 안 그대로 유지
-  - 삭제 로직은 `handleDeleteProperty` 함수로 추출 (aside + 모바일 섹션 공용)
+  - 삭제 로직은 `handleDeleteProperty` 함수로 추출 (aside + 모바일 공용)
+  - `showAdminMenu` state로 드롭업 열기/닫기, 바깥 클릭 시 닫힘
 
 ### 상호명(business_name) 표시 정책
 

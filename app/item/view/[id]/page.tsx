@@ -209,6 +209,7 @@ export default function PropertyDetailPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [shareToast, setShareToast] = useState('');
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -1634,28 +1635,37 @@ export default function PropertyDetailPage() {
             )}
           </div>
 
-          {/* ── 관리자 도구 (모바일 전용, PC/태블릿은 aside에서 표시) ── */}
+          {/* ── 관리자 도구 (모바일 전용 ⋮ 메뉴, PC/태블릿은 aside에서 표시) ── */}
           {isAdmin && (
-            <div className="admin-mobile-tools print-hide" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '12px' }}>
-              <p style={{ fontSize: '12px', color: '#aaa', fontWeight: 600, marginBottom: '8px', letterSpacing: '0.5px' }}>관리자 도구</p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <a href={`/admin/properties/${property.property_number}/edit`}
-                  style={{ flex: 1, minWidth: '80px', display: 'block', textAlign: 'center', padding: '10px 8px', background: '#f8f8f8', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
-                  매물 수정
-                </a>
-                <a href={`/admin/contracts/new?property_id=${property.id}`}
-                  style={{ flex: 1, minWidth: '80px', display: 'block', textAlign: 'center', padding: '10px 8px', background: '#fff', border: '1px solid #16a34a', borderRadius: '4px', color: '#16a34a', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
-                  📋 계약 등록
-                </a>
-                <button onClick={() => window.print()}
-                  style={{ flex: 1, minWidth: '80px', padding: '10px 8px', background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <Printer size={14} strokeWidth={2.2} />인쇄
-                </button>
-                <button onClick={handleDeleteProperty}
-                  style={{ flex: 1, minWidth: '80px', padding: '10px 8px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                  매물 삭제
-                </button>
-              </div>
+            <div className="admin-mobile-tools print-hide" style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative' }}>
+              <button
+                onClick={() => setShowAdminMenu(prev => !prev)}
+                style={{ background: '#fff', border: '1px solid #ddd', borderRadius: '6px', padding: '6px 14px', fontSize: '20px', cursor: 'pointer', color: '#555', lineHeight: 1 }}
+                title="관리자 도구"
+              >⋮</button>
+              {showAdminMenu && (
+                <>
+                  <div onClick={() => setShowAdminMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
+                  <div style={{ position: 'absolute', bottom: 'calc(100% + 4px)', right: 0, background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 -4px 16px rgba(0,0,0,0.12)', zIndex: 300, minWidth: '148px', overflow: 'hidden' }}>
+                    <a href={`/admin/properties/${property.property_number}/edit`}
+                      style={{ display: 'block', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#e2a06e', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
+                      매물 수정
+                    </a>
+                    <a href={`/admin/contracts/new?property_id=${property.id}`}
+                      style={{ display: 'block', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#16a34a', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
+                      📋 계약 등록
+                    </a>
+                    <button onClick={() => { window.print(); setShowAdminMenu(false); }}
+                      style={{ display: 'block', width: '100%', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#1a1a1a', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', textAlign: 'left' }}>
+                      인쇄
+                    </button>
+                    <button onClick={() => { setShowAdminMenu(false); handleDeleteProperty(); }}
+                      style={{ display: 'block', width: '100%', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#e05050', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                      매물 삭제
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
