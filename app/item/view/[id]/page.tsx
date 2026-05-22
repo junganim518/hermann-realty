@@ -210,6 +210,8 @@ export default function PropertyDetailPage() {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [shareToast, setShareToast] = useState('');
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [adminMenuPos, setAdminMenuPos] = useState<{ bottom: number; right: number } | null>(null);
+  const adminMenuBtnRef = useRef<HTMLButtonElement>(null);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -1637,30 +1639,37 @@ export default function PropertyDetailPage() {
 
           {/* ── 관리자 도구 (모바일 전용 ⋮ 메뉴, PC/태블릿은 aside에서 표시) ── */}
           {isAdmin && (
-            <div className="admin-mobile-tools print-hide" style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative' }}>
+            <div className="admin-mobile-tools print-hide" style={{ display: 'flex', justifyContent: 'center', paddingBottom: '8px' }}>
               <button
-                onClick={() => setShowAdminMenu(prev => !prev)}
-                style={{ background: '#fff', border: '1px solid #ddd', borderRadius: '6px', padding: '6px 14px', fontSize: '20px', cursor: 'pointer', color: '#555', lineHeight: 1 }}
+                ref={adminMenuBtnRef}
+                onClick={() => {
+                  if (adminMenuBtnRef.current) {
+                    const rect = adminMenuBtnRef.current.getBoundingClientRect();
+                    setAdminMenuPos({ bottom: window.innerHeight - rect.top + 6, right: window.innerWidth - rect.right });
+                  }
+                  setShowAdminMenu(prev => !prev);
+                }}
+                style={{ background: '#fff', border: '1px solid #c47c30', borderRadius: '6px', padding: '10px 20px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', color: '#c47c30', display: 'flex', alignItems: 'center', gap: '6px', minHeight: '44px', minWidth: '120px', justifyContent: 'center' }}
                 title="관리자 도구"
-              >⋮</button>
-              {showAdminMenu && (
+              >관리자 <span style={{ fontSize: '20px', lineHeight: 1 }}>⋮</span></button>
+              {showAdminMenu && adminMenuPos && (
                 <>
-                  <div onClick={() => setShowAdminMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
-                  <div style={{ position: 'absolute', bottom: 'calc(100% + 4px)', right: 0, background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 -4px 16px rgba(0,0,0,0.12)', zIndex: 300, minWidth: '148px', overflow: 'hidden' }}>
+                  <div onClick={() => { setShowAdminMenu(false); setAdminMenuPos(null); }} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
+                  <div style={{ position: 'fixed', bottom: adminMenuPos.bottom, right: adminMenuPos.right, background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', boxShadow: '0 -4px 20px rgba(0,0,0,0.15)', zIndex: 300, minWidth: '160px', maxWidth: 'calc(100vw - 32px)', overflow: 'hidden' }}>
                     <a href={`/admin/properties/${property.property_number}/edit`}
-                      style={{ display: 'block', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#e2a06e', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
+                      style={{ display: 'flex', alignItems: 'center', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#e2a06e', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
                       매물 수정
                     </a>
                     <a href={`/admin/contracts/new?property_id=${property.id}`}
-                      style={{ display: 'block', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#16a34a', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
+                      style={{ display: 'flex', alignItems: 'center', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#16a34a', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
                       📋 계약 등록
                     </a>
-                    <button onClick={() => { window.print(); setShowAdminMenu(false); }}
-                      style={{ display: 'block', width: '100%', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#1a1a1a', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', textAlign: 'left' }}>
+                    <button onClick={() => { window.print(); setShowAdminMenu(false); setAdminMenuPos(null); }}
+                      style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#1a1a1a', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', textAlign: 'left' }}>
                       인쇄
                     </button>
-                    <button onClick={() => { setShowAdminMenu(false); handleDeleteProperty(); }}
-                      style={{ display: 'block', width: '100%', padding: '13px 16px', fontSize: '14px', fontWeight: 600, color: '#e05050', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <button onClick={() => { setShowAdminMenu(false); setAdminMenuPos(null); handleDeleteProperty(); }}
+                      style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#e05050', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                       매물 삭제
                     </button>
                   </div>
