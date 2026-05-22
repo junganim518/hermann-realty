@@ -1639,7 +1639,7 @@ export default function PropertyDetailPage() {
 
           {/* ── 관리자 도구 (모바일 전용 ⋮ 메뉴, PC/태블릿은 aside에서 표시) ── */}
           {isAdmin && (
-            <div className="admin-mobile-tools print-hide" style={{ display: 'flex', justifyContent: 'center', paddingBottom: '8px' }}>
+            <div className="admin-mobile-tools print-hide" style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: '8px', paddingRight: '16px' }}>
               <button
                 ref={adminMenuBtnRef}
                 onClick={() => {
