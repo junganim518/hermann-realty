@@ -930,7 +930,7 @@ export default function PropertyDetailPage() {
         /* ── 모바일 전용: 액션 바 안 매물번호 ── */
         .mobile-aside-pnum { display: none; }
         @media (max-width: 767px) {
-          .mobile-aside-pnum { display: block !important; font-size: 12px !important; color: #c47c30 !important; font-weight: 700 !important; padding-bottom: 6px !important; margin-bottom: 2px !important; border-bottom: 1px solid #f0f0f0 !important; }
+          .mobile-aside-pnum { display: block !important; font-size: 15px !important; color: #c47c30 !important; font-weight: 700 !important; text-align: center !important; background: #fdf6ec !important; margin: -10px -12px 8px !important; padding: 7px 12px !important; border-bottom: 1px solid #f5e4c8 !important; letter-spacing: 0.02em !important; }
         }
 
         /* ── 관리자 도구 섹션 — 본문 최하단, 모바일 전용 ── */
@@ -1725,7 +1725,7 @@ export default function PropertyDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="mobile-aside-pnum print-hide">매물번호 {property.property_number ?? id}</div>
+            <div className="mobile-aside-pnum print-hide">🏷️ 매물번호 {property.property_number ?? id}</div>
             <div className="aside-cta-row" style={{ display: 'flex', gap: '8px' }}>
               <button
                 className="cta-inquiry"
