@@ -608,6 +608,25 @@ export default function PropertyDetailPage() {
     );
   }
 
+  const handleDeleteProperty = async () => {
+    if (!confirm(`매물 ${property.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    const pid = property.id;
+    const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', pid);
+    if (imgs && imgs.length > 0) {
+      const paths = imgs.map((img: any) => {
+        const m = (img.image_url as string).match(/property-images\/(.+)$/);
+        return m ? m[1] : null;
+      }).filter(Boolean) as string[];
+      if (paths.length > 0) await supabase.storage.from('property-images').remove(paths);
+      await supabase.from('property_images').delete().eq('property_id', pid);
+    }
+    const { error } = await supabase.from('properties').delete().eq('id', pid);
+    if (error) { alert(`삭제 실패: ${error.message}`); return; }
+    alert('매물이 삭제되었습니다.');
+    window.scrollTo(0, 0);
+    if (window.history.length > 1) { router.back(); } else { router.push('/properties'); }
+  };
+
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
 
@@ -835,14 +854,7 @@ export default function PropertyDetailPage() {
           .detail-mobile-fab { display: flex !important; }
           .detail-pc-back { display: none !important; }
           .detail-aside > div:first-child { display: grid !important; grid-template-columns: 1fr auto !important; gap: 12px !important; align-items: center !important; padding: 6px 12px !important; }
-          .detail-aside-info { display: flex !important; flex-direction: column !important; gap: 3px !important; }
-          .detail-aside-info .aside-pnum { display: inline-block !important; width: fit-content !important; font-size: 11px !important; padding: 2px 6px !important; background: #f0f0f0 !important; color: #888 !important; border-radius: 3px !important; }
-          .detail-aside-info .aside-price-row { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; }
-          .detail-aside-info .aside-price { font-size: 15px !important; font-weight: 700 !important; color: #e2a06e !important; margin: 0 !important; }
-          .detail-aside-info .aside-sub { font-size: 10px !important; color: #888 !important; margin: 0 !important; }
-          .detail-aside-info .aside-addr-row { display: flex !important; align-items: center !important; gap: 4px !important; flex-wrap: wrap !important; }
-          .detail-aside-info .aside-addr-row p { font-size: 11px !important; color: #777 !important; margin: 0 !important; }
-          .detail-aside > div:first-child > button { width: 100px !important; min-height: 56px !important; font-size: 13px !important; border-radius: 8px !important; margin: 0 !important; flex-shrink: 0 !important; }
+          .detail-aside-info { display: none !important; }
         }
         .detail-mobile-fab { display: none !important; }
         .detail-pc-back-btn { display: none !important; }
@@ -903,21 +915,19 @@ export default function PropertyDetailPage() {
           .aside-cta-row > .cta-share svg { width: 20px !important; height: 20px !important; }
           .cta-share-label { display: none !important; }
 
-          /* 관리자 버튼(수정/인쇄/삭제) — 모바일에서만 컴팩트 */
-          .admin-actions > a,
-          .admin-actions > button {
-            padding: 7px 6px !important;
-            font-size: 13px !important;
-            min-width: 60px !important;
-            min-height: 0 !important;
-            line-height: 1.2 !important;
-          }
-          .admin-actions > button svg { width: 14px !important; height: 14px !important; }
+          /* 관리자 버튼 — 모바일 aside에서 숨김 (본문 최하단에 별도 표시) */
+          .admin-actions { display: none !important; }
         }
 
         /* ── 태블릿 전용: 매물 문의하기 버튼 너비 확보 (글씨 잘림 방지) ── */
         @media (min-width: 768px) and (max-width: 1199px) {
           .aside-cta-row > .cta-inquiry { min-width: 160px !important; padding: 0 18px !important; }
+        }
+
+        /* ── 관리자 도구 섹션 — 본문 최하단, 모바일 전용 ── */
+        .admin-mobile-tools { display: none; }
+        @media (max-width: 767px) {
+          .admin-mobile-tools { display: block !important; }
         }
 
         /* ════════════ 인쇄 전용 ════════════ */
@@ -1173,7 +1183,7 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* ── 2열 본문 ── */}
-      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: isMobile ? (isAdmin ? '170px' : '128px') : isTablet ? (isAdmin ? '140px' : '104px') : 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+      <div className="detail-body" style={{ width: '100%', maxWidth: '100%', paddingLeft: '350px', paddingRight: '350px', paddingBottom: isMobile ? '80px' : isTablet ? (isAdmin ? '140px' : '104px') : 0, display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
 
         {/* ── 좌측 본문 ── */}
         <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1626,6 +1636,31 @@ export default function PropertyDetailPage() {
 
         </div>
 
+        {/* ── 관리자 도구 (모바일 전용, PC/태블릿은 aside에서 표시) ── */}
+        {isAdmin && (
+          <div className="admin-mobile-tools print-hide" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '12px', marginTop: '4px' }}>
+            <p style={{ fontSize: '12px', color: '#aaa', fontWeight: 600, marginBottom: '8px', letterSpacing: '0.5px' }}>관리자 도구</p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <a href={`/admin/properties/${property.property_number}/edit`}
+                style={{ flex: 1, minWidth: '80px', display: 'block', textAlign: 'center', padding: '10px 8px', background: '#f8f8f8', border: '1px solid #e2a06e', borderRadius: '4px', color: '#e2a06e', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
+                매물 수정
+              </a>
+              <a href={`/admin/contracts/new?property_id=${property.id}`}
+                style={{ flex: 1, minWidth: '80px', display: 'block', textAlign: 'center', padding: '10px 8px', background: '#fff', border: '1px solid #16a34a', borderRadius: '4px', color: '#16a34a', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
+                📋 계약 등록
+              </a>
+              <button onClick={() => window.print()}
+                style={{ flex: 1, minWidth: '80px', padding: '10px 8px', background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <Printer size={14} strokeWidth={2.2} />인쇄
+              </button>
+              <button onClick={handleDeleteProperty}
+                style={{ flex: 1, minWidth: '80px', padding: '10px 8px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                매물 삭제
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── 우측 패널 ── */}
         <aside className="detail-aside" style={{ width: '360px', flexShrink: 0, position: 'sticky', top: '190px', alignSelf: 'flex-start', maxHeight: 'calc(100vh - 190px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
@@ -1771,31 +1806,7 @@ export default function PropertyDetailPage() {
                 인쇄
               </button>
               <button
-                onClick={async () => {
-                  if (!confirm(`매물 ${property.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
-                  const pid = property.id;
-                  // 1) 이미지 조회 + Storage 삭제
-                  const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', pid);
-                  if (imgs && imgs.length > 0) {
-                    const paths = imgs.map((img: any) => {
-                      const m = (img.image_url as string).match(/property-images\/(.+)$/);
-                      return m ? m[1] : null;
-                    }).filter(Boolean) as string[];
-                    if (paths.length > 0) await supabase.storage.from('property-images').remove(paths);
-                    // 2) property_images 삭제
-                    await supabase.from('property_images').delete().eq('property_id', pid);
-                  }
-                  // 3) properties 삭제
-                  const { error } = await supabase.from('properties').delete().eq('id', pid);
-                  if (error) { alert(`삭제 실패: ${error.message}`); return; }
-                  alert('매물이 삭제되었습니다.');
-                  window.scrollTo(0, 0);
-                  if (window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push('/properties');
-                  }
-                }}
+                onClick={handleDeleteProperty}
                 style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
               >
                 매물 삭제
