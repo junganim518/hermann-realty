@@ -196,6 +196,12 @@ lib/
 - 클러스터 선택 상태(`visibleIds`): 매물 데이터 로드 후 `savedVisibleIdsRef`로 복원
 - 매물 목록 스크롤: `listRef`(데스크톱) + `mobileListRef`(모바일) sessionStorage 저장/복원, `back_forward` 진입 시에만 복원
 
+### 매물 상세 모바일: 매물번호 상단 고정 띠 (app/item/view/[id]/page.tsx)
+
+- `.mobile-prop-num-bar`: 모바일(max-width: 767px)에서만 표시, `position: fixed; top: 64px; height: 32px; z-index: 101`
+- 배경 `#1a1a1a` + 골드 글씨 `#e2a06e`, "매물번호 XXXXX" 형식
+- 탭바는 모바일에서 `top: 96px`(64px 헤더 + 32px 띠), `detail-body`는 `padding-top: 82px`
+
 ### 매물 상세 페이지 하단 영역 (app/item/view/[id]/page.tsx)
 
 - **PC/태블릿**: `detail-aside`가 우측 sticky 패널 — 매물정보+CTA+관리자버튼 모두 표시
