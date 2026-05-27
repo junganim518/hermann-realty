@@ -33,6 +33,7 @@ function NewContractInner() {
     property_address: '',
     property_building_name: '',
     property_unit_number: '',
+    property_type: '상가',
     landlord_name: '',
     landlord_phone: '',
     contract_type: '월세' as ContractType,
@@ -159,6 +160,7 @@ function NewContractInner() {
       property_address: form.property_address.trim() || null,
       property_building_name: form.property_building_name.trim() || null,
       property_unit_number: form.property_unit_number.trim() || null,
+      property_type: form.property_type || null,
       landlord_id,
       landlord_name,
       landlord_phone,
@@ -221,6 +223,14 @@ function NewContractInner() {
                 ))}
               </div>
             </div>
+            {/* 매물종류 */}
+            <div>
+              <label style={labelSt}>매물종류</label>
+              <select value={form.property_type} onChange={e => set('property_type', e.target.value)} style={selectSt}>
+                {['상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div />
             {/* 매물 주소 */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>매물 주소</label>

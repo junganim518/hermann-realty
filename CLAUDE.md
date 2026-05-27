@@ -94,6 +94,7 @@ lib/
 ### contracts (계약)
 
 - property_address, property_building_name, property_unit_number (TEXT) — 매물 주소 직접 입력 (property_id FK 미사용, 공동중개 등 시스템 외 매물 대응)
+- property_type (TEXT) — 매물종류 (상가/사무실/오피스텔/아파트/건물/기타); properties 테이블과 동일 목록
 - landlord_id (FK, nullable) — 임대인 직접 입력 + 자동 매칭 (매물 등록과 동일한 resolveLandlord 로직)
 - landlord_name, landlord_phone (TEXT) — 텍스트 직접 저장 (전화번호 없는 임대인 정보 보존용; landlord_id 있어도 함께 저장)
 - contract_type (TEXT) — 월세/전세/매매

@@ -37,6 +37,7 @@ function ContractsInner() {
 
   const [filterStatus, setFilterStatus] = useState(readParam('status', '전체'));
   const [filterType, setFilterType] = useState(readParam('type', '전체'));
+  const [filterPropType, setFilterPropType] = useState(readParam('pt', '전체'));
   const [search, setSearch] = useState(readParam('q', ''));
   const [sortBy, setSortBy] = useState<'expiring' | 'contract_date' | 'created_at'>((readParam('sort', 'expiring') as any));
 
@@ -62,13 +63,13 @@ function ContractsInner() {
   }, [authChecked]);
 
   const syncURL = useCallback((overrides: Record<string, string> = {}) => {
-    const vals: Record<string, string> = { status: filterStatus, type: filterType, q: search, sort: sortBy, ...overrides };
-    const defaults: Record<string, string> = { status: '전체', type: '전체', q: '', sort: 'expiring' };
+    const vals: Record<string, string> = { status: filterStatus, type: filterType, pt: filterPropType, q: search, sort: sortBy, ...overrides };
+    const defaults: Record<string, string> = { status: '전체', type: '전체', pt: '전체', q: '', sort: 'expiring' };
     const params = new URLSearchParams();
     Object.entries(vals).forEach(([k, v]) => { if (v && defaults[k] !== v) params.set(k, v); });
     const qs = params.toString();
     router.replace(`/admin/contracts${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [filterStatus, filterType, search, sortBy, router]);
+  }, [filterStatus, filterType, filterPropType, search, sortBy, router]);
 
   // 통계
   const stats = useMemo(() => {
@@ -89,6 +90,7 @@ function ContractsInner() {
       const eff = effectiveStatus(c) as ContractStatus;
       if (filterStatus !== '전체' && eff !== filterStatus) return false;
       if (filterType !== '전체' && c.contract_type !== filterType) return false;
+      if (filterPropType !== '전체' && c.property_type !== filterPropType) return false;
       if (q) {
         const landlord = c.landlord_id ? landlordMap[c.landlord_id] : null;
         const hay = `${c.property_address ?? ''} ${c.property_building_name ?? ''} ${c.property_unit_number ?? ''} ${landlord?.name ?? c.landlord_name ?? ''} ${c.tenant_name ?? ''} ${c.tenant_business_name ?? ''} ${c.tenant_phone ?? ''}`.toLowerCase();
@@ -120,7 +122,7 @@ function ContractsInner() {
     }
     // 기본 created_at desc는 이미 fetch 시 적용됨
     return list;
-  }, [contracts, filterStatus, filterType, search, sortBy, landlordMap]);
+  }, [contracts, filterStatus, filterType, filterPropType, search, sortBy, landlordMap]);
 
   if (!authChecked || loading) return <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</main>;
 
@@ -218,6 +220,19 @@ function ContractsInner() {
                 >{t}</button>
               );
             })}
+            <span style={{ color: '#ddd', alignSelf: 'center' }}>|</span>
+            {/* 매물종류 필터 */}
+            {(['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'] as const).map(t => {
+              const active = filterPropType === t;
+              return (
+                <button key={`pt-${t}`} type="button"
+                  onClick={() => { setFilterPropType(t); syncURL({ pt: t }); }}
+                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
+                    background: active ? '#475569' : '#fff', color: active ? '#fff' : '#666',
+                    border: active ? '1px solid #475569' : '1px solid #ddd', cursor: active ? 'default' : 'pointer' }}
+                >{t}</button>
+              );
+            })}
           </div>
         </div>
 
@@ -246,6 +261,9 @@ function ContractsInner() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: colors.bg, color: colors.color, border: `1px solid ${colors.border}` }}>{eff}</span>
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: '#f5f5f5', color: '#666' }}>{c.contract_type}</span>
+                        {c.property_type && (
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}>{c.property_type}</span>
+                        )}
                         {dInfo.urgency !== 'na' && (
                           <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: dInfo.bg, color: dInfo.color }}>{dInfo.label}</span>
                         )}

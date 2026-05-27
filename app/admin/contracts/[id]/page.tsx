@@ -104,14 +104,19 @@ export default function ContractDetailPage() {
         {/* 매물 정보 */}
         <div style={sectionSt}>
           <h2 style={sectionTitleSt}>🏢 매물 정보</h2>
-          {(contract.property_address || contract.property_building_name || contract.property_unit_number) ? (
+          {(contract.property_address || contract.property_building_name || contract.property_unit_number || contract.property_type) ? (
             <div style={{ padding: '12px 14px', background: '#f9f9f9', borderRadius: '6px' }}>
+              {contract.property_type && (
+                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600, marginBottom: '4px' }}>
+                  <span style={{ padding: '2px 8px', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #cbd5e1' }}>{contract.property_type}</span>
+                </div>
+              )}
               <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: 500 }}>
-                {[contract.property_address, contract.property_building_name, contract.property_unit_number].filter(Boolean).join(' ')}
+                {[contract.property_address, contract.property_building_name, contract.property_unit_number].filter(Boolean).join(' ') || '(주소 없음)'}
               </div>
             </div>
           ) : (
-            <p style={{ color: '#888', fontSize: '13px' }}>(주소 없음)</p>
+            <p style={{ color: '#888', fontSize: '13px' }}>(매물 정보 없음)</p>
           )}
         </div>
 
