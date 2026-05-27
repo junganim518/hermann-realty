@@ -32,7 +32,6 @@ export default function EditContractPage() {
     tenant_business_name: '',
     contract_date: '',
     move_in_date: '',
-    start_date: '',
     end_date: '',
     deposit: '',
     monthly_rent: '',
@@ -91,7 +90,6 @@ export default function EditContractPage() {
         tenant_business_name: c.tenant_business_name ?? '',
         contract_date: c.contract_date ?? '',
         move_in_date: c.move_in_date ?? '',
-        start_date: c.start_date ?? '',
         end_date: c.end_date ?? '',
         deposit: c.deposit ? String(c.deposit) : '',
         monthly_rent: c.monthly_rent ? String(c.monthly_rent) : '',
@@ -196,7 +194,6 @@ export default function EditContractPage() {
       tenant_business_name: form.tenant_business_name.trim() || null,
       contract_date: form.contract_date || null,
       move_in_date: form.move_in_date || null,
-      start_date: form.start_date || null,
       end_date: form.contract_type === '매매' ? null : (form.end_date || null),
       deposit: toInt(form.deposit),
       monthly_rent: form.contract_type === '월세' ? toInt(form.monthly_rent) : null,
@@ -306,10 +303,6 @@ export default function EditContractPage() {
             <div>
               <label style={labelSt}>잔금/입주일</label>
               <input type="date" value={form.move_in_date} onChange={e => set('move_in_date', e.target.value)} style={inputSt} />
-            </div>
-            <div style={{ opacity: isMaeMae ? 0.4 : 1 }}>
-              <label style={labelSt}>계약 시작일</label>
-              <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} disabled={isMaeMae} style={inputSt} />
             </div>
             <div style={{ opacity: isMaeMae ? 0.4 : 1 }}>
               <label style={labelSt}>계약 만기일</label>

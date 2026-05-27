@@ -170,7 +170,6 @@ export default function ContractDetailPage() {
             <div><div style={labelTextSt}>잔금/입주일</div><div style={valueTextSt}>{formatDateShort(contract.move_in_date)}</div></div>
             {!isMaeMae && (
               <>
-                <div><div style={labelTextSt}>시작일</div><div style={valueTextSt}>{formatDateShort(contract.start_date)}</div></div>
                 <div>
                   <div style={labelTextSt}>만기일</div>
                   <div style={{ ...valueTextSt, display: 'flex', alignItems: 'center', gap: '6px' }}>

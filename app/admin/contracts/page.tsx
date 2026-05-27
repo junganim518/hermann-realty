@@ -259,7 +259,7 @@ function ContractsInner() {
                         <span>임차 {c.tenant_name ?? '-'}{c.tenant_business_name ? ` (${c.tenant_business_name})` : ''}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#888', marginTop: '2px', flexWrap: 'wrap' }}>
-                        <span>{formatPeriod(c.start_date, c.end_date)}</span>
+                        <span>{formatPeriod(c.move_in_date, c.end_date)}</span>
                         <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{formatContractPrice(c)}</span>
                       </div>
                     </div>

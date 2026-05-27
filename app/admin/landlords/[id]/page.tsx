@@ -264,7 +264,7 @@ export default function LandlordDetailPage() {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: '#888', flexWrap: 'wrap' }}>
-                      <span>{formatPeriod(c.start_date, c.end_date)}</span>
+                      <span>{formatPeriod(c.move_in_date, c.end_date)}</span>
                       <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{formatContractPrice(c)}</span>
                     </div>
                   </Link>

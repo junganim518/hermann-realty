@@ -99,6 +99,7 @@ lib/
 - contract_type (TEXT) — 월세/전세/매매
 - tenant_name, tenant_phone, tenant_business_name
 - status — 진행중/입주완료/만기임박/만기/재계약/종료
+- start_date 컬럼은 DB에 유지되나 UI에서 미사용 (잔금/입주일과 중복으로 제거); formatPeriod는 move_in_date 기준
 
 ### customers (손님)
 
