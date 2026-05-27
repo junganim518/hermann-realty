@@ -140,6 +140,7 @@ function ContractsInner() {
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 767px) {
           .c-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .c-addr { white-space: normal !important; display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: keep-all; }
         }
       ` }} />
 
@@ -201,45 +202,25 @@ function ContractsInner() {
               <option value="created_at">등록순</option>
             </select>
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {/* 상태 필터 */}
-            {(['전체', '진행중', '입주완료', '만기임박', '종료', '재계약', '묵시적갱신'] as const).map(s => {
-              const active = filterStatus === s;
-              return (
-                <button key={s} type="button"
-                  onClick={() => { setFilterStatus(s); syncURL({ status: s }); }}
-                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
-                    background: active ? '#1a1a1a' : '#fff', color: active ? '#e2a06e' : '#666',
-                    border: active ? '1px solid #1a1a1a' : '1px solid #ddd', cursor: active ? 'default' : 'pointer' }}
-                >{s}</button>
-              );
-            })}
-            <span style={{ color: '#ddd', alignSelf: 'center' }}>|</span>
-            {/* 종류 필터 */}
-            {(['전체', ...CONTRACT_TYPES] as const).map(t => {
-              const active = filterType === t;
-              return (
-                <button key={t} type="button"
-                  onClick={() => { setFilterType(t); syncURL({ type: t }); }}
-                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
-                    background: active ? '#e2a06e' : '#fff', color: active ? '#fff' : '#666',
-                    border: active ? '1px solid #e2a06e' : '1px solid #ddd', cursor: active ? 'default' : 'pointer' }}
-                >{t}</button>
-              );
-            })}
-            <span style={{ color: '#ddd', alignSelf: 'center' }}>|</span>
-            {/* 매물종류 필터 */}
-            {(['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'] as const).map(t => {
-              const active = filterPropType === t;
-              return (
-                <button key={`pt-${t}`} type="button"
-                  onClick={() => { setFilterPropType(t); syncURL({ pt: t }); }}
-                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
-                    background: active ? '#475569' : '#fff', color: active ? '#fff' : '#666',
-                    border: active ? '1px solid #475569' : '1px solid #ddd', cursor: active ? 'default' : 'pointer' }}
-                >{t}</button>
-              );
-            })}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); syncURL({ status: e.target.value }); }}
+              style={{ height: '36px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 8px', fontSize: '13px', color: '#555', background: '#fff', cursor: 'pointer', outline: 'none', minWidth: '110px' }}>
+              {(['전체', '진행중', '입주완료', '만기임박', '종료', '재계약', '묵시적갱신'] as const).map(s =>
+                <option key={s} value={s}>{s === '전체' ? '상태 전체' : s}</option>
+              )}
+            </select>
+            <select value={filterType} onChange={e => { setFilterType(e.target.value); syncURL({ type: e.target.value }); }}
+              style={{ height: '36px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 8px', fontSize: '13px', color: '#555', background: '#fff', cursor: 'pointer', outline: 'none', minWidth: '110px' }}>
+              {(['전체', ...CONTRACT_TYPES] as const).map(t =>
+                <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>
+              )}
+            </select>
+            <select value={filterPropType} onChange={e => { setFilterPropType(e.target.value); syncURL({ pt: e.target.value }); }}
+              style={{ height: '36px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 8px', fontSize: '13px', color: '#555', background: '#fff', cursor: 'pointer', outline: 'none', minWidth: '110px' }}>
+              {(['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'] as const).map(t =>
+                <option key={t} value={t}>{t === '전체' ? '매물종류 전체' : t}</option>
+              )}
+            </select>
           </div>
         </div>
 
@@ -275,7 +256,7 @@ function ContractsInner() {
                           <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: dInfo.bg, color: dInfo.color }}>{dInfo.label}</span>
                         )}
                       </div>
-                      <p style={{ fontSize: '13px', color: '#555', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p className="c-addr" style={{ fontSize: '13px', color: '#555', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {propLine || '(주소 없음)'}
                       </p>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666', flexWrap: 'wrap' }}>
