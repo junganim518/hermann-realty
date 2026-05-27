@@ -181,23 +181,26 @@ function NewContractInner() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>매물</label>
-              <button
-                type="button"
-                onClick={() => setPropModalOpen(true)}
-                style={{ ...inputSt, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                {selectedProperty ? (
-                  <span style={{ flex: 1, fontSize: '14px', color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <strong>{selectedProperty.property_number}</strong> · {selectedProperty.address}
-                    {selectedProperty.building_name && ` · ${selectedProperty.building_name}`}
-                  </span>
-                ) : (
-                  <span style={{ flex: 1, color: '#aaa' }}>매물 선택 (선택사항)</span>
-                )}
-                {selectedProperty && (
-                  <span onClick={e => { e.stopPropagation(); set('property_id', ''); }} style={{ color: '#888', fontSize: '13px', padding: '0 4px' }}>×</span>
-                )}
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPropModalOpen(true)}
+                  style={{ ...inputSt, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 1 }}
+                >
+                  {selectedProperty ? (
+                    <span style={{ flex: 1, fontSize: '14px', color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <strong>{selectedProperty.property_number}</strong> · {selectedProperty.address}
+                      {selectedProperty.building_name && ` · ${selectedProperty.building_name}`}
+                    </span>
+                  ) : (
+                    <span style={{ flex: 1, color: '#aaa' }}>매물 선택 (선택사항)</span>
+                  )}
+                  {selectedProperty && (
+                    <span onClick={e => { e.stopPropagation(); set('property_id', ''); }} style={{ color: '#888', fontSize: '13px', padding: '0 4px' }}>×</span>
+                  )}
+                </button>
+                <a href="/admin/properties/new" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '40px', padding: '0 12px', background: '#fff', color: '#e2a06e', border: '1px solid #e2a06e', borderRadius: '6px', fontSize: '12px', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>+ 새 매물</a>
+              </div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>임대인</label>
@@ -327,7 +330,10 @@ function NewContractInner() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {filteredProps.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: '13px' }}>일치하는 매물이 없습니다</p>
+              <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '8px' }}>일치하는 매물이 없습니다</p>
+                <a href="/admin/properties/new" target="_blank" rel="noreferrer" style={{ display: 'inline-block', padding: '8px 14px', background: '#e2a06e', color: '#fff', borderRadius: '6px', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>+ 새 매물 등록</a>
+              </div>
             ) : filteredProps.map(p => (
               <button
                 key={p.id}
