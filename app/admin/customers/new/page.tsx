@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { formatPhone } from '@/lib/phoneFormat';
 import { combineDateTime } from '@/lib/parseTime';
 import CustomerConditionsForm from '@/components/CustomerConditionsForm';
 import type { DesiredConditions } from '@/lib/matchProperties';
@@ -85,7 +86,7 @@ export default function NewCustomerPage() {
             </div>
             <div>
               <label style={labelSt}>연락처</label>
-              <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="010-0000-0000" style={inputSt} />
+              <input value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="010-0000-0000" maxLength={13} style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>관심 매물종류</label>

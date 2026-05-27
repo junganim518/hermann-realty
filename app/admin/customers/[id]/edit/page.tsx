@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { formatPhone } from '@/lib/phoneFormat';
 import { combineDateTime, isoToDateString, isoToTimeString } from '@/lib/parseTime';
 import CustomerConditionsForm from '@/components/CustomerConditionsForm';
 import type { DesiredConditions } from '@/lib/matchProperties';
@@ -39,7 +40,7 @@ export default function EditCustomerPage() {
     if (!data) { alert('손님 정보를 찾을 수 없습니다.'); router.push('/admin/customers'); return; }
     setForm({
       name: data.name ?? '',
-      phone: data.phone ?? '',
+      phone: formatPhone(data.phone ?? ''),
       interest_type: data.interest_type ?? '',
       budget: data.budget ?? '',
       region: data.region ?? '',
@@ -122,7 +123,7 @@ export default function EditCustomerPage() {
             </div>
             <div>
               <label style={labelSt}>연락처</label>
-              <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="010-0000-0000" style={inputSt} />
+              <input value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="010-0000-0000" maxLength={13} style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>관심 매물종류</label>
