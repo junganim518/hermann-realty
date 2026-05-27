@@ -7,7 +7,7 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
 import { categorizeReferrer, getReferrerDetail } from '@/lib/analyticsUtils';
-import { FILTER_THEMES } from '@/lib/themeUtils';
+import { ALL_THEMES } from '@/lib/themeUtils';
 import { matchRange, matchAreaRange, matchFloor } from '@/lib/propertyFilter';
 
 
@@ -41,6 +41,17 @@ const TX_TYPES = ['전체', '월세', '전세', '매매'];
 const SOLD_TYPES = ['전체', '거래중', '보류', '거래완료'];
 const FLOOR_RANGES = ['전체', '지하', '1층', '2층 이상'];
 const PAGE_SIZE = 20;
+
+const THEME_DISPLAY: Record<string, string> = {
+  '사옥형및통임대': '사옥형 및 통임대', '대형상가': '대형 상가',
+  '무권리상가': '무권리 상가', '프랜차이즈양도양수': '프랜차이즈 양도양수',
+  '1층상가': '1층 상가', '2층이상상가': '2층 이상 상가',
+};
+const THEME_GROUPS = [
+  { label: '매물 특성', themes: ALL_THEMES.slice(0, 8) },
+  { label: '위치·조건', themes: ALL_THEMES.slice(8, 17) },
+  { label: '업종', themes: ALL_THEMES.slice(17) },
+];
 
 
 const formatPrice = (v: number) => {
@@ -133,6 +144,10 @@ function AdminDashboardInner() {
   const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null);
   const [moreMenuPos, setMoreMenuPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
+  const [openTypesDD, setOpenTypesDD] = useState(false);
+  const [openThemesDD, setOpenThemesDD] = useState(false);
+  const typesDDRef = useRef<HTMLDivElement | null>(null);
+  const themesDDRef = useRef<HTMLDivElement | null>(null);
 
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
@@ -388,6 +403,24 @@ function AdminDashboardInner() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [openMoreMenu]);
+
+  useEffect(() => {
+    if (!openTypesDD) return;
+    const handler = (e: MouseEvent) => {
+      if (typesDDRef.current && !typesDDRef.current.contains(e.target as Node)) setOpenTypesDD(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openTypesDD]);
+
+  useEffect(() => {
+    if (!openThemesDD) return;
+    const handler = (e: MouseEvent) => {
+      if (themesDDRef.current && !themesDDRef.current.contains(e.target as Node)) setOpenThemesDD(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openThemesDD]);
 
   const copyProperty = async (p: any) => {
     if (copying) return;
@@ -1044,33 +1077,113 @@ function AdminDashboardInner() {
                 <button onClick={resetAllFilters} style={{ height: '36px', padding: '0 14px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>초기화</button>
               )}
             </div>
-            {/* 매물종류 다중 선택 */}
-            <div className="admin-filters" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#888', flexShrink: 0 }}>매물종류</span>
-              {['상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map(t => {
-                const active = filterTypes.includes(t);
-                return (
-                  <button key={t} type="button"
-                    onClick={() => {
-                      const next = active ? filterTypes.filter(x => x !== t) : [...filterTypes, t];
-                      setFilterTypes(next); setPage(1); syncURL({ types: next.join(','), page: '1' });
-                    }}
-                    style={{ padding: '4px 12px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
-                      background: active ? '#1a1a1a' : '#fff', color: active ? '#e2a06e' : '#666',
-                      border: active ? '1px solid #1a1a1a' : '1px solid #ddd', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >{t}</button>
-                );
-              })}
-            </div>
-            {/* 거래유형 + 층수 + 범위 입력 */}
-            <div className="admin-filters" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* 드롭다운 필터 한 줄: 매물종류 · 거래유형 · 층수 · 테마 */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* 매물종류 드롭다운 */}
+              <div ref={typesDDRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => { setOpenTypesDD(v => !v); if (openThemesDD) setOpenThemesDD(false); }}
+                  style={{
+                    height: '36px', padding: '0 12px',
+                    border: `1px solid ${filterTypes.length > 0 ? '#1a1a1a' : '#ddd'}`,
+                    borderRadius: '6px', fontSize: '13px',
+                    color: filterTypes.length > 0 ? '#e2a06e' : '#555',
+                    background: filterTypes.length > 0 ? '#1a1a1a' : '#fff',
+                    cursor: 'pointer', outline: 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap',
+                  }}
+                >
+                  매물종류{filterTypes.length > 0 ? ` (${filterTypes.length})` : ''} <span style={{ fontSize: '9px', opacity: 0.6 }}>▼</span>
+                </button>
+                {openTypesDD && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '6px', minWidth: '140px',
+                  }}>
+                    {['상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map(t => {
+                      const checked = filterTypes.includes(t);
+                      return (
+                        <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', cursor: 'pointer', fontSize: '13px', borderRadius: '4px', color: '#333', userSelect: 'none' as const }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f5f5f5'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        >
+                          <input type="checkbox" checked={checked} style={{ accentColor: '#1a1a1a', width: '14px', height: '14px', cursor: 'pointer', flexShrink: 0 }}
+                            onChange={() => {
+                              const next = checked ? filterTypes.filter(x => x !== t) : [...filterTypes, t];
+                              setFilterTypes(next); setPage(1); syncURL({ types: next.join(','), page: '1' });
+                            }} />
+                          {t}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 거래유형 */}
               <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setPage(1); syncURL({ tx: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
               </select>
+
+              {/* 층수 */}
               <select value={filterFloor} onChange={e => { setFilterFloor(e.target.value); setPage(1); syncURL({ floor: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {FLOOR_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '층수 전체' : t}</option>)}
               </select>
-              <span style={{ color: '#ddd', fontSize: '18px' }}>|</span>
+
+              {/* 테마 드롭다운 */}
+              <div ref={themesDDRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => { setOpenThemesDD(v => !v); if (openTypesDD) setOpenTypesDD(false); }}
+                  style={{
+                    height: '36px', padding: '0 12px',
+                    border: `1px solid ${filterThemes.length > 0 ? '#e2a06e' : '#ddd'}`,
+                    borderRadius: '6px', fontSize: '13px',
+                    color: filterThemes.length > 0 ? '#fff' : '#555',
+                    background: filterThemes.length > 0 ? '#e2a06e' : '#fff',
+                    cursor: 'pointer', outline: 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap',
+                  }}
+                >
+                  테마{filterThemes.length > 0 ? ` (${filterThemes.length})` : ''} <span style={{ fontSize: '9px', opacity: 0.6 }}>▼</span>
+                </button>
+                {openThemesDD && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                    maxHeight: '380px', overflowY: 'auto',
+                    minWidth: '200px', maxWidth: 'min(260px, calc(100vw - 16px))',
+                  }}>
+                    {THEME_GROUPS.map(group => (
+                      <div key={group.label}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#aaa', padding: '8px 10px 3px', letterSpacing: '0.3px' }}>{group.label}</div>
+                        {group.themes.map(t => {
+                          const checked = filterThemes.includes(t);
+                          const displayName = THEME_DISPLAY[t] ?? t;
+                          return (
+                            <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '13px', color: '#333', userSelect: 'none' as const }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f9f9f9'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                            >
+                              <input type="checkbox" checked={checked} style={{ accentColor: '#e2a06e', width: '14px', height: '14px', cursor: 'pointer', flexShrink: 0 }}
+                                onChange={() => {
+                                  const next = checked ? filterThemes.filter(x => x !== t) : [...filterThemes, t];
+                                  setFilterThemes(next); setPage(1); syncURL({ theme: next.join(','), page: '1' });
+                                }} />
+                              {displayName}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 범위 입력 */}
+            <div className="admin-filters" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               {[
                 { label: '보증금', minK: 'deposit_min', maxK: 'deposit_max', minV: depositMin, maxV: depositMax, setMin: setDepositMin, setMax: setDepositMax, unit: '만원' },
                 { label: '월세', minK: 'rent_min', maxK: 'rent_max', minV: rentMin, maxV: rentMax, setMin: setRentMin, setMax: setRentMax, unit: '만원' },
@@ -1091,24 +1204,6 @@ function AdminDashboardInner() {
                   <span style={{ fontSize: '11px', color: '#888', whiteSpace: 'nowrap' }}>{unit}</span>
                 </div>
               ))}
-            </div>
-            {/* 테마 다중 선택 */}
-            <div className="admin-filters" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#888', flexShrink: 0 }}>테마</span>
-              {FILTER_THEMES.map(({ id, name }) => {
-                const active = filterThemes.includes(id);
-                return (
-                  <button key={id} type="button"
-                    onClick={() => {
-                      const next = active ? filterThemes.filter(x => x !== id) : [...filterThemes, id];
-                      setFilterThemes(next); setPage(1); syncURL({ theme: next.join(','), page: '1' });
-                    }}
-                    style={{ padding: '4px 10px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
-                      background: active ? '#e2a06e' : '#fff', color: active ? '#fff' : '#666',
-                      border: active ? '1px solid #e2a06e' : '1px solid #ddd', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >{name}</button>
-                );
-              })}
             </div>
           </div>
 

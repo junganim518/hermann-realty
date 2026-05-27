@@ -198,12 +198,16 @@ lib/
 
 ### 관리자 매물 관리 필터 (app/admin/page.tsx)
 
-- **매물종류**: 다중 선택 칩 (상가/사무실/오피스텔/아파트/건물/기타) — URL 키 `types=상가,사무실`
-- **테마**: FILTER_THEMES 17개 다중 선택 칩 (AND 조건) — URL 키 `theme=추천매물,카페`
+- **매물종류**: 드롭다운 체크박스 다중 선택 (상가/사무실/오피스텔/아파트/건물/기타) — URL 키 `types=상가,사무실`
+- **테마**: 드롭다운 체크박스 다중 선택 (AND 조건) — ALL_THEMES 26개 / 3그룹(매물 특성·위치·조건·업종) — URL 키 `theme=추천매물,카페`
+  - **관리자**: ALL_THEMES (26개) / **손님(검색·지도)**: FILTER_THEMES (17개)
+  - THEME_GROUPS: 매물 특성(slice 0..8) · 위치·조건(slice 8..17) · 업종(slice 17..)
+  - THEME_DISPLAY: 한글 표시명 다른 경우만 별도 매핑 (사옥형및통임대→사옥형 및 통임대 등)
 - **거래유형/층수**: 단일 select — URL 키 `tx`, `floor`
 - **보증금/월세/면적/권리금**: min~max 직접 입력 (만원/평) — URL 키 `deposit_min`, `deposit_max`, `rent_min`, `rent_max`, `area_min`, `area_max`, `premium_min`, `premium_max`
 - 필터 함수: `lib/propertyFilter.ts` (`matchRange`, `matchAreaRange`, `matchFloor`)
   - 면적: DB는 ㎡, 입력은 평 — `matchAreaRange` 내부에서 변환 (÷ 3.3058)
+- 드롭다운 바깥 클릭 시 자동 닫힘 (useEffect + ref), Portal 불필요
 
 ### 관리자 매물 카드 (app/admin/page.tsx)
 
