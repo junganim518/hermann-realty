@@ -102,14 +102,14 @@ function NewContractInner() {
 
   const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
 
-  const resolveLandlord = async (): Promise<{ landlord_id: string | null }> => {
+  const resolveLandlord = async (): Promise<{ landlord_id: string | null; landlord_name: string | null; landlord_phone: string | null }> => {
     const nameStr = form.landlord_name.trim();
     const phoneStr = form.landlord_phone.trim();
     const address = form.property_address.trim();
     const unitNumber = form.property_unit_number.trim();
     const buildingName = form.property_building_name.trim();
 
-    if (!nameStr && !phoneStr) return { landlord_id: null };
+    if (!nameStr && !phoneStr) return { landlord_id: null, landlord_name: null, landlord_phone: null };
 
     // 1순위: 주소+동호수 매칭
     if (address && unitNumber) {
@@ -124,7 +124,7 @@ function NewContractInner() {
         const addrLine = [address, unitLabel].filter(Boolean).join(' ');
         const infoLine = [addrLine || null, landlord?.phone || null].filter(Boolean).join(' / ');
         const ok = confirm(`${infoLine}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
-        if (ok) return { landlord_id: landlord ? landlord.id : matchedId };
+        if (ok) return { landlord_id: landlord ? landlord.id : matchedId, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
       }
     }
 
@@ -136,7 +136,7 @@ function NewContractInner() {
         const matched = (allLandlords ?? []).find(l => normalizePhone(l.phone ?? '') === normalized);
         if (matched) {
           const ok = confirm(`${matched.phone}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
-          if (ok) return { landlord_id: matched.id };
+          if (ok) return { landlord_id: matched.id, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
         }
       }
     }
@@ -145,22 +145,24 @@ function NewContractInner() {
     if (phoneStr) {
       const { data: newLandlord } = await supabase.from('landlords')
         .insert({ name: nameStr || null, phone: phoneStr }).select('id').single();
-      return { landlord_id: newLandlord?.id ?? null };
+      return { landlord_id: newLandlord?.id ?? null, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
     }
 
-    // 전화번호 없음 → landlords 미등록
-    return { landlord_id: null };
+    // 전화번호 없음 → landlords 미등록, 텍스트만 저장
+    return { landlord_id: null, landlord_name: nameStr || null, landlord_phone: null };
   };
 
   const handleSave = async () => {
     setSaving(true);
     const toInt = (s: string) => { const n = parseInt(s.replace(/,/g, ''), 10); return isNaN(n) ? null : n; };
-    const { landlord_id } = await resolveLandlord();
+    const { landlord_id, landlord_name, landlord_phone } = await resolveLandlord();
     const payload = {
       property_address: form.property_address.trim() || null,
       property_building_name: form.property_building_name.trim() || null,
       property_unit_number: form.property_unit_number.trim() || null,
       landlord_id,
+      landlord_name,
+      landlord_phone,
       contract_type: form.contract_type,
       tenant_name: form.tenant_name.trim() || null,
       tenant_phone: form.tenant_phone.trim() || null,

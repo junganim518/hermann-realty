@@ -91,7 +91,7 @@ function ContractsInner() {
       if (filterType !== '전체' && c.contract_type !== filterType) return false;
       if (q) {
         const landlord = c.landlord_id ? landlordMap[c.landlord_id] : null;
-        const hay = `${c.property_address ?? ''} ${c.property_building_name ?? ''} ${c.property_unit_number ?? ''} ${landlord?.name ?? ''} ${c.tenant_name ?? ''} ${c.tenant_business_name ?? ''} ${c.tenant_phone ?? ''}`.toLowerCase();
+        const hay = `${c.property_address ?? ''} ${c.property_building_name ?? ''} ${c.property_unit_number ?? ''} ${landlord?.name ?? c.landlord_name ?? ''} ${c.tenant_name ?? ''} ${c.tenant_business_name ?? ''} ${c.tenant_phone ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -254,7 +254,7 @@ function ContractsInner() {
                         {propLine || '(주소 없음)'}
                       </p>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666', flexWrap: 'wrap' }}>
-                        <span>임대 {landlord?.name ?? '-'}</span>
+                        <span>임대 {landlord?.name ?? c.landlord_name ?? '-'}</span>
                         <span>·</span>
                         <span>임차 {c.tenant_name ?? '-'}{c.tenant_business_name ? ` (${c.tenant_business_name})` : ''}</span>
                       </div>

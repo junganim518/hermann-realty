@@ -126,6 +126,20 @@ export default function ContractDetailPage() {
                 {landlord.business_number && (<div><div style={labelTextSt}>사업자번호</div><div style={valueTextSt}>{landlord.business_number}</div></div>)}
               </div>
             </Link>
+          ) : (contract.landlord_name || contract.landlord_phone) ? (
+            <div style={{ padding: '12px 14px', background: '#f9f9f9', borderRadius: '6px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                <div><div style={labelTextSt}>이름</div><div style={valueTextSt}>{contract.landlord_name || '-'}</div></div>
+                <div>
+                  <div style={labelTextSt}>연락처</div>
+                  {contract.landlord_phone ? (
+                    <a href={`tel:${contract.landlord_phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '14px', color: '#e2a06e', fontWeight: 600, textDecoration: 'none' }}>
+                      <Phone size={12} /> {contract.landlord_phone}
+                    </a>
+                  ) : <div style={valueTextSt}>-</div>}
+                </div>
+              </div>
+            </div>
           ) : (
             <p style={{ color: '#888', fontSize: '13px' }}>(임대인 미연결)</p>
           )}
