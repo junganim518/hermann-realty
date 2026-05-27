@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { formatPhone } from '@/lib/phoneFormat';
 import { CONTRACT_TYPES, CONTRACT_STATUSES, type ContractType, type ContractStatus } from '@/lib/contracts';
 
 declare global {
@@ -18,13 +19,13 @@ export default function EditContractPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [allLandlords, setAllLandlords] = useState<any[]>([]);
 
   const [form, setForm] = useState({
     property_address: '',
     property_building_name: '',
     property_unit_number: '',
-    landlord_id: '',
+    landlord_name: '',
+    landlord_phone: '',
     contract_type: '월세' as ContractType,
     tenant_name: '',
     tenant_phone: '',
@@ -42,9 +43,6 @@ export default function EditContractPage() {
     status: '진행중' as ContractStatus,
     memo: '',
   });
-
-  const [landlordModalOpen, setLandlordModalOpen] = useState(false);
-  const [landlordSearch, setLandlordSearch] = useState('');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -66,17 +64,24 @@ export default function EditContractPage() {
   useEffect(() => {
     if (!authChecked) return;
     (async () => {
-      const [{ data: c }, { data: lands }] = await Promise.all([
-        supabase.from('contracts').select('*').eq('id', contractId).single(),
-        supabase.from('landlords').select('id, name, phone').order('name'),
-      ]);
+      const { data: c } = await supabase.from('contracts').select('*').eq('id', contractId).single();
       if (!c) { alert('계약을 찾을 수 없습니다.'); router.push('/admin/contracts'); return; }
-      setAllLandlords(lands ?? []);
+
+      // 기존 임대인 이름/전화번호 prefill (landlords 테이블에서)
+      let landlordName = '';
+      let landlordPhone = '';
+      if (c.landlord_id) {
+        const { data: l } = await supabase.from('landlords').select('name, phone').eq('id', c.landlord_id).single();
+        landlordName = l?.name ?? '';
+        landlordPhone = l?.phone ?? '';
+      }
+
       setForm({
         property_address: c.property_address ?? '',
         property_building_name: c.property_building_name ?? '',
         property_unit_number: c.property_unit_number ?? '',
-        landlord_id: c.landlord_id ?? '',
+        landlord_name: landlordName,
+        landlord_phone: landlordPhone,
         contract_type: c.contract_type,
         tenant_name: c.tenant_name ?? '',
         tenant_phone: c.tenant_phone ?? '',
@@ -97,14 +102,6 @@ export default function EditContractPage() {
       setLoading(false);
     })();
   }, [authChecked]);
-
-  useEffect(() => {
-    if (landlordModalOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = prev; };
-    }
-  }, [landlordModalOpen]);
 
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -127,16 +124,66 @@ export default function EditContractPage() {
     }).open();
   };
 
-  const selectedLandlord = allLandlords.find(l => l.id === form.landlord_id);
+  const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
+
+  const resolveLandlord = async (): Promise<{ landlord_id: string | null }> => {
+    const nameStr = form.landlord_name.trim();
+    const phoneStr = form.landlord_phone.trim();
+    const address = form.property_address.trim();
+    const unitNumber = form.property_unit_number.trim();
+    const buildingName = form.property_building_name.trim();
+
+    if (!nameStr && !phoneStr) return { landlord_id: null };
+
+    // 1순위: 주소+동호수 매칭
+    if (address && unitNumber) {
+      const { data: matchedProps } = await supabase.from('properties')
+        .select('landlord_id').eq('address', address).eq('unit_number', unitNumber)
+        .not('landlord_id', 'is', null).limit(1);
+
+      if (matchedProps && matchedProps.length > 0) {
+        const matchedId = matchedProps[0].landlord_id as string;
+        const { data: landlord } = await supabase.from('landlords').select('id, name, phone').eq('id', matchedId).single();
+        const unitLabel = [buildingName, unitNumber].filter(Boolean).join(' ');
+        const addrLine = [address, unitLabel].filter(Boolean).join(' ');
+        const infoLine = [addrLine || null, landlord?.phone || null].filter(Boolean).join(' / ');
+        const ok = confirm(`${infoLine}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
+        if (ok) return { landlord_id: landlord ? landlord.id : matchedId };
+      }
+    }
+
+    // 2순위: 전화번호 매칭
+    if (phoneStr) {
+      const normalized = normalizePhone(phoneStr);
+      if (normalized.length >= 9) {
+        const { data: allLandlords } = await supabase.from('landlords').select('id, name, phone').not('phone', 'is', null);
+        const matched = (allLandlords ?? []).find(l => normalizePhone(l.phone ?? '') === normalized);
+        if (matched) {
+          const ok = confirm(`${matched.phone}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
+          if (ok) return { landlord_id: matched.id };
+        }
+      }
+    }
+
+    // 신규 등록
+    if (phoneStr) {
+      const { data: newLandlord } = await supabase.from('landlords')
+        .insert({ name: nameStr || null, phone: phoneStr }).select('id').single();
+      return { landlord_id: newLandlord?.id ?? null };
+    }
+
+    return { landlord_id: null };
+  };
 
   const handleSave = async () => {
     setSaving(true);
     const toInt = (s: string) => { const n = parseInt(s.replace(/,/g, ''), 10); return isNaN(n) ? null : n; };
+    const { landlord_id } = await resolveLandlord();
     const payload = {
       property_address: form.property_address.trim() || null,
       property_building_name: form.property_building_name.trim() || null,
       property_unit_number: form.property_unit_number.trim() || null,
-      landlord_id: form.landlord_id || null,
+      landlord_id,
       contract_type: form.contract_type,
       tenant_name: form.tenant_name.trim() || null,
       tenant_phone: form.tenant_phone.trim() || null,
@@ -172,12 +219,6 @@ export default function EditContractPage() {
 
   const isMaeMae = form.contract_type === '매매';
   const isWolse = form.contract_type === '월세';
-
-  const filteredLandlords = allLandlords.filter(l => {
-    const q = landlordSearch.trim().toLowerCase();
-    if (!q) return true;
-    return (l.name ?? '').toLowerCase().includes(q) || (l.phone ?? '').toLowerCase().includes(q);
-  }).slice(0, 50);
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
@@ -224,31 +265,22 @@ export default function EditContractPage() {
               <input value={form.property_unit_number} onChange={e => set('property_unit_number', e.target.value)} placeholder="예: 3층 301호" style={inputSt} />
             </div>
             {/* 임대인 */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelSt}>임대인</label>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button type="button" onClick={() => setLandlordModalOpen(true)} style={{ ...inputSt, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 1 }}>
-                  {selectedLandlord ? (
-                    <span style={{ flex: 1, fontSize: '14px', color: '#1a1a1a' }}>
-                      <strong>{selectedLandlord.name}</strong>{selectedLandlord.phone && ` · ${selectedLandlord.phone}`}
-                    </span>
-                  ) : (
-                    <span style={{ flex: 1, color: '#aaa' }}>임대인 선택</span>
-                  )}
-                  {selectedLandlord && (
-                    <span onClick={e => { e.stopPropagation(); set('landlord_id', ''); }} style={{ color: '#888', fontSize: '13px', padding: '0 4px' }}>×</span>
-                  )}
-                </button>
-                <a href="/admin/landlords/new" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '40px', padding: '0 12px', background: '#fff', color: '#e2a06e', border: '1px solid #e2a06e', borderRadius: '6px', fontSize: '12px', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>+ 새 임대인</a>
-              </div>
+            <div>
+              <label style={labelSt}>임대인 이름</label>
+              <input value={form.landlord_name} onChange={e => set('landlord_name', e.target.value)} placeholder="예: 김철수" style={inputSt} />
             </div>
+            <div>
+              <label style={labelSt}>임대인 전화번호</label>
+              <input value={form.landlord_phone} onChange={e => set('landlord_phone', formatPhone(e.target.value))} placeholder="010-1234-5678" style={inputSt} maxLength={13} />
+            </div>
+            {/* 임차인 */}
             <div>
               <label style={labelSt}>임차인 이름</label>
               <input value={form.tenant_name} onChange={e => set('tenant_name', e.target.value)} placeholder="홍길동" style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>임차인 연락처</label>
-              <input value={form.tenant_phone} onChange={e => set('tenant_phone', e.target.value)} placeholder="010-0000-0000" style={inputSt} />
+              <input value={form.tenant_phone} onChange={e => set('tenant_phone', formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputSt} maxLength={13} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>임차인 사업자명/상호명</label>
@@ -337,46 +369,6 @@ export default function EditContractPage() {
           {saving ? '저장 중...' : '수정 저장'}
         </button>
       </div>
-
-      {/* 임대인 선택 모달 */}
-      {landlordModalOpen && (
-        <SearchModal title="임대인 선택" query={landlordSearch} onQueryChange={setLandlordSearch} onClose={() => setLandlordModalOpen(false)}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {filteredLandlords.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px 0' }}>
-                <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '8px' }}>일치하는 임대인이 없습니다</p>
-                <a href="/admin/landlords/new" target="_blank" rel="noreferrer" style={{ display: 'inline-block', padding: '8px 14px', background: '#e2a06e', color: '#fff', borderRadius: '6px', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>+ 새 임대인 등록</a>
-              </div>
-            ) : filteredLandlords.map(l => (
-              <button key={l.id} type="button" onClick={() => { set('landlord_id', l.id); setLandlordModalOpen(false); }}
-                style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 10px', textAlign: 'left', background: '#fff', border: '1px solid #eee', borderRadius: '6px', cursor: 'pointer' }}>
-                <strong style={{ fontSize: '13px' }}>{l.name}</strong>
-                {l.phone && <span style={{ fontSize: '11px', color: '#666' }}>{l.phone}</span>}
-              </button>
-            ))}
-          </div>
-        </SearchModal>
-      )}
     </main>
-  );
-}
-
-function SearchModal({ title, query, onQueryChange, onClose, children }: {
-  title: string; query: string; onQueryChange: (q: string) => void; onClose: () => void; children: React.ReactNode;
-}) {
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflow: 'auto' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '600px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 'auto' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <h3 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}><X size={20} /></button>
-        </div>
-        <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-          <input value={query} onChange={e => onQueryChange(e.target.value)} placeholder="검색" autoFocus
-            style={{ width: '100%', height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }} />
-        </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px', minHeight: 0 }}>{children}</div>
-      </div>
-    </div>
   );
 }
