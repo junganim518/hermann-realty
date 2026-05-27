@@ -33,7 +33,6 @@ function ContractsInner() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<any[]>([]);
-  const [propertyMap, setPropertyMap] = useState<Record<string, any>>({});
   const [landlordMap, setLandlordMap] = useState<Record<string, any>>({});
 
   const [filterStatus, setFilterStatus] = useState(readParam('status', '전체'));
@@ -53,12 +52,7 @@ function ContractsInner() {
     (async () => {
       const { data: cs } = await supabase.from('contracts').select('*').order('created_at', { ascending: false });
       setContracts(cs ?? []);
-      const propIds = Array.from(new Set((cs ?? []).map(c => c.property_id).filter(Boolean)));
       const landlordIds = Array.from(new Set((cs ?? []).map(c => c.landlord_id).filter(Boolean)));
-      if (propIds.length > 0) {
-        const { data: props } = await supabase.from('properties').select('id, property_number, address, building_name').in('id', propIds);
-        const map: Record<string, any> = {}; (props ?? []).forEach(p => { map[p.id] = p; }); setPropertyMap(map);
-      }
       if (landlordIds.length > 0) {
         const { data: lands } = await supabase.from('landlords').select('id, name').in('id', landlordIds);
         const map: Record<string, any> = {}; (lands ?? []).forEach(l => { map[l.id] = l; }); setLandlordMap(map);
@@ -96,9 +90,8 @@ function ContractsInner() {
       if (filterStatus !== '전체' && eff !== filterStatus) return false;
       if (filterType !== '전체' && c.contract_type !== filterType) return false;
       if (q) {
-        const prop = c.property_id ? propertyMap[c.property_id] : null;
         const landlord = c.landlord_id ? landlordMap[c.landlord_id] : null;
-        const hay = `${prop?.property_number ?? ''} ${prop?.address ?? ''} ${prop?.building_name ?? ''} ${landlord?.name ?? ''} ${c.tenant_name ?? ''} ${c.tenant_business_name ?? ''} ${c.tenant_phone ?? ''}`.toLowerCase();
+        const hay = `${c.property_address ?? ''} ${c.property_building_name ?? ''} ${c.property_unit_number ?? ''} ${landlord?.name ?? ''} ${c.tenant_name ?? ''} ${c.tenant_business_name ?? ''} ${c.tenant_phone ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -127,7 +120,7 @@ function ContractsInner() {
     }
     // 기본 created_at desc는 이미 fetch 시 적용됨
     return list;
-  }, [contracts, filterStatus, filterType, search, sortBy, propertyMap, landlordMap]);
+  }, [contracts, filterStatus, filterType, search, sortBy, landlordMap]);
 
   if (!authChecked || loading) return <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</main>;
 
@@ -244,8 +237,8 @@ function ContractsInner() {
               const eff = effectiveStatus(c) as ContractStatus;
               const colors = getStatusColors(eff);
               const dInfo = getDDayInfo(c.end_date, c.contract_type as ContractType);
-              const prop = c.property_id ? propertyMap[c.property_id] : null;
               const landlord = c.landlord_id ? landlordMap[c.landlord_id] : null;
+              const propLine = [c.property_address, c.property_building_name, c.property_unit_number].filter(Boolean).join(' ');
               return (
                 <Link key={c.id} href={`/admin/contracts/${c.id}`} style={{ display: 'block', padding: '14px 16px', background: '#fff', border: `1px solid ${dInfo.urgency === 'critical' || dInfo.urgency === 'urgent' ? '#fed7aa' : '#e0e0e0'}`, borderRadius: '8px', textDecoration: 'none', color: '#1a1a1a' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -253,13 +246,12 @@ function ContractsInner() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: colors.bg, color: colors.color, border: `1px solid ${colors.border}` }}>{eff}</span>
                         <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: '#f5f5f5', color: '#666' }}>{c.contract_type}</span>
-                        {prop && <span style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a' }}>{prop.property_number}</span>}
                         {dInfo.urgency !== 'na' && (
                           <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: dInfo.bg, color: dInfo.color }}>{dInfo.label}</span>
                         )}
                       </div>
                       <p style={{ fontSize: '13px', color: '#555', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {prop ? `${prop.address}${prop.building_name ? ` · ${prop.building_name}` : ''}` : '(매물 미연결)'}
+                        {propLine || '(주소 없음)'}
                       </p>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666', flexWrap: 'wrap' }}>
                         <span>임대 {landlord?.name ?? '-'}</span>

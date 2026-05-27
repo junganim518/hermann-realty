@@ -24,7 +24,6 @@ export default function ContractDetailPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState<any>(null);
-  const [property, setProperty] = useState<any>(null);
   const [landlord, setLandlord] = useState<any>(null);
 
   useEffect(() => {
@@ -40,10 +39,7 @@ export default function ContractDetailPage() {
       const { data: c } = await supabase.from('contracts').select('*').eq('id', contractId).single();
       if (!c) { alert('계약을 찾을 수 없습니다.'); router.push('/admin/contracts'); return; }
       setContract(c);
-      const promises = [];
-      if (c.property_id) promises.push(supabase.from('properties').select('id, property_number, address, building_name, unit_number').eq('id', c.property_id).single().then(r => setProperty(r.data)));
-      if (c.landlord_id) promises.push(supabase.from('landlords').select('*').eq('id', c.landlord_id).single().then(r => setLandlord(r.data)));
-      await Promise.all(promises);
+      if (c.landlord_id) await supabase.from('landlords').select('*').eq('id', c.landlord_id).single().then(r => setLandlord(r.data));
       setLoading(false);
     })();
   }, [authChecked]);
@@ -68,9 +64,7 @@ export default function ContractDetailPage() {
   const sectionSt: React.CSSProperties = { background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', marginBottom: '16px' };
   const sectionTitleSt: React.CSSProperties = { fontSize: '17px', fontWeight: 700, color: '#1a1a1a', marginBottom: '14px', paddingBottom: '8px', borderBottom: '2px solid #e2a06e' };
 
-  // 재계약: 새 계약 등록 페이지로 (property_id, landlord_id 자동 입력)
   const renewQuery = new URLSearchParams();
-  if (contract.property_id) renewQuery.set('property_id', contract.property_id);
   if (contract.landlord_id) renewQuery.set('landlord_id', contract.landlord_id);
 
   const fmtMan = (v: number | null | undefined): string => {
@@ -110,20 +104,14 @@ export default function ContractDetailPage() {
         {/* 매물 정보 */}
         <div style={sectionSt}>
           <h2 style={sectionTitleSt}>🏢 매물 정보</h2>
-          {property ? (
-            <a href={`/item/view/${property.property_number}`} target="_blank" rel="noreferrer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#f9f9f9', borderRadius: '6px', textDecoration: 'none', color: '#1a1a1a' }}>
-              <div>
-                <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '2px' }}>{property.property_number}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  {property.address}
-                  {property.building_name && ` · ${property.building_name}`}
-                  {property.unit_number && ` ${property.unit_number}`}
-                </div>
+          {(contract.property_address || contract.property_building_name || contract.property_unit_number) ? (
+            <div style={{ padding: '12px 14px', background: '#f9f9f9', borderRadius: '6px' }}>
+              <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: 500 }}>
+                {[contract.property_address, contract.property_building_name, contract.property_unit_number].filter(Boolean).join(' ')}
               </div>
-              <span style={{ fontSize: '12px', color: '#e2a06e', fontWeight: 700 }}>매물 보기 →</span>
-            </a>
+            </div>
           ) : (
-            <p style={{ color: '#888', fontSize: '13px' }}>(매물 미연결)</p>
+            <p style={{ color: '#888', fontSize: '13px' }}>(주소 없음)</p>
           )}
         </div>
 

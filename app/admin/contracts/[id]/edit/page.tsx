@@ -6,6 +6,10 @@ import { ArrowLeft, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { CONTRACT_TYPES, CONTRACT_STATUSES, type ContractType, type ContractStatus } from '@/lib/contracts';
 
+declare global {
+  interface Window { daum: any; }
+}
+
 export default function EditContractPage() {
   const router = useRouter();
   const params = useParams();
@@ -14,11 +18,12 @@ export default function EditContractPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [allProperties, setAllProperties] = useState<any[]>([]);
   const [allLandlords, setAllLandlords] = useState<any[]>([]);
 
   const [form, setForm] = useState({
-    property_id: '',
+    property_address: '',
+    property_building_name: '',
+    property_unit_number: '',
     landlord_id: '',
     contract_type: '월세' as ContractType,
     tenant_name: '',
@@ -38,9 +43,7 @@ export default function EditContractPage() {
     memo: '',
   });
 
-  const [propModalOpen, setPropModalOpen] = useState(false);
   const [landlordModalOpen, setLandlordModalOpen] = useState(false);
-  const [propSearch, setPropSearch] = useState('');
   const [landlordSearch, setLandlordSearch] = useState('');
 
   useEffect(() => {
@@ -51,18 +54,28 @@ export default function EditContractPage() {
   }, []);
 
   useEffect(() => {
+    if (!document.getElementById('daum-postcode-script')) {
+      const s = document.createElement('script');
+      s.id = 'daum-postcode-script';
+      s.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!authChecked) return;
     (async () => {
-      const [{ data: c }, { data: props }, { data: lands }] = await Promise.all([
+      const [{ data: c }, { data: lands }] = await Promise.all([
         supabase.from('contracts').select('*').eq('id', contractId).single(),
-        supabase.from('properties').select('id, property_number, address, building_name, transaction_type').order('property_number', { ascending: false }),
         supabase.from('landlords').select('id, name, phone').order('name'),
       ]);
       if (!c) { alert('계약을 찾을 수 없습니다.'); router.push('/admin/contracts'); return; }
-      setAllProperties(props ?? []);
       setAllLandlords(lands ?? []);
       setForm({
-        property_id: c.property_id ?? '',
+        property_address: c.property_address ?? '',
+        property_building_name: c.property_building_name ?? '',
+        property_unit_number: c.property_unit_number ?? '',
         landlord_id: c.landlord_id ?? '',
         contract_type: c.contract_type,
         tenant_name: c.tenant_name ?? '',
@@ -86,26 +99,43 @@ export default function EditContractPage() {
   }, [authChecked]);
 
   useEffect(() => {
-    if (propModalOpen || landlordModalOpen) {
+    if (landlordModalOpen) {
       const prev = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = prev; };
     }
-  }, [propModalOpen, landlordModalOpen]);
+  }, [landlordModalOpen]);
 
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
-  const selectedProperty = allProperties.find(p => p.id === form.property_id);
+  const searchAddress = () => {
+    if (!window.daum?.Postcode) {
+      alert('주소검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    new window.daum.Postcode({
+      oncomplete: (data: any) => {
+        const addr = data.userSelectedType === 'J'
+          ? (data.jibunAddress || data.autoJibunAddress)
+          : (data.roadAddress || data.autoRoadAddress);
+        setForm(prev => ({
+          ...prev,
+          property_address: addr,
+          property_building_name: data.buildingName || prev.property_building_name,
+        }));
+      },
+    }).open();
+  };
+
   const selectedLandlord = allLandlords.find(l => l.id === form.landlord_id);
 
   const handleSave = async () => {
     setSaving(true);
-    const toInt = (s: string) => {
-      const n = parseInt(s.replace(/,/g, ''), 10);
-      return isNaN(n) ? null : n;
-    };
+    const toInt = (s: string) => { const n = parseInt(s.replace(/,/g, ''), 10); return isNaN(n) ? null : n; };
     const payload = {
-      property_id: form.property_id || null,
+      property_address: form.property_address.trim() || null,
+      property_building_name: form.property_building_name.trim() || null,
+      property_unit_number: form.property_unit_number.trim() || null,
       landlord_id: form.landlord_id || null,
       contract_type: form.contract_type,
       tenant_name: form.tenant_name.trim() || null,
@@ -143,16 +173,6 @@ export default function EditContractPage() {
   const isMaeMae = form.contract_type === '매매';
   const isWolse = form.contract_type === '월세';
 
-  const filteredProps = allProperties.filter(p => {
-    const q = propSearch.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      String(p.property_number ?? '').includes(q) ||
-      (p.address ?? '').toLowerCase().includes(q) ||
-      (p.building_name ?? '').toLowerCase().includes(q)
-    );
-  }).slice(0, 50);
-
   const filteredLandlords = allLandlords.filter(l => {
     const q = landlordSearch.trim().toLowerCase();
     if (!q) return true;
@@ -187,22 +207,23 @@ export default function EditContractPage() {
                 ))}
               </div>
             </div>
+            {/* 매물 주소 */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelSt}>매물</label>
-              <button type="button" onClick={() => setPropModalOpen(true)} style={{ ...inputSt, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                {selectedProperty ? (
-                  <span style={{ flex: 1, fontSize: '14px', color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <strong>{selectedProperty.property_number}</strong> · {selectedProperty.address}
-                    {selectedProperty.building_name && ` · ${selectedProperty.building_name}`}
-                  </span>
-                ) : (
-                  <span style={{ flex: 1, color: '#aaa' }}>매물 선택</span>
-                )}
-                {selectedProperty && (
-                  <span onClick={e => { e.stopPropagation(); set('property_id', ''); }} style={{ color: '#888', fontSize: '13px', padding: '0 4px' }}>×</span>
-                )}
-              </button>
+              <label style={labelSt}>매물 주소</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input value={form.property_address} readOnly placeholder="주소를 검색하세요" style={{ ...inputSt, flex: 1 }} />
+                <button type="button" onClick={searchAddress} style={{ height: '40px', padding: '0 16px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>주소 검색</button>
+              </div>
             </div>
+            <div>
+              <label style={labelSt}>건물명</label>
+              <input value={form.property_building_name} onChange={e => set('property_building_name', e.target.value)} placeholder="예: 현대타워" style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>동호수</label>
+              <input value={form.property_unit_number} onChange={e => set('property_unit_number', e.target.value)} placeholder="예: 3층 301호" style={inputSt} />
+            </div>
+            {/* 임대인 */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelSt}>임대인</label>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -317,25 +338,7 @@ export default function EditContractPage() {
         </button>
       </div>
 
-      {/* 모달 */}
-      {propModalOpen && (
-        <SearchModal title="매물 선택" query={propSearch} onQueryChange={setPropSearch} onClose={() => setPropModalOpen(false)}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {filteredProps.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: '13px' }}>일치하는 매물이 없습니다</p>
-            ) : filteredProps.map(p => (
-              <button key={p.id} type="button" onClick={() => { set('property_id', p.id); setPropModalOpen(false); }}
-                style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 10px', textAlign: 'left', background: '#fff', border: '1px solid #eee', borderRadius: '6px', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <strong style={{ fontSize: '13px' }}>{p.property_number}</strong>
-                  {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
-                </div>
-                <span style={{ fontSize: '11px', color: '#666' }}>{p.address}{p.building_name && ` · ${p.building_name}`}</span>
-              </button>
-            ))}
-          </div>
-        </SearchModal>
-      )}
+      {/* 임대인 선택 모달 */}
       {landlordModalOpen && (
         <SearchModal title="임대인 선택" query={landlordSearch} onQueryChange={setLandlordSearch} onClose={() => setLandlordModalOpen(false)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

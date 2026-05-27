@@ -93,6 +93,7 @@ lib/
 
 ### contracts (계약)
 
+- property_address, property_building_name, property_unit_number (TEXT) — 매물 주소 직접 입력 (property_id FK 미사용, 공동중개 등 시스템 외 매물 대응)
 - contract_type (TEXT) — 월세/전세/매매
 - tenant_name, tenant_phone, tenant_business_name
 - status — 진행중/입주완료/만기임박/만기/재계약/종료
