@@ -98,7 +98,14 @@ lib/
 - landlord_name, landlord_phone (TEXT) — 텍스트 직접 저장 (전화번호 없는 임대인 정보 보존용; landlord_id 있어도 함께 저장)
 - contract_type (TEXT) — 월세/전세/매매
 - tenant_name, tenant_phone, tenant_business_name
-- status — 진행중/입주완료/만기임박/만기/재계약/종료
+- status (TEXT) — **수동 선택 6개**: 진행중/입주완료/만기임박/종료/재계약/묵시적갱신
+  - **자동 전환 상태** (진행중/입주완료/만기임박): 날짜 기반 자동 계산 (`effectiveStatus` in lib/contracts.ts)
+    - 오늘 < move_in_date → 진행중
+    - move_in_date ≤ 오늘 < end_date-60일 → 입주완료
+    - end_date-60일 ≤ 오늘 (만기 전후 포함) → 만기임박
+  - **수동 고정 상태** (종료/재계약/묵시적갱신): DB 값 그대로 표시 (자동 전환 안 함)
+  - DB의 status 값은 그대로, 화면 표시 시에만 `effectiveStatus()` 계산값 사용
+  - '만기' 옵션 제거 (기존 데이터는 '종료'로 마이그레이션 완료)
 - start_date 컬럼은 DB에 유지되나 UI에서 미사용 (잔금/입주일과 중복으로 제거); formatPeriod는 move_in_date 기준
 
 ### customers (손님)

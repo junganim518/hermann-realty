@@ -75,7 +75,7 @@ function ContractsInner() {
     let active = 0, expiring = 0, ended = 0;
     for (const c of contracts) {
       const eff = effectiveStatus(c) as ContractStatus;
-      if (eff === '종료' || eff === '재계약') ended++;
+      if (eff === '종료' || eff === '재계약' || eff === '묵시적갱신') ended++;
       else active++;
       if (isExpiringSoon(c)) expiring++;
     }
@@ -168,7 +168,7 @@ function ContractsInner() {
             <p style={{ fontSize: '28px', fontWeight: 800, color: stats.expiring > 0 ? '#92400e' : '#888' }}>{stats.expiring}</p>
           </div>
           <div style={cardSt}>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>종료/재계약</p>
+            <p style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>종료/재계약/묵시적갱신</p>
             <p style={{ fontSize: '28px', fontWeight: 800, color: '#888' }}>{stats.ended}</p>
           </div>
         </div>
@@ -194,7 +194,7 @@ function ContractsInner() {
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {/* 상태 필터 */}
-            {['전체', '진행중', '입주완료', '만기임박', '만기', '종료'].map(s => {
+            {(['전체', '진행중', '입주완료', '만기임박', '종료', '재계약', '묵시적갱신'] as const).map(s => {
               const active = filterStatus === s;
               return (
                 <button key={s} type="button"

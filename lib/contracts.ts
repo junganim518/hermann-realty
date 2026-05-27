@@ -3,10 +3,13 @@
 import { formatPrice } from '@/lib/formatProperty';
 
 export type ContractType = '월세' | '전세' | '매매';
-export type ContractStatus = '진행중' | '입주완료' | '만기임박' | '만기' | '재계약' | '종료';
+export type ContractStatus = '진행중' | '입주완료' | '만기임박' | '종료' | '재계약' | '묵시적갱신';
 
 export const CONTRACT_TYPES: ContractType[] = ['월세', '전세', '매매'];
-export const CONTRACT_STATUSES: ContractStatus[] = ['진행중', '입주완료', '만기임박', '만기', '재계약', '종료'];
+export const CONTRACT_STATUSES: ContractStatus[] = ['진행중', '입주완료', '만기임박', '종료', '재계약', '묵시적갱신'];
+
+/** 수동 선택 상태 — 자동 전환 없이 그대로 표시 */
+const MANUAL_STATUSES: string[] = ['종료', '재계약', '묵시적갱신'];
 
 /** 만기일까지 남은 일수. 양수=남음, 0=오늘, 음수=지남. null=계산 불가 */
 export function calculateDDay(endDate: string | null | undefined): number | null {
@@ -54,31 +57,63 @@ export function getDDayInfo(endDate: string | null | undefined, contractType: Co
   return { dDay: dd, urgency: 'normal', label: `D-${dd}`, color: '#666', bg: '#f3f4f6' };
 }
 
-/** 만기 임박 여부 (60일 이내, 임대 계약만) */
-export function isExpiringSoon(c: { contract_type: ContractType; end_date?: string | null; status?: ContractStatus }): boolean {
+/** 만기 임박 여부 (만기 60일 이내 또는 만기 지남, 임대 계약만, 수동 종료 제외) */
+export function isExpiringSoon(c: { contract_type: ContractType; end_date?: string | null; status?: string | null }): boolean {
   if (c.contract_type === '매매') return false;
-  if (c.status === '종료' || c.status === '재계약') return false;
+  if (MANUAL_STATUSES.includes(c.status ?? '')) return false;
   const dd = calculateDDay(c.end_date);
   if (dd === null) return false;
-  return dd >= 0 && dd <= 60;
+  return dd <= 60;
 }
 
-/** 클라이언트 측 자동 상태 표시: DB status 우선, 단 진행중/입주완료인데 60일 이내면 "만기임박" 표시 */
-export function effectiveStatus(c: { contract_type: ContractType; end_date?: string | null; status?: ContractStatus }): ContractStatus {
-  const stored: ContractStatus = (c.status as ContractStatus) ?? '진행중';
+/**
+ * 화면 표시용 상태 계산.
+ * - 수동 상태(종료/재계약/묵시적갱신): DB 값 그대로 반환
+ * - 그 외: 날짜 기반 자동 계산
+ *   - 매매: DB 값 그대로
+ *   - 오늘 < move_in_date → 진행중
+ *   - move_in_date ≤ 오늘 < end_date-60일 → 입주완료
+ *   - end_date-60일 ≤ 오늘 (만기 전후 포함) → 만기임박
+ */
+export function effectiveStatus(c: {
+  contract_type: ContractType;
+  end_date?: string | null;
+  move_in_date?: string | null;
+  status?: string | null;
+}): ContractStatus {
+  const stored = (c.status as ContractStatus) ?? '진행중';
+  if (MANUAL_STATUSES.includes(stored)) return stored;
   if (c.contract_type === '매매') return stored;
-  if (stored === '종료' || stored === '재계약' || stored === '만기') return stored;
-  if (isExpiringSoon(c)) return '만기임박';
-  return stored;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (c.move_in_date) {
+    const moveIn = new Date(c.move_in_date);
+    if (!isNaN(moveIn.getTime())) {
+      moveIn.setHours(0, 0, 0, 0);
+      if (today < moveIn) return '진행중';
+    }
+  }
+
+  if (!c.end_date) return stored;
+  const end = new Date(c.end_date);
+  if (isNaN(end.getTime())) return stored;
+  end.setHours(0, 0, 0, 0);
+
+  const twoMonthsBefore = new Date(end);
+  twoMonthsBefore.setDate(twoMonthsBefore.getDate() - 60);
+
+  return today < twoMonthsBefore ? '입주완료' : '만기임박';
 }
 
 const STATUS_COLORS: Record<ContractStatus, { bg: string; color: string; border: string }> = {
-  '진행중':   { bg: '#e0f2fe', color: '#075985', border: '#7dd3fc' },
-  '입주완료': { bg: '#dcfce7', color: '#166534', border: '#86efac' },
-  '만기임박': { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  '만기':     { bg: '#fed7aa', color: '#9a3412', border: '#fdba74' },
-  '재계약':   { bg: '#f3e8ff', color: '#6b21a8', border: '#d8b4fe' },
-  '종료':     { bg: '#f3f4f6', color: '#525252', border: '#d4d4d4' },
+  '진행중':     { bg: '#e0f2fe', color: '#075985', border: '#7dd3fc' },
+  '입주완료':   { bg: '#dcfce7', color: '#166534', border: '#86efac' },
+  '만기임박':   { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  '종료':       { bg: '#f3f4f6', color: '#525252', border: '#d4d4d4' },
+  '재계약':     { bg: '#f3e8ff', color: '#6b21a8', border: '#d8b4fe' },
+  '묵시적갱신': { bg: '#fefce8', color: '#a16207', border: '#fde68a' },
 };
 
 export function getStatusColors(status: ContractStatus | string | null | undefined): { bg: string; color: string; border: string } {
