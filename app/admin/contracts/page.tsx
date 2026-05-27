@@ -9,7 +9,6 @@ import {
   effectiveStatus,
   getStatusColors,
   getDDayInfo,
-  formatContractPrice,
   formatPeriod,
   isExpiringSoon,
   CONTRACT_TYPES,
@@ -125,6 +124,14 @@ function ContractsInner() {
   }, [contracts, filterStatus, filterType, filterPropType, search, sortBy, landlordMap]);
 
   if (!authChecked || loading) return <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</main>;
+
+  const fmtP = (n: number | null | undefined) => n ? `${n.toLocaleString()}만원` : null;
+  const fmtContractPrice = (c: any): string => {
+    if (c.contract_type === '매매') return `매매가 ${fmtP(c.sale_price ?? c.deposit) ?? '-'}`;
+    if (c.contract_type === '전세') return `전세금 ${fmtP(c.deposit) ?? '-'}`;
+    const parts = [c.deposit && `보증금 ${fmtP(c.deposit)}`, c.monthly_rent && `월세 ${fmtP(c.monthly_rent)}`].filter(Boolean);
+    return parts.length > 0 ? parts.join(' / ') : '-';
+  };
 
   const cardSt: React.CSSProperties = { background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', textAlign: 'center' };
 
@@ -272,13 +279,13 @@ function ContractsInner() {
                         {propLine || '(주소 없음)'}
                       </p>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666', flexWrap: 'wrap' }}>
-                        <span>임대 {landlord?.name ?? c.landlord_name ?? '-'}</span>
+                        <span>임대인 {landlord?.name ?? c.landlord_name ?? '-'}</span>
                         <span>·</span>
-                        <span>임차 {c.tenant_name ?? '-'}{c.tenant_business_name ? ` (${c.tenant_business_name})` : ''}</span>
+                        <span>임차인 {c.tenant_name ?? '-'}{c.tenant_business_name ? ` (${c.tenant_business_name})` : ''}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#888', marginTop: '2px', flexWrap: 'wrap' }}>
                         <span>{formatPeriod(c.move_in_date, c.end_date)}</span>
-                        <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{formatContractPrice(c)}</span>
+                        <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{fmtContractPrice(c)}</span>
                       </div>
                     </div>
                   </div>
