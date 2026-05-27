@@ -7,6 +7,8 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
 import { categorizeReferrer, getReferrerDetail } from '@/lib/analyticsUtils';
+import { FILTER_THEMES } from '@/lib/themeUtils';
+import { matchRange, matchAreaRange, matchFloor } from '@/lib/propertyFilter';
 
 
 const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -35,78 +37,11 @@ const getAgeBadge = (p: { is_sold?: boolean; status?: string; updated_at?: strin
   return null;
 };
 
-const PROP_TYPES = ['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'];
 const TX_TYPES = ['전체', '월세', '전세', '매매'];
 const SOLD_TYPES = ['전체', '거래중', '보류', '거래완료'];
-const AREA_RANGES = ['전체', '10평 이하', '10~20평', '20~30평', '30~50평', '50평 이상'];
-const DEPOSIT_RANGES = ['전체', '1000만 이하', '1000만~2000만', '2000만~3000만', '3000만~4000만', '4000만~5000만', '5000만 이상'];
-const RENT_RANGES = ['전체', '50만 이하', '50만~100만', '100만~150만', '150만~200만', '200만~300만', '300만~400만', '400만~500만', '500만 이상'];
-const PREMIUM_RANGES = ['전체', '1000만 이하', '1000만~2000만', '2000만~3000만', '3000만~4000만', '4000만~5000만', '5000만 이상'];
 const FLOOR_RANGES = ['전체', '지하', '1층', '2층 이상'];
 const PAGE_SIZE = 20;
 
-const matchArea = (exclusiveArea: any, supplyArea: any, range: string) => {
-  if (range === '전체') return true;
-  const sqm = parseFloat(exclusiveArea) || parseFloat(supplyArea);
-  if (isNaN(sqm) || !sqm) return false;
-  if (range === '10평 이하') return sqm <= 33.058;
-  if (range === '10~20평') return sqm > 33.058 && sqm <= 66.116;
-  if (range === '20~30평') return sqm > 66.116 && sqm <= 99.174;
-  if (range === '30~50평') return sqm > 99.174 && sqm <= 165.29;
-  if (range === '50평 이상') return sqm > 165.29;
-  return true;
-};
-
-const matchDeposit = (deposit: any, range: string) => {
-  if (range === '전체') return true;
-  const v = Number(deposit);
-  if (isNaN(v)) return false;
-  if (range === '1000만 이하') return v <= 1000;
-  if (range === '1000만~2000만') return v > 1000 && v <= 2000;
-  if (range === '2000만~3000만') return v > 2000 && v <= 3000;
-  if (range === '3000만~4000만') return v > 3000 && v <= 4000;
-  if (range === '4000만~5000만') return v > 4000 && v <= 5000;
-  if (range === '5000만 이상') return v > 5000;
-  return true;
-};
-
-const matchRent = (rent: any, range: string) => {
-  if (range === '전체') return true;
-  const v = Number(rent);
-  if (isNaN(v)) return false;
-  if (range === '50만 이하') return v <= 50;
-  if (range === '50만~100만') return v > 50 && v <= 100;
-  if (range === '100만~150만') return v > 100 && v <= 150;
-  if (range === '150만~200만') return v > 150 && v <= 200;
-  if (range === '200만~300만') return v > 200 && v <= 300;
-  if (range === '300만~400만') return v > 300 && v <= 400;
-  if (range === '400만~500만') return v > 400 && v <= 500;
-  if (range === '500만 이상') return v > 500;
-  return true;
-};
-
-const matchPremium = (premium: any, range: string) => {
-  if (range === '전체') return true;
-  const v = Number(premium);
-  if (isNaN(v) || !v) return range === '전체';
-  if (range === '1000만 이하') return v <= 1000;
-  if (range === '1000만~2000만') return v > 1000 && v <= 2000;
-  if (range === '2000만~3000만') return v > 2000 && v <= 3000;
-  if (range === '3000만~4000만') return v > 3000 && v <= 4000;
-  if (range === '4000만~5000만') return v > 4000 && v <= 5000;
-  if (range === '5000만 이상') return v > 5000;
-  return true;
-};
-
-const matchFloor = (floor: any, range: string) => {
-  if (range === '전체') return true;
-  const s = String(floor ?? '').trim();
-  if (!s) return false;
-  if (range === '지하') return s.includes('지하') || s.startsWith('-') || s.startsWith('B');
-  if (range === '1층') { const n = parseInt(s); return !isNaN(n) && n === 1; }
-  if (range === '2층 이상') { const n = parseInt(s); return !isNaN(n) && n >= 2; }
-  return true;
-};
 
 const formatPrice = (v: number) => {
   if (!v) return '-';
@@ -172,14 +107,19 @@ function AdminDashboardInner() {
 
   // 검색 & 필터 & 페이지 (URL 쿼리에서 초기화 — 매물 수정 후 돌아왔을 때 위치 유지)
   const [search, setSearch] = useState(readParam('q', ''));
-  const [filterType, setFilterType] = useState(readParam('type', '전체'));
+  const [filterTypes, setFilterTypes] = useState<string[]>(() => readParam('types', '').split(',').filter(Boolean));
+  const [filterThemes, setFilterThemes] = useState<string[]>(() => readParam('theme', '').split(',').filter(Boolean));
   const [filterTx, setFilterTx] = useState(readParam('tx', '전체'));
   const [filterSold, setFilterSold] = useState(readParam('sold', '전체'));
-  const [filterArea, setFilterArea] = useState(readParam('area', '전체'));
-  const [filterDeposit, setFilterDeposit] = useState(readParam('deposit', '전체'));
-  const [filterRent, setFilterRent] = useState(readParam('rent', '전체'));
   const [filterFloor, setFilterFloor] = useState(readParam('floor', '전체'));
-  const [filterPremium, setFilterPremium] = useState(readParam('premium', '전체'));
+  const [depositMin, setDepositMin] = useState(readParam('deposit_min', ''));
+  const [depositMax, setDepositMax] = useState(readParam('deposit_max', ''));
+  const [rentMin, setRentMin] = useState(readParam('rent_min', ''));
+  const [rentMax, setRentMax] = useState(readParam('rent_max', ''));
+  const [areaMin, setAreaMin] = useState(readParam('area_min', ''));
+  const [areaMax, setAreaMax] = useState(readParam('area_max', ''));
+  const [premiumMin, setPremiumMin] = useState(readParam('premium_min', ''));
+  const [premiumMax, setPremiumMax] = useState(readParam('premium_max', ''));
   const [page, setPage] = useState(parseInt(readParam('page', '1'), 10) || 1);
   const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>(readParam('sort', 'property_number') as any);
   const [filterCallOld, setFilterCallOld] = useState(readParam('callOld', '') === '1');
@@ -582,18 +522,22 @@ function AdminDashboardInner() {
 
   // 필터링
   const filtered = properties.filter(p => {
-    if (filterType !== '전체' && p.property_type !== filterType) return false;
+    if (filterTypes.length > 0 && !filterTypes.includes(p.property_type)) return false;
+    if (filterThemes.length > 0) {
+      const pThemes = (p.theme_type ?? '').split(',').map((s: string) => s.trim()).filter(Boolean);
+      if (!filterThemes.every(t => pThemes.includes(t))) return false;
+    }
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
     // 매물 상태 필터 (status 우선, fallback to is_sold)
     const ps = p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
       ? p.status
       : (p.is_sold ? '거래완료' : '거래중');
     if (filterSold !== '전체' && filterSold !== ps) return false;
-    if (!matchArea(p.exclusive_area, p.supply_area, filterArea)) return false;
-    if (!matchDeposit(p.deposit, filterDeposit)) return false;
-    if (!matchRent(p.monthly_rent, filterRent)) return false;
+    if (!matchAreaRange(p.exclusive_area, p.supply_area, areaMin, areaMax)) return false;
+    if (!matchRange(p.deposit, depositMin, depositMax)) return false;
+    if (!matchRange(p.monthly_rent, rentMin, rentMax)) return false;
     if (!matchFloor(p.current_floor, filterFloor)) return false;
-    if (!matchPremium(p.premium, filterPremium)) return false;
+    if (!matchRange(p.premium, premiumMin, premiumMax)) return false;
     if (search) {
       const q = search.toLowerCase();
       const target = [p.property_number, p.address, p.building_name, p.business_name, p.unit_number, p.admin_memo, p.land_number, p.title, p.description].filter(Boolean).join(' ').toLowerCase();
@@ -606,20 +550,26 @@ function AdminDashboardInner() {
     return true;
   });
 
-  const hasActiveFilter = filterType !== '전체' || filterTx !== '전체' || filterSold !== '전체' || filterArea !== '전체' || filterDeposit !== '전체' || filterRent !== '전체' || filterFloor !== '전체' || filterPremium !== '전체' || filterCallOld || search;
+  const hasActiveFilter = filterTypes.length > 0 || filterThemes.length > 0 || filterTx !== '전체' || filterSold !== '전체' || filterFloor !== '전체' || depositMin || depositMax || rentMin || rentMax || areaMin || areaMax || premiumMin || premiumMax || filterCallOld || !!search;
 
   // URL 쿼리 ↔ state 양방향 동기화 (매물 수정 후 router.back() 으로 돌아오면 같은 페이지/필터 유지)
   const syncURL = useCallback((overrides: Record<string, string> = {}) => {
     const vals: Record<string, string> = {
       page: String(page), sort: sortBy, sold: filterSold, q: search,
-      type: filterType, tx: filterTx, area: filterArea,
-      deposit: filterDeposit, rent: filterRent, floor: filterFloor, premium: filterPremium,
+      types: filterTypes.join(','), theme: filterThemes.join(','),
+      tx: filterTx, floor: filterFloor,
+      deposit_min: depositMin, deposit_max: depositMax,
+      rent_min: rentMin, rent_max: rentMax,
+      area_min: areaMin, area_max: areaMax,
+      premium_min: premiumMin, premium_max: premiumMax,
       callOld: filterCallOld ? '1' : '',
       ...overrides,
     };
     const defaults: Record<string, string> = {
       page: '1', sort: 'property_number', sold: '전체', q: '',
-      type: '전체', tx: '전체', area: '전체', deposit: '전체', rent: '전체', floor: '전체', premium: '전체',
+      types: '', theme: '', tx: '전체', floor: '전체',
+      deposit_min: '', deposit_max: '', rent_min: '', rent_max: '',
+      area_min: '', area_max: '', premium_min: '', premium_max: '',
     };
     const params = new URLSearchParams();
     Object.entries(vals).forEach(([k, v]) => {
@@ -629,19 +579,24 @@ function AdminDashboardInner() {
     });
     const qs = params.toString();
     router.replace(`/admin${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [page, sortBy, filterSold, search, filterType, filterTx, filterArea, filterDeposit, filterRent, filterFloor, filterPremium, filterCallOld, router]);
+  }, [page, sortBy, filterSold, search, filterTypes, filterThemes, filterTx, filterFloor, depositMin, depositMax, rentMin, rentMax, areaMin, areaMax, premiumMin, premiumMax, filterCallOld, router]);
 
   // 뒤로가기/외부 URL 변경 시 state 재동기화
   useEffect(() => {
     setSearch(readParam('q', ''));
-    setFilterType(readParam('type', '전체'));
+    setFilterTypes(readParam('types', '').split(',').filter(Boolean));
+    setFilterThemes(readParam('theme', '').split(',').filter(Boolean));
     setFilterTx(readParam('tx', '전체'));
     setFilterSold(readParam('sold', '전체'));
-    setFilterArea(readParam('area', '전체'));
-    setFilterDeposit(readParam('deposit', '전체'));
-    setFilterRent(readParam('rent', '전체'));
     setFilterFloor(readParam('floor', '전체'));
-    setFilterPremium(readParam('premium', '전체'));
+    setDepositMin(readParam('deposit_min', ''));
+    setDepositMax(readParam('deposit_max', ''));
+    setRentMin(readParam('rent_min', ''));
+    setRentMax(readParam('rent_max', ''));
+    setAreaMin(readParam('area_min', ''));
+    setAreaMax(readParam('area_max', ''));
+    setPremiumMin(readParam('premium_min', ''));
+    setPremiumMax(readParam('premium_max', ''));
     setFilterCallOld(readParam('callOld', '') === '1');
     setPage(parseInt(readParam('page', '1'), 10) || 1);
     setSortBy((readParam('sort', 'property_number') as any));
@@ -649,11 +604,13 @@ function AdminDashboardInner() {
   }, [searchParams]);
 
   const resetAllFilters = () => {
-    setSearch(''); setFilterType('전체'); setFilterTx('전체'); setFilterSold('전체');
-    setFilterArea('전체'); setFilterDeposit('전체'); setFilterRent('전체'); setFilterFloor('전체'); setFilterPremium('전체');
-    setFilterCallOld(false);
-    setPage(1);
-    syncURL({ q: '', type: '전체', tx: '전체', sold: '전체', area: '전체', deposit: '전체', rent: '전체', floor: '전체', premium: '전체', callOld: '', page: '1' });
+    setSearch(''); setFilterTypes([]); setFilterThemes([]); setFilterTx('전체'); setFilterSold('전체');
+    setFilterFloor('전체'); setDepositMin(''); setDepositMax(''); setRentMin(''); setRentMax('');
+    setAreaMin(''); setAreaMax(''); setPremiumMin(''); setPremiumMax('');
+    setFilterCallOld(false); setPage(1);
+    syncURL({ q: '', types: '', theme: '', tx: '전체', sold: '전체', floor: '전체',
+      deposit_min: '', deposit_max: '', rent_min: '', rent_max: '',
+      area_min: '', area_max: '', premium_min: '', premium_max: '', callOld: '', page: '1' });
   };
 
   const handleCallSave = async () => {
@@ -1087,29 +1044,71 @@ function AdminDashboardInner() {
                 <button onClick={resetAllFilters} style={{ height: '36px', padding: '0 14px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', color: '#e05050', background: '#fff', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>초기화</button>
               )}
             </div>
-            {/* 드롭다운 필터 */}
-            <div className="admin-filters" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-              <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); syncURL({ type: e.target.value, page: '1' }); }} style={selectFilterSt}>
-                {PROP_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '매물종류 전체' : t}</option>)}
-              </select>
+            {/* 매물종류 다중 선택 */}
+            <div className="admin-filters" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#888', flexShrink: 0 }}>매물종류</span>
+              {['상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map(t => {
+                const active = filterTypes.includes(t);
+                return (
+                  <button key={t} type="button"
+                    onClick={() => {
+                      const next = active ? filterTypes.filter(x => x !== t) : [...filterTypes, t];
+                      setFilterTypes(next); setPage(1); syncURL({ types: next.join(','), page: '1' });
+                    }}
+                    style={{ padding: '4px 12px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
+                      background: active ? '#1a1a1a' : '#fff', color: active ? '#e2a06e' : '#666',
+                      border: active ? '1px solid #1a1a1a' : '1px solid #ddd', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >{t}</button>
+                );
+              })}
+            </div>
+            {/* 거래유형 + 층수 + 범위 입력 */}
+            <div className="admin-filters" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               <select value={filterTx} onChange={e => { setFilterTx(e.target.value); setPage(1); syncURL({ tx: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {TX_TYPES.map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
-              </select>
-              <select value={filterArea} onChange={e => { setFilterArea(e.target.value); setPage(1); syncURL({ area: e.target.value, page: '1' }); }} style={selectFilterSt}>
-                {AREA_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '면적 전체' : t}</option>)}
-              </select>
-              <select value={filterDeposit} onChange={e => { setFilterDeposit(e.target.value); setPage(1); syncURL({ deposit: e.target.value, page: '1' }); }} style={selectFilterSt}>
-                {DEPOSIT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '보증금 전체' : t}</option>)}
-              </select>
-              <select value={filterRent} onChange={e => { setFilterRent(e.target.value); setPage(1); syncURL({ rent: e.target.value, page: '1' }); }} style={selectFilterSt}>
-                {RENT_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '월세 전체' : t}</option>)}
-              </select>
-              <select value={filterPremium} onChange={e => { setFilterPremium(e.target.value); setPage(1); syncURL({ premium: e.target.value, page: '1' }); }} style={selectFilterSt}>
-                {PREMIUM_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '권리금 전체' : t}</option>)}
               </select>
               <select value={filterFloor} onChange={e => { setFilterFloor(e.target.value); setPage(1); syncURL({ floor: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {FLOOR_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '층수 전체' : t}</option>)}
               </select>
+              <span style={{ color: '#ddd', fontSize: '18px' }}>|</span>
+              {[
+                { label: '보증금', minK: 'deposit_min', maxK: 'deposit_max', minV: depositMin, maxV: depositMax, setMin: setDepositMin, setMax: setDepositMax, unit: '만원' },
+                { label: '월세', minK: 'rent_min', maxK: 'rent_max', minV: rentMin, maxV: rentMax, setMin: setRentMin, setMax: setRentMax, unit: '만원' },
+                { label: '면적', minK: 'area_min', maxK: 'area_max', minV: areaMin, maxV: areaMax, setMin: setAreaMin, setMax: setAreaMax, unit: '평' },
+                { label: '권리금', minK: 'premium_min', maxK: 'premium_max', minV: premiumMin, maxV: premiumMax, setMin: setPremiumMin, setMax: setPremiumMax, unit: '만원' },
+              ].map(({ label, minK, maxK, minV, maxV, setMin, setMax, unit }) => (
+                <div key={label} style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>{label}</span>
+                  <input type="number" min="0" value={minV}
+                    onChange={e => { setMin(e.target.value); setPage(1); syncURL({ [minK]: e.target.value, page: '1' }); }}
+                    placeholder="최소"
+                    style={{ width: '56px', height: '32px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 4px', fontSize: '12px', outline: 'none', textAlign: 'center' }} />
+                  <span style={{ fontSize: '12px', color: '#aaa' }}>~</span>
+                  <input type="number" min="0" value={maxV}
+                    onChange={e => { setMax(e.target.value); setPage(1); syncURL({ [maxK]: e.target.value, page: '1' }); }}
+                    placeholder="최대"
+                    style={{ width: '56px', height: '32px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 4px', fontSize: '12px', outline: 'none', textAlign: 'center' }} />
+                  <span style={{ fontSize: '11px', color: '#888', whiteSpace: 'nowrap' }}>{unit}</span>
+                </div>
+              ))}
+            </div>
+            {/* 테마 다중 선택 */}
+            <div className="admin-filters" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#888', flexShrink: 0 }}>테마</span>
+              {FILTER_THEMES.map(({ id, name }) => {
+                const active = filterThemes.includes(id);
+                return (
+                  <button key={id} type="button"
+                    onClick={() => {
+                      const next = active ? filterThemes.filter(x => x !== id) : [...filterThemes, id];
+                      setFilterThemes(next); setPage(1); syncURL({ theme: next.join(','), page: '1' });
+                    }}
+                    style={{ padding: '4px 10px', fontSize: '12px', fontWeight: active ? 700 : 500, borderRadius: '999px',
+                      background: active ? '#e2a06e' : '#fff', color: active ? '#fff' : '#666',
+                      border: active ? '1px solid #e2a06e' : '1px solid #ddd', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >{name}</button>
+                );
+              })}
             </div>
           </div>
 
@@ -1404,7 +1403,8 @@ function AdminDashboardInner() {
           .admin-stats { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
           .admin-stats > div { padding: 12px 8px !important; }
           .admin-stats > div p:last-child { font-size: 22px !important; }
-          .admin-filters select { min-width: 110px !important; font-size: 12px !important; }
+          .admin-filters { flex-wrap: wrap !important; overflow-x: visible !important; }
+          .admin-filters select { min-width: 90px !important; font-size: 12px !important; }
           .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
           .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
           /* 모바일 매물 카드: 썸네일(64px) 좌측 + 정보 우측 가로 배치, 액션 하단 전체 너비 */

@@ -48,7 +48,8 @@ lib/
 ├── favorites.ts                      # 즐겨찾기 (localStorage)
 ├── recentlyViewed.ts                 # 최근 본 매물
 ├── phoneFormat.ts                    # 전화번호 자동 하이픈
-└── isBot.ts                          # 봇 감지 (35개 패턴)
+├── isBot.ts                          # 봇 감지 (35개 패턴)
+└── propertyFilter.ts                 # 매물 필터 함수 (matchRange, matchAreaRange, matchFloor)
 ```
 
 ## DB 스키마 (Supabase)
@@ -194,6 +195,15 @@ lib/
 - **메인 색상**: 블랙 / 골드 (#c47c30 계열)
 - **모바일 우선** — 사장님 실무는 주로 모바일에서
 - 푸터 좌우 비율: 2:1 (주소 한 줄 표시)
+
+### 관리자 매물 관리 필터 (app/admin/page.tsx)
+
+- **매물종류**: 다중 선택 칩 (상가/사무실/오피스텔/아파트/건물/기타) — URL 키 `types=상가,사무실`
+- **테마**: FILTER_THEMES 17개 다중 선택 칩 (AND 조건) — URL 키 `theme=추천매물,카페`
+- **거래유형/층수**: 단일 select — URL 키 `tx`, `floor`
+- **보증금/월세/면적/권리금**: min~max 직접 입력 (만원/평) — URL 키 `deposit_min`, `deposit_max`, `rent_min`, `rent_max`, `area_min`, `area_max`, `premium_min`, `premium_max`
+- 필터 함수: `lib/propertyFilter.ts` (`matchRange`, `matchAreaRange`, `matchFloor`)
+  - 면적: DB는 ㎡, 입력은 평 — `matchAreaRange` 내부에서 변환 (÷ 3.3058)
 
 ### 관리자 매물 카드 (app/admin/page.tsx)
 
