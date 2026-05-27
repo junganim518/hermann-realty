@@ -138,6 +138,12 @@ export default function EditContractPage() {
 
     if (!nameStr && !phoneStr) return { landlord_id: null, landlord_name: null, landlord_phone: null };
 
+    const addrPayload = address ? {
+      property_address: address,
+      property_building_name: buildingName || null,
+      property_dong_ho: unitNumber || null,
+    } : {};
+
     // 1순위: 주소+동호수 매칭
     if (address && unitNumber) {
       const { data: matchedProps } = await supabase.from('properties')
@@ -146,12 +152,18 @@ export default function EditContractPage() {
 
       if (matchedProps && matchedProps.length > 0) {
         const matchedId = matchedProps[0].landlord_id as string;
-        const { data: landlord } = await supabase.from('landlords').select('id, name, phone').eq('id', matchedId).single();
+        const { data: landlord } = await supabase.from('landlords').select('id, name, phone, property_address').eq('id', matchedId).single();
         const unitLabel = [buildingName, unitNumber].filter(Boolean).join(' ');
         const addrLine = [address, unitLabel].filter(Boolean).join(' ');
         const infoLine = [addrLine || null, landlord?.phone || null].filter(Boolean).join(' / ');
         const ok = confirm(`${infoLine}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
-        if (ok) return { landlord_id: landlord ? landlord.id : matchedId, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
+        if (ok) {
+          const lid = landlord ? landlord.id : matchedId;
+          if (address && !landlord?.property_address) {
+            await supabase.from('landlords').update(addrPayload).eq('id', lid);
+          }
+          return { landlord_id: lid, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
+        }
       }
     }
 
@@ -159,11 +171,16 @@ export default function EditContractPage() {
     if (phoneStr) {
       const normalized = normalizePhone(phoneStr);
       if (normalized.length >= 9) {
-        const { data: allLandlords } = await supabase.from('landlords').select('id, name, phone').not('phone', 'is', null);
+        const { data: allLandlords } = await supabase.from('landlords').select('id, name, phone, property_address').not('phone', 'is', null);
         const matched = (allLandlords ?? []).find(l => normalizePhone(l.phone ?? '') === normalized);
         if (matched) {
           const ok = confirm(`${matched.phone}\n같은 임대인이 있습니다.\n보유 매물에 추가할까요?`);
-          if (ok) return { landlord_id: matched.id, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
+          if (ok) {
+            if (address && !matched.property_address) {
+              await supabase.from('landlords').update(addrPayload).eq('id', matched.id);
+            }
+            return { landlord_id: matched.id, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
+          }
         }
       }
     }
@@ -171,7 +188,7 @@ export default function EditContractPage() {
     // 신규 등록
     if (phoneStr) {
       const { data: newLandlord } = await supabase.from('landlords')
-        .insert({ name: nameStr || null, phone: phoneStr }).select('id').single();
+        .insert({ name: nameStr || null, phone: phoneStr, ...addrPayload }).select('id').single();
       return { landlord_id: newLandlord?.id ?? null, landlord_name: nameStr || null, landlord_phone: phoneStr || null };
     }
 

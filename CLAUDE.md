@@ -147,8 +147,12 @@ lib/
 - [취소] → 신규 등록
 
 **신규 등록**
-- 전화번호 있음 → landlords INSERT, ID 연결
+- 전화번호 있음 → landlords INSERT, ID 연결 + 계약 주소를 landlords.property_address/building_name/dong_ho에도 저장
 - 전화번호 없음 → landlords 안 건드림, properties.landlord_name에 텍스트만 저장
+
+**매칭 확정 시 주소 보완**
+- 기존 임대인에 매칭 확정 후 → 해당 임대인의 property_address가 비어 있고 계약에 주소 있으면 주소 채워넣기
+- 기존 임대인의 property_address가 있으면 덮어쓰지 않음
 
 **매물 수정 시**
 - 기존 임대인 정보 변경 없으면 매칭 로직 스킵
