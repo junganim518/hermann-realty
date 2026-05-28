@@ -447,7 +447,7 @@ export default function PropertyDetailPage() {
       console.log('[지도] buildMap 실행 — lat:', lat, 'lng:', lng);
 
       const pos = new window.kakao.maps.LatLng(lat, lng);
-      const map = new window.kakao.maps.Map(locationMapRef.current, { center: pos, level: 4, minLevel: 3 });
+      const map = new window.kakao.maps.Map(locationMapRef.current, { center: pos, level: 4, minLevel: 4 });
       locationMapObjRef.current = map;
 
       // 반경 200m 원으로 근방 표시
