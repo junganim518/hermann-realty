@@ -94,7 +94,7 @@ export default function CustomerPickPrintPage() {
       if (rows.length === 0) { setPicks([]); setLoading(false); return; }
 
       const ids = rows.map(r => r.property_id);
-      const { data: props } = await supabase.from('properties').select('*').in('id', ids);
+      const { data: props } = await supabase.from('properties').select('*').in('id', ids).is('deleted_at', null);
       const propMap = new Map<string, any>((props ?? []).map(p => [p.id, p]));
 
       // 픽 순서대로 매핑 (DB 매물 누락된 픽은 제외)

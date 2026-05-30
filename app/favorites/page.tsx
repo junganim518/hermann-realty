@@ -30,6 +30,7 @@ export default function FavoritesPage() {
       .from('properties')
       .select('*')
       .in('id', ids)
+      .is('deleted_at', null)
       .neq('status', '보류');
 
     const found = props ?? [];

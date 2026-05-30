@@ -51,7 +51,7 @@ export default function LandlordsPage() {
         supabase.from('landlords').select('*').order('created_at', { ascending: false }),
         supabase.from('contracts').select('landlord_id, status, property_id'),
         // 임대인이 직접 연결된 매물 (계약 없이도 매물에 임대인만 지정한 경우)
-        supabase.from('properties').select('id, property_number, address, building_name, unit_number, landlord_id').not('landlord_id', 'is', null),
+        supabase.from('properties').select('id, property_number, address, building_name, unit_number, landlord_id').not('landlord_id', 'is', null).is('deleted_at', null),
       ]);
       setLandlords(lands ?? []);
 
@@ -90,7 +90,8 @@ export default function LandlordsPage() {
         const { data: contractProps } = await supabase
           .from('properties')
           .select('id, property_number, address, building_name, unit_number')
-          .in('id', Array.from(contractPropIdSet));
+          .in('id', Array.from(contractPropIdSet))
+          .is('deleted_at', null);
         const contractPropMap: Record<string, PropertyInfo> = {};
         (contractProps ?? []).forEach(p => { contractPropMap[p.id] = p; });
         Object.entries(contractPropIds).forEach(([landlordId, ids]) => {

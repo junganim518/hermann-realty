@@ -103,6 +103,7 @@ function AdminDashboardInner() {
   const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0, hold: 0 });
+  const [trashCount, setTrashCount] = useState(0);
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
   type RefTableRow = { referrer: string; detail: string; page: string; count: number };
   type RawView = { referrer: string | null; page: string | null; created_at: string };
@@ -289,7 +290,14 @@ function AdminDashboardInner() {
     const { data: props } = await supabase
       .from('properties')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
+
+    const { count: tc } = await supabase
+      .from('properties')
+      .select('*', { count: 'exact', head: true })
+      .not('deleted_at', 'is', null);
+    setTrashCount(tc ?? 0);
     const allProps = props ?? [];
     setProperties(allProps);
     setStats({
@@ -452,6 +460,7 @@ function AdminDashboardInner() {
         title: p.title ? `(복사) ${p.title}` : '(복사)',
         is_sold: false,
         status: '거래중', // 복사본은 거래중으로 시작
+        deleted_at: null,
         view_count: 0,  // 신규 매물처럼 시작 (인기 TOP10 등에 부적절히 노출되는 문제 방지)
         landlord_id: null,
         landlord_name: '',
@@ -522,25 +531,8 @@ function AdminDashboardInner() {
   };
 
   const deleteProperty = async (p: any) => {
-    if (!confirm(`매물 ${p.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
-    const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', p.id);
-    if (imgs && imgs.length > 0) {
-      // 같은 image_url을 다른 매물이 참조하는지 일괄 확인 후, 공유 안 되는 파일만 R2에서 삭제
-      for (const img of imgs) {
-        const { count } = await supabase
-          .from('property_images')
-          .select('*', { count: 'exact', head: true })
-          .eq('image_url', img.image_url);
-        const isShared = (count ?? 1) > 1;
-        if (!isShared) {
-          try { await fetch('/api/delete-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: img.image_url }) }); } catch {}
-        } else {
-          console.log('[매물 삭제] 이미지 공유 중 — R2 보존:', img.image_url);
-        }
-      }
-      await supabase.from('property_images').delete().eq('property_id', p.id);
-    }
-    const { error } = await supabase.from('properties').delete().eq('id', p.id);
+    if (!confirm(`매물 ${p.property_number}을 휴지통으로 이동하시겠습니까?`)) return;
+    const { error } = await supabase.from('properties').update({ deleted_at: new Date().toISOString() }).eq('id', p.id);
     if (error) { alert(`삭제 실패: ${error.message}`); return; }
     setProperties(prev => prev.filter(x => x.id !== p.id));
     setStats(prev => ({
@@ -551,6 +543,8 @@ function AdminDashboardInner() {
       sold: prev.sold - ((p.is_sold || p.status === '거래완료') ? 1 : 0),
       hold: prev.hold - (p.status === '보류' ? 1 : 0),
     }));
+    setTrashCount(prev => prev + 1);
+    showToast('휴지통으로 이동되었습니다');
   };
 
   // 필터링
@@ -1053,8 +1047,13 @@ function AdminDashboardInner() {
                   style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, background: filterCallOld ? '#e2a06e' : '#fff', color: filterCallOld ? '#fff' : '#666', border: `1px solid ${filterCallOld ? '#e2a06e' : '#ddd'}`, borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                 >📞 통화 30일+</button>
               </div>
-              {/* 데스크톱 전용 등록 버튼 */}
-              <a href="/admin/properties/new" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>+ 매물 등록</a>
+              {/* 데스크톱 전용 등록 + 휴지통 버튼 */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <a href="/admin/trash" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  🗑️ 휴지통{trashCount > 0 ? ` (${trashCount})` : ''}
+                </a>
+                <a href="/admin/properties/new" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>+ 매물 등록</a>
+              </div>
             </div>
           </div>
 

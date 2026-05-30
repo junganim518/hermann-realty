@@ -528,6 +528,7 @@ function MapPageInner() {
       const { data: props } = await supabase
         .from('properties')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       // 각 매물의 이미지를 property_id로 조회

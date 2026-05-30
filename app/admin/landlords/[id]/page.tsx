@@ -58,7 +58,8 @@ export default function LandlordDetailPage() {
       const { data: directProps, error: directErr } = await supabase
         .from('properties')
         .select(propertyCols)
-        .eq('landlord_id', landlordId);
+        .eq('landlord_id', landlordId)
+        .is('deleted_at', null);
       if (directErr) console.error('[임대인상세] direct properties 조회 에러:', directErr);
       console.log('[임대인상세] direct properties:', directProps);
 
@@ -69,7 +70,8 @@ export default function LandlordDetailPage() {
         const { data: contractProps, error: contractPropsErr } = await supabase
           .from('properties')
           .select(propertyCols)
-          .in('id', contractPropIds);
+          .in('id', contractPropIds)
+          .is('deleted_at', null);
         if (contractPropsErr) console.error('[임대인상세] contract properties 조회 에러:', contractPropsErr);
         console.log('[임대인상세] contract properties:', contractProps);
         (contractProps ?? []).forEach(p => { map[p.id] = p; });

@@ -108,6 +108,7 @@ export default function Home() {
       const { data } = await supabase
         .from('properties')
         .select('*')
+        .is('deleted_at', null)
         .neq('status', '보류') // 보류 매물은 사이트에서 숨김
         .order('is_sold', { ascending: true })
         .order('created_at', { ascending: false })
@@ -171,6 +172,7 @@ export default function Home() {
           const { count } = await supabase
             .from('properties')
             .select('*', { count: 'exact', head: true })
+            .is('deleted_at', null)
             .eq('property_type', t);
           tc[t] = count ?? 0;
         }),
@@ -178,6 +180,7 @@ export default function Home() {
           const { count } = await supabase
             .from('properties')
             .select('*', { count: 'exact', head: true })
+            .is('deleted_at', null)
             .ilike('theme_type', `%${t}%`);
           hc[t] = count ?? 0;
         }),

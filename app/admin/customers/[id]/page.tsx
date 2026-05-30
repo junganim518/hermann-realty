@@ -87,7 +87,7 @@ export default function CustomerDetailPage() {
 
     // 모든 매물 + 손님 추천 정보를 한 번에 로드 (맞춤 매칭, 픽 매물, 모달 검색이 공통 사용)
     const [{ data: props }, { data: recsRows }] = await Promise.all([
-      supabase.from('properties').select('*'),
+      supabase.from('properties').select('*').is('deleted_at', null),
       supabase.from('customer_recommendations').select('property_id, is_recommended, reason_memo').eq('customer_id', customerId),
     ]);
     const propsList = props ?? [];

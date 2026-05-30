@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: properties } = await supabase
     .from('properties')
     .select('property_number, updated_at')
+    .is('deleted_at', null)
     .eq('status', '거래중'); // sitemap엔 거래중 매물만 노출
 
   const dynamicEntries: MetadataRoute.Sitemap = (properties ?? []).map((p: any) => ({

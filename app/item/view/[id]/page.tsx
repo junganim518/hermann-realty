@@ -338,6 +338,7 @@ export default function PropertyDetailPage() {
         .from('properties')
         .select('*')
         .eq('property_number', id)
+        .is('deleted_at', null)
         .single();
 
       if (data) {
@@ -372,6 +373,7 @@ export default function PropertyDetailPage() {
           .select('*')
           .eq('property_type', data.property_type)
           .eq('status', '거래중') // 추천 매물엔 거래중만
+          .is('deleted_at', null)
           .neq('property_number', data.property_number)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -397,6 +399,7 @@ export default function PropertyDetailPage() {
             .select('*')
             .eq('property_type', data.property_type)
             .eq('status', '거래중') // 추천 매물엔 거래중만
+            .is('deleted_at', null)
             .order('created_at', { ascending: false })
             .limit(10);
           const extra = (raw2 ?? []).filter((p: any) => !existIds.has(p.property_number));
@@ -612,20 +615,10 @@ export default function PropertyDetailPage() {
   }
 
   const handleDeleteProperty = async () => {
-    if (!confirm(`매물 ${property.property_number}을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
-    const pid = property.id;
-    const { data: imgs } = await supabase.from('property_images').select('id, image_url').eq('property_id', pid);
-    if (imgs && imgs.length > 0) {
-      const paths = imgs.map((img: any) => {
-        const m = (img.image_url as string).match(/property-images\/(.+)$/);
-        return m ? m[1] : null;
-      }).filter(Boolean) as string[];
-      if (paths.length > 0) await supabase.storage.from('property-images').remove(paths);
-      await supabase.from('property_images').delete().eq('property_id', pid);
-    }
-    const { error } = await supabase.from('properties').delete().eq('id', pid);
+    if (!confirm(`매물 ${property.property_number}을 휴지통으로 이동하시겠습니까?`)) return;
+    const { error } = await supabase.from('properties').update({ deleted_at: new Date().toISOString() }).eq('id', property.id);
     if (error) { alert(`삭제 실패: ${error.message}`); return; }
-    alert('매물이 삭제되었습니다.');
+    alert('휴지통으로 이동되었습니다.');
     window.scrollTo(0, 0);
     if (window.history.length > 1) { router.back(); } else { router.push('/properties'); }
   };

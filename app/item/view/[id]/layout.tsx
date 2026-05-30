@@ -16,6 +16,7 @@ async function fetchProperty(propertyNumber: string) {
     .from('properties')
     .select(PROPERTY_SELECT)
     .eq('property_number', propertyNumber)
+    .is('deleted_at', null)
     .single();
   if (error) console.error('[JSON-LD] property fetch error:', error.message);
   return (raw as Record<string, any>) ?? null;

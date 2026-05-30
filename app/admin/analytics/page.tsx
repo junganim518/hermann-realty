@@ -84,7 +84,8 @@ export default function AnalyticsPage() {
         const { data: props } = await supabase
           .from('properties')
           .select('property_number, address')
-          .in('property_number', Array.from(pnumSet));
+          .in('property_number', Array.from(pnumSet))
+          .is('deleted_at', null);
         const map: Record<string, { property_number: string; address: string }> = {};
         (props ?? []).forEach(p => { map[String(p.property_number)] = { property_number: String(p.property_number), address: p.address ?? '' }; });
         setPropertyMap(map);

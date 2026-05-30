@@ -35,7 +35,8 @@ app/
     ├── properties/[new|edit]/        # 매물 등록/수정
     ├── customers/                    # 손님 관리
     ├── contracts/                    # 계약 관리
-    └── landlords/[new|edit|page]     # 임대인 관리
+    ├── landlords/[new|edit|page]     # 임대인 관리
+    └── trash/page.tsx                # 휴지통 (소프트 삭제된 매물 복구/영구삭제)
 
 components/
 ├── PropertyCard.tsx                  # 매물 카드 (즐겨찾기 하트) — showPrivateBusinessName prop: 관리자 화면에서 비공개 상호명도 🔒 회색으로 표시
@@ -67,6 +68,7 @@ lib/
   - 새 테마 추가 시 `ALL_THEMES` + `FILTER_THEMES` 둘 다 확인 필요
 - status (TEXT) — 거래중/보류/거래완료
 - is_sold (BOOLEAN) — 하위호환용
+- deleted_at (TIMESTAMPTZ, NULL 허용) — 소프트 삭제 (NULL=정상, 값 있음=휴지통)
 - view_count (INTEGER)
 - last_contacted_at (TIMESTAMPTZ) — 마지막 통화 체크일
 - landlord_id (UUID, FK)
@@ -74,6 +76,13 @@ lib/
 - tenant_name, tenant_phone (TEXT)
 - extra_contacts (JSONB)
 - created_at, updated_at (TIMESTAMPTZ)
+
+**매물 삭제 정책 (중요)**
+- 삭제는 항상 소프트 삭제: `update({ deleted_at: new Date().toISOString() })`
+- 완전 삭제 금지 — 휴지통(/admin/trash)에서만 영구 삭제 가능
+- **모든 매물 조회 쿼리에 `.is('deleted_at', null)` 필수** — 빠뜨리면 휴지통 매물이 사용자에게 노출됨
+- 휴지통 페이지(app/admin/trash/page.tsx): 복구(deleted_at=null) / 영구 삭제(이미지 정리 후 DELETE)
+- 매물 복사 시 payload에 `deleted_at: null` 명시적으로 포함
 
 **가격 컬럼**: deposit, monthly_rent, sale_price, maintenance_fee, premium
 - **매매**: `sale_price` 사용 (deposit/monthly_rent는 null)
