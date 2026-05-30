@@ -218,6 +218,13 @@ lib/
 - **매물번호/주소 클릭**: `router.push`로 상세 페이지 이동 (cursor: pointer)
 - **매물 수정 후 스크롤 복원**: 수정 링크 클릭 시 `sessionStorage.setItem('admin_scroll_position', scrollY)` 저장, 돌아온 후 `properties` + `propImages` 로드 완료 시 복원 (50ms setTimeout)
 
+### 지도 페이지 줌 레벨 (app/map/page.tsx)
+
+- 초기 줌: `level: 7` (세션 저장값 없을 때 기본)
+- 최대 확대 한계 `minLevel`: **관리자(로그인) 1 / 손님(비로그인) 5**
+  - 맵 초기화는 `minLevel: 5`로 고정, `isAdmin` resolve 후 `map.setMinLevel(isAdmin ? 1 : 5)` 동적 갱신
+  - useEffect deps: `[isAdmin, mapReady]`
+
 ### 지도 페이지 뒤로가기 상태 복원 (app/map/page.tsx)
 
 - sessionStorage 키: `MAP_STATE_KEY = 'hermann-map-state-v1'`

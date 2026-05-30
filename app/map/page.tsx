@@ -197,6 +197,12 @@ function MapPageInner() {
     supabase.auth.getUser().then(({ data }) => setIsAdmin(!!data.user));
   }, []);
 
+  // 관리자 여부 확정 후 minLevel 동적 적용 (맵 초기화보다 늦게 resolve되므로)
+  useEffect(() => {
+    if (!mapReady || !mapObjRef.current) return;
+    mapObjRef.current.setMinLevel(isAdmin ? 1 : 5);
+  }, [isAdmin, mapReady]);
+
   useEffect(() => {
     const check = () => {
       // window.innerWidth < 768 직접 비교 (기존 방식 유지)
