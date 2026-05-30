@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Link as LinkIcon, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isNewProperty } from '@/lib/isNewProperty';
@@ -1561,7 +1562,7 @@ export default function PropertyDetailPage() {
                 {similarProperties.map((p: any) => {
                   const pyeong = p.exclusive_area ? toPyeong(parseFloat(p.exclusive_area)) : null;
                   return (
-                    <a
+                    <Link
                       key={p.property_number}
                       href={`/item/view/${p.property_number}`}
                       style={{ textDecoration: 'none', color: 'inherit', display: 'block', border: '1px solid #e0e0e0', overflow: 'hidden', transition: 'all 0.2s ease', cursor: 'pointer', background: '#fff' }}
@@ -1627,7 +1628,7 @@ export default function PropertyDetailPage() {
                           {[p.property_type, p.exclusive_area ? `${p.exclusive_area}㎡${pyeong ? ` (${pyeong}평)` : ''}` : null, p.current_floor ? `${p.current_floor}층` : null].filter(Boolean).join(' · ')}
                         </p>
                       </div>
-                    </a>
+                    </Link>
                   );
                 })}
               </div>

@@ -1108,9 +1108,10 @@ function MapPageInner() {
                 ].filter(Boolean).join(' · ');
                 const isTop = p.property_number === topPropertyNumber;
                 return (
-                  <a
+                  <Link
                     key={p.property_number}
                     href={`/item/view/${p.property_number}`}
+                    prefetch={false}
                     style={{
                       display: 'flex', gap: '12px', padding: '14px 20px',
                       textDecoration: 'none', color: 'inherit',
@@ -1187,7 +1188,7 @@ function MapPageInner() {
                       </p>
                       {detailStr && <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{detailStr}</p>}
                     </div>
-                  </a>
+                  </Link>
                 );
               })}
             </div>

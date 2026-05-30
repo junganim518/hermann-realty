@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -1216,7 +1217,7 @@ function AdminDashboardInner() {
                 return (
                   <div key={p.id} className="admin-prop-row" style={{ background: (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : 1 }}>
                     {/* 썸네일 */}
-                    <a href={`/item/view/${p.property_number}`} className="admin-prop-thumbnail" style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
+                    <Link href={`/item/view/${p.property_number}`} prefetch={false} className="admin-prop-thumbnail" style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
                         <img src={propImages[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
@@ -1230,13 +1231,13 @@ function AdminDashboardInner() {
                       {p.status === '보류' && !p.is_sold && (
                         <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#f59e0b', color: '#fff', fontSize: '8px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', zIndex: 2 }}>보류</div>
                       )}
-                    </a>
+                    </Link>
 
                     {/* 정보 영역 */}
                     <div className="admin-prop-info">
                       {/* 1행: 매물번호 + 뱃지 + 타이틀 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                        <span onClick={() => router.push(`/item/view/${p.property_number}`)} style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a', cursor: 'pointer' }}>{p.property_number}</span>
+                        <Link href={`/item/view/${p.property_number}`} prefetch={false} style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a', cursor: 'pointer', textDecoration: 'none' }}>{p.property_number}</Link>
                         {p.property_type && (
                           <span style={{ fontSize: '11px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', background: '#f5f5f5', color: '#666', border: '1px solid #e0e0e0' }}>{p.property_type}</span>
                         )}
@@ -1271,7 +1272,7 @@ function AdminDashboardInner() {
                         )}
                       </div>
                       {/* 2행: 주소 */}
-                      <p onClick={() => router.push(`/item/view/${p.property_number}`)} style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4, cursor: 'pointer' }}>{formatAddr(p)}</p>
+                      <Link href={`/item/view/${p.property_number}`} prefetch={false} style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4, cursor: 'pointer', textDecoration: 'none', display: 'block' }}>{formatAddr(p)}</Link>
                       {/* 3행: 면적 + 금액 + 권리금 + 관리비 */}
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '13px', marginBottom: p.admin_memo ? '4px' : '0' }}>
                         {p.exclusive_area && <span style={{ color: '#555' }}>{p.exclusive_area}㎡ ({(parseFloat(p.exclusive_area) / 3.3058).toFixed(1)}평)</span>}

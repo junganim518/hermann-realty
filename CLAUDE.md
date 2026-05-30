@@ -218,6 +218,12 @@ lib/
   - 면적: DB는 ㎡, 입력은 평 — `matchAreaRange` 내부에서 변환 (÷ 3.3058)
 - 드롭다운 바깥 클릭 시 자동 닫힘 (useEffect + ref), Portal 불필요
 
+### 매물 상세 이동 (공통)
+
+- 매물 상세 이동은 Next.js `<Link href>` 사용 — `<a href>`는 프리페치 없어서 느림
+- 카드 수 많은 페이지(관리자 대시보드, 지도 모바일 드로어): `<Link prefetch={false}>`
+- 카드 수 적은 페이지(비슷한 매물 3개, 전체매물, PropertyCard): `<Link>` 기본값(prefetch=true)
+
 ### 관리자 매물 카드 (app/admin/page.tsx)
 
 - **모바일**: 썸네일(`admin-prop-thumbnail`) + 매물제목(`admin-prop-title`) 숨김, 가로 컴팩트 레이아웃
