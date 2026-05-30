@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
+export const revalidate = 3600; // 1시간마다 재생성
+
 const BASE_URL = 'https://hermann-realty.com';
 const SITE_UPDATED = new Date('2026-05-19');
 
