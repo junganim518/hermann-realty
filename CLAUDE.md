@@ -36,7 +36,11 @@ app/
     ├── customers/                    # 손님 관리
     ├── contracts/                    # 계약 관리
     ├── landlords/[new|edit|page]     # 임대인 관리
-    └── trash/page.tsx                # 휴지통 (소프트 삭제된 매물 복구/영구삭제)
+    ├── trash/page.tsx                # 휴지통 (소프트 삭제된 매물 복구/영구삭제)
+    └── account/page.tsx              # 내 계정 — 비밀번호 변경 (로그인 필요, 현재 비밀번호 재인증 후 변경)
+├── login/page.tsx                    # 로그인 (하단에 "비밀번호를 잊으셨나요?" 링크)
+├── login/reset/page.tsx              # 비밀번호 재설정 — 이메일 입력 → supabase.auth.resetPasswordForEmail()
+└── login/reset/confirm/page.tsx      # 재설정 확인 — 메일 링크 클릭 후 새 비밀번호 설정 (PASSWORD_RECOVERY 이벤트 감지)
 
 components/
 ├── PropertyCard.tsx                  # 매물 카드 (즐겨찾기 하트) — showPrivateBusinessName prop: 관리자 화면에서 비공개 상호명도 🔒 회색으로 표시
@@ -278,6 +282,13 @@ lib/
 - **데스크톱 테이블 위계**: 찾는매물(16px bold #1a1a1a) > 메모(14px #444) > 연락처(#c47c30 tel:링크) > 나머지(13px #666)
 - **모바일 카드 순서**: 찾는매물(16px bold) → 전화번호(15px bold 골드 tel:링크) → 메모(14px #444 3줄) → 관심매물·예산·지역(12px) → 날짜(12px #aaa) → 상세/삭제 버튼
 - **연락처**: `formatPhone()` (lib/phoneFormat.ts) 로 표시, `href="tel:숫자만"`
+
+## 비밀번호 관련
+
+- **비밀번호 변경**: `/admin/account` (로그인 필요, 현재 비밀번호 재인증 후 변경)
+- **비밀번호 재설정**: `/login/reset` (이메일로 재설정 메일 발송)
+- **재설정 메일 한국어 템플릿**: Supabase 대시보드 → Authentication → Email Templates에서 수정 필요 (사장님 직접 작업)
+- 재설정 완료 후 리다이렉트: `/login/reset/confirm` — `PASSWORD_RECOVERY` 이벤트 감지 후 비밀번호 변경
 
 ## 자주 발생하는 이슈
 

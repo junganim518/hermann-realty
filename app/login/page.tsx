@@ -85,10 +85,17 @@ function LoginPageInner() {
                 width: '100%', height: '48px', background: loading ? '#ccc' : '#e2a06e',
                 color: '#fff', border: 'none', borderRadius: '6px', fontSize: '16px',
                 fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
+                marginBottom: '16px',
               }}
             >
               {loading ? '로그인 중...' : '로그인'}
             </button>
+
+            <div style={{ textAlign: 'center' }}>
+              <a href="/login/reset" style={{ fontSize: '13px', color: '#999', textDecoration: 'none' }}>
+                비밀번호를 잊으셨나요?
+              </a>
+            </div>
           </form>
         </div>
       </div>

@@ -168,6 +168,10 @@ export default function Header() {
                     style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#fff', textDecoration: 'none', borderBottom: '1px solid #333' }}>
                     관리자 페이지
                   </a>
+                  <a href="/admin/account" onClick={() => setIsUserMenuOpen(false)}
+                    style={{ display: 'block', padding: '12px 20px', fontSize: '14px', color: '#ccc', textDecoration: 'none', borderBottom: '1px solid #333' }}>
+                    내 계정
+                  </a>
                   <button type="button" onClick={() => { handleLogout(); setIsUserMenuOpen(false); }}
                     style={{ display: 'block', width: '100%', padding: '12px 20px', fontSize: '14px', color: '#ef5350', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                     로그아웃
@@ -193,6 +197,7 @@ export default function Header() {
                   <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#e05050', color: '#fff', fontSize: '10px', fontWeight: 700, minWidth: '18px', height: '18px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>
                 )}
               </a>
+              <a href="/admin/account" style={{ color: '#999', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>내 계정</a>
               <button onClick={handleLogout} style={{ color: '#999', fontSize: '17px', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>로그아웃</button>
             </>
           ) : (
