@@ -245,6 +245,7 @@ lib/
 - sessionStorage 키: `MAP_STATE_KEY = 'hermann-map-state-v1'`
 - 저장 항목: 지도 중심/줌, 드로어 상태, 필터, **클러스터 visibleIds**
 - **navigation type 체크 없음** — sessionStorage에 데이터 있으면 무조건 복원 (Next.js 클라이언트 라우팅에서 back_forward 미감지 문제로 제거)
+- **메뉴 클릭 시 리셋**: `components/Header.tsx`의 "지도검색" 링크 onClick에서 `sessionStorage.removeItem(MAP_STATE_KEY)` 호출 → 메뉴로 들어오면 초기 상태, 뒤로가기로 돌아오면 이전 상태 복원
 - 클러스터 선택 상태(`visibleIds`): 매물 데이터 로드 후 `savedVisibleIdsRef`로 복원
 - 매물 목록 스크롤: `listRef`(데스크톱) + `mobileListRef`(모바일) sessionStorage 저장/복원, `scrollRestoredRef`로 중복 방지
 

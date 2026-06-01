@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { Home, Map, Building2, Newspaper, MessageSquarePlus, Info, Clock, Heart, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+const MAP_STATE_KEY = 'hermann-map-state-v1';
+
 export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -66,7 +68,7 @@ export default function Header() {
   };
 
   const navItems = [
-    { label: '지도검색', href: '/map' },
+    { label: '지도검색', href: '/map', onClick: () => sessionStorage.removeItem(MAP_STATE_KEY) },
     { label: '전체매물', href: '/properties' },
     { label: '매물 의뢰하기', href: '/inquiry' },
     { label: '부동산 소식', href: '/news' },
@@ -209,6 +211,7 @@ export default function Header() {
           <a
             key={item.label}
             href={item.href}
+            onClick={(item as any).onClick}
             style={{ fontSize: '18px', fontWeight: 500, color: '#333', textDecoration: 'none', whiteSpace: 'nowrap' }}
             onMouseEnter={e => (e.target as HTMLElement).style.color = '#e2a06e'}
             onMouseLeave={e => (e.target as HTMLElement).style.color = '#333'}
@@ -288,7 +291,7 @@ export default function Header() {
 
         {[
           { Icon: Home, label: '홈', href: '/' },
-          { Icon: Map, label: '지도검색', href: '/map' },
+          { Icon: Map, label: '지도검색', href: '/map', onClick: () => sessionStorage.removeItem(MAP_STATE_KEY) },
           { Icon: Building2, label: '매물', href: '/properties' },
           { Icon: Clock, label: '본매물', href: '/recent' },
           { Icon: MoreHorizontal, label: '더보기', isMore: true },
@@ -361,6 +364,7 @@ export default function Header() {
               href={href}
               className="h-bottom-tab-item"
               style={commonStyle}
+              onClick={(tab as any).onClick}
             >
               {indicator}
               <tab.Icon size={22} strokeWidth={active ? 2.2 : 1.8} color={color} />
