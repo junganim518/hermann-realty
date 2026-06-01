@@ -77,6 +77,11 @@ lib/
 - extra_contacts (JSONB)
 - created_at, updated_at (TIMESTAMPTZ)
 
+**매물 상태별 검색엔진 노출 정책**
+- **거래중**: 검색엔진 색인 허용 (sitemap 포함, JSON-LD 생성, robots 기본값)
+- **보류/거래완료(is_sold 포함)**: `robots: { index: false, follow: false }` + JSON-LD 미생성 (OG 태그는 유지)
+- 적용 위치: `app/item/view/[id]/layout.tsx` — `isIndexable()` 함수로 판별
+
 **매물 삭제 정책 (중요)**
 - 삭제는 항상 소프트 삭제: `update({ deleted_at: new Date().toISOString() })`
 - 완전 삭제 금지 — 휴지통(/admin/trash)에서만 영구 삭제 가능

@@ -4,7 +4,11 @@ import { supabase } from '@/lib/supabase';
 const PROPERTY_SELECT =
   'id, property_number, title, address, building_name, unit_number, transaction_type, ' +
   'deposit, monthly_rent, maintenance_fee, premium, supply_area, exclusive_area, ' +
-  'current_floor, total_floor, description, property_type, latitude, longitude, created_at';
+  'current_floor, total_floor, description, property_type, latitude, longitude, created_at, ' +
+  'status, is_sold';
+
+const isIndexable = (p: Record<string, any>) =>
+  p.status === '거래중' && !p.is_sold;
 
 // XSS 방지: JSON-LD 내 < 를 유니코드 이스케이프
 function safeJsonLd(obj: object): string {
@@ -42,6 +46,8 @@ export async function generateMetadata(
     return { title: { absolute: '매물 정보 없음 | 헤르만부동산' } };
   }
 
+  const noIndex = !isIndexable(property);
+
   const imgs = await fetchImages(property.id, 1);
 
   const propertyNumber = property.property_number || '';
@@ -59,6 +65,7 @@ export async function generateMetadata(
   return {
     title: { absolute: title },
     description,
+    ...(noIndex && { robots: { index: false, follow: false } }),
     openGraph: { title, description, images: [{ url: firstImage }] },
     twitter: { card: 'summary_large_image', title, description, images: [firstImage] },
   };
@@ -78,7 +85,7 @@ export default async function ItemViewLayout({
 
   let jsonLdStr: string | null = null;
 
-  if (property) {
+  if (property && isIndexable(property)) {
     const imgs = await fetchImages(property.id, 5);
 
     const customTitle = (property.title || '').trim();
