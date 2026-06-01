@@ -171,27 +171,7 @@ function MapPageInner() {
   const drawerDragRef = useRef(0);
   const savedVisibleIdsRef = useRef<string[] | null>(null);
   const mobileListRef = useRef<HTMLDivElement>(null);
-  const isBackForwardRef = useRef(false);
   const scrollRestoredRef = useRef(false);
-
-
-  // 처음 진입(navigate)일 때만 sessionStorage 초기화 — 뒤로가기(back_forward)/새로고침(reload)은 유지
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      const navType = navEntries[0]?.type;
-      if (navType === 'navigate') {
-        sessionStorage.removeItem(MAP_STATE_KEY);
-        console.log('[map] 새 진입 감지 — 지도 상태 초기화');
-      } else {
-        console.log('[map] 뒤로가기/새로고침 감지 — 지도 상태 유지 (type:', navType, ')');
-        if (navType === 'back_forward') isBackForwardRef.current = true;
-      }
-    } catch (err) {
-      console.warn('[map] navigation type 조회 실패:', err);
-    }
-  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setIsAdmin(!!data.user));
@@ -400,7 +380,7 @@ function MapPageInner() {
 
   // ── 매물 목록 스크롤 복원 (back_forward 진입 시, 클러스터 적용 후)
   useEffect(() => {
-    if (!isBackForwardRef.current || scrollRestoredRef.current) return;
+    if (scrollRestoredRef.current) return;
     if (loading || properties.length === 0) return;
     const desktopScroll = sessionStorage.getItem('map_list_scroll');
     const mobileScroll = sessionStorage.getItem('map_mobile_list_scroll');

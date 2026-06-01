@@ -244,9 +244,9 @@ lib/
 
 - sessionStorage 키: `MAP_STATE_KEY = 'hermann-map-state-v1'`
 - 저장 항목: 지도 중심/줌, 드로어 상태, 필터, **클러스터 visibleIds**
-- navigation type `'navigate'`(새 진입)일 때만 초기화 — `'back_forward'`(뒤로가기)/`'reload'`(새로고침)은 유지
+- **navigation type 체크 없음** — sessionStorage에 데이터 있으면 무조건 복원 (Next.js 클라이언트 라우팅에서 back_forward 미감지 문제로 제거)
 - 클러스터 선택 상태(`visibleIds`): 매물 데이터 로드 후 `savedVisibleIdsRef`로 복원
-- 매물 목록 스크롤: `listRef`(데스크톱) + `mobileListRef`(모바일) sessionStorage 저장/복원, `back_forward` 진입 시에만 복원
+- 매물 목록 스크롤: `listRef`(데스크톱) + `mobileListRef`(모바일) sessionStorage 저장/복원, `scrollRestoredRef`로 중복 방지
 
 ### 매물 상세 페이지 하단 영역 (app/item/view/[id]/page.tsx)
 
