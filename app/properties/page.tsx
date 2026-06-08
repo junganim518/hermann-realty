@@ -504,6 +504,12 @@ function PropertiesPageInner() {
                             <span style={{ fontSize: '14px', color: '#e05050', fontWeight: 600 }}>무권리</span>
                           )}
                           <span style={{ fontSize: '13px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
+                          {p.business_name && p.business_name_public && (
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>🏪 {p.business_name}</span>
+                          )}
+                          {p.business_name && !p.business_name_public && isAdmin && (
+                            <span style={{ fontSize: '11px', fontWeight: 500, color: '#92400e', whiteSpace: 'nowrap' }}>🔒 {p.business_name}</span>
+                          )}
                         </div>
                         <p className="prop-addr" style={{ fontSize: '13px', color: '#666', margin: isMobile ? '0' : '0 0 2px', ...(isMobile ? { whiteSpace: 'normal' as const, wordBreak: 'keep-all' as const, overflowWrap: 'break-word' as const } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }) }}>
                           {isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '')}

@@ -1002,6 +1002,12 @@ function MapPageInner() {
                             <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>무권리</span>
                           )}
                           <span style={{ fontSize: '11px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
+                          {p.business_name && p.business_name_public && (
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>🏪 {p.business_name}</span>
+                          )}
+                          {p.business_name && !p.business_name_public && isAdmin && (
+                            <span style={{ fontSize: '11px', fontWeight: 500, color: '#92400e', whiteSpace: 'nowrap' }}>🔒 {p.business_name}</span>
+                          )}
                         </div>
                         <p className="map-card-addr" style={{ fontSize: '13px', color: '#888', margin: isMobile ? '0 0 1px' : '0 0 2px', ...(isMobile ? { whiteSpace: 'normal' as const, wordBreak: 'keep-all' as const, overflowWrap: 'break-word' as const } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }) }}>
                           {addr}
@@ -1157,6 +1163,12 @@ function MapPageInner() {
                           <span style={{ fontSize: '13px', color: '#e05050', fontWeight: 600 }}>무권리</span>
                         )}
                         <span style={{ fontSize: '11px', color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
+                        {p.business_name && p.business_name_public && (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>🏪 {p.business_name}</span>
+                        )}
+                        {p.business_name && !p.business_name_public && isAdmin && (
+                          <span style={{ fontSize: '11px', fontWeight: 500, color: '#92400e', whiteSpace: 'nowrap' }}>🔒 {p.business_name}</span>
+                        )}
                       </div>
                       <p style={{ fontSize: '12px', color: '#888', margin: '0 0 2px', whiteSpace: 'normal', wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
                         {isAdmin ? normalizeAddr(p.address ?? '') : formatAddress(p.address ?? '')}
