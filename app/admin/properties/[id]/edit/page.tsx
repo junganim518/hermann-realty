@@ -152,6 +152,7 @@ export default function EditPropertyPage() {
     exclusive_area: '',
     land_area: '',
     total_floor_area: '',
+    building_area: '',
     floor_area_ratio: '',
     building_coverage_ratio: '',
     current_floor: '',
@@ -252,6 +253,7 @@ export default function EditPropertyPage() {
         exclusive_area: data.exclusive_area ?? '',
         land_area: data.land_area ?? '',
         total_floor_area: data.total_floor_area ?? '',
+        building_area: data.building_area ?? '',
         floor_area_ratio: data.floor_area_ratio != null ? String(data.floor_area_ratio) : '',
         building_coverage_ratio: data.building_coverage_ratio != null ? String(data.building_coverage_ratio) : '',
         current_floor: data.current_floor ?? '',
@@ -762,12 +764,13 @@ export default function EditPropertyPage() {
         monthly_rent: form.transaction_type === '월세' ? (form.monthly_rent ? parseInt(form.monthly_rent) : null) : null,
         maintenance_fee: form.maintenance_fee ? parseInt(form.maintenance_fee) : null,
         premium: form.premium ? parseInt(form.premium) : null,
-        supply_area: form.supply_area || null,
-        exclusive_area: form.exclusive_area || null,
-        land_area: form.transaction_type === '매매' ? (form.land_area || null) : null,
-        total_floor_area: form.transaction_type === '매매' ? (form.total_floor_area || null) : null,
-        floor_area_ratio: form.transaction_type === '매매' ? (form.floor_area_ratio ? parseFloat(form.floor_area_ratio) : null) : null,
-        building_coverage_ratio: form.transaction_type === '매매' ? (form.building_coverage_ratio ? parseFloat(form.building_coverage_ratio) : null) : null,
+        supply_area: (form.property_type === '건물' && form.transaction_type === '매매') ? null : (form.supply_area || null),
+        exclusive_area: (form.property_type === '건물' && form.transaction_type === '매매') ? null : (form.exclusive_area || null),
+        land_area: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.land_area || null) : null,
+        total_floor_area: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.total_floor_area || null) : null,
+        building_area: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.building_area || null) : null,
+        floor_area_ratio: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.floor_area_ratio ? parseFloat(form.floor_area_ratio) : null) : null,
+        building_coverage_ratio: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.building_coverage_ratio ? parseFloat(form.building_coverage_ratio) : null) : null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
         building_name: form.building_name || null,
@@ -1134,29 +1137,31 @@ export default function EditPropertyPage() {
         <div className="admin-section" style={sectionSt}>
           <h2 className="admin-section-title" style={sectionTitle}>상세 정보</h2>
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={labelSt}>
-                공급면적 (㎡)
-                {form.supply_area && !isNaN(parseFloat(form.supply_area)) && (
-                  <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
-                    ({(parseFloat(form.supply_area) / 3.3058).toFixed(1)}평)
-                  </span>
-                )}
-              </label>
-              <input value={form.supply_area} onChange={e => set('supply_area', e.target.value)} style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>
-                전용면적 (㎡)
-                {form.exclusive_area && !isNaN(parseFloat(form.exclusive_area)) && (
-                  <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
-                    ({(parseFloat(form.exclusive_area) / 3.3058).toFixed(1)}평)
-                  </span>
-                )}
-              </label>
-              <input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} />
-            </div>
-            {form.transaction_type === '매매' && <>
+            {!(form.property_type === '건물' && form.transaction_type === '매매') && <>
+              <div>
+                <label style={labelSt}>
+                  공급면적 (㎡)
+                  {form.supply_area && !isNaN(parseFloat(form.supply_area)) && (
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                      ({(parseFloat(form.supply_area) / 3.3058).toFixed(1)}평)
+                    </span>
+                  )}
+                </label>
+                <input value={form.supply_area} onChange={e => set('supply_area', e.target.value)} style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>
+                  전용면적 (㎡)
+                  {form.exclusive_area && !isNaN(parseFloat(form.exclusive_area)) && (
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                      ({(parseFloat(form.exclusive_area) / 3.3058).toFixed(1)}평)
+                    </span>
+                  )}
+                </label>
+                <input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} />
+              </div>
+            </>}
+            {form.property_type === '건물' && form.transaction_type === '매매' && <>
               <div>
                 <label style={labelSt}>
                   대지면적 (㎡)
@@ -1178,6 +1183,17 @@ export default function EditPropertyPage() {
                   )}
                 </label>
                 <input value={form.total_floor_area} onChange={e => set('total_floor_area', e.target.value)} placeholder="예: 1200.5" style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>
+                  건축면적 (㎡)
+                  {form.building_area && !isNaN(parseFloat(form.building_area)) && (
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                      ({(parseFloat(form.building_area) / 3.3058).toFixed(1)}평)
+                    </span>
+                  )}
+                </label>
+                <input value={form.building_area} onChange={e => set('building_area', e.target.value)} placeholder="예: 250.0" style={inputSt} />
               </div>
               <div>
                 <label style={labelSt}>용적률 (%)</label>
