@@ -1380,7 +1380,7 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>권리금</td><td style={{ ...valTd, fontSize: '16px', color: property.premium ? '#333' : '#E53935' }}>{premiumCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>관리비</td><td style={valTd}>{maintCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>면적</td><td style={valTd}>{areaCell}</td></tr>
-                          <tr style={rowSt}><td style={labelTd}>{isBuilding ? '지상층수 / 지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
+                          <tr style={rowSt}><td style={{ ...labelTd, whiteSpace: 'pre-line' }}>{isBuilding ? '지상층수 /\n지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
                           {!isBuilding && <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>}
                           {isBuilding && (property.current_deposit != null || property.current_rent != null) && (
