@@ -182,6 +182,11 @@ interface Property {
   extra_contacts?: { name: string; phone: string; role: string }[];
   sale_price?: number;
   is_sold?: boolean;
+  land_area?: string;
+  total_floor_area?: string;
+  building_area?: string;
+  floor_area_ratio?: number | string;
+  building_coverage_ratio?: number | string;
   created_at?: string;
   latitude?: number | string;
   longitude?: number | string;
@@ -1305,15 +1310,21 @@ export default function PropertyDetailPage() {
                     const priceCell = buildPriceStr(property);
                     const premiumCell = property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리';
                     const maintCell = formatMaintenance(property.maintenance_fee);
+                    const isBuilding = property.property_type === '건물' && property.transaction_type === '매매';
                     const areaCell = (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        {property.supply_area && (
-                          <span>공급 {property.supply_area}㎡ ({toPyeong(parseFloat(property.supply_area))}평)</span>
-                        )}
-                        {property.exclusive_area && (
-                          <span>전용 {property.exclusive_area}㎡ ({toPyeong(parseFloat(property.exclusive_area))}평)</span>
-                        )}
-                        {!property.supply_area && !property.exclusive_area && '-'}
+                        {isBuilding ? (<>
+                          {property.land_area && <span>대지 {property.land_area}㎡ ({toPyeong(parseFloat(property.land_area))}평)</span>}
+                          {property.total_floor_area && <span>연면 {property.total_floor_area}㎡ ({toPyeong(parseFloat(property.total_floor_area))}평)</span>}
+                          {property.building_area && <span>건축 {property.building_area}㎡ ({toPyeong(parseFloat(property.building_area))}평)</span>}
+                          {property.floor_area_ratio != null && property.floor_area_ratio !== '' && <span>용적률 {property.floor_area_ratio}%</span>}
+                          {property.building_coverage_ratio != null && property.building_coverage_ratio !== '' && <span>건폐율 {property.building_coverage_ratio}%</span>}
+                          {!property.land_area && !property.total_floor_area && !property.building_area && property.floor_area_ratio == null && property.building_coverage_ratio == null && '-'}
+                        </>) : (<>
+                          {property.supply_area && <span>공급 {property.supply_area}㎡ ({toPyeong(parseFloat(property.supply_area))}평)</span>}
+                          {property.exclusive_area && <span>전용 {property.exclusive_area}㎡ ({toPyeong(parseFloat(property.exclusive_area))}평)</span>}
+                          {!property.supply_area && !property.exclusive_area && '-'}
+                        </>)}
                       </div>
                     );
                     const floorCell = [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
