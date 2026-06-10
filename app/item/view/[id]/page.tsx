@@ -187,6 +187,8 @@ interface Property {
   building_area?: string;
   floor_area_ratio?: number | string;
   building_coverage_ratio?: number | string;
+  current_deposit?: number;
+  current_rent?: number;
   created_at?: string;
   latitude?: number | string;
   longitude?: number | string;
@@ -697,7 +699,7 @@ export default function PropertyDetailPage() {
                     property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : '',
                   ].filter(Boolean).join(' / ') || '-'}
                 </td>
-                <th>층수</th>
+                <th>{(property.property_type === '건물' && property.transaction_type === '매매') ? '지하층수' : '층수'}</th>
                 <td>
                   {[
                     property.current_floor && formatFloor(property.current_floor),
@@ -705,12 +707,22 @@ export default function PropertyDetailPage() {
                   ].filter(Boolean).join(' / ') || '-'}
                 </td>
               </tr>
+              {!(property.property_type === '건물' && property.transaction_type === '매매') && (
               <tr>
                 <th>총 주차대수</th>
                 <td>{property.total_parking != null ? `${property.total_parking}대` : '-'}</td>
                 <th>방수/욕실수</th>
                 <td>{`${property.room_count != null ? property.room_count : '-'}개 / ${property.bathroom_count != null ? property.bathroom_count : '-'}개`}</td>
               </tr>
+              )}
+              {(property.property_type === '건물' && property.transaction_type === '매매') && (property.current_deposit != null || property.current_rent != null) && (
+              <tr>
+                <th>기보증금</th>
+                <td>{property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : '-'}</td>
+                <th>월세</th>
+                <td>{property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : '-'}</td>
+              </tr>
+              )}
               <tr>
                 <th>방향</th>
                 <td>{property.direction ?? '-'}</td>
@@ -1355,9 +1367,13 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>권리금</td><td style={{ ...valTd, fontSize: '16px', color: property.premium ? '#333' : '#E53935' }}>{premiumCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>관리비</td><td style={valTd}>{maintCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>면적</td><td style={valTd}>{areaCell}</td></tr>
-                          <tr style={rowSt}><td style={labelTd}>층수</td><td style={valTd}>{floorCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>{isBuilding ? '지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
-                          <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>
+                          {!isBuilding && <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>}
+                          {isBuilding && (property.current_deposit != null || property.current_rent != null) && <>
+                            <tr style={rowSt}><td style={labelTd}>기보증금</td><td style={valTd}>{property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : '-'}</td></tr>
+                            <tr style={rowSt}><td style={labelTd}>월세</td><td style={valTd}>{property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : '-'}</td></tr>
+                          </>}
                           <tr style={rowSt}><td style={labelTd}>방향</td><td style={valTd}>{property.direction ?? '-'}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>입주가능일</td><td style={valTd}>{availableDateCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>주차</td><td style={valTd}>{parkingCell}</td></tr>
@@ -1395,15 +1411,27 @@ export default function PropertyDetailPage() {
                         <tr style={rowSt}>
                           <td style={labelTd}>면적</td>
                           <td style={valTd}>{areaCell}</td>
-                          <td style={labelTd}>층수</td>
+                          <td style={labelTd}>{isBuilding ? '지하층수' : '층수'}</td>
                           <td style={valTd}>{floorCell}</td>
                         </tr>
                         <tr style={rowSt}>
                           <td style={labelTd}>총 주차대수</td>
                           <td style={valTd}>{parkingCountCell}</td>
-                          <td style={labelTd}>방수/욕실수</td>
-                          <td style={valTd}>{roomBathroomCell}</td>
+                          {!isBuilding ? <>
+                            <td style={labelTd}>방수/욕실수</td>
+                            <td style={valTd}>{roomBathroomCell}</td>
+                          </> : <>
+                            <td style={labelTd}>기보증금</td>
+                            <td style={valTd}>{property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : '-'}</td>
+                          </>}
                         </tr>
+                        {isBuilding && (
+                        <tr style={rowSt}>
+                          <td style={labelTd}>월세</td>
+                          <td style={valTd}>{property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : '-'}</td>
+                          <td style={labelTd}></td><td style={valTd}></td>
+                        </tr>
+                        )}
                         {/* 5행: 방향 | 입주가능일 */}
                         <tr style={rowSt}>
                           <td style={labelTd}>방향</td>

@@ -168,6 +168,8 @@ export default function EditPropertyPage() {
     total_parking: '',
     room_count: '',
     bathroom_count: '',
+    current_deposit: '',
+    current_rent: '',
     available_date: '',
     available_immediate: false,
     available_negotiable: false,
@@ -269,6 +271,8 @@ export default function EditPropertyPage() {
         total_parking: data.total_parking != null ? String(data.total_parking) : '',
         room_count: data.room_count != null ? String(data.room_count) : '',
         bathroom_count: data.bathroom_count != null ? String(data.bathroom_count) : '',
+        current_deposit: data.current_deposit != null ? String(data.current_deposit) : '',
+        current_rent: data.current_rent != null ? String(data.current_rent) : '',
         available_date: availDateOnly,
         available_immediate: availParts.includes('즉시입주'),
         available_negotiable: availParts.includes('협의가능'),
@@ -781,8 +785,10 @@ export default function EditPropertyPage() {
         parking: form.parking,
         elevator: form.elevator,
         total_parking: form.total_parking ? parseInt(form.total_parking) : null,
-        room_count: form.room_count ? parseInt(form.room_count) : null,
-        bathroom_count: form.bathroom_count ? parseInt(form.bathroom_count) : null,
+        room_count: (form.property_type === '건물' && form.transaction_type === '매매') ? null : (form.room_count ? parseInt(form.room_count) : null),
+        bathroom_count: (form.property_type === '건물' && form.transaction_type === '매매') ? null : (form.bathroom_count ? parseInt(form.bathroom_count) : null),
+        current_deposit: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.current_deposit ? parseInt(form.current_deposit) : null) : null,
+        current_rent: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.current_rent ? parseInt(form.current_rent) : null) : null,
         available_date: (() => {
           const parts = [
             form.available_date || '',
@@ -1203,18 +1209,26 @@ export default function EditPropertyPage() {
                 <label style={labelSt}>건폐율 (%)</label>
                 <input value={form.building_coverage_ratio} onChange={e => set('building_coverage_ratio', e.target.value)} placeholder="예: 60" style={inputSt} />
               </div>
+              <div>
+                <label style={labelSt}>기보증금 (만원)</label>
+                <input type="number" value={form.current_deposit} onChange={e => set('current_deposit', e.target.value)} placeholder="예: 5000" style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>월세 (만원)</label>
+                <input type="number" value={form.current_rent} onChange={e => set('current_rent', e.target.value)} placeholder="예: 300" style={inputSt} />
+              </div>
             </>}
-            <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
+            <div><label style={labelSt}>{(form.property_type === '건물' && form.transaction_type === '매매') ? '지하층수' : '현재층'}</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>총 주차대수</label><input value={form.total_parking} onChange={e => set('total_parking', e.target.value)} placeholder="예: 8" style={inputSt} /></div>
-            <div>
+            {!(form.property_type === '건물' && form.transaction_type === '매매') && <div>
               <label style={labelSt}>방수/욕실수</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input type="number" value={form.room_count} onChange={e => set('room_count', e.target.value)} placeholder="방 수" style={{ ...inputSt, flex: 1 }} />
                 <span style={{ fontSize: '16px', color: '#888' }}>/</span>
                 <input type="number" value={form.bathroom_count} onChange={e => set('bathroom_count', e.target.value)} placeholder="욕실 수" style={{ ...inputSt, flex: 1 }} />
               </div>
-            </div>
+            </div>}
             <div><label style={labelSt}>용도</label><input value={form.usage_type} onChange={e => set('usage_type', e.target.value)} style={inputSt} /></div>
             <div>
               <label style={labelSt}>방향</label>
