@@ -1275,8 +1275,14 @@ function AdminDashboardInner() {
                       <Link href={`/item/view/${p.property_number}`} prefetch={false} style={{ fontSize: '13px', color: '#555', margin: '0 0 4px', lineHeight: 1.4, cursor: 'pointer', textDecoration: 'none', display: 'block' }}>{formatAddr(p)}</Link>
                       {/* 3행: 면적 + 금액 + 권리금 + 관리비 */}
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '13px', marginBottom: p.admin_memo ? '4px' : '0' }}>
-                        {p.exclusive_area && <span style={{ color: '#555' }}>{p.exclusive_area}㎡ ({(parseFloat(p.exclusive_area) / 3.3058).toFixed(1)}평)</span>}
-                        {p.current_floor && <span style={{ color: '#555' }}>{String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`}</span>}
+                        {(p.property_type === '건물' && p.transaction_type === '매매')
+                          ? (p.land_area && <span style={{ color: '#555' }}>대지 {p.land_area}㎡ ({(parseFloat(p.land_area) / 3.3058).toFixed(1)}평)</span>)
+                          : (p.exclusive_area && <span style={{ color: '#555' }}>{p.exclusive_area}㎡ ({(parseFloat(p.exclusive_area) / 3.3058).toFixed(1)}평)</span>)
+                        }
+                        {(p.property_type === '건물' && p.transaction_type === '매매')
+                          ? ((p.total_floor || p.current_floor != null) && <span style={{ color: '#555' }}>{p.total_floor ? `지상${String(p.total_floor).trim().endsWith('층') ? p.total_floor : `${p.total_floor}층`}` : ''}${p.current_floor != null && p.current_floor !== '' ? `/지하${Math.abs(parseInt(String(p.current_floor)))}층` : ''}</span>)
+                          : (p.current_floor && <span style={{ color: '#555' }}>{String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`}</span>)
+                        }
                         <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                         <span style={{ color: '#e05050' }}>{p.premium ? `권리금 ${formatPrice(p.premium)}` : '무권리'}</span>
                         <span style={{ color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
