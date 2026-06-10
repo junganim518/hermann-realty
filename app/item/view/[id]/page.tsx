@@ -723,7 +723,7 @@ export default function PropertyDetailPage() {
                 <td>{`${property.room_count != null ? property.room_count : '-'}개 / ${property.bathroom_count != null ? property.bathroom_count : '-'}개`}</td>
               </tr>
               )}
-              {(property.property_type === '건물' && property.transaction_type === '매매') && (property.current_deposit != null || property.current_rent != null) && (
+              {property.transaction_type === '매매' && (property.current_deposit != null || property.current_rent != null) && (
               <tr>
                 <th>기보증금/월세</th>
                 <td colSpan={3}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ')}</td>
@@ -1329,6 +1329,7 @@ export default function PropertyDetailPage() {
                     const premiumCell = property.premium ? (isAdmin ? formatPrice(property.premium) : '협의') : '무권리';
                     const maintCell = formatMaintenance(property.maintenance_fee);
                     const isBuilding = property.property_type === '건물' && property.transaction_type === '매매';
+                    const isSale = property.transaction_type === '매매';
                     const areaCell = (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {isBuilding ? (<>
@@ -1383,7 +1384,7 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={{ ...labelTd, whiteSpace: 'pre-line' }}>{isBuilding ? '지상층수 /\n지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
                           {!isBuilding && <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>}
-                          {isBuilding && (property.current_deposit != null || property.current_rent != null) && (
+                          {isSale && (property.current_deposit != null || property.current_rent != null) && (
                             <tr style={rowSt}><td style={labelTd}>기보증금/월세</td><td style={valTd}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ')}</td></tr>
                           )}
                           <tr style={rowSt}><td style={labelTd}>방향</td><td style={valTd}>{property.direction ?? '-'}</td></tr>
@@ -1429,7 +1430,7 @@ export default function PropertyDetailPage() {
                         <tr style={rowSt}>
                           <td style={labelTd}>총 주차대수</td>
                           <td style={valTd}>{parkingCountCell}</td>
-                          {!isBuilding ? <>
+                          {!isSale ? <>
                             <td style={labelTd}>방수/욕실수</td>
                             <td style={valTd}>{roomBathroomCell}</td>
                           </> : <>

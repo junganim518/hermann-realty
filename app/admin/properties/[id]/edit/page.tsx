@@ -787,8 +787,8 @@ export default function EditPropertyPage() {
         total_parking: form.total_parking ? parseInt(form.total_parking) : null,
         room_count: (form.property_type === '건물' && form.transaction_type === '매매') ? null : (form.room_count ? parseInt(form.room_count) : null),
         bathroom_count: (form.property_type === '건물' && form.transaction_type === '매매') ? null : (form.bathroom_count ? parseInt(form.bathroom_count) : null),
-        current_deposit: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.current_deposit ? parseInt(form.current_deposit) : null) : null,
-        current_rent: (form.property_type === '건물' && form.transaction_type === '매매') ? (form.current_rent ? parseInt(form.current_rent) : null) : null,
+        current_deposit: form.transaction_type === '매매' ? (form.current_deposit ? parseInt(form.current_deposit) : null) : null,
+        current_rent: form.transaction_type === '매매' ? (form.current_rent ? parseInt(form.current_rent) : null) : null,
         available_date: (() => {
           const parts = [
             form.available_date || '',
@@ -1209,6 +1209,8 @@ export default function EditPropertyPage() {
                 <label style={labelSt}>건폐율 (%)</label>
                 <input value={form.building_coverage_ratio} onChange={e => set('building_coverage_ratio', e.target.value)} placeholder="예: 60" style={inputSt} />
               </div>
+            </>}
+            {form.transaction_type === '매매' && (
               <div>
                 <label style={labelSt}>기보증금 / 월세 (만원)</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1217,7 +1219,7 @@ export default function EditPropertyPage() {
                   <input type="number" value={form.current_rent} onChange={e => set('current_rent', e.target.value)} placeholder="예: 300" style={{ ...inputSt, flex: 1 }} />
                 </div>
               </div>
-            </>}
+            )}
             <div><label style={labelSt}>{(form.property_type === '건물' && form.transaction_type === '매매') ? '지하층수' : '현재층'}</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>총 주차대수</label><input value={form.total_parking} onChange={e => set('total_parking', e.target.value)} placeholder="예: 8" style={inputSt} /></div>

@@ -1283,6 +1283,9 @@ function AdminDashboardInner() {
                           ? <span style={{ color: '#555' }}>{`지상${p.total_floor || 0}층/지하${Math.abs(parseInt(String(p.current_floor || 0)))}층`}</span>
                           : (p.current_floor && <span style={{ color: '#555' }}>{String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`}</span>)
                         }
+                        {p.transaction_type === '매매' && (p.current_deposit != null || p.current_rent != null) && (
+                          <span style={{ color: '#555' }}>기보 {[p.current_deposit != null ? `${p.current_deposit.toLocaleString()}만` : null, p.current_rent != null ? `${p.current_rent.toLocaleString()}만` : null].filter(Boolean).join('/')}</span>
+                        )}
                         <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
                         <span style={{ color: '#e05050' }}>{p.premium ? `권리금 ${formatPrice(p.premium)}` : '무권리'}</span>
                         <span style={{ color: '#888' }}>관리비 {formatMaintenance(p.maintenance_fee)}</span>
