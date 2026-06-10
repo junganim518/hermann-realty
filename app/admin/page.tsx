@@ -1280,7 +1280,7 @@ function AdminDashboardInner() {
                           : (p.exclusive_area && <span style={{ color: '#555' }}>{p.exclusive_area}㎡ ({(parseFloat(p.exclusive_area) / 3.3058).toFixed(1)}평)</span>)
                         }
                         {(p.property_type === '건물' && p.transaction_type === '매매')
-                          ? ((p.total_floor || p.current_floor != null) && <span style={{ color: '#555' }}>{p.total_floor ? `지상${String(p.total_floor).trim().endsWith('층') ? p.total_floor : `${p.total_floor}층`}` : ''}${p.current_floor != null && p.current_floor !== '' ? `/지하${Math.abs(parseInt(String(p.current_floor)))}층` : ''}</span>)
+                          ? <span style={{ color: '#555' }}>{`지상${p.total_floor || 0}층/지하${Math.abs(parseInt(String(p.current_floor || 0)))}층`}</span>
                           : (p.current_floor && <span style={{ color: '#555' }}>{String(p.current_floor).trim().endsWith('층') ? p.current_floor : `${p.current_floor}층`}</span>)
                         }
                         <span style={{ fontWeight: 700, color: '#1a1a1a' }}>{buildPriceStr(p)}</span>
