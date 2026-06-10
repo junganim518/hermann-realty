@@ -150,6 +150,10 @@ export default function EditPropertyPage() {
     premium: '',
     supply_area: '',
     exclusive_area: '',
+    land_area: '',
+    total_floor_area: '',
+    floor_area_ratio: '',
+    building_coverage_ratio: '',
     current_floor: '',
     total_floor: '',
     building_name: '',
@@ -246,6 +250,10 @@ export default function EditPropertyPage() {
         premium: data.premium ? String(data.premium) : '',
         supply_area: data.supply_area ?? '',
         exclusive_area: data.exclusive_area ?? '',
+        land_area: data.land_area ?? '',
+        total_floor_area: data.total_floor_area ?? '',
+        floor_area_ratio: data.floor_area_ratio != null ? String(data.floor_area_ratio) : '',
+        building_coverage_ratio: data.building_coverage_ratio != null ? String(data.building_coverage_ratio) : '',
         current_floor: data.current_floor ?? '',
         total_floor: data.total_floor ?? '',
         building_name: data.building_name ?? '',
@@ -756,6 +764,10 @@ export default function EditPropertyPage() {
         premium: form.premium ? parseInt(form.premium) : null,
         supply_area: form.supply_area || null,
         exclusive_area: form.exclusive_area || null,
+        land_area: form.transaction_type === '매매' ? (form.land_area || null) : null,
+        total_floor_area: form.transaction_type === '매매' ? (form.total_floor_area || null) : null,
+        floor_area_ratio: form.transaction_type === '매매' ? (form.floor_area_ratio ? parseFloat(form.floor_area_ratio) : null) : null,
+        building_coverage_ratio: form.transaction_type === '매매' ? (form.building_coverage_ratio ? parseFloat(form.building_coverage_ratio) : null) : null,
         current_floor: form.current_floor || null,
         total_floor: form.total_floor || null,
         building_name: form.building_name || null,
@@ -1144,6 +1156,38 @@ export default function EditPropertyPage() {
               </label>
               <input value={form.exclusive_area} onChange={e => set('exclusive_area', e.target.value)} style={inputSt} />
             </div>
+            {form.transaction_type === '매매' && <>
+              <div>
+                <label style={labelSt}>
+                  대지면적 (㎡)
+                  {form.land_area && !isNaN(parseFloat(form.land_area)) && (
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                      ({(parseFloat(form.land_area) / 3.3058).toFixed(1)}평)
+                    </span>
+                  )}
+                </label>
+                <input value={form.land_area} onChange={e => set('land_area', e.target.value)} placeholder="예: 330.0" style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>
+                  연면적 (㎡)
+                  {form.total_floor_area && !isNaN(parseFloat(form.total_floor_area)) && (
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '6px' }}>
+                      ({(parseFloat(form.total_floor_area) / 3.3058).toFixed(1)}평)
+                    </span>
+                  )}
+                </label>
+                <input value={form.total_floor_area} onChange={e => set('total_floor_area', e.target.value)} placeholder="예: 1200.5" style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>용적률 (%)</label>
+                <input value={form.floor_area_ratio} onChange={e => set('floor_area_ratio', e.target.value)} placeholder="예: 300" style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>건폐율 (%)</label>
+                <input value={form.building_coverage_ratio} onChange={e => set('building_coverage_ratio', e.target.value)} placeholder="예: 60" style={inputSt} />
+              </div>
+            </>}
             <div><label style={labelSt}>현재층</label><input value={form.current_floor} onChange={e => set('current_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>전체층</label><input value={form.total_floor} onChange={e => set('total_floor', e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>총 주차대수</label><input value={form.total_parking} onChange={e => set('total_parking', e.target.value)} placeholder="예: 8" style={inputSt} /></div>
