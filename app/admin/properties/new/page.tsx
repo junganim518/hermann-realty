@@ -486,7 +486,9 @@ export default function NewPropertyPage() {
       ...prev,
       exclusive_area: totalEx ? String(Math.round(totalEx * 100) / 100) : prev.exclusive_area,
       supply_area: totalSupply ? String(Math.round(totalSupply * 100) / 100) : prev.supply_area,
-      current_floor: firstFloor || prev.current_floor,
+      current_floor: (prev.property_type === '건물' && prev.transaction_type === '매매')
+        ? prev.current_floor
+        : (firstFloor || prev.current_floor),
       usage_type: firstUsage || prev.usage_type,
     }));
   }, [selectedBldHos, areaCache, buildingExposList]);
