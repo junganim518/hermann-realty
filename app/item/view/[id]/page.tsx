@@ -717,10 +717,8 @@ export default function PropertyDetailPage() {
               )}
               {(property.property_type === '건물' && property.transaction_type === '매매') && (property.current_deposit != null || property.current_rent != null) && (
               <tr>
-                <th>기보증금</th>
-                <td>{property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : '-'}</td>
-                <th>월세</th>
-                <td>{property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : '-'}</td>
+                <th>기보증금/월세</th>
+                <td colSpan={3}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ')}</td>
               </tr>
               )}
               <tr>
@@ -1370,10 +1368,9 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>{isBuilding ? '지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
                           {!isBuilding && <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>}
-                          {isBuilding && (property.current_deposit != null || property.current_rent != null) && <>
-                            <tr style={rowSt}><td style={labelTd}>기보증금</td><td style={valTd}>{property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : '-'}</td></tr>
-                            <tr style={rowSt}><td style={labelTd}>월세</td><td style={valTd}>{property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : '-'}</td></tr>
-                          </>}
+                          {isBuilding && (property.current_deposit != null || property.current_rent != null) && (
+                            <tr style={rowSt}><td style={labelTd}>기보증금/월세</td><td style={valTd}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ')}</td></tr>
+                          )}
                           <tr style={rowSt}><td style={labelTd}>방향</td><td style={valTd}>{property.direction ?? '-'}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>입주가능일</td><td style={valTd}>{availableDateCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>주차</td><td style={valTd}>{parkingCell}</td></tr>
@@ -1421,17 +1418,10 @@ export default function PropertyDetailPage() {
                             <td style={labelTd}>방수/욕실수</td>
                             <td style={valTd}>{roomBathroomCell}</td>
                           </> : <>
-                            <td style={labelTd}>기보증금</td>
-                            <td style={valTd}>{property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : '-'}</td>
+                            <td style={labelTd}>기보증금/월세</td>
+                            <td style={valTd}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ') || '-'}</td>
                           </>}
                         </tr>
-                        {isBuilding && (
-                        <tr style={rowSt}>
-                          <td style={labelTd}>월세</td>
-                          <td style={valTd}>{property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : '-'}</td>
-                          <td style={labelTd}></td><td style={valTd}></td>
-                        </tr>
-                        )}
                         {/* 5행: 방향 | 입주가능일 */}
                         <tr style={rowSt}>
                           <td style={labelTd}>방향</td>

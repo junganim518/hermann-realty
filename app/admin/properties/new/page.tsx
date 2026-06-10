@@ -1130,12 +1130,12 @@ export default function NewPropertyPage() {
                 <input value={form.building_coverage_ratio} onChange={e => set('building_coverage_ratio', e.target.value)} placeholder="예: 60" style={inputSt} />
               </div>
               <div>
-                <label style={labelSt}>기보증금 (만원)</label>
-                <input type="number" value={form.current_deposit} onChange={e => set('current_deposit', e.target.value)} placeholder="예: 5000" style={inputSt} />
-              </div>
-              <div>
-                <label style={labelSt}>월세 (만원)</label>
-                <input type="number" value={form.current_rent} onChange={e => set('current_rent', e.target.value)} placeholder="예: 300" style={inputSt} />
+                <label style={labelSt}>기보증금 / 월세 (만원)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input type="number" value={form.current_deposit} onChange={e => set('current_deposit', e.target.value)} placeholder="예: 5000" style={{ ...inputSt, flex: 1 }} />
+                  <span style={{ fontSize: '16px', color: '#888' }}>/</span>
+                  <input type="number" value={form.current_rent} onChange={e => set('current_rent', e.target.value)} placeholder="예: 300" style={{ ...inputSt, flex: 1 }} />
+                </div>
               </div>
             </>}
             <div>
