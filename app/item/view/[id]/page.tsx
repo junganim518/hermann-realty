@@ -699,12 +699,20 @@ export default function PropertyDetailPage() {
                     property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : '',
                   ].filter(Boolean).join(' / ') || '-'}
                 </td>
-                <th>{(property.property_type === '건물' && property.transaction_type === '매매') ? '지하층수' : '층수'}</th>
+                <th>{(property.property_type === '건물' && property.transaction_type === '매매') ? '지상층수 / 지하층수' : '층수'}</th>
                 <td>
-                  {[
-                    property.current_floor && formatFloor(property.current_floor),
-                    property.total_floor && `전체 ${formatFloor(property.total_floor)}`,
-                  ].filter(Boolean).join(' / ') || '-'}
+                  {(property.property_type === '건물' && property.transaction_type === '매매')
+                    ? (() => {
+                        const parts: string[] = [];
+                        if (property.total_floor) parts.push(`지상${formatFloor(property.total_floor)}`);
+                        if (property.current_floor != null && property.current_floor !== '') parts.push(`지하${Math.abs(parseInt(String(property.current_floor)))}층`);
+                        return parts.join(' / ') || '-';
+                      })()
+                    : [
+                        property.current_floor && formatFloor(property.current_floor),
+                        property.total_floor && `전체 ${formatFloor(property.total_floor)}`,
+                      ].filter(Boolean).join(' / ') || '-'
+                  }
                 </td>
               </tr>
               {!(property.property_type === '건물' && property.transaction_type === '매매') && (
@@ -1324,9 +1332,9 @@ export default function PropertyDetailPage() {
                     const areaCell = (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {isBuilding ? (<>
-                          {property.land_area && <span>대지 {property.land_area}㎡ ({toPyeong(parseFloat(property.land_area))}평)</span>}
-                          {property.total_floor_area && <span>연면 {property.total_floor_area}㎡ ({toPyeong(parseFloat(property.total_floor_area))}평)</span>}
-                          {property.building_area && <span>건축 {property.building_area}㎡ ({toPyeong(parseFloat(property.building_area))}평)</span>}
+                          {property.land_area && <span>대지면적 {property.land_area}㎡ ({toPyeong(parseFloat(property.land_area))}평)</span>}
+                          {property.total_floor_area && <span>연면적 {property.total_floor_area}㎡ ({toPyeong(parseFloat(property.total_floor_area))}평)</span>}
+                          {property.building_area && <span>건축면적 {property.building_area}㎡ ({toPyeong(parseFloat(property.building_area))}평)</span>}
                           {property.floor_area_ratio != null && property.floor_area_ratio !== '' && <span>용적률 {property.floor_area_ratio}%</span>}
                           {property.building_coverage_ratio != null && property.building_coverage_ratio !== '' && <span>건폐율 {property.building_coverage_ratio}%</span>}
                           {!property.land_area && !property.total_floor_area && !property.building_area && property.floor_area_ratio == null && property.building_coverage_ratio == null && '-'}
@@ -1337,7 +1345,14 @@ export default function PropertyDetailPage() {
                         </>)}
                       </div>
                     );
-                    const floorCell = [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
+                    const floorCell = isBuilding
+                      ? (() => {
+                          const parts: string[] = [];
+                          if (property.total_floor) parts.push(`지상${formatFloor(property.total_floor)}`);
+                          if (property.current_floor != null && property.current_floor !== '') parts.push(`지하${Math.abs(parseInt(String(property.current_floor)))}층`);
+                          return parts.join(' / ') || '-';
+                        })()
+                      : [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
                     const roomBathroomCell = `${property.room_count != null ? property.room_count : '-'}개 / ${property.bathroom_count != null ? property.bathroom_count : '-'}개`;
                     const parkingCountCell = `${property.total_parking != null ? property.total_parking : '-'}대`;
                     const availableDateCell = (() => {
@@ -1365,7 +1380,7 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>권리금</td><td style={{ ...valTd, fontSize: '16px', color: property.premium ? '#333' : '#E53935' }}>{premiumCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>관리비</td><td style={valTd}>{maintCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>면적</td><td style={valTd}>{areaCell}</td></tr>
-                          <tr style={rowSt}><td style={labelTd}>{isBuilding ? '지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
+                          <tr style={rowSt}><td style={labelTd}>{isBuilding ? '지상층수 / 지하층수' : '층수'}</td><td style={valTd}>{floorCell}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
                           {!isBuilding && <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>}
                           {isBuilding && (property.current_deposit != null || property.current_rent != null) && (
@@ -1408,7 +1423,7 @@ export default function PropertyDetailPage() {
                         <tr style={rowSt}>
                           <td style={labelTd}>면적</td>
                           <td style={valTd}>{areaCell}</td>
-                          <td style={labelTd}>{isBuilding ? '지하층수' : '층수'}</td>
+                          <td style={labelTd}>{isBuilding ? '지상층수 / 지하층수' : '층수'}</td>
                           <td style={valTd}>{floorCell}</td>
                         </tr>
                         <tr style={rowSt}>
@@ -1744,7 +1759,23 @@ export default function PropertyDetailPage() {
                   ) : '-'}
                 </p>
                 <p style={{ fontSize: '16px', color: '#666' }}>
-                  {[property.property_type, property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`, property.current_floor && formatFloor(property.current_floor)].filter(Boolean).join(' · ')}
+                  {(property.property_type === '건물' && property.transaction_type === '매매')
+                    ? [
+                        property.property_type,
+                        property.land_area ? `대지 ${property.land_area}㎡ (${toPyeong(parseFloat(property.land_area))}평)` : null,
+                        (() => {
+                          const parts: string[] = [];
+                          if (property.total_floor) parts.push(`지상${formatFloor(property.total_floor)}`);
+                          if (property.current_floor != null && property.current_floor !== '') parts.push(`지하${Math.abs(parseInt(String(property.current_floor)))}층`);
+                          return parts.join(' / ') || null;
+                        })(),
+                      ].filter(Boolean).join(' · ')
+                    : [
+                        property.property_type,
+                        property.exclusive_area && `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)`,
+                        property.current_floor && formatFloor(property.current_floor),
+                      ].filter(Boolean).join(' · ')
+                  }
                 </p>
               </div>
             </div>
