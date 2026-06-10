@@ -371,6 +371,7 @@ export default function NewPropertyPage() {
       floor_area_ratio: title?.vlRat ? String(title.vlRat) : prev.floor_area_ratio,
       building_coverage_ratio: title?.bcRat ? String(title.bcRat) : prev.building_coverage_ratio,
       building_area: title?.archArea ? String(title.archArea) : prev.building_area,
+      current_floor: title?.ugrndFlrCnt !== undefined ? (Number(title.ugrndFlrCnt) === 0 ? '0' : `-${Number(title.ugrndFlrCnt)}`) : prev.current_floor,
     }));
   };
 
