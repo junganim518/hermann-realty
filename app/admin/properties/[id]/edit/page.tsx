@@ -422,6 +422,12 @@ export default function EditPropertyPage() {
       approval_date: formatYmd(title?.useAprDay) || prev.approval_date,
       elevator: Number(title?.rideUseElvtCnt) > 0 ? true : prev.elevator,
       total_parking: totalParking > 0 ? String(totalParking) : prev.total_parking,
+      land_area: title?.platArea ? String(title.platArea) : prev.land_area,
+      total_floor_area: title?.totArea ? String(title.totArea) : prev.total_floor_area,
+      building_area: title?.archArea ? String(title.archArea) : prev.building_area,
+      floor_area_ratio: title?.vlRat ? String(title.vlRat) : prev.floor_area_ratio,
+      building_coverage_ratio: title?.bcRat ? String(title.bcRat) : prev.building_coverage_ratio,
+      current_floor: title?.ugrndFlrCnt !== undefined ? (Number(title.ugrndFlrCnt) === 0 ? '0' : `-${Number(title.ugrndFlrCnt)}`) : prev.current_floor,
     }));
   };
 
