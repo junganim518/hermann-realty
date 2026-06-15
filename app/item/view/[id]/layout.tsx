@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 const PROPERTY_SELECT =
   'id, property_number, title, address, building_name, unit_number, transaction_type, ' +
-  'deposit, monthly_rent, maintenance_fee, premium, supply_area, exclusive_area, ' +
+  'deposit, monthly_rent, sale_price, maintenance_fee, premium, supply_area, exclusive_area, ' +
   'current_floor, total_floor, description, property_type, latitude, longitude, created_at, ' +
   'status, is_sold';
 
@@ -66,7 +66,8 @@ export async function generateMetadata(
   } else if (transactionType === '전세') {
     if (property.deposit) descPriceParts.push(`보증금 ${Number(property.deposit).toLocaleString()}만원`);
   } else if (transactionType === '매매') {
-    if (property.deposit) descPriceParts.push(`매매가 ${Number(property.deposit).toLocaleString()}만원`);
+    const saleVal = property.sale_price || property.deposit;
+    if (saleVal) descPriceParts.push(`매매가 ${Number(saleVal).toLocaleString()}만원`);
   }
   const descAreaM2 = parseFloat(String(exclusiveArea || property.supply_area || ''));
   const descAreaStr = !isNaN(descAreaM2) && descAreaM2 > 0
@@ -156,8 +157,9 @@ export default async function ItemViewLayout({
       ld.offers = { '@type': 'Offer', price: property.monthly_rent, priceCurrency: 'KRW', description: priceDesc };
     } else if (tx === '전세' && property.deposit) {
       ld.offers = { '@type': 'Offer', price: property.deposit, priceCurrency: 'KRW', description: `보증금 ${property.deposit}만원` };
-    } else if (tx === '매매' && property.deposit) {
-      ld.offers = { '@type': 'Offer', price: property.deposit, priceCurrency: 'KRW' };
+    } else if (tx === '매매') {
+      const saleVal = property.sale_price || property.deposit;
+      if (saleVal) ld.offers = { '@type': 'Offer', price: saleVal, priceCurrency: 'KRW' };
     }
 
     jsonLdStr = safeJsonLd(ld);
