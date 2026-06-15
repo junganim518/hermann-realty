@@ -59,8 +59,26 @@ export async function generateMetadata(
   const firstImage = (imgs[0]?.image_url || '').trim() || 'https://hermann-realty.com/og-image.png';
   const headline = customTitle || [propertyType, transactionType].filter(Boolean).join(' ');
   const title = `${[propertyNumber, headline].filter(Boolean).join(' ')} - 헤르만부동산`;
-  const description = ['부천시', propertyType, transactionType, exclusiveArea ? `${exclusiveArea}㎡` : '']
-    .filter(Boolean).join(' ');
+  const descPriceParts: string[] = [];
+  if (transactionType === '월세') {
+    if (property.deposit) descPriceParts.push(`보증금 ${Number(property.deposit).toLocaleString()}만원`);
+    if (property.monthly_rent) descPriceParts.push(`월세 ${Number(property.monthly_rent).toLocaleString()}만원`);
+  } else if (transactionType === '전세') {
+    if (property.deposit) descPriceParts.push(`보증금 ${Number(property.deposit).toLocaleString()}만원`);
+  } else if (transactionType === '매매') {
+    if (property.deposit) descPriceParts.push(`매매가 ${Number(property.deposit).toLocaleString()}만원`);
+  }
+  const descAreaM2 = parseFloat(String(exclusiveArea || property.supply_area || ''));
+  const descAreaStr = !isNaN(descAreaM2) && descAreaM2 > 0
+    ? `전용 ${descAreaM2}㎡(${(descAreaM2 / 3.3058).toFixed(1)}평)`
+    : '';
+  const description = [
+    property.address || '부천시',
+    propertyType,
+    transactionType,
+    ...descPriceParts,
+    descAreaStr,
+  ].filter(Boolean).join(' ') + ' - 헤르만공인중개사사무소';
 
   return {
     title: { absolute: title },
