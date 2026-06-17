@@ -74,7 +74,7 @@ export async function generateMetadata(
     ? `전용 ${descAreaM2}㎡(${(descAreaM2 / 3.3058).toFixed(1)}평)`
     : '';
   const description = [
-    property.address || '부천시',
+    (property.address ? (property.address.match(/(.+동)/)?.[1] ?? property.address) : '부천시'),
     propertyType,
     transactionType,
     ...descPriceParts,
