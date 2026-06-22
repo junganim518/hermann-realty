@@ -350,9 +350,14 @@ function AdminDashboardInner() {
     });
 
     // 유입 경로 원본 데이터 보관 (useMemo에서 날짜별 필터링)
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     const { data: views } = await supabase
       .from('page_views')
-      .select('referrer, page, created_at');
+      .select('referrer, page, created_at')
+      .gte('created_at', ninetyDaysAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5000);
     if (views) {
       setRawViews(views as RawView[]);
     }
