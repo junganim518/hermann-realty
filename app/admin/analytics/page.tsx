@@ -71,7 +71,8 @@ export default function AnalyticsPage() {
         .from('page_views')
         .select('created_at, page, device, referrer')
         .gte('created_at', periodStart.toISOString())
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(5000);
       setAllViews((views as PageView[]) ?? []);
 
       // /item/view/{pnum} 페이지를 매물 정보로 매핑하기 위한 fetch
