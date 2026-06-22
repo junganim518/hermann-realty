@@ -761,6 +761,12 @@ function AdminDashboardInner() {
               </label>
             </div>
 
+            {/* 총 방문자수 */}
+            <div style={{ padding: '6px 16px 6px', background: '#fafafa', borderBottom: '1px solid #e0e0e0', fontSize: '12px', color: '#888' }}>
+              {showAll ? '전체 기간' : selectedDate} 총 방문{' '}
+              <strong style={{ color: '#1a1a1a' }}>{referralRows.reduce((s, r) => s + r.count, 0).toLocaleString()}건</strong>
+            </div>
+
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
               {(() => {
                 const rows = referralRows;
