@@ -155,24 +155,7 @@ export function generateTitle(form: TitleForm): string {
   const rawTx = (form.transaction_type ?? '').trim();
   const txType = (rawTx === '월세' || rawTx === '전세') ? '임대' : rawTx;
 
-  const idx = pickTemplateIndex(form.property_number ?? '');
-  const template = TEMPLATES[idx];
-
-  const replaced = template
-    .replace(/\{지역\}/g, region)
-    .replace(/\{전용평수\}/g, pyeongWithLabel)
-    .replace(/\{층수특성\}/g, floorFeat)
-    .replace(/\{역세권\}/g, subway)
-    .replace(/\{건물특성\}/g, buildingFeat)
-    .replace(/\{거래장점\}/g, benefit)
-    .replace(/\{면적표현\}/g, sizeDesc)
-    .replace(/\{매물종류\}/g, propType)
-    .replace(/\{거래유형\}/g, txType);
-
-  return replaced
-    .replace(/\[\s+/g, '[')
-    .replace(/\s+\]/g, ']')
-    .replace(/\[\s*\]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const parts = [region, propType, txType].filter(Boolean).join(' ');
+  const prefix = parts ? `[부천 ${parts}]` : '[부천]';
+  return [prefix, pyeongWithLabel].filter(Boolean).join(' ');
 }
