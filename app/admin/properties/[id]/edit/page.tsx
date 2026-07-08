@@ -199,7 +199,14 @@ export default function EditPropertyPage() {
 
   useEffect(() => {
     supabase.from('agents').select('id, name, role').eq('is_active', true).then(({ data }) => {
-      if (data) setAgents(data);
+      if (data) {
+        setAgents(data);
+        setForm(prev => {
+          if (prev.agent_id) return prev;
+          const rep = data.find((a: { name: string }) => a.name === '황정아');
+          return rep ? { ...prev, agent_id: rep.id } : prev;
+        });
+      }
     });
   }, []);
 
@@ -1316,7 +1323,6 @@ export default function EditPropertyPage() {
           <div style={{ marginBottom: '16px' }}>
             <label style={labelSt}>담당자</label>
             <select value={form.agent_id} onChange={e => set('agent_id', e.target.value)} style={inputSt}>
-              <option value="">미지정 (대표 황정아)</option>
               {agents.map(a => (
                 <option key={a.id} value={a.id}>{a.name} · {a.role}</option>
               ))}
