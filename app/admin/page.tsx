@@ -1399,7 +1399,7 @@ function AdminDashboardInner() {
                       {/* 담당자 버튼 */}
                       {(() => {
                         const ag = agents.find(a => a.id === p.agent_id);
-                        const agentName = ag ? [ag.name, ag.title, ag.license].filter(Boolean).join(' ') : '황정아';
+                        const agentName = ag?.name ?? '황정아';
                         const isOpen = openAgentDropdown === p.id;
                         return (
                           <button
