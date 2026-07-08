@@ -5,7 +5,7 @@ const PROPERTY_SELECT =
   'id, property_number, title, address, building_name, unit_number, transaction_type, ' +
   'deposit, monthly_rent, sale_price, maintenance_fee, premium, supply_area, exclusive_area, ' +
   'current_floor, total_floor, description, property_type, latitude, longitude, created_at, ' +
-  'status, is_sold';
+  'status, is_sold, agent_id';
 
 const isIndexable = (p: Record<string, any>) =>
   p.status === '거래중' && !p.is_sold;

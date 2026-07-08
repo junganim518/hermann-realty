@@ -178,6 +178,7 @@ export default function EditPropertyPage() {
     status: '거래중' as '거래중' | '보류' | '거래완료',
     description: '',
     admin_memo: '',
+    agent_id: '',
     landlord_id: '',
     landlord_name: '',
     landlord_phone: '',
@@ -194,6 +195,13 @@ export default function EditPropertyPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [kakaoReady, setKakaoReady] = useState(false);
   const [fileDragOver, setFileDragOver] = useState(false);
+  const [agents, setAgents] = useState<{ id: string; name: string; role: string }[]>([]);
+
+  useEffect(() => {
+    supabase.from('agents').select('id, name, role').eq('is_active', true).then(({ data }) => {
+      if (data) setAgents(data);
+    });
+  }, []);
 
   // 건축물대장 관련 상태
   const [buildingLoading, setBuildingLoading] = useState(false);
@@ -283,6 +291,7 @@ export default function EditPropertyPage() {
           : (data.is_sold ? '거래완료' : '거래중'),
         description: data.description ?? '',
         admin_memo: data.admin_memo ?? '',
+        agent_id: data.agent_id ?? '',
         landlord_id: data.landlord_id ?? '',
         landlord_name: data.landlord_name ?? '',
         landlord_phone: data.landlord_phone ?? '',
@@ -808,6 +817,7 @@ export default function EditPropertyPage() {
         is_sold: form.status === '거래완료', // 하위호환: status === '거래완료'일 때 true
         description: form.description || null,
         admin_memo: form.admin_memo || null,
+        agent_id: form.agent_id || null,
         landlord_id: resolvedLandlordId,
         landlord_name: resolvedLandlordName || null,
         landlord_phone: resolvedLandlordPhone || null,
@@ -1301,6 +1311,17 @@ export default function EditPropertyPage() {
         {/* ════════════ 연락처 (관리자 전용) ════════════ */}
         <div className="admin-section" style={{ ...sectionSt, background: '#f0f6ff', border: '1px solid #c6dcf3' }}>
           <h2 style={{ ...sectionTitle, borderBottom: '2px solid #4a7cdc' }}>🔒 연락처 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 400 }}>(관리자 전용)</span></h2>
+
+          {/* 담당자 */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelSt}>담당자</label>
+            <select value={form.agent_id} onChange={e => set('agent_id', e.target.value)} style={inputSt}>
+              <option value="">미지정 (대표 황정아)</option>
+              {agents.map(a => (
+                <option key={a.id} value={a.id}>{a.name} · {a.role}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="admin-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
             <div>

@@ -182,6 +182,7 @@ interface Property {
   extra_contacts?: { name: string; phone: string; role: string }[];
   sale_price?: number;
   is_sold?: boolean;
+  agent_id?: string;
   land_area?: string;
   total_floor_area?: string;
   building_area?: string;
@@ -202,6 +203,7 @@ export default function PropertyDetailPage() {
 
   const [property, setProperty] = useState<Property | null>(null);
   const [linkedLandlord, setLinkedLandlord] = useState<{ id: string; name: string; phone: string | null } | null>(null);
+  const [agent, setAgent] = useState<{ name: string; role: string; phone: string; kakao_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [similarProperties, setSimilarProperties] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -371,6 +373,19 @@ export default function PropertyDetailPage() {
           .eq('id', (data as any).landlord_id)
           .single();
         if (landlordData) setLinkedLandlord(landlordData);
+      }
+
+      // 담당자 조회 (agent_id 있으면 agents 테이블, 없으면 대표 폴백)
+      const DEFAULT_AGENT = { name: '황정아', role: '대표공인중개사', phone: '010-8680-8151', kakao_url: 'https://open.kakao.com/o/s3lwiwsh' };
+      if ((data as any)?.agent_id) {
+        const { data: agentData } = await supabase
+          .from('agents')
+          .select('name, role, phone, kakao_url')
+          .eq('id', (data as any).agent_id)
+          .single();
+        setAgent(agentData ?? DEFAULT_AGENT);
+      } else {
+        setAgent(DEFAULT_AGENT);
       }
 
       if (data?.property_type) {
@@ -1844,18 +1859,22 @@ export default function PropertyDetailPage() {
 
           {/* 공인중개사 카드 */}
           <div className="detail-aside-agent" style={{ background: '#fff', border: '1px solid #ddd', padding: '16px' }}>
+            {/* 담당자 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👤</div>
               <div>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '1px' }}>황정아</p>
-                <p style={{ fontSize: '13px', color: '#888' }}>대표공인중개사</p>
+                <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '1px' }}>{agent?.name ?? '황정아'}</p>
+                <p style={{ fontSize: '13px', color: '#888' }}>{agent?.role ?? '대표공인중개사'}</p>
               </div>
             </div>
-            <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '10px' }}>📞 010-8680-8151</p>
+            <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '10px' }}>📞 {agent?.phone ?? '010-8680-8151'}</p>
+            {/* 사무소 고정 정보 */}
             <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {[
-                '사무소: 헤르만공인중개사사무소',
-                '주소: 부천시 신흥로 223 101동 712호',
+                '헤르만공인중개사사무소',
+                '대표 황정아',
+                '010-8680-8151',
+                '부천시 신흥로 223 101동 712호',
                 '등록번호: 제41192-2024-00113호',
               ].map((info, i) => (
                 <p key={i} style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>{info}</p>
@@ -2048,31 +2067,33 @@ export default function PropertyDetailPage() {
             <p style={{ fontSize: '13px', color: '#999', marginBottom: '20px' }}>원하시는 방법으로 문의해 주세요</p>
 
             <div style={{ background: '#f8f8f8', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'center' }}>
-              <p style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>대표 공인중개사 황정아</p>
-              <p style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e' }}>010-8680-8151</p>
+              <p style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>{agent?.role ?? '대표공인중개사'} {agent?.name ?? '황정아'}</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e' }}>{agent?.phone ?? '010-8680-8151'}</p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <a
-                href="tel:010-8680-8151"
+                href={`tel:${agent?.phone ?? '010-8680-8151'}`}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#e2a06e', color: '#fff', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none' }}
               >
                 📞 전화 문의하기
               </a>
               <a
-                href="sms:010-8680-8151"
+                href={`sms:${agent?.phone ?? '010-8680-8151'}`}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#fff', color: '#e2a06e', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none', border: '1.5px solid #e2a06e' }}
               >
                 💬 문자 문의하기
               </a>
-              <a
-                href="https://open.kakao.com/o/s3lwiwsh"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#FEE500', color: '#3C1E1E', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none' }}
-              >
-                💛 카카오톡 문의
-              </a>
+              {(agent?.kakao_url) && (
+                <a
+                  href={agent.kakao_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#FEE500', color: '#3C1E1E', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none' }}
+                >
+                  💛 카카오톡 문의
+                </a>
+              )}
             </div>
           </div>
         </div>
