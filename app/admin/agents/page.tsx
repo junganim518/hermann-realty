@@ -7,19 +7,23 @@ import { supabase } from '@/lib/supabase';
 type Agent = {
   id: string;
   name: string;
-  role: string;
+  title: string;
+  license: string;
   phone: string;
   kakao_url: string | null;
   is_active: boolean;
   created_at: string;
 };
 
-const EMPTY_FORM = { name: '', role: '', phone: '', kakao_url: '' };
+const EMPTY_FORM = { name: '', title: '', license: '', phone: '', kakao_url: '' };
 
 const inputSt: React.CSSProperties = {
   width: '100%', height: '36px', border: '1px solid #ddd', borderRadius: '4px',
   padding: '0 10px', fontSize: '13px', outline: 'none', boxSizing: 'border-box',
 };
+
+const agentLabel = (a: Pick<Agent, 'name' | 'title' | 'license'>) =>
+  [a.name, a.title, a.license].filter(Boolean).join(' ');
 
 export default function AgentsPage() {
   const router = useRouter();
@@ -59,7 +63,8 @@ export default function AgentsPage() {
     setAdding(true);
     const { error } = await supabase.from('agents').insert({
       name: addForm.name.trim(),
-      role: addForm.role.trim() || '공인중개사',
+      title: addForm.title.trim() || null,
+      license: addForm.license.trim() || null,
       phone: addForm.phone.trim(),
       kakao_url: addForm.kakao_url.trim() || null,
       is_active: true,
@@ -72,7 +77,7 @@ export default function AgentsPage() {
 
   const startEdit = (a: Agent) => {
     setEditId(a.id);
-    setEditForm({ name: a.name, role: a.role, phone: a.phone, kakao_url: a.kakao_url ?? '' });
+    setEditForm({ name: a.name, title: a.title ?? '', license: a.license ?? '', phone: a.phone, kakao_url: a.kakao_url ?? '' });
   };
 
   const cancelEdit = () => { setEditId(null); setEditForm(EMPTY_FORM); };
@@ -82,7 +87,8 @@ export default function AgentsPage() {
     if (!editForm.phone.trim()) { alert('전화번호를 입력하세요.'); return; }
     const { error } = await supabase.from('agents').update({
       name: editForm.name.trim(),
-      role: editForm.role.trim() || '공인중개사',
+      title: editForm.title.trim() || null,
+      license: editForm.license.trim() || null,
       phone: editForm.phone.trim(),
       kakao_url: editForm.kakao_url.trim() || null,
     }).eq('id', id);
@@ -116,39 +122,28 @@ export default function AgentsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
           <div>
             <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>이름 *</label>
-            <input
-              style={inputSt}
-              placeholder="홍길동"
-              value={addForm.name}
-              onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
-            />
+            <input style={inputSt} placeholder="홍길동" value={addForm.name}
+              onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div>
             <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>직함</label>
-            <input
-              style={inputSt}
-              placeholder="공인중개사"
-              value={addForm.role}
-              onChange={e => setAddForm(f => ({ ...f, role: e.target.value }))}
-            />
+            <input style={inputSt} placeholder="대표 / 팀장 / 부장 등" value={addForm.title}
+              onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))} />
+          </div>
+          <div>
+            <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>자격</label>
+            <input style={inputSt} placeholder="공인중개사 / 중개보조원 등" value={addForm.license}
+              onChange={e => setAddForm(f => ({ ...f, license: e.target.value }))} />
           </div>
           <div>
             <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>전화번호 *</label>
-            <input
-              style={inputSt}
-              placeholder="010-0000-0000"
-              value={addForm.phone}
-              onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))}
-            />
+            <input style={inputSt} placeholder="010-0000-0000" value={addForm.phone}
+              onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))} />
           </div>
-          <div>
+          <div style={{ gridColumn: '1 / -1' }}>
             <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>카카오톡 오픈채팅 URL</label>
-            <input
-              style={inputSt}
-              placeholder="https://open.kakao.com/..."
-              value={addForm.kakao_url}
-              onChange={e => setAddForm(f => ({ ...f, kakao_url: e.target.value }))}
-            />
+            <input style={inputSt} placeholder="https://open.kakao.com/..." value={addForm.kakao_url}
+              onChange={e => setAddForm(f => ({ ...f, kakao_url: e.target.value }))} />
           </div>
         </div>
         <button
@@ -177,7 +172,6 @@ export default function AgentsPage() {
               }}
             >
               {editId === a.id ? (
-                /* 수정 모드 */
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                     <div>
@@ -186,13 +180,17 @@ export default function AgentsPage() {
                     </div>
                     <div>
                       <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '3px' }}>직함</label>
-                      <input style={inputSt} value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} />
+                      <input style={inputSt} placeholder="대표 / 팀장 / 부장 등" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '3px' }}>자격</label>
+                      <input style={inputSt} placeholder="공인중개사 / 중개보조원 등" value={editForm.license} onChange={e => setEditForm(f => ({ ...f, license: e.target.value }))} />
                     </div>
                     <div>
                       <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '3px' }}>전화번호</label>
                       <input style={inputSt} value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
                     </div>
-                    <div>
+                    <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '3px' }}>카카오 URL</label>
                       <input style={inputSt} value={editForm.kakao_url} onChange={e => setEditForm(f => ({ ...f, kakao_url: e.target.value }))} placeholder="https://open.kakao.com/..." />
                     </div>
@@ -203,12 +201,10 @@ export default function AgentsPage() {
                   </div>
                 </>
               ) : (
-                /* 표시 모드 */
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{a.name}</span>
-                      <span style={{ fontSize: '12px', color: '#888' }}>{a.role}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{agentLabel(a)}</span>
                       {!a.is_active && (
                         <span style={{ fontSize: '11px', background: '#f3f4f6', color: '#999', borderRadius: '10px', padding: '1px 8px' }}>비활성</span>
                       )}
@@ -221,18 +217,10 @@ export default function AgentsPage() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                    <button
-                      onClick={() => startEdit(a)}
-                      style={{ padding: '5px 12px', background: '#fff', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', color: '#444', cursor: 'pointer' }}
-                    >수정</button>
+                    <button onClick={() => startEdit(a)} style={{ padding: '5px 12px', background: '#fff', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', color: '#444', cursor: 'pointer' }}>수정</button>
                     <button
                       onClick={() => toggleActive(a.id, a.is_active)}
-                      style={{
-                        padding: '5px 12px', border: 'none', borderRadius: '4px', fontSize: '12px',
-                        fontWeight: 600, cursor: 'pointer',
-                        background: a.is_active ? '#fee2e2' : '#dcfce7',
-                        color: a.is_active ? '#991b1b' : '#166534',
-                      }}
+                      style={{ padding: '5px 12px', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: a.is_active ? '#fee2e2' : '#dcfce7', color: a.is_active ? '#991b1b' : '#166534' }}
                     >
                       {a.is_active ? '비활성화' : '활성화'}
                     </button>

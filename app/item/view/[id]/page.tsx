@@ -203,7 +203,7 @@ export default function PropertyDetailPage() {
 
   const [property, setProperty] = useState<Property | null>(null);
   const [linkedLandlord, setLinkedLandlord] = useState<{ id: string; name: string; phone: string | null } | null>(null);
-  const [agent, setAgent] = useState<{ name: string; role: string; phone: string; kakao_url?: string } | null>(null);
+  const [agent, setAgent] = useState<{ name: string; title?: string; license?: string; phone: string; kakao_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [similarProperties, setSimilarProperties] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -376,11 +376,11 @@ export default function PropertyDetailPage() {
       }
 
       // 담당자 조회 (agent_id 있으면 agents 테이블, 없으면 대표 폴백)
-      const DEFAULT_AGENT = { name: '황정아', role: '대표공인중개사', phone: '010-8680-8151', kakao_url: 'https://open.kakao.com/o/s3lwiwsh' };
+      const DEFAULT_AGENT = { name: '황정아', title: '대표', license: '공인중개사', phone: '010-8680-8151', kakao_url: 'https://open.kakao.com/o/s3lwiwsh' };
       if ((data as any)?.agent_id) {
         const { data: agentData } = await supabase
           .from('agents')
-          .select('name, role, phone, kakao_url')
+          .select('name, title, license, phone, kakao_url')
           .eq('id', (data as any).agent_id)
           .single();
         setAgent(agentData ?? DEFAULT_AGENT);
@@ -1864,21 +1864,28 @@ export default function PropertyDetailPage() {
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👤</div>
               <div>
                 <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '1px' }}>{agent?.name ?? '황정아'}</p>
-                <p style={{ fontSize: '13px', color: '#888' }}>{agent?.role ?? '대표공인중개사'}</p>
+                <p style={{ fontSize: '13px', color: '#888' }}>{[agent?.title, agent?.license].filter(Boolean).join(' ') || '대표 공인중개사'}</p>
               </div>
             </div>
             <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', marginBottom: '10px' }}>📞 {agent?.phone ?? '010-8680-8151'}</p>
             {/* 사무소 고정 정보 */}
-            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              {[
-                '헤르만공인중개사사무소',
-                '대표 황정아',
-                '010-8680-8151',
-                '부천시 신흥로 223 101동 712호',
-                '등록번호: 제41192-2024-00113호',
-              ].map((info, i) => (
-                <p key={i} style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>{info}</p>
-              ))}
+            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '10px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#666', lineHeight: 1.6 }}>
+                <tbody>
+                  {([
+                    ['상호명', '헤르만공인중개사사무소'],
+                    ['대표자', '황정아'],
+                    ['소재지', '부천시 신흥로 223 신중동역 랜드마크 푸르지오시티 101동 712호'],
+                    ['등록번호', '제41192-2024-00113호'],
+                    ['대표번호', '010-8680-8151'],
+                  ] as [string, string][]).map(([label, value]) => (
+                    <tr key={label}>
+                      <td style={{ whiteSpace: 'nowrap', paddingRight: '10px', color: '#aaa', verticalAlign: 'top' }}>{label}</td>
+                      <td>{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 

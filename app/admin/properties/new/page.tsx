@@ -171,10 +171,10 @@ export default function NewPropertyPage() {
 
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const [saving, setSaving] = useState(false);
-  const [agents, setAgents] = useState<{ id: string; name: string; role: string }[]>([]);
+  const [agents, setAgents] = useState<{ id: string; name: string; title: string; license: string }[]>([]);
 
   useEffect(() => {
-    supabase.from('agents').select('id, name, role').eq('is_active', true).then(({ data }) => {
+    supabase.from('agents').select('id, name, title, license').eq('is_active', true).then(({ data }) => {
       if (data) {
         setAgents(data);
         const rep = data.find((a: { name: string }) => a.name === '황정아');
@@ -1278,7 +1278,7 @@ export default function NewPropertyPage() {
             <label style={labelSt}>담당자</label>
             <select value={form.agent_id} onChange={e => set('agent_id', e.target.value)} style={inputSt}>
               {agents.map(a => (
-                <option key={a.id} value={a.id}>{a.name} · {a.role}</option>
+                <option key={a.id} value={a.id}>{[a.name, a.title, a.license].filter(Boolean).join(' ')}</option>
               ))}
             </select>
           </div>

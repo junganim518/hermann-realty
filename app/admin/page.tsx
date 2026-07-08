@@ -146,7 +146,7 @@ function AdminDashboardInner() {
   const [openAgentDropdown, setOpenAgentDropdown] = useState<string | null>(null);
   const [agentDropdownPos, setAgentDropdownPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
   const agentDropdownRef = useRef<HTMLDivElement | null>(null);
-  const [agents, setAgents] = useState<{ id: string; name: string; role: string }[]>([]);
+  const [agents, setAgents] = useState<{ id: string; name: string; title: string; license: string }[]>([]);
   const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null);
   const [moreMenuPos, setMoreMenuPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
@@ -288,7 +288,7 @@ function AdminDashboardInner() {
       if (!data.user) { router.replace('/login?redirect=/admin'); return; }
       setAuthChecked(true);
       fetchData();
-      supabase.from('agents').select('id, name, role').eq('is_active', true).then(({ data: ag }) => {
+      supabase.from('agents').select('id, name, title, license').eq('is_active', true).then(({ data: ag }) => {
         if (ag) setAgents(ag);
       });
     });
@@ -1381,7 +1381,8 @@ function AdminDashboardInner() {
 
                       {/* 담당자 버튼 */}
                       {(() => {
-                        const agentName = agents.find(a => a.id === p.agent_id)?.name ?? '황정아';
+                        const ag = agents.find(a => a.id === p.agent_id);
+                        const agentName = ag ? [ag.name, ag.title, ag.license].filter(Boolean).join(' ') : '황정아';
                         const isOpen = openAgentDropdown === p.id;
                         return (
                           <button
@@ -1706,8 +1707,7 @@ function AdminDashboardInner() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  <span style={{ fontSize: '11px', color: '#888' }}>{a.role}</span>
-                  {a.name}
+                  {[a.name, a.title, a.license].filter(Boolean).join(' ')}
                   {isCurrent && <span style={{ marginLeft: 'auto', paddingLeft: '8px', fontSize: '11px' }}>✓</span>}
                 </button>
               );
