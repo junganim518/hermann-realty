@@ -136,6 +136,7 @@ function AdminDashboardInner() {
   const [page, setPage] = useState(parseInt(readParam('page', '1'), 10) || 1);
   const [sortBy, setSortBy] = useState<'property_number' | 'views' | 'oldest'>(readParam('sort', 'property_number') as any);
   const [filterCallOld, setFilterCallOld] = useState(readParam('callOld', '') === '1');
+  const [filterAgent, setFilterAgent] = useState(readParam('agent', ''));
   const [toastMsg, setToastMsg] = useState('');
   const [copying, setCopying] = useState<string | null>(null);
   const [callModalProp, setCallModalProp] = useState<any>(null);
@@ -595,6 +596,7 @@ function AdminDashboardInner() {
     if (!matchRange(p.monthly_rent, rentMin, rentMax)) return false;
     if (!matchFloor(p.current_floor, filterFloor)) return false;
     if (!matchRange(p.premium, premiumMin, premiumMax)) return false;
+    if (filterAgent && p.agent_id !== filterAgent) return false;
     if (search) {
       const q = search.toLowerCase();
       const target = [p.property_number, p.address, p.building_name, p.business_name, p.unit_number, p.admin_memo, p.land_number, p.title, p.description].filter(Boolean).join(' ').toLowerCase();
@@ -607,14 +609,14 @@ function AdminDashboardInner() {
     return true;
   });
 
-  const hasActiveFilter = filterTypes.length > 0 || filterThemes.length > 0 || filterTx !== '전체' || filterSold !== '전체' || filterFloor !== '전체' || depositMin || depositMax || rentMin || rentMax || areaMin || areaMax || premiumMin || premiumMax || filterCallOld || !!search;
+  const hasActiveFilter = filterTypes.length > 0 || filterThemes.length > 0 || filterTx !== '전체' || filterSold !== '전체' || filterFloor !== '전체' || depositMin || depositMax || rentMin || rentMax || areaMin || areaMax || premiumMin || premiumMax || filterCallOld || !!filterAgent || !!search;
 
   // URL 쿼리 ↔ state 양방향 동기화 (매물 수정 후 router.back() 으로 돌아오면 같은 페이지/필터 유지)
   const syncURL = useCallback((overrides: Record<string, string> = {}) => {
     const vals: Record<string, string> = {
       page: String(page), sort: sortBy, sold: filterSold, q: search,
       types: filterTypes.join(','), theme: filterThemes.join(','),
-      tx: filterTx, floor: filterFloor,
+      tx: filterTx, floor: filterFloor, agent: filterAgent,
       deposit_min: depositMin, deposit_max: depositMax,
       rent_min: rentMin, rent_max: rentMax,
       area_min: areaMin, area_max: areaMax,
@@ -636,7 +638,7 @@ function AdminDashboardInner() {
     });
     const qs = params.toString();
     router.replace(`/admin${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [page, sortBy, filterSold, search, filterTypes, filterThemes, filterTx, filterFloor, depositMin, depositMax, rentMin, rentMax, areaMin, areaMax, premiumMin, premiumMax, filterCallOld, router]);
+  }, [page, sortBy, filterSold, search, filterTypes, filterThemes, filterTx, filterFloor, filterAgent, depositMin, depositMax, rentMin, rentMax, areaMin, areaMax, premiumMin, premiumMax, filterCallOld, router]);
 
   // 뒤로가기/외부 URL 변경 시 state 재동기화
   useEffect(() => {
@@ -655,6 +657,7 @@ function AdminDashboardInner() {
     setPremiumMin(readParam('premium_min', ''));
     setPremiumMax(readParam('premium_max', ''));
     setFilterCallOld(readParam('callOld', '') === '1');
+    setFilterAgent(readParam('agent', ''));
     setPage(parseInt(readParam('page', '1'), 10) || 1);
     setSortBy((readParam('sort', 'property_number') as any));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -664,10 +667,10 @@ function AdminDashboardInner() {
     setSearch(''); setFilterTypes([]); setFilterThemes([]); setFilterTx('전체'); setFilterSold('전체');
     setFilterFloor('전체'); setDepositMin(''); setDepositMax(''); setRentMin(''); setRentMax('');
     setAreaMin(''); setAreaMax(''); setPremiumMin(''); setPremiumMax('');
-    setFilterCallOld(false); setPage(1);
+    setFilterCallOld(false); setFilterAgent(''); setPage(1);
     syncURL({ q: '', types: '', theme: '', tx: '전체', sold: '전체', floor: '전체',
       deposit_min: '', deposit_max: '', rent_min: '', rent_max: '',
-      area_min: '', area_max: '', premium_min: '', premium_max: '', callOld: '', page: '1' });
+      area_min: '', area_max: '', premium_min: '', premium_max: '', callOld: '', agent: '', page: '1' });
   };
 
   const handleCallSave = async () => {
@@ -1168,6 +1171,20 @@ function AdminDashboardInner() {
               <select value={filterFloor} onChange={e => { setFilterFloor(e.target.value); setPage(1); syncURL({ floor: e.target.value, page: '1' }); }} style={selectFilterSt}>
                 {FLOOR_RANGES.map(t => <option key={t} value={t}>{t === '전체' ? '층수 전체' : t}</option>)}
               </select>
+
+              {/* 담당자 */}
+              {agents.length > 0 && (
+                <select
+                  value={filterAgent}
+                  onChange={e => { setFilterAgent(e.target.value); setPage(1); syncURL({ agent: e.target.value, page: '1' }); }}
+                  style={{ ...selectFilterSt, ...(filterAgent ? { border: '1px solid #1a1a1a', color: '#e2a06e', background: '#1a1a1a' } : {}) }}
+                >
+                  <option value="">담당자 전체</option>
+                  {agents.map(a => (
+                    <option key={a.id} value={a.id}>{[a.name, a.title, a.license].filter(Boolean).join(' ')}</option>
+                  ))}
+                </select>
+              )}
 
               {/* 테마 드롭다운 */}
               <div ref={themesDDRef} style={{ position: 'relative' }}>
