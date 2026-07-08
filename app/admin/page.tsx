@@ -143,6 +143,10 @@ function AdminDashboardInner() {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [openAgentDropdown, setOpenAgentDropdown] = useState<string | null>(null);
+  const [agentDropdownPos, setAgentDropdownPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
+  const agentDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [agents, setAgents] = useState<{ id: string; name: string; role: string }[]>([]);
   const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null);
   const [moreMenuPos, setMoreMenuPos] = useState<{ top: number; left: number; buttonBottom: number } | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
@@ -284,6 +288,9 @@ function AdminDashboardInner() {
       if (!data.user) { router.replace('/login?redirect=/admin'); return; }
       setAuthChecked(true);
       fetchData();
+      supabase.from('agents').select('id, name, role').eq('is_active', true).then(({ data: ag }) => {
+        if (ag) setAgents(ag);
+      });
     });
   }, []);
 
@@ -386,6 +393,11 @@ function AdminDashboardInner() {
     return () => clearTimeout(t);
   }, [properties, propImages]);
 
+  const changeAgent = async (propertyId: string, agentId: string) => {
+    await supabase.from('properties').update({ agent_id: agentId }).eq('id', propertyId);
+    setProperties(prev => prev.map(p => p.id === propertyId ? { ...p, agent_id: agentId } : p));
+  };
+
   const changeStatus = async (id: string, next: '거래중' | '보류' | '거래완료', cur: '거래중' | '보류' | '거래완료') => {
     if (next === cur) return;
     const nextIsSold = next === '거래완료';
@@ -405,6 +417,18 @@ function AdminDashboardInner() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [openStatusDropdown]);
+
+  useEffect(() => {
+    if (!openAgentDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
+        setOpenAgentDropdown(null);
+        setAgentDropdownPos(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openAgentDropdown]);
 
   useEffect(() => {
     if (!openMoreMenu) return;
@@ -1355,6 +1379,36 @@ function AdminDashboardInner() {
                         );
                       })()}
 
+                      {/* 담당자 버튼 */}
+                      {(() => {
+                        const agentName = agents.find(a => a.id === p.agent_id)?.name ?? '황정아';
+                        const isOpen = openAgentDropdown === p.id;
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isOpen) {
+                                setOpenAgentDropdown(null);
+                                setAgentDropdownPos(null);
+                              } else {
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                setOpenAgentDropdown(p.id);
+                                setAgentDropdownPos({ top: rect.top, left: rect.left, buttonBottom: rect.bottom });
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px 4px 10px', borderRadius: '4px', cursor: 'pointer',
+                              fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px',
+                              background: '#f8f5f0', color: '#92400e', border: '1px solid #e2c9a0',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {agentName}
+                            <span style={{ fontSize: '9px', opacity: 0.7 }}>▼</span>
+                          </button>
+                        );
+                      })()}
+
                       {/* 데스크톱 전용 버튼 (모바일에서 숨김) */}
                       <div className="admin-prop-desktop-btns">
                         <button onClick={() => copyProperty(p)} disabled={copying === p.id} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '4px', border: '1px solid #4a80e8', color: '#4a80e8', background: '#fff', cursor: copying === p.id ? 'wait' : 'pointer', opacity: copying === p.id ? 0.6 : 1 }}>
@@ -1600,6 +1654,60 @@ function AdminDashboardInner() {
                 >
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: oc.dot, flexShrink: 0, display: 'inline-block' }} />
                   {opt}
+                  {isCurrent && <span style={{ marginLeft: 'auto', paddingLeft: '8px', fontSize: '11px' }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        );
+      })()}
+
+      {/* 담당자 드롭다운 Portal */}
+      {openAgentDropdown && agentDropdownPos && agents.length > 0 && (() => {
+        const curProp = properties.find(pr => pr.id === openAgentDropdown);
+        if (!curProp) return null;
+        const above = agentDropdownPos.top > window.innerHeight * 0.6;
+        const left = Math.min(agentDropdownPos.left, window.innerWidth - 140);
+        return createPortal(
+          <div
+            ref={agentDropdownRef}
+            style={{
+              position: 'fixed',
+              ...(above
+                ? { bottom: window.innerHeight - agentDropdownPos.top + 4 }
+                : { top: agentDropdownPos.buttonBottom + 4 }),
+              left,
+              zIndex: 9999,
+              background: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
+              minWidth: '130px',
+              overflow: 'hidden',
+            }}
+          >
+            {agents.map(a => {
+              const isCurrent = a.id === curProp.agent_id;
+              return (
+                <button
+                  key={a.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    changeAgent(openAgentDropdown, a.id);
+                    setOpenAgentDropdown(null);
+                    setAgentDropdownPos(null);
+                  }}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '8px 12px', cursor: 'pointer',
+                    fontSize: '13px', fontWeight: isCurrent ? 700 : 400,
+                    background: isCurrent ? '#fdf8f2' : '#fff',
+                    color: '#92400e', border: 'none', display: 'flex', alignItems: 'center', gap: '6px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', color: '#888' }}>{a.role}</span>
+                  {a.name}
                   {isCurrent && <span style={{ marginLeft: 'auto', paddingLeft: '8px', fontSize: '11px' }}>✓</span>}
                 </button>
               );
