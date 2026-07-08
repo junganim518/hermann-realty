@@ -2074,7 +2074,7 @@ export default function PropertyDetailPage() {
             <p style={{ fontSize: '13px', color: '#999', marginBottom: '20px' }}>원하시는 방법으로 문의해 주세요</p>
 
             <div style={{ background: '#f8f8f8', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'center' }}>
-              <p style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>{agent?.role ?? '대표공인중개사'} {agent?.name ?? '황정아'}</p>
+              <p style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>{agent?.title} {agent?.license} {agent?.name ?? '황정아'}</p>
               <p style={{ fontSize: '22px', fontWeight: 700, color: '#e2a06e' }}>{agent?.phone ?? '010-8680-8151'}</p>
             </div>
 
