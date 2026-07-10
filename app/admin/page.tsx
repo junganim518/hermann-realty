@@ -489,6 +489,10 @@ function AdminDashboardInner() {
         ...rest,
         property_number: nextNumber,
         title: p.title ? `(복사) ${p.title}` : '(복사)',
+        description: p.description?.replace(
+          /🏢 헤르만 매물번호 ➔ \[ \d+ \]/g,
+          `🏢 헤르만 매물번호 ➔ [ ${nextNumber} ]`
+        ) ?? p.description,
         is_sold: false,
         status: '거래중', // 복사본은 거래중으로 시작
         deleted_at: null,
