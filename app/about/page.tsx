@@ -117,7 +117,7 @@ export default function AboutPage() {
           </div>
 
           <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.8, marginTop: '24px', maxWidth: '600px', margin: '24px auto 0' }}>
-            헤르만부동산은 신중동역 인근에서 상가, 사무실, 주거용 부동산까지<br />
+            헤르만부동산은 부천 상가, 사무실 중개를 전문으로 하는 부동산으로<br />
             고객의 니즈에 맞는 최적의 매물을 정직하게 중개합니다.<br />
             오랜 경험과 신뢰를 바탕으로 안전한 거래를 약속드립니다.
           </p>
