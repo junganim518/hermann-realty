@@ -1592,7 +1592,7 @@ function AdminDashboardInner() {
           .admin-stats { grid-template-columns: repeat(6, 1fr) !important; gap: 8px !important; }
           .admin-stats > div { padding: 12px 8px !important; }
           .admin-stats > div p:last-child { font-size: 24px !important; }
-          .admin-shortcuts { grid-template-columns: repeat(4, 1fr) !important; }
+          .admin-shortcuts { grid-template-columns: repeat(5, 1fr) !important; }
         }
 
         @media (max-width: 767px) {
@@ -1603,7 +1603,7 @@ function AdminDashboardInner() {
           .admin-stats > div p:last-child { font-size: 22px !important; }
           .admin-filters { flex-wrap: wrap !important; overflow-x: visible !important; }
           .admin-filters select { min-width: 90px !important; font-size: 12px !important; }
-          .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .admin-shortcuts { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
           .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
           /* 모바일 매물 카드: 썸네일(64px) 좌측 + 정보 우측 가로 배치, 액션 하단 전체 너비 */
           .admin-prop-thumbnail { display: block !important; width: 64px !important; height: 64px !important; flex-shrink: 0 !important; }
