@@ -77,18 +77,16 @@ export default function FieldTripsPage() {
     return () => { document.body.style.overflow = ''; };
   }, [anyModalOpen]);
 
-  // 이 페이지에서만 모바일 하단 탭바 숨기기
+  // 이 페이지에서만 사이트 하단 푸터 숨기기
   useEffect(() => {
-    document.body.classList.add('ft-hide-tab');
+    document.body.classList.add('ft-hide-footer');
     const style = document.createElement('style');
-    style.id = '__ft-tab-hide';
-    style.textContent =
-      'body.ft-hide-tab .h-bottom-tab{display:none!important}' +
-      'body.ft-hide-tab{padding-bottom:0!important}';
+    style.id = '__ft-footer-hide';
+    style.textContent = 'body.ft-hide-footer footer{display:none!important}';
     document.head.appendChild(style);
     return () => {
-      document.body.classList.remove('ft-hide-tab');
-      document.getElementById('__ft-tab-hide')?.remove();
+      document.body.classList.remove('ft-hide-footer');
+      document.getElementById('__ft-footer-hide')?.remove();
     };
   }, []);
 
@@ -173,6 +171,13 @@ export default function FieldTripsPage() {
     });
     mapInstanceRef.current = map;
 
+    window.kakao.maps.event.addListener(map, 'dragstart', () => {
+      if (searchMarkerRef.current) { searchMarkerRef.current.setMap(null); searchMarkerRef.current = null; }
+      if (searchOverlayRef.current) { searchOverlayRef.current.setMap(null); searchOverlayRef.current = null; }
+      setPendingLocation(null);
+      setMapSearch('');
+    });
+
     window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
       const latlng = mouseEvent.latLng;
       const geocoder = new window.kakao.maps.services.Geocoder();
@@ -234,13 +239,9 @@ export default function FieldTripsPage() {
 
       let content: string;
       if (isSelected) {
-        const addr = item.building_name ? `${item.address} ${item.building_name}` : item.address;
-        content = `<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:32px">` +
-          `<div style="background:#1a1a1a;color:#fff;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);margin-bottom:4px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${addr}</div>` +
-          `<div style="width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)">${idx + 1}</div>` +
-          `</div>`;
+        content = `<div style="width:22px;height:22px;border-radius:50%;background:#c47c30;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:32px">${idx + 1}</div>`;
       } else {
-        content = `<div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:32px">${idx + 1}</div>`;
+        content = `<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:32px">${idx + 1}</div>`;
       }
 
       const overlay = new window.kakao.maps.CustomOverlay({
