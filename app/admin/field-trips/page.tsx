@@ -40,6 +40,7 @@ export default function FieldTripsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [floatingCard, setFloatingCard] = useState<FlatItem | null>(null);
 
   // Map
   const mapRef = useRef<HTMLDivElement>(null);
@@ -47,6 +48,7 @@ export default function FieldTripsPage() {
   const overlaysRef = useRef<any[]>([]);
   const searchMarkerRef = useRef<any>(null);
   const searchOverlayRef = useRef<any>(null);
+  const myLocationOverlayRef = useRef<any>(null);
   const prevPlannedRef = useRef<FlatItem[]>([]);
   const [mapReady, setMapReady] = useState(false);
 
@@ -175,9 +177,13 @@ export default function FieldTripsPage() {
       if (searchOverlayRef.current) { searchOverlayRef.current.setMap(null); searchOverlayRef.current = null; }
       setPendingLocation(null);
       setMapSearch('');
+      setFloatingCard(null);
+      setSelectedItemId(null);
     });
 
     window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
+      setFloatingCard(null);
+      setSelectedItemId(null);
       const latlng = mouseEvent.latLng;
       const geocoder = new window.kakao.maps.services.Geocoder();
       geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result: any, status: any) => {
@@ -217,7 +223,7 @@ export default function FieldTripsPage() {
     mapInstanceRef.current.setCenter(pos);
   }, [pendingLocation, mapReady]);
 
-  // 예정 매물 마커 (선택 상태에 따라 색상/크기/인포윈도우 변경)
+  // 예정 매물 마커 (선택 상태에 따라 색상/크기 변경, 클릭 시 플로팅 카드)
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     overlaysRef.current.forEach(o => o.setMap(null));
@@ -231,18 +237,22 @@ export default function FieldTripsPage() {
       latlngs.push(pos);
       const isSelected = item.id === selectedItemId;
 
-      let content: string;
-      if (isSelected) {
-        content = `<div style="width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:14px">${idx + 1}</div>`;
-      } else {
-        content = `<div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:11px">${idx + 1}</div>`;
-      }
+      const content = isSelected
+        ? `<div style="width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:14px">${idx + 1}</div>`
+        : `<div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:11px">${idx + 1}</div>`;
 
       const overlay = new window.kakao.maps.CustomOverlay({
         position: pos, content,
         yAnchor: 0, zIndex: isSelected ? 5 : 3,
+        clickable: true,
       });
       overlay.setMap(mapInstanceRef.current);
+      window.kakao.maps.event.addListener(overlay, 'click', () => {
+        setSelectedItemId(item.id);
+        setFloatingCard(item);
+        setPendingLocation(null);
+        setMapSearch('');
+      });
       overlaysRef.current.push(overlay);
     });
 
@@ -273,11 +283,18 @@ export default function FieldTripsPage() {
     });
   };
 
+  // 내 위치: ref로 1개만 유지, 구글맵 스타일 파란 원
   const showMyLocation = () => {
     if (!mapInstanceRef.current) return;
     navigator.geolocation.getCurrentPosition(pos => {
       const me = new window.kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-      new window.kakao.maps.Marker({ position: me, map: mapInstanceRef.current });
+      if (myLocationOverlayRef.current) myLocationOverlayRef.current.setMap(null);
+      myLocationOverlayRef.current = new window.kakao.maps.CustomOverlay({
+        position: me,
+        content: `<div style="position:relative;width:14px;height:22px"><div style="position:absolute;top:-5px;left:-5px;width:24px;height:24px;border-radius:50%;background:rgba(66,133,244,0.2)"></div><div style="position:absolute;top:0;left:0;width:14px;height:14px;border-radius:50%;background:#4285f4;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(66,133,244,.6)"></div></div>`,
+        yAnchor: 0, zIndex: 10,
+      });
+      myLocationOverlayRef.current.setMap(mapInstanceRef.current);
       mapInstanceRef.current.setCenter(me);
     }, () => alert('위치 정보를 가져올 수 없습니다.'));
   };
@@ -345,6 +362,8 @@ export default function FieldTripsPage() {
 
   const completeItem = async (item: FlatItem) => {
     await supabase.from('field_trip_items').update({ status: 'completed' }).eq('id', item.id);
+    setFloatingCard(null);
+    setSelectedItemId(null);
     showToast('임장 완료!');
     loadAll();
   };
@@ -377,6 +396,8 @@ export default function FieldTripsPage() {
     if ((count ?? 0) === 0) {
       await supabase.from('field_trips').delete().eq('id', item.field_trip_id);
     }
+    setFloatingCard(null);
+    setSelectedItemId(null);
     showToast('삭제되었습니다.');
     loadAll();
   };
@@ -391,7 +412,7 @@ export default function FieldTripsPage() {
 
   return (
     <>
-      {/* PC 레이아웃 CSS */}
+      {/* 레이아웃 CSS */}
       <style>{`
         @media (min-width: 768px) {
           .ft-outer {
@@ -412,6 +433,19 @@ export default function FieldTripsPage() {
             flex: none !important;
             border-left: 1px solid #eee !important;
           }
+          .ft-mobile-back { display: none !important; }
+          .ft-floating-card { display: none !important; }
+        }
+        @media (max-width: 767px) {
+          .ft-map-wrap {
+            display: block !important;
+            height: 100% !important;
+            flex: 1 !important;
+            flex-shrink: 1 !important;
+          }
+          .ft-right-panel { display: none !important; }
+          .ft-mobile-back { display: flex !important; }
+          .ft-search-bar { left: 54px !important; }
         }
       `}</style>
 
@@ -424,8 +458,14 @@ export default function FieldTripsPage() {
         }}>
           <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: anyModalOpen ? 'none' : 'auto' }} />
 
+          {/* 모바일 전용: 뒤로가기 버튼 */}
+          <div className="ft-mobile-back" style={{ display: 'none', position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+            <button onClick={() => router.push('/admin')}
+              style={{ width: '38px', height: '40px', background: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>←</button>
+          </div>
+
           {/* 주소 검색 */}
-          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
+          <div className="ft-search-bar" style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
             <input
               style={{ flex: 1, height: '40px', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '14px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', boxSizing: 'border-box' }}
               placeholder="주소 검색"
@@ -576,6 +616,54 @@ export default function FieldTripsPage() {
           )}
         </div>
       </div>
+
+      {/* ─── 모바일 전용: 마커 클릭 시 하단 플로팅 카드 ─── */}
+      {floatingCard && (
+        <div className="ft-floating-card" style={{
+          position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 50,
+          padding: '0 12px 8px',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '14px', boxShadow: '0 -2px 16px rgba(0,0,0,0.15)',
+            overflow: 'hidden', pointerEvents: 'auto',
+          }}>
+            {/* 카드 헤더 */}
+            <div style={{ padding: '12px 14px 8px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', lineHeight: 1.4 }}>
+                  {floatingCard.building_name ? `${floatingCard.address} ${floatingCard.building_name}` : floatingCard.address}
+                </div>
+                <div style={{ fontSize: '12px', color: '#999', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {[floatingCard.trip_title, floatingCard.trip_date, floatingCard.agent_name].filter(Boolean).join(' · ')}
+                </div>
+                {floatingCard.memo && (
+                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {floatingCard.memo}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => { setFloatingCard(null); setSelectedItemId(null); }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', color: '#aaa', cursor: 'pointer', padding: '0', lineHeight: 1, flexShrink: 0 }}>×</button>
+            </div>
+            {/* 액션 버튼 */}
+            <div style={{ display: 'flex', gap: '8px', padding: '10px 14px' }}>
+              <button onClick={() => openDetail(floatingCard)}
+                style={{ flex: 1, padding: '9px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff', color: '#444', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                메모
+              </button>
+              <button onClick={() => completeItem(floatingCard)}
+                style={{ flex: 1, padding: '9px', border: 'none', borderRadius: '8px', background: '#dcfce7', color: '#166534', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                완료 ✓
+              </button>
+              <button onClick={() => deleteItem(floatingCard)}
+                style={{ flex: 1, padding: '9px', border: '1px solid #fee2e2', borderRadius: '8px', background: '#fff', color: '#dc2626', fontSize: '13px', cursor: 'pointer' }}>
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── 임장 추가 저장 모달 ─── */}
       {showSaveModal && pendingLocation && (
