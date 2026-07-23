@@ -44,7 +44,6 @@ export default function FieldTripsPage() {
   // Map
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
   const overlaysRef = useRef<any[]>([]);
   const searchMarkerRef = useRef<any>(null);
   const searchOverlayRef = useRef<any>(null);
@@ -221,9 +220,7 @@ export default function FieldTripsPage() {
   // 예정 매물 마커 (선택 상태에 따라 색상/크기/인포윈도우 변경)
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
-    markersRef.current.forEach(m => m.setMap(null));
     overlaysRef.current.forEach(o => o.setMap(null));
-    markersRef.current = [];
     overlaysRef.current = [];
 
     const itemsToShow = plannedItems.filter(i => i.latitude && i.longitude);
@@ -234,14 +231,11 @@ export default function FieldTripsPage() {
       latlngs.push(pos);
       const isSelected = item.id === selectedItemId;
 
-      const marker = new window.kakao.maps.Marker({ position: pos, map: mapInstanceRef.current });
-      markersRef.current.push(marker);
-
       let content: string;
       if (isSelected) {
-        content = `<div style="width:22px;height:22px;border-radius:50%;background:#c47c30;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:32px">${idx + 1}</div>`;
+        content = `<div style="width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:14px">${idx + 1}</div>`;
       } else {
-        content = `<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:32px">${idx + 1}</div>`;
+        content = `<div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:11px">${idx + 1}</div>`;
       }
 
       const overlay = new window.kakao.maps.CustomOverlay({
