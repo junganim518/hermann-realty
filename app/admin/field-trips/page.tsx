@@ -33,11 +33,13 @@ const inputSt: React.CSSProperties = {
 export default function FieldTripsPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
+  const [headerH, setHeaderH] = useState(144);
   const [tab, setTab] = useState<'planned' | 'completed'>('planned');
   const [plannedItems, setPlannedItems] = useState<FlatItem[]>([]);
   const [completedItems, setCompletedItems] = useState<FlatItem[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   // Map
   const mapRef = useRef<HTMLDivElement>(null);
@@ -46,6 +48,7 @@ export default function FieldTripsPage() {
   const overlaysRef = useRef<any[]>([]);
   const searchMarkerRef = useRef<any>(null);
   const searchOverlayRef = useRef<any>(null);
+  const prevPlannedRef = useRef<FlatItem[]>([]);
   const [mapReady, setMapReady] = useState(false);
 
   // Map search & pending location
@@ -67,12 +70,33 @@ export default function FieldTripsPage() {
   const [toast, setToast] = useState('');
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
-  // body overflow:hidden when any modal open — prevents map drag-through
+  // body overflow:hidden when any modal open
   const anyModalOpen = showSaveModal || !!detailItem;
   useEffect(() => {
     document.body.style.overflow = anyModalOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [anyModalOpen]);
+
+  // 이 페이지에서만 모바일 하단 탭바 숨기기
+  useEffect(() => {
+    document.body.classList.add('ft-hide-tab');
+    const style = document.createElement('style');
+    style.id = '__ft-tab-hide';
+    style.textContent =
+      'body.ft-hide-tab .h-bottom-tab{display:none!important}' +
+      'body.ft-hide-tab{padding-bottom:0!important}';
+    document.head.appendChild(style);
+    return () => {
+      document.body.classList.remove('ft-hide-tab');
+      document.getElementById('__ft-tab-hide')?.remove();
+    };
+  }, []);
+
+  // PC 레이아웃용 헤더 높이 측정
+  useEffect(() => {
+    const h = document.querySelector('header') as HTMLElement | null;
+    if (h) setHeaderH(h.offsetHeight);
+  }, []);
 
   // Auth
   useEffect(() => {
@@ -118,7 +142,6 @@ export default function FieldTripsPage() {
       });
     }
 
-    // 예정: order_num asc, 동일 시 created_at asc
     const planned = flatItems.filter(i => i.status === 'planned');
     planned.sort((a, b) => {
       if (a.order_num !== b.order_num) return a.order_num - b.order_num;
@@ -141,7 +164,7 @@ export default function FieldTripsPage() {
     document.head.appendChild(script);
   }, [authChecked]);
 
-  // Initialize map — mapRef.current is always mounted (display:none hides it)
+  // Initialize map
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstanceRef.current) return;
     const map = new window.kakao.maps.Map(mapRef.current, {
@@ -165,7 +188,7 @@ export default function FieldTripsPage() {
     });
   }, [mapReady]);
 
-  // relayout when map becomes visible after being hidden
+  // relayout when map becomes visible after being hidden (mobile tab switch)
   useEffect(() => {
     if (tab === 'planned' && !loading && mapInstanceRef.current) {
       setTimeout(() => mapInstanceRef.current?.relayout(), 50);
@@ -190,7 +213,7 @@ export default function FieldTripsPage() {
     mapInstanceRef.current.setCenter(pos);
   }, [pendingLocation, mapReady]);
 
-  // Existing planned item markers
+  // 예정 매물 마커 (선택 상태에 따라 색상/크기/인포윈도우 변경)
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     markersRef.current.forEach(m => m.setMap(null));
@@ -200,26 +223,43 @@ export default function FieldTripsPage() {
 
     const itemsToShow = plannedItems.filter(i => i.latitude && i.longitude);
     const latlngs: any[] = [];
+
     itemsToShow.forEach((item, idx) => {
       const pos = new window.kakao.maps.LatLng(item.latitude!, item.longitude!);
       latlngs.push(pos);
+      const isSelected = item.id === selectedItemId;
+
       const marker = new window.kakao.maps.Marker({ position: pos, map: mapInstanceRef.current });
+      markersRef.current.push(marker);
+
+      let content: string;
+      if (isSelected) {
+        const addr = item.building_name ? `${item.address} ${item.building_name}` : item.address;
+        content = `<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:32px">` +
+          `<div style="background:#1a1a1a;color:#fff;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);margin-bottom:4px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${addr}</div>` +
+          `<div style="width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)">${idx + 1}</div>` +
+          `</div>`;
+      } else {
+        content = `<div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:32px">${idx + 1}</div>`;
+      }
+
       const overlay = new window.kakao.maps.CustomOverlay({
-        position: pos,
-        content: `<div style="background:#c47c30;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3);margin-bottom:32px">${idx + 1}</div>`,
-        yAnchor: 0, zIndex: 3,
+        position: pos, content,
+        yAnchor: 0, zIndex: isSelected ? 5 : 3,
       });
       overlay.setMap(mapInstanceRef.current);
-      markersRef.current.push(marker);
       overlaysRef.current.push(overlay);
     });
 
-    if (latlngs.length > 0 && !pendingLocation) {
+    // plannedItems가 실제로 바뀐 경우에만 bounds 재조정 (선택 변경 시 재조정 방지)
+    const plannedChanged = prevPlannedRef.current !== plannedItems;
+    prevPlannedRef.current = plannedItems;
+    if (latlngs.length > 0 && !pendingLocation && plannedChanged) {
       const bounds = new window.kakao.maps.LatLngBounds();
       latlngs.forEach(ll => bounds.extend(ll));
       mapInstanceRef.current.setBounds(bounds);
     }
-  }, [plannedItems, mapReady]);
+  }, [plannedItems, mapReady, selectedItemId]);
 
   const searchAddress = () => {
     if (!mapSearch.trim() || !mapReady) return;
@@ -247,12 +287,13 @@ export default function FieldTripsPage() {
     }, () => alert('위치 정보를 가져올 수 없습니다.'));
   };
 
-  // 리스트 클릭 → 지도 해당 핀으로 이동
+  // 리스트 클릭 → 지도 해당 핀으로 이동 + 마커 강조
   const focusOnMap = (item: FlatItem) => {
     if (!mapInstanceRef.current || !item.latitude || !item.longitude) return;
     const pos = new window.kakao.maps.LatLng(item.latitude, item.longitude);
     mapInstanceRef.current.setCenter(pos);
     mapInstanceRef.current.setLevel(3);
+    setSelectedItemId(item.id);
   };
 
   // ▲▼ 순서 변경 — 전체 order_num 재정규화
@@ -261,7 +302,7 @@ export default function FieldTripsPage() {
     if (newIdx < 0 || newIdx >= plannedItems.length) return;
     const items = [...plannedItems];
     [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
-    setPlannedItems(items); // 즉시 UI 반영
+    setPlannedItems(items);
     await Promise.all(items.map((item, i) =>
       supabase.from('field_trip_items').update({ order_num: i + 1 }).eq('id', item.id)
     ));
@@ -354,159 +395,192 @@ export default function FieldTripsPage() {
   };
 
   return (
-    <div style={{ maxWidth: '640px', margin: '0 auto', height: '100dvh', background: '#f8f8f8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-        <button onClick={() => router.push('/admin')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '20px', padding: 0, lineHeight: 1 }}>←</button>
-        <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>임장노트</h1>
-      </div>
+    <>
+      {/* PC 레이아웃 CSS */}
+      <style>{`
+        @media (min-width: 768px) {
+          .ft-outer {
+            flex-direction: row !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            height: calc(100dvh - ${headerH}px) !important;
+          }
+          .ft-map-wrap {
+            display: block !important;
+            height: 100% !important;
+            flex: 1 !important;
+            flex-shrink: 0 !important;
+          }
+          .ft-right-panel {
+            width: 360px !important;
+            min-width: 360px !important;
+            flex: none !important;
+            border-left: 1px solid #eee !important;
+          }
+        }
+      `}</style>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #eee', flexShrink: 0 }}>
-        {(['planned', 'completed'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ flex: 1, padding: '11px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: 600,
-              color: tab === t ? '#c47c30' : '#aaa',
-              borderBottom: tab === t ? '2px solid #c47c30' : '2px solid transparent',
-            }}>
-            {t === 'planned' ? `예정 (${plannedItems.length})` : `완료 (${completedItems.length})`}
-          </button>
-        ))}
-      </div>
+      <div className="ft-outer" style={{ maxWidth: '640px', margin: '0 auto', height: '100dvh', background: '#f8f8f8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* ─── 지도 영역: 항상 DOM에 유지, 예정 탭 + 로딩 완료 시만 표시 ─── */}
-      <div style={{ height: '58%', position: 'relative', flexShrink: 0, display: (tab === 'planned' && !loading) ? 'block' : 'none' }}>
-        {/* 모달 열려있을 때 지도 터치/클릭 차단 */}
-        <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: anyModalOpen ? 'none' : 'auto' }} />
+        {/* ─── 지도 영역: 항상 DOM에 유지 ─── */}
+        <div className="ft-map-wrap" style={{
+          height: '58%', position: 'relative', flexShrink: 0,
+          display: (tab === 'planned' && !loading) ? 'block' : 'none',
+        }}>
+          <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: anyModalOpen ? 'none' : 'auto' }} />
 
-        {/* Address search overlay */}
-        <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
-          <input
-            style={{ flex: 1, height: '40px', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '14px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', boxSizing: 'border-box' }}
-            placeholder="주소 검색"
-            value={mapSearch}
-            onChange={e => setMapSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && searchAddress()}
-          />
-          <button onClick={searchAddress}
-            style={{ height: '40px', padding: '0 14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', whiteSpace: 'nowrap' }}>
-            검색
-          </button>
-        </div>
-
-        {/* My location button */}
-        <button onClick={showMyLocation}
-          style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10, width: '38px', height: '40px', background: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-          📍
-        </button>
-
-        {/* 임장 추가 button */}
-        {pendingLocation && (
-          <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
-            <button onClick={openSaveModal}
-              style={{ padding: '12px 28px', background: '#c47c30', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,124,48,0.55)', whiteSpace: 'nowrap' }}>
-              + 임장 추가
+          {/* 주소 검색 */}
+          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
+            <input
+              style={{ flex: 1, height: '40px', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '14px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', boxSizing: 'border-box' }}
+              placeholder="주소 검색"
+              value={mapSearch}
+              onChange={e => setMapSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && searchAddress()}
+            />
+            <button onClick={searchAddress}
+              style={{ height: '40px', padding: '0 14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', whiteSpace: 'nowrap' }}>
+              검색
             </button>
           </div>
-        )}
-      </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#999', fontSize: '14px' }}>로딩 중...</div>
-      ) : tab === 'planned' ? (
-        /* ─── 예정 탭: 플랫 리스트 ─── */
-        <div style={{ flex: 1, overflowY: 'auto', background: '#f0f0f0' }}>
-          {plannedItems.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '28px 20px', color: '#aaa', fontSize: '14px' }}>
-              지도에서 주소를 검색하고 임장을 추가하세요.
+          {/* 내 위치 */}
+          <button onClick={showMyLocation}
+            style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10, width: '38px', height: '40px', background: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+            📍
+          </button>
+
+          {/* 임장 추가 버튼 */}
+          {pendingLocation && (
+            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
+              <button onClick={openSaveModal}
+                style={{ padding: '12px 28px', background: '#c47c30', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,124,48,0.55)', whiteSpace: 'nowrap' }}>
+                + 임장 추가
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ─── 오른쪽 패널 (PC) / 하단 영역 (모바일) ─── */}
+        <div className="ft-right-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+
+          {/* 헤더 */}
+          <div style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+            <button onClick={() => router.push('/admin')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '20px', padding: 0, lineHeight: 1 }}>←</button>
+            <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>임장노트</h1>
+          </div>
+
+          {/* 탭 */}
+          <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #eee', flexShrink: 0 }}>
+            {(['planned', 'completed'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                style={{ flex: 1, padding: '11px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: 600,
+                  color: tab === t ? '#c47c30' : '#aaa',
+                  borderBottom: tab === t ? '2px solid #c47c30' : '2px solid transparent',
+                }}>
+                {t === 'planned' ? `예정 (${plannedItems.length})` : `완료 (${completedItems.length})`}
+              </button>
+            ))}
+          </div>
+
+          {/* 리스트 영역 */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px', color: '#999', fontSize: '14px' }}>로딩 중...</div>
+          ) : tab === 'planned' ? (
+            <div style={{ flex: 1, overflowY: 'auto', background: '#f0f0f0' }}>
+              {plannedItems.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '28px 20px', color: '#aaa', fontSize: '14px' }}>
+                  지도에서 주소를 검색하고 임장을 추가하세요.
+                </div>
+              ) : (
+                plannedItems.map((item, idx) => (
+                  <div key={item.id} style={{ background: item.id === selectedItemId ? '#fffbf5' : '#fff', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'stretch', borderLeft: item.id === selectedItemId ? '3px solid #c47c30' : '3px solid transparent' }}>
+                    {/* ▲▼ 순서 변경 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px', padding: '6px 6px 6px 8px', borderRight: '1px solid #f0f0f0', flexShrink: 0 }}>
+                      <button onClick={() => moveItem(idx, -1)} disabled={idx === 0}
+                        style={{ width: '22px', height: '22px', border: '1px solid #e0e0e0', borderRadius: '3px', background: '#fafafa', color: idx === 0 ? '#ccc' : '#555', fontSize: '9px', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▲</button>
+                      <button onClick={() => moveItem(idx, 1)} disabled={idx === plannedItems.length - 1}
+                        style={{ width: '22px', height: '22px', border: '1px solid #e0e0e0', borderRadius: '3px', background: '#fafafa', color: idx === plannedItems.length - 1 ? '#ccc' : '#555', fontSize: '9px', cursor: idx === plannedItems.length - 1 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▼</button>
+                    </div>
+
+                    {/* 번호 + 텍스트 (클릭 → 지도 이동 + 마커 강조) */}
+                    <div onClick={() => focusOnMap(item)}
+                      style={{ flex: 1, minWidth: 0, padding: '8px 8px', display: 'flex', gap: '8px', alignItems: 'center', cursor: item.latitude ? 'pointer' : 'default' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: item.id === selectedItemId ? '#c47c30' : '#3b82f6', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {idx + 1}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.building_name ? `${item.address} ${item.building_name}` : item.address}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#999', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {[item.trip_title, item.trip_date, item.agent_name].filter(Boolean).join(' · ')}
+                          {item.memo && ` · ${item.memo}`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 액션 버튼 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px', padding: '6px 8px 6px 4px', flexShrink: 0 }}>
+                      <button onClick={() => openDetail(item)}
+                        style={{ padding: '3px 8px', border: '1px solid #ddd', borderRadius: '3px', background: '#fff', color: '#444', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>메모</button>
+                      <button onClick={() => completeItem(item)}
+                        style={{ padding: '3px 8px', border: 'none', borderRadius: '3px', background: '#dcfce7', color: '#166534', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>완료✓</button>
+                      <button onClick={() => deleteItem(item)}
+                        style={{ padding: '3px 8px', border: '1px solid #fee2e2', borderRadius: '3px', background: '#fff', color: '#dc2626', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>삭제</button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           ) : (
-            plannedItems.map((item, idx) => (
-              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'stretch' }}>
-                {/* ▲▼ 순서 변경 */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px', padding: '6px 6px 6px 8px', borderRight: '1px solid #f0f0f0', flexShrink: 0 }}>
-                  <button onClick={() => moveItem(idx, -1)} disabled={idx === 0}
-                    style={{ width: '22px', height: '22px', border: '1px solid #e0e0e0', borderRadius: '3px', background: '#fafafa', color: idx === 0 ? '#ccc' : '#555', fontSize: '9px', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▲</button>
-                  <button onClick={() => moveItem(idx, 1)} disabled={idx === plannedItems.length - 1}
-                    style={{ width: '22px', height: '22px', border: '1px solid #e0e0e0', borderRadius: '3px', background: '#fafafa', color: idx === plannedItems.length - 1 ? '#ccc' : '#555', fontSize: '9px', cursor: idx === plannedItems.length - 1 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▼</button>
-                </div>
-
-                {/* 번호 + 텍스트 (클릭 → 지도 이동) */}
-                <div onClick={() => focusOnMap(item)}
-                  style={{ flex: 1, minWidth: 0, padding: '8px 8px', display: 'flex', gap: '8px', alignItems: 'center', cursor: item.latitude ? 'pointer' : 'default' }}>
-                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {idx + 1}
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.building_name ? `${item.address} ${item.building_name}` : item.address}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#999', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {[item.trip_title, item.trip_date, item.agent_name].filter(Boolean).join(' · ')}
-                      {item.memo && ` · ${item.memo}`}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 액션 버튼 */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px', padding: '6px 8px 6px 4px', flexShrink: 0 }}>
-                  <button onClick={() => openDetail(item)}
-                    style={{ padding: '3px 8px', border: '1px solid #ddd', borderRadius: '3px', background: '#fff', color: '#444', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>메모</button>
-                  <button onClick={() => completeItem(item)}
-                    style={{ padding: '3px 8px', border: 'none', borderRadius: '3px', background: '#dcfce7', color: '#166534', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>완료✓</button>
-                  <button onClick={() => deleteItem(item)}
-                    style={{ padding: '3px 8px', border: '1px solid #fee2e2', borderRadius: '3px', background: '#fff', color: '#dc2626', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>삭제</button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      ) : (
-        /* ─── 완료 탭 ─── */
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {completedItems.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa', fontSize: '14px' }}>완료된 임장 매물이 없습니다.</div>
-          ) : (
-            completedItems.map(item => (
-              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px' }}>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a', lineHeight: 1.4 }}>
-                      {item.building_name ? `${item.address} ${item.building_name}` : item.address}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#999', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {[item.trip_title, item.trip_date, item.agent_name].filter(Boolean).join(' · ')}
-                    </div>
-                    {item.memo && (
-                      <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{item.memo}</div>
-                    )}
-                    {item.checklist && (
-                      <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {CHECKLIST_KEYS.map(k => (
-                          <span key={k} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
-                            background: item.checklist![k] ? '#dcfce7' : '#f3f4f6',
-                            color: item.checklist![k] ? '#166534' : '#999' }}>
-                            {item.checklist![k] ? '✓' : '·'} {k}
-                          </span>
-                        ))}
+            /* 완료 탭 */
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {completedItems.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa', fontSize: '14px' }}>완료된 임장 매물이 없습니다.</div>
+              ) : (
+                completedItems.map(item => (
+                  <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a', lineHeight: 1.4 }}>
+                          {item.building_name ? `${item.address} ${item.building_name}` : item.address}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#999', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {[item.trip_title, item.trip_date, item.agent_name].filter(Boolean).join(' · ')}
+                        </div>
+                        {item.memo && (
+                          <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{item.memo}</div>
+                        )}
+                        {item.checklist && (
+                          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {CHECKLIST_KEYS.map(k => (
+                              <span key={k} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
+                                background: item.checklist![k] ? '#dcfce7' : '#f3f4f6',
+                                color: item.checklist![k] ? '#166534' : '#999' }}>
+                                {item.checklist![k] ? '✓' : '·'} {k}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flexShrink: 0 }}>
+                        <button onClick={() => openDetail(item)}
+                          style={{ padding: '6px 10px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>수정</button>
+                        <a href="/admin/properties/new"
+                          style={{ display: 'block', padding: '6px 10px', border: '1px solid #c47c30', borderRadius: '4px', background: '#fff', color: '#c47c30', fontSize: '12px', fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
+                        <button onClick={() => deleteItem(item)}
+                          style={{ padding: '6px 10px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flexShrink: 0 }}>
-                    <button onClick={() => openDetail(item)}
-                      style={{ padding: '6px 10px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>수정</button>
-                    <a href="/admin/properties/new"
-                      style={{ display: 'block', padding: '6px 10px', border: '1px solid #c47c30', borderRadius: '4px', background: '#fff', color: '#c47c30', fontSize: '12px', fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
-                    <button onClick={() => deleteItem(item)}
-                      style={{ padding: '6px 10px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
-                  </div>
-                </div>
-              </div>
-            ))
+                ))
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* ─── 임장 추가 저장 모달 ─── */}
       {showSaveModal && pendingLocation && (
@@ -611,10 +685,10 @@ export default function FieldTripsPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', background: '#1a1a1a', color: '#fff', padding: '10px 22px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#1a1a1a', color: '#fff', padding: '10px 22px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, zIndex: 200, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
           {toast}
         </div>
       )}
-    </div>
+    </>
   );
 }
