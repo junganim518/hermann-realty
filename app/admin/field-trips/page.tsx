@@ -146,12 +146,13 @@ export default function FieldTripsPage() {
       const latlng = mouseEvent.latLng;
       const geocoder = new window.kakao.maps.services.Geocoder();
       geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result: any, status: any) => {
-        let addr = '';
+        let addr = '', bname = '';
         if (status === window.kakao.maps.services.Status.OK && result[0]) {
           addr = result[0].address?.address_name || result[0].road_address?.address_name || '';
+          bname = result[0].road_address?.building_name || result[0].address?.building_name || '';
         }
         setPendingLocation({ address: addr, lat: latlng.getLat(), lng: latlng.getLng() });
-        setSaveForm(f => ({ ...f, address: addr, building_name: '' }));
+        setSaveForm(f => ({ ...f, address: addr, building_name: bname }));
       });
     });
   }, [mapReady]);
@@ -224,8 +225,9 @@ export default function FieldTripsPage() {
         const lat = parseFloat(result[0].y);
         const lng = parseFloat(result[0].x);
         const addr = result[0].address?.address_name || result[0].address_name || '';
+        const bname = result[0].road_address?.building_name || result[0].address?.building_name || '';
         setPendingLocation({ address: addr, lat, lng });
-        setSaveForm(f => ({ ...f, address: addr, building_name: '' }));
+        setSaveForm(f => ({ ...f, address: addr, building_name: bname }));
       } else {
         alert('주소를 찾을 수 없습니다.');
       }
@@ -255,7 +257,7 @@ export default function FieldTripsPage() {
 
     let tripId = saveMode;
     if (saveMode === 'new') {
-      if (!saveForm.title.trim()) { alert('일정 제목을 입력하세요.'); setSaving(false); return; }
+      if (!saveForm.title.trim()) { alert('내용을 입력하세요.'); setSaving(false); return; }
       const { data: tripData, error: tripErr } = await supabase.from('field_trips').insert({
         title: saveForm.title.trim(),
         trip_date: saveForm.trip_date,
@@ -541,7 +543,7 @@ export default function FieldTripsPage() {
       {/* ─── 임장 추가 저장 모달 ─── */}
       {showSaveModal && pendingLocation && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}>
-          <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '80vh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '85dvh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '16px', fontWeight: 700 }}>임장 추가</div>
               <button onClick={() => setShowSaveModal(false)}
@@ -568,9 +570,10 @@ export default function FieldTripsPage() {
               {saveMode === 'new' && (
                 <>
                   <div>
-                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>일정 제목 *</label>
-                    <input style={inputSt} placeholder="예: 중동 임장" value={saveForm.title}
-                      onChange={e => setSaveForm(f => ({ ...f, title: e.target.value }))} />
+                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>내용 *</label>
+                    <textarea rows={3} placeholder="예: 중동 임장" value={saveForm.title}
+                      onChange={e => setSaveForm(f => ({ ...f, title: e.target.value }))}
+                      style={{ width: '100%', border: '1px solid #ddd', borderRadius: '6px', padding: '10px 12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>날짜 *</label>
@@ -587,11 +590,17 @@ export default function FieldTripsPage() {
                 </>
               )}
             </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #eee' }}>
-              <button onClick={handleSave} disabled={saving}
-                style={{ width: '100%', padding: '14px', background: '#c47c30', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
-                {saving ? '저장 중...' : '저장'}
-              </button>
+            <div style={{ padding: '12px 16px', borderTop: '1px solid #eee', flexShrink: 0, background: '#fff' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setShowSaveModal(false)}
+                  style={{ flex: 1, padding: '14px', background: '#fff', color: '#666', border: '1px solid #ddd', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
+                  취소
+                </button>
+                <button onClick={handleSave} disabled={saving}
+                  style={{ flex: 2, padding: '14px', background: '#c47c30', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  {saving ? '저장 중...' : '저장'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
