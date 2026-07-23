@@ -15,16 +15,14 @@ const CHECKLIST_KEYS = [
 ];
 
 type Agent = { id: string; name: string; title?: string; };
-type FieldTrip = {
-  id: string; title: string; trip_date: string;
-  agent_id: string | null; status: 'planned' | 'completed'; created_at: string;
-};
-type FieldTripItem = {
+
+type FlatItem = {
   id: string; field_trip_id: string; property_id: string | null;
   address: string; building_name: string | null; order_num: number;
   status: 'planned' | 'completed'; memo: string | null;
   checklist: Record<string, boolean> | null;
   latitude: number | null; longitude: number | null; created_at: string;
+  trip_title: string; trip_date: string; agent_name: string;
 };
 
 const inputSt: React.CSSProperties = {
@@ -36,9 +34,8 @@ export default function FieldTripsPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [tab, setTab] = useState<'planned' | 'completed'>('planned');
-  const [trips, setTrips] = useState<FieldTrip[]>([]);
-  const [itemsByTrip, setItemsByTrip] = useState<Record<string, FieldTripItem[]>>({});
-  const [expandedTrip, setExpandedTrip] = useState<string | null>(null);
+  const [plannedItems, setPlannedItems] = useState<FlatItem[]>([]);
+  const [completedItems, setCompletedItems] = useState<FlatItem[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,20 +52,16 @@ export default function FieldTripsPage() {
   const [mapSearch, setMapSearch] = useState('');
   const [pendingLocation, setPendingLocation] = useState<{ address: string; lat: number; lng: number } | null>(null);
 
-  // Save modal (임장 추가)
+  // Save modal
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveMode, setSaveMode] = useState<'new' | string>('new');
-  const [saveForm, setSaveForm] = useState({ address: '', building_name: '', title: '', trip_date: TODAY, agent_id: '' });
+  const [saveForm, setSaveForm] = useState({ address: '', building_name: '', content: '', trip_date: TODAY, agent_id: '' });
   const [saving, setSaving] = useState(false);
 
-  // Detail modal (memo + checklist)
-  const [detailItem, setDetailItem] = useState<FieldTripItem | null>(null);
+  // Detail modal
+  const [detailItem, setDetailItem] = useState<FlatItem | null>(null);
   const [detailMemo, setDetailMemo] = useState('');
   const [detailChecklist, setDetailChecklist] = useState<Record<string, boolean>>({});
   const [savingDetail, setSavingDetail] = useState(false);
-
-  // Completed items
-  const [completedItems, setCompletedItems] = useState<(FieldTripItem & { trip_title: string })[]>([]);
 
   // Toast
   const [toast, setToast] = useState('');
@@ -94,30 +87,33 @@ export default function FieldTripsPage() {
       supabase.from('agents').select('id, name, title').eq('is_active', true),
     ]);
 
-    const allTrips: FieldTrip[] = tripsRes.data ?? [];
-    setTrips(allTrips);
-    setAgents(agentsRes.data ?? []);
+    const allTrips: any[] = tripsRes.data ?? [];
+    const agentList: Agent[] = agentsRes.data ?? [];
+    setAgents(agentList);
 
+    const agentMap = Object.fromEntries(agentList.map(a => [a.id, a.name]));
+    const tripMap = Object.fromEntries(allTrips.map(t => [t.id, t]));
+
+    let flatItems: FlatItem[] = [];
     if (allTrips.length > 0) {
       const { data: items } = await supabase
         .from('field_trip_items').select('*')
         .in('field_trip_id', allTrips.map(t => t.id))
-        .order('order_num', { ascending: true });
+        .order('created_at', { ascending: false });
 
-      const byTrip: Record<string, FieldTripItem[]> = {};
-      (items ?? []).forEach(item => {
-        if (!byTrip[item.field_trip_id]) byTrip[item.field_trip_id] = [];
-        byTrip[item.field_trip_id].push(item);
+      flatItems = (items ?? []).map((item: any) => {
+        const trip = tripMap[item.field_trip_id];
+        return {
+          ...item,
+          trip_title: trip?.title ?? '',
+          trip_date: trip?.trip_date ?? '',
+          agent_name: agentMap[trip?.agent_id ?? ''] ?? '',
+        };
       });
-      setItemsByTrip(byTrip);
-
-      const tripMap = Object.fromEntries(allTrips.map(t => [t.id, t.title]));
-      setCompletedItems((items ?? []).filter(i => i.status === 'completed')
-        .map(i => ({ ...i, trip_title: tripMap[i.field_trip_id] ?? '' })));
-    } else {
-      setItemsByTrip({});
-      setCompletedItems([]);
     }
+
+    setPlannedItems(flatItems.filter(i => i.status === 'planned'));
+    setCompletedItems(flatItems.filter(i => i.status === 'completed'));
     setLoading(false);
   };
 
@@ -141,7 +137,6 @@ export default function FieldTripsPage() {
     });
     mapInstanceRef.current = map;
 
-    // Map click → reverse geocode → pendingLocation
     window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
       const latlng = mouseEvent.latLng;
       const geocoder = new window.kakao.maps.services.Geocoder();
@@ -190,11 +185,7 @@ export default function FieldTripsPage() {
     markersRef.current = [];
     overlaysRef.current = [];
 
-    const plannedTrips = trips.filter(t => t.status === 'planned');
-    const itemsToShow: FieldTripItem[] = expandedTrip
-      ? (itemsByTrip[expandedTrip] ?? []).filter(i => i.status === 'planned' && i.latitude && i.longitude)
-      : plannedTrips.flatMap(t => (itemsByTrip[t.id] ?? []).filter(i => i.status === 'planned' && i.latitude && i.longitude));
-
+    const itemsToShow = plannedItems.filter(i => i.latitude && i.longitude);
     const latlngs: any[] = [];
     itemsToShow.forEach((item, idx) => {
       const pos = new window.kakao.maps.LatLng(item.latitude!, item.longitude!);
@@ -215,7 +206,7 @@ export default function FieldTripsPage() {
       latlngs.forEach(ll => bounds.extend(ll));
       mapInstanceRef.current.setBounds(bounds);
     }
-  }, [expandedTrip, itemsByTrip, mapReady, trips]);
+  }, [plannedItems, mapReady]);
 
   const searchAddress = () => {
     if (!mapSearch.trim() || !mapReady) return;
@@ -245,39 +236,35 @@ export default function FieldTripsPage() {
 
   const openSaveModal = () => {
     if (!pendingLocation) return;
-    setSaveMode('new');
-    setSaveForm(f => ({ ...f, title: '', trip_date: TODAY, agent_id: '' }));
+    setSaveForm(f => ({ ...f, content: '', trip_date: TODAY, agent_id: '' }));
     setShowSaveModal(true);
   };
 
   const handleSave = async () => {
     if (!pendingLocation) return;
     if (!saveForm.address.trim()) { alert('주소를 확인하세요.'); return; }
+    if (!saveForm.content.trim()) { alert('내용을 입력하세요.'); return; }
     setSaving(true);
 
-    let tripId = saveMode;
-    if (saveMode === 'new') {
-      if (!saveForm.title.trim()) { alert('내용을 입력하세요.'); setSaving(false); return; }
-      const { data: tripData, error: tripErr } = await supabase.from('field_trips').insert({
-        title: saveForm.title.trim(),
-        trip_date: saveForm.trip_date,
-        agent_id: saveForm.agent_id || null,
-        status: 'planned',
-      }).select().single();
-      if (tripErr || !tripData) { alert(`저장 실패: ${tripErr?.message}`); setSaving(false); return; }
-      tripId = tripData.id;
-    }
+    const { data: tripData, error: tripErr } = await supabase.from('field_trips').insert({
+      title: saveForm.content.trim(),
+      trip_date: saveForm.trip_date,
+      agent_id: saveForm.agent_id || null,
+      status: 'planned',
+    }).select().single();
 
-    const existingPlanned = (itemsByTrip[tripId] ?? []).filter(i => i.status === 'planned');
+    if (tripErr || !tripData) { alert(`저장 실패: ${tripErr?.message}`); setSaving(false); return; }
+
     const checklist = Object.fromEntries(CHECKLIST_KEYS.map(k => [k, false]));
     const { error: itemErr } = await supabase.from('field_trip_items').insert({
-      field_trip_id: tripId,
+      field_trip_id: tripData.id,
       address: saveForm.address.trim(),
       building_name: saveForm.building_name.trim() || null,
-      order_num: existingPlanned.length + 1,
+      order_num: 1,
       status: 'planned', checklist,
       latitude: pendingLocation.lat, longitude: pendingLocation.lng,
     });
+
     setSaving(false);
     if (itemErr) { alert(`추가 실패: ${itemErr.message}`); return; }
     setShowSaveModal(false);
@@ -287,27 +274,13 @@ export default function FieldTripsPage() {
     loadAll();
   };
 
-  const moveItem = async (tripId: string, idx: number, dir: -1 | 1) => {
-    const items = [...(itemsByTrip[tripId] ?? []).filter(i => i.status === 'planned')];
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= items.length) return;
-    [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
-    await Promise.all(items.map((item, i) =>
-      supabase.from('field_trip_items').update({ order_num: i + 1 }).eq('id', item.id)
-    ));
-    setItemsByTrip(prev => {
-      const completed = (prev[tripId] ?? []).filter(i => i.status === 'completed');
-      return { ...prev, [tripId]: [...items.map((it, i) => ({ ...it, order_num: i + 1 })), ...completed] };
-    });
-  };
-
-  const completeItem = async (item: FieldTripItem) => {
+  const completeItem = async (item: FlatItem) => {
     await supabase.from('field_trip_items').update({ status: 'completed' }).eq('id', item.id);
     showToast('임장 완료!');
     loadAll();
   };
 
-  const openDetail = (item: FieldTripItem) => {
+  const openDetail = (item: FlatItem) => {
     setDetailItem(item);
     setDetailMemo(item.memo ?? '');
     setDetailChecklist(item.checklist ?? Object.fromEntries(CHECKLIST_KEYS.map(k => [k, false])));
@@ -325,23 +298,19 @@ export default function FieldTripsPage() {
     loadAll();
   };
 
-  const deleteItem = async (id: string) => {
+  const deleteItem = async (item: FlatItem) => {
     if (!confirm('삭제하시겠습니까?')) return;
-    await supabase.from('field_trip_items').delete().eq('id', id);
+    await supabase.from('field_trip_items').delete().eq('id', item.id);
+    const { count } = await supabase
+      .from('field_trip_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('field_trip_id', item.field_trip_id);
+    if ((count ?? 0) === 0) {
+      await supabase.from('field_trips').delete().eq('id', item.field_trip_id);
+    }
     showToast('삭제되었습니다.');
     loadAll();
   };
-
-  const deleteTrip = async (id: string) => {
-    if (!confirm('일정과 매물 목록이 모두 삭제됩니다.')) return;
-    await supabase.from('field_trip_items').delete().eq('field_trip_id', id);
-    await supabase.from('field_trips').delete().eq('id', id);
-    if (expandedTrip === id) setExpandedTrip(null);
-    showToast('일정이 삭제되었습니다.');
-    loadAll();
-  };
-
-  const plannedTrips = trips.filter(t => t.status === 'planned');
 
   if (!authChecked) return null;
 
@@ -362,14 +331,15 @@ export default function FieldTripsPage() {
               color: tab === t ? '#c47c30' : '#aaa',
               borderBottom: tab === t ? '2px solid #c47c30' : '2px solid transparent',
             }}>
-            {t === 'planned' ? `예정 (${plannedTrips.length})` : `완료 (${completedItems.length})`}
+            {t === 'planned' ? `예정 (${plannedItems.length})` : `완료 (${completedItems.length})`}
           </button>
         ))}
       </div>
 
       {/* ─── 지도 영역: 항상 DOM에 유지, 예정 탭 + 로딩 완료 시만 표시 ─── */}
       <div style={{ height: '60%', position: 'relative', flexShrink: 0, display: (tab === 'planned' && !loading) ? 'block' : 'none' }}>
-        <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+        {/* 모달 열려있을 때 지도 터치/클릭 차단 */}
+        <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: showSaveModal ? 'none' : 'auto' }} />
 
         {/* Address search overlay */}
         <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
@@ -406,95 +376,49 @@ export default function FieldTripsPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#999', fontSize: '14px' }}>로딩 중...</div>
       ) : tab === 'planned' ? (
-        /* ─── 예정 탭: 리스트 (40%) ─── */
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* List (scrollable) */}
-          <div style={{ flex: 1, overflowY: 'auto', background: '#f8f8f8' }}>
-            {plannedTrips.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '36px 20px', color: '#aaa', fontSize: '14px' }}>
-                지도에서 주소를 검색하고 임장을 추가하세요.
-              </div>
-            ) : (
-              plannedTrips.map(trip => {
-                const allItems = itemsByTrip[trip.id] ?? [];
-                const plannedItems = allItems.filter(i => i.status === 'planned');
-                const doneCount = allItems.filter(i => i.status === 'completed').length;
-                const agent = agents.find(a => a.id === trip.agent_id);
-                const isExpanded = expandedTrip === trip.id;
-
-                return (
-                  <div key={trip.id} style={{ background: '#fff', borderBottom: '1px solid #eee' }}>
-                    {/* Trip header */}
-                    <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
-                      onClick={() => setExpandedTrip(isExpanded ? null : trip.id)}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a' }}>{trip.title}</span>
-                          {agent && <span style={{ fontSize: '12px', color: '#888' }}>{agent.name}</span>}
-                        </div>
-                        <div style={{ fontSize: '13px', marginTop: '2px', display: 'flex', gap: '8px' }}>
-                          <span style={{ color: '#c47c30' }}>{trip.trip_date}</span>
-                          <span style={{ color: '#ccc' }}>|</span>
-                          <span style={{ color: '#666' }}>매물 {plannedItems.length}건{doneCount > 0 ? ` · 완료 ${doneCount}` : ''}</span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                        <button onClick={e => { e.stopPropagation(); deleteTrip(trip.id); }}
-                          style={{ padding: '5px 10px', border: '1px solid #fee2e2', color: '#dc2626', background: '#fff', borderRadius: '4px', fontSize: '12px', cursor: 'pointer' }}>
-                          삭제
-                        </button>
-                        <span style={{ color: '#bbb', fontSize: '14px', userSelect: 'none' }}>{isExpanded ? '▲' : '▼'}</span>
-                      </div>
-                    </div>
-
-                    {/* Trip items */}
-                    {isExpanded && (
-                      <div style={{ borderTop: '1px solid #f0f0f0' }}>
-                        {plannedItems.length === 0 ? (
-                          <div style={{ padding: '16px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>매물을 추가해주세요.</div>
-                        ) : (
-                          plannedItems.map((item, idx) => (
-                            <div key={item.id} style={{ padding: '11px 16px', borderBottom: '1px solid #f5f5f5', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                                {idx + 1}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a1a1a', lineHeight: 1.4 }}>
-                                  {item.building_name ? `${item.address} ${item.building_name}` : item.address}
-                                </div>
-                                {item.memo && (
-                                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.memo}</div>
-                                )}
-                                {item.checklist && (
-                                  <div style={{ fontSize: '11px', color: '#aaa', marginTop: '2px' }}>
-                                    체크 {Object.values(item.checklist).filter(Boolean).length}/{CHECKLIST_KEYS.length}
-                                  </div>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
-                                <div style={{ display: 'flex', gap: '3px' }}>
-                                  <button onClick={() => moveItem(trip.id, idx, -1)} disabled={idx === 0}
-                                    style={{ padding: '4px 7px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: idx === 0 ? '#ccc' : '#555', fontSize: '12px', cursor: idx === 0 ? 'default' : 'pointer' }}>▲</button>
-                                  <button onClick={() => moveItem(trip.id, idx, 1)} disabled={idx === plannedItems.length - 1}
-                                    style={{ padding: '4px 7px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: idx === plannedItems.length - 1 ? '#ccc' : '#555', fontSize: '12px', cursor: idx === plannedItems.length - 1 ? 'default' : 'pointer' }}>▼</button>
-                                </div>
-                                <button onClick={() => openDetail(item)}
-                                  style={{ padding: '4px 7px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '11px', cursor: 'pointer' }}>메모</button>
-                                <button onClick={() => completeItem(item)}
-                                  style={{ padding: '4px 7px', border: 'none', borderRadius: '4px', background: '#dcfce7', color: '#166534', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>완료✓</button>
-                                <button onClick={() => deleteItem(item.id)}
-                                  style={{ padding: '4px 7px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '11px', cursor: 'pointer' }}>삭제</button>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
+        /* ─── 예정 탭: 플랫 리스트 ─── */
+        <div style={{ flex: 1, overflowY: 'auto', background: '#f8f8f8' }}>
+          {plannedItems.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '36px 20px', color: '#aaa', fontSize: '14px' }}>
+              지도에서 주소를 검색하고 임장을 추가하세요.
+            </div>
+          ) : (
+            plannedItems.map((item, idx) => (
+              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                  {idx + 1}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', lineHeight: 1.4 }}>
+                    {item.building_name ? `${item.address} ${item.building_name}` : item.address}
                   </div>
-                );
-              })
-            )}
-          </div>
+                  {item.trip_title && (
+                    <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>{item.trip_title}</div>
+                  )}
+                  <div style={{ fontSize: '12px', color: '#aaa', marginTop: '2px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span>{item.trip_date}</span>
+                    {item.agent_name && <><span>·</span><span>{item.agent_name}</span></>}
+                  </div>
+                  {item.memo && (
+                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.memo}</div>
+                  )}
+                  {item.checklist && (
+                    <div style={{ fontSize: '11px', color: '#aaa', marginTop: '2px' }}>
+                      체크 {Object.values(item.checklist).filter(Boolean).length}/{CHECKLIST_KEYS.length}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                  <button onClick={() => openDetail(item)}
+                    style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>메모</button>
+                  <button onClick={() => completeItem(item)}
+                    style={{ padding: '5px 10px', border: 'none', borderRadius: '4px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>완료✓</button>
+                  <button onClick={() => deleteItem(item)}
+                    style={{ padding: '5px 10px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       ) : (
         /* ─── 완료 탭 ─── */
@@ -506,9 +430,15 @@ export default function FieldTripsPage() {
               <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '14px 16px' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '3px' }}>{item.trip_title}</div>
                     <div style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a', lineHeight: 1.4 }}>
                       {item.building_name ? `${item.address} ${item.building_name}` : item.address}
+                    </div>
+                    {item.trip_title && (
+                      <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>{item.trip_title}</div>
+                    )}
+                    <div style={{ fontSize: '12px', color: '#aaa', marginTop: '2px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>{item.trip_date}</span>
+                      {item.agent_name && <><span>·</span><span>{item.agent_name}</span></>}
                     </div>
                     {item.memo && (
                       <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{item.memo}</div>
@@ -530,7 +460,7 @@ export default function FieldTripsPage() {
                       style={{ padding: '7px 12px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>수정</button>
                     <a href="/admin/properties/new"
                       style={{ display: 'block', padding: '7px 12px', border: '1px solid #c47c30', borderRadius: '4px', background: '#fff', color: '#c47c30', fontSize: '12px', fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
-                    <button onClick={() => deleteItem(item.id)}
+                    <button onClick={() => deleteItem(item)}
                       style={{ padding: '7px 12px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
                   </div>
                 </div>
@@ -542,9 +472,13 @@ export default function FieldTripsPage() {
 
       {/* ─── 임장 추가 저장 모달 ─── */}
       {showSaveModal && pendingLocation && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
+          onTouchStart={e => e.stopPropagation()}
+          onTouchMove={e => e.stopPropagation()}
+        >
           <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '85dvh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <div style={{ fontSize: '16px', fontWeight: 700 }}>임장 추가</div>
               <button onClick={() => setShowSaveModal(false)}
                 style={{ background: 'none', border: 'none', fontSize: '24px', color: '#999', cursor: 'pointer', padding: 0 }}>×</button>
@@ -561,36 +495,26 @@ export default function FieldTripsPage() {
                   onChange={e => setSaveForm(f => ({ ...f, building_name: e.target.value }))} />
               </div>
               <div>
-                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>일정</label>
-                <select style={inputSt} value={saveMode} onChange={e => setSaveMode(e.target.value)}>
-                  <option value="new">새 일정 만들기</option>
-                  {plannedTrips.map(t => <option key={t.id} value={t.id}>{t.title} ({t.trip_date})</option>)}
+                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>내용 *</label>
+                <textarea rows={3} placeholder="예: 중동 카페 임장" value={saveForm.content}
+                  onChange={e => setSaveForm(f => ({ ...f, content: e.target.value }))}
+                  style={{ width: '100%', border: '1px solid #ddd', borderRadius: '6px', padding: '10px 12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>날짜 *</label>
+                <input type="date" style={inputSt} value={saveForm.trip_date}
+                  onChange={e => setSaveForm(f => ({ ...f, trip_date: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>담당자</label>
+                <select style={inputSt} value={saveForm.agent_id} onChange={e => setSaveForm(f => ({ ...f, agent_id: e.target.value }))}>
+                  <option value="">선택 안 함</option>
+                  {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.title ? ` ${a.title}` : ''}</option>)}
                 </select>
               </div>
-              {saveMode === 'new' && (
-                <>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>내용 *</label>
-                    <textarea rows={3} placeholder="예: 중동 임장" value={saveForm.title}
-                      onChange={e => setSaveForm(f => ({ ...f, title: e.target.value }))}
-                      style={{ width: '100%', border: '1px solid #ddd', borderRadius: '6px', padding: '10px 12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>날짜 *</label>
-                    <input type="date" style={inputSt} value={saveForm.trip_date}
-                      onChange={e => setSaveForm(f => ({ ...f, trip_date: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>담당자</label>
-                    <select style={inputSt} value={saveForm.agent_id} onChange={e => setSaveForm(f => ({ ...f, agent_id: e.target.value }))}>
-                      <option value="">선택 안 함</option>
-                      {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.title ? ` ${a.title}` : ''}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
             </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #eee', flexShrink: 0, background: '#fff' }}>
+            {/* 하단 탭바(약 60px) 위로 버튼 위치 — padding-bottom: 72px */}
+            <div style={{ padding: '12px 16px 72px', borderTop: '1px solid #eee', flexShrink: 0, background: '#fff' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setShowSaveModal(false)}
                   style={{ flex: 1, padding: '14px', background: '#fff', color: '#666', border: '1px solid #ddd', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}>
@@ -608,9 +532,13 @@ export default function FieldTripsPage() {
 
       {/* ─── 메모/체크리스트 모달 ─── */}
       {detailItem && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}>
-          <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '85vh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
+          onTouchStart={e => e.stopPropagation()}
+          onTouchMove={e => e.stopPropagation()}
+        >
+          <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '85dvh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
               <div style={{ flex: 1, marginRight: '12px' }}>
                 <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '3px' }}>메모 & 체크리스트</div>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', lineHeight: 1.4 }}>
@@ -642,7 +570,8 @@ export default function FieldTripsPage() {
                 </div>
               </div>
             </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #eee' }}>
+            {/* 하단 탭바(약 60px) 위로 버튼 위치 — padding-bottom: 72px */}
+            <div style={{ padding: '12px 16px 72px', borderTop: '1px solid #eee', flexShrink: 0, background: '#fff' }}>
               <button onClick={saveDetail} disabled={savingDetail}
                 style={{ width: '100%', padding: '14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: savingDetail ? 'not-allowed' : 'pointer', opacity: savingDetail ? 0.6 : 1 }}>
                 {savingDetail ? '저장 중...' : '저장'}
