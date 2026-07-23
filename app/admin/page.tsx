@@ -1020,6 +1020,7 @@ function AdminDashboardInner() {
           {[
             { label: '매물 등록', href: '/admin/properties/new' },
             { label: '손님 관리', href: '/admin/customers' },
+            { label: '임장노트', href: '/admin/field-trips' },
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
           ].map(link => (

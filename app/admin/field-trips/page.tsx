@@ -132,7 +132,7 @@ export default function FieldTripsPage() {
     document.head.appendChild(script);
   }, [authChecked]);
 
-  // Initialize map
+  // Initialize map — mapRef.current is always mounted (display:none hides it)
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstanceRef.current) return;
     const map = new window.kakao.maps.Map(mapRef.current, {
@@ -155,6 +155,13 @@ export default function FieldTripsPage() {
       });
     });
   }, [mapReady]);
+
+  // relayout when map becomes visible after being hidden
+  useEffect(() => {
+    if (tab === 'planned' && !loading && mapInstanceRef.current) {
+      setTimeout(() => mapInstanceRef.current?.relayout(), 50);
+    }
+  }, [tab, loading]);
 
   // Search result pin
   useEffect(() => {
@@ -357,48 +364,48 @@ export default function FieldTripsPage() {
         ))}
       </div>
 
+      {/* ─── 지도 영역: 항상 DOM에 유지, 예정 탭 + 로딩 완료 시만 표시 ─── */}
+      <div style={{ height: '60%', position: 'relative', flexShrink: 0, display: (tab === 'planned' && !loading) ? 'block' : 'none' }}>
+        <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+
+        {/* Address search overlay */}
+        <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
+          <input
+            style={{ flex: 1, height: '40px', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '14px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', boxSizing: 'border-box' }}
+            placeholder="주소 검색"
+            value={mapSearch}
+            onChange={e => setMapSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && searchAddress()}
+          />
+          <button onClick={searchAddress}
+            style={{ height: '40px', padding: '0 14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', whiteSpace: 'nowrap' }}>
+            검색
+          </button>
+        </div>
+
+        {/* My location button */}
+        <button onClick={showMyLocation}
+          style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10, width: '38px', height: '40px', background: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+          📍
+        </button>
+
+        {/* 임장 추가 button */}
+        {pendingLocation && (
+          <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
+            <button onClick={openSaveModal}
+              style={{ padding: '12px 28px', background: '#c47c30', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,124,48,0.55)', whiteSpace: 'nowrap' }}>
+              + 임장 추가
+            </button>
+          </div>
+        )}
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#999', fontSize: '14px' }}>로딩 중...</div>
       ) : tab === 'planned' ? (
-        /* ─── 예정 탭: 지도(60%) + 리스트(40%) ─── */
+        /* ─── 예정 탭: 리스트 (40%) ─── */
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Map (60%) */}
-          <div style={{ height: '60%', position: 'relative', flexShrink: 0 }}>
-            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
-
-            {/* Address search overlay */}
-            <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
-              <input
-                style={{ flex: 1, height: '40px', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '14px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', boxSizing: 'border-box' }}
-                placeholder="주소 검색"
-                value={mapSearch}
-                onChange={e => setMapSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchAddress()}
-              />
-              <button onClick={searchAddress}
-                style={{ height: '40px', padding: '0 14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', whiteSpace: 'nowrap' }}>
-                검색
-              </button>
-            </div>
-
-            {/* My location button */}
-            <button onClick={showMyLocation}
-              style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10, width: '38px', height: '40px', background: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-              📍
-            </button>
-
-            {/* 임장 추가 button — appears after search/click */}
-            {pendingLocation && (
-              <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
-                <button onClick={openSaveModal}
-                  style={{ padding: '12px 28px', background: '#c47c30', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,124,48,0.55)', whiteSpace: 'nowrap' }}>
-                  + 임장 추가
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* List (40%, scrollable) */}
+          {/* List (scrollable) */}
           <div style={{ flex: 1, overflowY: 'auto', background: '#f8f8f8' }}>
             {plannedTrips.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 20px', color: '#aaa', fontSize: '14px' }}>
