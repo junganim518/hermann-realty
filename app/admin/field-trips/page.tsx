@@ -237,9 +237,10 @@ export default function FieldTripsPage() {
       latlngs.push(pos);
       const isSelected = item.id === selectedItemId;
 
+      const markerId = `ftm_${item.id.replace(/-/g, '')}`;
       const content = isSelected
-        ? `<div style="width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:14px">${idx + 1}</div>`
-        : `<div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:11px">${idx + 1}</div>`;
+        ? `<div id="${markerId}" class="ft-marker-selected" style="cursor:pointer;width:28px;height:28px;border-radius:50%;background:#c47c30;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);margin-bottom:14px">${idx + 1}</div>`
+        : `<div id="${markerId}" class="ft-marker-default" style="cursor:pointer;width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);margin-bottom:11px">${idx + 1}</div>`;
 
       const overlay = new window.kakao.maps.CustomOverlay({
         position: pos, content,
@@ -247,13 +248,17 @@ export default function FieldTripsPage() {
         clickable: true,
       });
       overlay.setMap(mapInstanceRef.current);
-      window.kakao.maps.event.addListener(overlay, 'click', () => {
-        setSelectedItemId(item.id);
-        setFloatingCard(item);
-        setPendingLocation(null);
-        setMapSearch('');
-      });
       overlaysRef.current.push(overlay);
+
+      const capturedItem = item;
+      setTimeout(() => {
+        document.getElementById(markerId)?.addEventListener('click', () => {
+          setSelectedItemId(capturedItem.id);
+          setFloatingCard(capturedItem);
+          setPendingLocation(null);
+          setMapSearch('');
+        });
+      }, 0);
     });
 
     // plannedItems가 실제로 바뀐 경우에만 bounds 재조정 (선택 변경 시 재조정 방지)
@@ -291,7 +296,7 @@ export default function FieldTripsPage() {
       if (myLocationOverlayRef.current) myLocationOverlayRef.current.setMap(null);
       myLocationOverlayRef.current = new window.kakao.maps.CustomOverlay({
         position: me,
-        content: `<div style="position:relative;width:14px;height:22px"><div style="position:absolute;top:-5px;left:-5px;width:24px;height:24px;border-radius:50%;background:rgba(66,133,244,0.2)"></div><div style="position:absolute;top:0;left:0;width:14px;height:14px;border-radius:50%;background:#4285f4;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(66,133,244,.6)"></div></div>`,
+        content: `<div style="position:relative;width:14px;height:22px"><div style="position:absolute;top:-5px;left:-5px;width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,0.2)"></div><div style="position:absolute;top:0;left:0;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(34,197,94,.6)"></div></div>`,
         yAnchor: 0, zIndex: 10,
       });
       myLocationOverlayRef.current.setMap(mapInstanceRef.current);
@@ -446,6 +451,8 @@ export default function FieldTripsPage() {
           .ft-right-panel { display: none !important; }
           .ft-mobile-back { display: flex !important; }
           .ft-search-bar { left: 54px !important; }
+          .ft-marker-default { width: 36px !important; height: 36px !important; font-size: 16px !important; margin-bottom: 18px !important; }
+          .ft-marker-selected { width: 40px !important; height: 40px !important; font-size: 18px !important; margin-bottom: 20px !important; }
         }
       `}</style>
 
