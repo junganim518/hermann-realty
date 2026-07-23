@@ -67,6 +67,13 @@ export default function FieldTripsPage() {
   const [toast, setToast] = useState('');
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
+  // body overflow:hidden when any modal open — prevents map drag-through
+  const anyModalOpen = showSaveModal || !!detailItem;
+  useEffect(() => {
+    document.body.style.overflow = anyModalOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [anyModalOpen]);
+
   // Auth
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -98,8 +105,7 @@ export default function FieldTripsPage() {
     if (allTrips.length > 0) {
       const { data: items } = await supabase
         .from('field_trip_items').select('*')
-        .in('field_trip_id', allTrips.map(t => t.id))
-        .order('created_at', { ascending: false });
+        .in('field_trip_id', allTrips.map(t => t.id));
 
       flatItems = (items ?? []).map((item: any) => {
         const trip = tripMap[item.field_trip_id];
@@ -112,8 +118,15 @@ export default function FieldTripsPage() {
       });
     }
 
-    setPlannedItems(flatItems.filter(i => i.status === 'planned'));
-    setCompletedItems(flatItems.filter(i => i.status === 'completed'));
+    // 예정: order_num asc, 동일 시 created_at asc
+    const planned = flatItems.filter(i => i.status === 'planned');
+    planned.sort((a, b) => {
+      if (a.order_num !== b.order_num) return a.order_num - b.order_num;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+    setPlannedItems(planned);
+    setCompletedItems(flatItems.filter(i => i.status === 'completed')
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     setLoading(false);
   };
 
@@ -234,6 +247,26 @@ export default function FieldTripsPage() {
     }, () => alert('위치 정보를 가져올 수 없습니다.'));
   };
 
+  // 리스트 클릭 → 지도 해당 핀으로 이동
+  const focusOnMap = (item: FlatItem) => {
+    if (!mapInstanceRef.current || !item.latitude || !item.longitude) return;
+    const pos = new window.kakao.maps.LatLng(item.latitude, item.longitude);
+    mapInstanceRef.current.setCenter(pos);
+    mapInstanceRef.current.setLevel(3);
+  };
+
+  // ▲▼ 순서 변경 — 전체 order_num 재정규화
+  const moveItem = async (idx: number, dir: -1 | 1) => {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= plannedItems.length) return;
+    const items = [...plannedItems];
+    [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+    setPlannedItems(items); // 즉시 UI 반영
+    await Promise.all(items.map((item, i) =>
+      supabase.from('field_trip_items').update({ order_num: i + 1 }).eq('id', item.id)
+    ));
+  };
+
   const openSaveModal = () => {
     if (!pendingLocation) return;
     setSaveForm(f => ({ ...f, content: '', trip_date: TODAY, agent_id: '' }));
@@ -260,7 +293,7 @@ export default function FieldTripsPage() {
       field_trip_id: tripData.id,
       address: saveForm.address.trim(),
       building_name: saveForm.building_name.trim() || null,
-      order_num: 1,
+      order_num: plannedItems.length + 1,
       status: 'planned', checklist,
       latitude: pendingLocation.lat, longitude: pendingLocation.lng,
     });
@@ -314,6 +347,12 @@ export default function FieldTripsPage() {
 
   if (!authChecked) return null;
 
+  const modalOverlaySt: React.CSSProperties = {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+    zIndex: 100, display: 'flex', alignItems: 'flex-end',
+    touchAction: 'none',
+  };
+
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto', height: '100dvh', background: '#f8f8f8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
@@ -327,7 +366,7 @@ export default function FieldTripsPage() {
       <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #eee', flexShrink: 0 }}>
         {(['planned', 'completed'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            style={{ flex: 1, padding: '13px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: 600,
+            style={{ flex: 1, padding: '11px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: 600,
               color: tab === t ? '#c47c30' : '#aaa',
               borderBottom: tab === t ? '2px solid #c47c30' : '2px solid transparent',
             }}>
@@ -337,9 +376,9 @@ export default function FieldTripsPage() {
       </div>
 
       {/* ─── 지도 영역: 항상 DOM에 유지, 예정 탭 + 로딩 완료 시만 표시 ─── */}
-      <div style={{ height: '60%', position: 'relative', flexShrink: 0, display: (tab === 'planned' && !loading) ? 'block' : 'none' }}>
+      <div style={{ height: '58%', position: 'relative', flexShrink: 0, display: (tab === 'planned' && !loading) ? 'block' : 'none' }}>
         {/* 모달 열려있을 때 지도 터치/클릭 차단 */}
-        <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: showSaveModal ? 'none' : 'auto' }} />
+        <div ref={mapRef} style={{ width: '100%', height: '100%', pointerEvents: anyModalOpen ? 'none' : 'auto' }} />
 
         {/* Address search overlay */}
         <div style={{ position: 'absolute', top: '10px', left: '10px', right: '54px', zIndex: 10, display: 'flex', gap: '6px' }}>
@@ -377,44 +416,47 @@ export default function FieldTripsPage() {
         <div style={{ textAlign: 'center', padding: '60px', color: '#999', fontSize: '14px' }}>로딩 중...</div>
       ) : tab === 'planned' ? (
         /* ─── 예정 탭: 플랫 리스트 ─── */
-        <div style={{ flex: 1, overflowY: 'auto', background: '#f8f8f8' }}>
+        <div style={{ flex: 1, overflowY: 'auto', background: '#f0f0f0' }}>
           {plannedItems.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '36px 20px', color: '#aaa', fontSize: '14px' }}>
+            <div style={{ textAlign: 'center', padding: '28px 20px', color: '#aaa', fontSize: '14px' }}>
               지도에서 주소를 검색하고 임장을 추가하세요.
             </div>
           ) : (
             plannedItems.map((item, idx) => (
-              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                  {idx + 1}
+              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'stretch' }}>
+                {/* ▲▼ 순서 변경 */}
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px', padding: '6px 6px 6px 8px', borderRight: '1px solid #f0f0f0', flexShrink: 0 }}>
+                  <button onClick={() => moveItem(idx, -1)} disabled={idx === 0}
+                    style={{ width: '22px', height: '22px', border: '1px solid #e0e0e0', borderRadius: '3px', background: '#fafafa', color: idx === 0 ? '#ccc' : '#555', fontSize: '9px', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▲</button>
+                  <button onClick={() => moveItem(idx, 1)} disabled={idx === plannedItems.length - 1}
+                    style={{ width: '22px', height: '22px', border: '1px solid #e0e0e0', borderRadius: '3px', background: '#fafafa', color: idx === plannedItems.length - 1 ? '#ccc' : '#555', fontSize: '9px', cursor: idx === plannedItems.length - 1 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▼</button>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', lineHeight: 1.4 }}>
-                    {item.building_name ? `${item.address} ${item.building_name}` : item.address}
+
+                {/* 번호 + 텍스트 (클릭 → 지도 이동) */}
+                <div onClick={() => focusOnMap(item)}
+                  style={{ flex: 1, minWidth: 0, padding: '8px 8px', display: 'flex', gap: '8px', alignItems: 'center', cursor: item.latitude ? 'pointer' : 'default' }}>
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {idx + 1}
                   </div>
-                  {item.trip_title && (
-                    <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>{item.trip_title}</div>
-                  )}
-                  <div style={{ fontSize: '12px', color: '#aaa', marginTop: '2px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span>{item.trip_date}</span>
-                    {item.agent_name && <><span>·</span><span>{item.agent_name}</span></>}
-                  </div>
-                  {item.memo && (
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.memo}</div>
-                  )}
-                  {item.checklist && (
-                    <div style={{ fontSize: '11px', color: '#aaa', marginTop: '2px' }}>
-                      체크 {Object.values(item.checklist).filter(Boolean).length}/{CHECKLIST_KEYS.length}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.building_name ? `${item.address} ${item.building_name}` : item.address}
                     </div>
-                  )}
+                    <div style={{ fontSize: '11px', color: '#999', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {[item.trip_title, item.trip_date, item.agent_name].filter(Boolean).join(' · ')}
+                      {item.memo && ` · ${item.memo}`}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+
+                {/* 액션 버튼 */}
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px', padding: '6px 8px 6px 4px', flexShrink: 0 }}>
                   <button onClick={() => openDetail(item)}
-                    style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>메모</button>
+                    style={{ padding: '3px 8px', border: '1px solid #ddd', borderRadius: '3px', background: '#fff', color: '#444', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>메모</button>
                   <button onClick={() => completeItem(item)}
-                    style={{ padding: '5px 10px', border: 'none', borderRadius: '4px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>완료✓</button>
+                    style={{ padding: '3px 8px', border: 'none', borderRadius: '3px', background: '#dcfce7', color: '#166534', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>완료✓</button>
                   <button onClick={() => deleteItem(item)}
-                    style={{ padding: '5px 10px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
+                    style={{ padding: '3px 8px', border: '1px solid #fee2e2', borderRadius: '3px', background: '#fff', color: '#dc2626', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>삭제</button>
                 </div>
               </div>
             ))
@@ -427,18 +469,14 @@ export default function FieldTripsPage() {
             <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa', fontSize: '14px' }}>완료된 임장 매물이 없습니다.</div>
           ) : (
             completedItems.map(item => (
-              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '14px 16px' }}>
+              <div key={item.id} style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '12px 16px' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a1a', lineHeight: 1.4 }}>
                       {item.building_name ? `${item.address} ${item.building_name}` : item.address}
                     </div>
-                    {item.trip_title && (
-                      <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>{item.trip_title}</div>
-                    )}
-                    <div style={{ fontSize: '12px', color: '#aaa', marginTop: '2px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      <span>{item.trip_date}</span>
-                      {item.agent_name && <><span>·</span><span>{item.agent_name}</span></>}
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {[item.trip_title, item.trip_date, item.agent_name].filter(Boolean).join(' · ')}
                     </div>
                     {item.memo && (
                       <div style={{ fontSize: '13px', color: '#555', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{item.memo}</div>
@@ -455,13 +493,13 @@ export default function FieldTripsPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flexShrink: 0 }}>
                     <button onClick={() => openDetail(item)}
-                      style={{ padding: '7px 12px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>수정</button>
+                      style={{ padding: '6px 10px', border: '1px solid #ddd', borderRadius: '4px', background: '#fff', color: '#444', fontSize: '12px', cursor: 'pointer' }}>수정</button>
                     <a href="/admin/properties/new"
-                      style={{ display: 'block', padding: '7px 12px', border: '1px solid #c47c30', borderRadius: '4px', background: '#fff', color: '#c47c30', fontSize: '12px', fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
+                      style={{ display: 'block', padding: '6px 10px', border: '1px solid #c47c30', borderRadius: '4px', background: '#fff', color: '#c47c30', fontSize: '12px', fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>매물 등록</a>
                     <button onClick={() => deleteItem(item)}
-                      style={{ padding: '7px 12px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
+                      style={{ padding: '6px 10px', border: '1px solid #fee2e2', borderRadius: '4px', background: '#fff', color: '#dc2626', fontSize: '12px', cursor: 'pointer' }}>삭제</button>
                   </div>
                 </div>
               </div>
@@ -472,11 +510,7 @@ export default function FieldTripsPage() {
 
       {/* ─── 임장 추가 저장 모달 ─── */}
       {showSaveModal && pendingLocation && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
-          onTouchStart={e => e.stopPropagation()}
-          onTouchMove={e => e.stopPropagation()}
-        >
+        <div style={modalOverlaySt} onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
           <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '85dvh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <div style={{ fontSize: '16px', fontWeight: 700 }}>임장 추가</div>
@@ -513,7 +547,6 @@ export default function FieldTripsPage() {
                 </select>
               </div>
             </div>
-            {/* 하단 탭바(약 60px) 위로 버튼 위치 — padding-bottom: 72px */}
             <div style={{ padding: '12px 16px 72px', borderTop: '1px solid #eee', flexShrink: 0, background: '#fff' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setShowSaveModal(false)}
@@ -532,11 +565,7 @@ export default function FieldTripsPage() {
 
       {/* ─── 메모/체크리스트 모달 ─── */}
       {detailItem && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
-          onTouchStart={e => e.stopPropagation()}
-          onTouchMove={e => e.stopPropagation()}
-        >
+        <div style={modalOverlaySt} onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
           <div style={{ background: '#fff', width: '100%', maxWidth: '640px', margin: '0 auto', maxHeight: '85dvh', borderRadius: '16px 16px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
               <div style={{ flex: 1, marginRight: '12px' }}>
@@ -570,7 +599,6 @@ export default function FieldTripsPage() {
                 </div>
               </div>
             </div>
-            {/* 하단 탭바(약 60px) 위로 버튼 위치 — padding-bottom: 72px */}
             <div style={{ padding: '12px 16px 72px', borderTop: '1px solid #eee', flexShrink: 0, background: '#fff' }}>
               <button onClick={saveDetail} disabled={savingDetail}
                 style={{ width: '100%', padding: '14px', background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: savingDetail ? 'not-allowed' : 'pointer', opacity: savingDetail ? 0.6 : 1 }}>
