@@ -148,7 +148,7 @@ export default function FieldTripsPage() {
       geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result: any, status: any) => {
         let addr = '';
         if (status === window.kakao.maps.services.Status.OK && result[0]) {
-          addr = result[0].road_address?.address_name || result[0].address?.address_name || '';
+          addr = result[0].address?.address_name || result[0].road_address?.address_name || '';
         }
         setPendingLocation({ address: addr, lat: latlng.getLat(), lng: latlng.getLng() });
         setSaveForm(f => ({ ...f, address: addr, building_name: '' }));
@@ -223,8 +223,9 @@ export default function FieldTripsPage() {
       if (status === window.kakao.maps.services.Status.OK && result[0]) {
         const lat = parseFloat(result[0].y);
         const lng = parseFloat(result[0].x);
-        setPendingLocation({ address: result[0].address_name, lat, lng });
-        setSaveForm(f => ({ ...f, address: result[0].address_name, building_name: '' }));
+        const addr = result[0].address?.address_name || result[0].address_name || '';
+        setPendingLocation({ address: addr, lat, lng });
+        setSaveForm(f => ({ ...f, address: addr, building_name: '' }));
       } else {
         alert('주소를 찾을 수 없습니다.');
       }
