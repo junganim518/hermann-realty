@@ -38,6 +38,7 @@ app/
     ├── landlords/[new|edit|page]     # 임대인 관리
     ├── trash/page.tsx                # 휴지통 (소프트 삭제된 매물 복구/영구삭제)
     ├── field-trips/page.tsx          # 임장노트 (지도 기반 임장 매물 관리)
+    ├── agents/page.tsx               # 담당자 관리 (추가/수정/비활성화)
     └── account/page.tsx              # 내 계정 — 비밀번호 변경 (로그인 필요, 현재 비밀번호 재인증 후 변경)
 ├── login/page.tsx                    # 로그인 (하단에 "비밀번호를 잊으셨나요?" 링크)
 ├── login/reset/page.tsx              # 비밀번호 재설정 — 이메일 입력 → supabase.auth.resetPasswordForEmail()
@@ -67,7 +68,11 @@ lib/
 - address, building_name, dong_ho (TEXT)
 - business_name (TEXT), business_name_public (BOOLEAN)
 - transaction_type (TEXT) — 월세/전세/매매
-- deposit, monthly_rent, maintenance_fee, premium (BIGINT)
+- deposit, monthly_rent, sale_price, maintenance_fee, premium (BIGINT)
+- current_deposit, current_rent (BIGINT) — 매매 매물의 현재 임차 보증금/월세 (기보증금/월세)
+- land_area, total_floor_area, building_area (FLOAT) — 대지/연면적/건축면적 (㎡)
+- floor_area_ratio, building_coverage_ratio (FLOAT) — 용적률/건폐율 (%)
+- agent_id (UUID, FK → agents) — 담당 직원
 - theme_type (TEXT) — 콤마 구분 (26개: 추천매물·사옥형및통임대·대형상가·대형사무실·무권리상가·프랜차이즈양도양수·1층상가·2층이상상가·역세권매물·신축매물·저렴한매물·코너매물·메인상권·즉시입주·대로변매물·노출좋음·인기매물·카페·사무실·음식점·병원·학원·뷰티·편의점·헬스장·유흥/주류)
   - 검색 필터 목록(17개): `FILTER_THEMES` 상수 (lib/themeUtils.ts) — properties/map 페이지 공용
   - 새 테마 추가 시 `ALL_THEMES` + `FILTER_THEMES` 둘 다 확인 필요
@@ -95,7 +100,7 @@ lib/
 - 매물 복사 시 payload에 `deleted_at: null` 명시적으로 포함
 
 **가격 컬럼**: deposit, monthly_rent, sale_price, maintenance_fee, premium
-- **매매**: `sale_price` 사용 (deposit/monthly_rent는 null)
+- **매매**: `sale_price` 사용 (deposit/monthly_rent는 null) + current_deposit/current_rent (기존 임차 조건)
 - **전세**: `deposit` 사용 (monthly_rent는 null, sale_price는 null)
 - **월세**: `deposit` + `monthly_rent` 사용 (sale_price는 null)
 - 등록/수정 폼에서 거래유형 변경 시 입력 칸 즉시 분기 (조건부 렌더링)
@@ -128,6 +133,17 @@ lib/
   - DB의 status 값은 그대로, 화면 표시 시에만 `effectiveStatus()` 계산값 사용
   - '만기' 옵션 제거 (기존 데이터는 '종료'로 마이그레이션 완료)
 - start_date 컬럼은 DB에 유지되나 UI에서 미사용 (잔금/입주일과 중복으로 제거); formatPeriod는 move_in_date 기준
+
+### agents (담당자)
+
+- id (UUID, PK)
+- name (TEXT) — 이름
+- title (TEXT) — 직책 (예: 공인중개사, 중개보조원)
+- license (TEXT) — 자격증 번호
+- phone (TEXT) — 연락처
+- kakao_url (TEXT) — 카카오톡 오픈채팅 링크
+- is_active (BOOLEAN) — 활성 여부 (비활성 시 드롭다운에서 숨김)
+- created_at, updated_at
 
 ### field_trips (임장 노트)
 
@@ -339,6 +355,15 @@ lib/
 - `prevPlannedRef`로 reference 비교 — `plannedItems` 배열이 실제로 바뀔 때만 `setBounds` 실행
 - 선택 변경(`selectedItemId`) 시 bounds 재조정 안 함
 
+## 담당자 시스템 (agents)
+
+- **관리**: `/admin/agents` — 담당자 추가/수정/비활성화
+- **매물 연결**: `properties.agent_id` (FK → agents) — 매물별 담당 직원 지정
+- **관리자 대시보드**: 매물 카드에서 담당자 인라인 변경 가능
+- **임장노트**: `field_trips.agent_id`로 임장 담당자 지정
+- **드롭다운 표시**: `is_active = true`인 담당자만 노출 (`eq('is_active', true)`)
+- **문의 연결**: 매물 상세 페이지에서 담당자 카카오톡(`kakao_url`) 연결
+
 ## 비밀번호 관련
 
 - **비밀번호 변경**: `/admin/account` (로그인 필요, 현재 비밀번호 재인증 후 변경)
@@ -351,7 +376,7 @@ lib/
 ### 400 에러 (column does not exist)
 
 - 원인: properties에 없는 컬럼 select
-- 주의: sale_price 컬럼 없음, 가격은 deposit/monthly_rent/maintenance_fee/premium
+- 가격 컬럼 목록: deposit, monthly_rent, sale_price, maintenance_fee, premium, current_deposit, current_rent
 
 ### 임대인 매칭 디버깅
 
