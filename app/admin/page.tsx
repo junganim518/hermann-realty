@@ -1092,6 +1092,9 @@ function AdminDashboardInner() {
               </div>
               {/* 데스크톱 전용 등록 + 휴지통 버튼 */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <a href="/admin/field-trips" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  📋 임장노트
+                </a>
                 <a href="/admin/agents" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   👤 담당자 관리
                 </a>
