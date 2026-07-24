@@ -400,12 +400,14 @@ export default function ProspectsPage() {
 
       {/* 입력/수정 모달 */}
       {modalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
-          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
-            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 20px', color: '#1a1a1a' }}>
-              {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>
+                {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
+              </h2>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999', lineHeight: 1, padding: '0 2px' }}>×</button>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
