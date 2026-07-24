@@ -422,7 +422,7 @@ export default function ProspectsPage() {
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
                       {/* 비고 — 인라인 편집 */}
-                      <td style={{ ...tdS, color: tc, minWidth: '240px', height: '40px', maxHeight: '40px', overflow: 'hidden', cursor: isEditingMemo ? 'default' : 'text', padding: isEditingMemo ? '0' : tdS.padding }}
+                      <td style={{ ...tdS, color: tc, width: '240px', minWidth: '240px', maxWidth: '240px', height: '40px', maxHeight: '40px', overflow: 'hidden', cursor: isEditingMemo ? 'default' : 'text', padding: isEditingMemo ? '0' : tdS.padding }}
                         onClick={e => { e.stopPropagation(); if (!isEditingMemo) { setEditingMemoId(row.id); setMemoEdit(row.memo ?? ''); } }}>
                         {isEditingMemo ? (
                           <textarea autoFocus value={memoEdit}
