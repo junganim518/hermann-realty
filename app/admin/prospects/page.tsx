@@ -15,11 +15,32 @@ type Row = {
   area_m2: number | null;
   deposit: number | null;
   monthly_rent: number | null;
-  is_advertised: boolean;
   memo: string | null;
   agent_id: string | null;
   status: 'prospect' | 'registered';
   created_at: string;
+};
+
+type FormState = {
+  dong: string; lot_number: string; business_name: string; phone: string;
+  floor_info: string; area_m2: string; deposit: string; monthly_rent: string;
+  memo: string; agent_id: string;
+};
+
+const emptyForm = (): FormState => ({
+  dong: '', lot_number: '', business_name: '', phone: '',
+  floor_info: '', area_m2: '', deposit: '', monthly_rent: '', memo: '', agent_id: '',
+});
+
+const fmtPhone = (val: string) => {
+  const d = val.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.startsWith('02')) {
+    if (d.length <= 6) return `${d.slice(0, 2)}-${d.slice(2)}`;
+    return `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6)}`;
+  }
+  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
 };
 
 export default function ProspectsPage() {
@@ -29,9 +50,11 @@ export default function ProspectsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [filterAgent, setFilterAgent] = useState('');
   const [loading, setLoading] = useState(true);
-  const [editCell, setEditCell] = useState<{ id: string; field: string } | null>(null);
-  const [editVal, setEditVal] = useState('');
   const [toast, setToast] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalRow, setModalRow] = useState<Row | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm());
+  const [saving, setSaving] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -61,25 +84,60 @@ export default function ProspectsPage() {
 
   const displayed = filterAgent ? rows.filter(r => r.agent_id === filterAgent) : rows;
 
-  const startEdit = (id: string, field: string, val: any) => {
-    setEditCell({ id, field });
-    setEditVal(val != null ? String(val) : '');
+  const openNew = () => {
+    setModalRow(null);
+    setForm(emptyForm());
+    setModalOpen(true);
   };
 
-  const commit = async (id: string, field: string, raw: string) => {
-    let value: any = raw === '' ? null : raw;
-    if (['area_m2', 'deposit', 'monthly_rent'].includes(field)) {
-      value = raw === '' ? null : Number(raw);
-      if (isNaN(value as number)) value = null;
+  const openEdit = (row: Row) => {
+    if (row.status === 'registered') return;
+    setModalRow(row);
+    setForm({
+      dong: row.dong ?? '',
+      lot_number: row.lot_number ?? '',
+      business_name: row.business_name ?? '',
+      phone: row.phone ?? '',
+      floor_info: row.floor_info ?? '',
+      area_m2: row.area_m2 != null ? String(row.area_m2) : '',
+      deposit: row.deposit != null ? String(row.deposit) : '',
+      monthly_rent: row.monthly_rent != null ? String(row.monthly_rent) : '',
+      memo: row.memo ?? '',
+      agent_id: row.agent_id ?? '',
+    });
+    setModalOpen(true);
+  };
+
+  const closeModal = () => { setModalOpen(false); setModalRow(null); };
+
+  const saveModal = async () => {
+    setSaving(true);
+    const payload = {
+      dong: form.dong || null,
+      lot_number: form.lot_number || null,
+      business_name: form.business_name || null,
+      phone: form.phone || null,
+      floor_info: form.floor_info || null,
+      area_m2: form.area_m2 !== '' ? Number(form.area_m2) : null,
+      deposit: form.deposit !== '' ? Number(form.deposit) : null,
+      monthly_rent: form.monthly_rent !== '' ? Number(form.monthly_rent) : null,
+      memo: form.memo || null,
+      agent_id: form.agent_id || null,
+    };
+    if (modalRow) {
+      await supabase.from('prospect_properties').update(payload).eq('id', modalRow.id);
+      setRows(prev => prev.map(r => r.id === modalRow.id ? { ...r, ...payload } : r));
+      showToast('수정되었습니다.');
+    } else {
+      const { data } = await supabase
+        .from('prospect_properties')
+        .insert({ ...payload, status: 'prospect' })
+        .select().single();
+      if (data) setRows(prev => [data, ...prev]);
+      showToast('추가되었습니다.');
     }
-    await supabase.from('prospect_properties').update({ [field]: value }).eq('id', id);
-    setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
-    setEditCell(null);
-  };
-
-  const toggleAdvert = async (id: string, cur: boolean) => {
-    await supabase.from('prospect_properties').update({ is_advertised: !cur }).eq('id', id);
-    setRows(prev => prev.map(r => r.id === id ? { ...r, is_advertised: !cur } : r));
+    setSaving(false);
+    closeModal();
   };
 
   const deleteRow = async (id: string) => {
@@ -87,18 +145,6 @@ export default function ProspectsPage() {
     await supabase.from('prospect_properties').delete().eq('id', id);
     setRows(prev => prev.filter(r => r.id !== id));
     showToast('삭제되었습니다.');
-  };
-
-  const addRow = async () => {
-    const { data } = await supabase
-      .from('prospect_properties')
-      .insert({ status: 'prospect', is_advertised: false })
-      .select().single();
-    if (data) {
-      setRows(prev => [data, ...prev]);
-      setEditCell({ id: data.id, field: 'dong' });
-      setEditVal('');
-    }
   };
 
   const registerProperty = async (row: Row) => {
@@ -121,43 +167,26 @@ export default function ProspectsPage() {
 
   const agentName = (id: string | null) => agents.find(a => a.id === id)?.name ?? '-';
   const pyeong = (m2: number | null) => m2 != null ? (m2 / 3.3058).toFixed(1) : '';
-  const fmt = (v: number | null) => v != null ? v.toLocaleString() : '';
-  const isEd = (id: string, f: string) => editCell?.id === id && editCell.field === f;
+  const fmtNum = (v: number | null) => v != null ? v.toLocaleString() : '';
 
-  const tdBase: React.CSSProperties = { padding: '4px 6px', borderRight: '1px solid #eee', verticalAlign: 'middle' };
-
-  // text/number cell (helper fn, not component — avoids unmount on re-render)
-  const tc = (row: Row, field: keyof Row, type: 'text' | 'number', mw: number) => {
-    const editing = isEd(row.id, field);
-    const reg = row.status === 'registered';
-    const raw = row[field];
-    const disp = type === 'number' ? fmt(raw as number | null) : ((raw ?? '') as string);
-    return (
-      <td style={{ ...tdBase, minWidth: `${mw}px` }}
-        className={reg ? '' : 'pcell'}
-        onClick={() => !reg && !editing && startEdit(row.id, field, raw)}>
-        {editing
-          ? <input autoFocus type={type === 'number' ? 'number' : 'text'} value={editVal}
-              onChange={e => setEditVal(e.target.value)}
-              onBlur={e => commit(row.id, field, e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditCell(null); }}
-              style={{ width: '100%', fontSize: '12px', border: '1px solid #c47c30', borderRadius: '3px', padding: '2px 4px', outline: 'none', boxSizing: 'border-box' }} />
-          : <span style={{ fontSize: '12px', color: reg ? '#bbb' : '#222', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minHeight: '18px', cursor: reg ? 'default' : 'pointer' }}>{disp}</span>
-        }
-      </td>
-    );
+  const tdS: React.CSSProperties = {
+    padding: '8px 10px', borderRight: '1px solid #eee', verticalAlign: 'middle',
+    fontSize: '13px', color: '#333',
+  };
+  const inpS: React.CSSProperties = {
+    width: '100%', border: '1px solid #ddd', borderRadius: '5px',
+    padding: '8px 10px', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+  };
+  const labelS: React.CSSProperties = {
+    display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px',
   };
 
-  const HEADERS: [string, number][] = [
-    ['동', 58], ['번지', 68], ['상호(업종)', 110], ['전화번호', 110], ['층(호수)', 74],
-    ['㎡', 62], ['평', 54], ['보증금', 88], ['월세', 78], ['광고', 52],
-    ['비고', 140], ['담당자', 78], ['', 130],
-  ];
+  const HEADERS = ['동', '번지', '상호(업종)', '전화번호', '층(호수)', '㎡', '평', '보증금', '월세', '비고', '담당자', ''];
 
   return (
     <>
       <style>{`
-        .pcell:hover { background: #fffbf5; }
+        .prow:hover { background: #fffbf5 !important; cursor: pointer; }
         @media print {
           .no-print { display: none !important; }
           .ptitle { display: block !important; }
@@ -165,13 +194,10 @@ export default function ProspectsPage() {
           table { border-collapse: collapse !important; width: 100% !important; }
           th, td { border: 1px solid #aaa !important; padding: 4px 6px !important; font-size: 11px !important; }
           thead tr { background: #eee !important; print-color-adjust: exact; }
-          input[type="checkbox"] { display: none; }
-          .advert-label { display: inline !important; }
         }
       `}</style>
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px 16px 80px' }}>
-        {/* 헤더 */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px 80px' }}>
         <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <button onClick={() => router.push('/admin')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666', padding: 0 }}>←</button>
@@ -189,7 +215,6 @@ export default function ProspectsPage() {
           </button>
         </div>
 
-        {/* 인쇄 전용 제목 */}
         <div className="ptitle" style={{ display: 'none', marginBottom: '10px' }}>
           <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>임장 후보 매물 목록</h2>
         </div>
@@ -198,12 +223,12 @@ export default function ProspectsPage() {
           <div style={{ textAlign: 'center', padding: '60px', color: '#aaa', fontSize: '14px' }}>로딩 중...</div>
         ) : (
           <div style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px', background: '#fff' }}>
-            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '920px' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '820px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #ddd' }}>
-                  {HEADERS.map(([label, w], i) => (
-                    <th key={i} style={{ padding: '9px 8px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: (label === '광고' || label === '') ? 'center' : 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee', minWidth: `${w}px` }}>
-                      {label}
+                  {HEADERS.map((h, i) => (
+                    <th key={i} style={{ padding: '9px 10px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: h === '' ? 'center' : 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee' }}>
+                      {h}
                     </th>
                   ))}
                 </tr>
@@ -211,50 +236,36 @@ export default function ProspectsPage() {
               <tbody>
                 {displayed.length === 0 && (
                   <tr>
-                    <td colSpan={13} style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: '13px' }}>
+                    <td colSpan={12} style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: '13px' }}>
                       아래 "+ 추가" 버튼으로 추가하세요.
                     </td>
                   </tr>
                 )}
                 {displayed.map((row, idx) => {
                   const reg = row.status === 'registered';
+                  const tc = reg ? '#bbb' : '#333';
+                  const cell = (val: string | number | null, maxW?: string) => (
+                    <td style={{ ...tdS, color: tc, ...(maxW ? { maxWidth: maxW } : {}) }}>
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val ?? ''}</span>
+                    </td>
+                  );
                   return (
-                    <tr key={row.id} style={{ background: reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}>
-                      {tc(row, 'dong', 'text', 58)}
-                      {tc(row, 'lot_number', 'text', 68)}
-                      {tc(row, 'business_name', 'text', 110)}
-                      {tc(row, 'phone', 'text', 110)}
-                      {tc(row, 'floor_info', 'text', 74)}
-                      {tc(row, 'area_m2', 'number', 62)}
-                      {/* 평 자동계산 (읽기전용) */}
-                      <td style={{ ...tdBase, minWidth: '54px' }}>
-                        <span style={{ fontSize: '12px', color: '#888' }}>{pyeong(row.area_m2)}</span>
-                      </td>
-                      {tc(row, 'deposit', 'number', 88)}
-                      {tc(row, 'monthly_rent', 'number', 78)}
-                      {/* 광고여부 */}
-                      <td style={{ ...tdBase, textAlign: 'center', minWidth: '52px' }}>
-                        <input type="checkbox" checked={row.is_advertised}
-                          onChange={() => !reg && toggleAdvert(row.id, row.is_advertised)}
-                          style={{ cursor: reg ? 'default' : 'pointer', accentColor: '#c47c30', width: '14px', height: '14px' }} />
-                        <span className="advert-label" style={{ display: 'none', fontSize: '12px' }}>{row.is_advertised ? '●' : '○'}</span>
-                      </td>
-                      {tc(row, 'memo', 'text', 140)}
-                      {/* 담당자 */}
-                      <td style={{ ...tdBase, minWidth: '78px' }}
-                        className={reg ? '' : 'pcell'}
-                        onClick={() => !reg && !isEd(row.id, 'agent_id') && startEdit(row.id, 'agent_id', row.agent_id ?? '')}>
-                        {isEd(row.id, 'agent_id')
-                          ? <select autoFocus value={editVal} onChange={e => setEditVal(e.target.value)} onBlur={e => commit(row.id, 'agent_id', e.target.value)}
-                              style={{ width: '100%', fontSize: '12px', border: '1px solid #c47c30', borderRadius: '3px', padding: '2px', outline: 'none' }}>
-                              <option value="">-</option>
-                              {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </select>
-                          : <span style={{ fontSize: '12px', color: reg ? '#bbb' : '#555', display: 'block', minHeight: '18px', cursor: reg ? 'default' : 'pointer' }}>{agentName(row.agent_id)}</span>
-                        }
-                      </td>
-                      {/* 액션 */}
-                      <td className="no-print" style={{ ...tdBase, textAlign: 'center', minWidth: '130px' }}>
+                    <tr key={row.id} className={reg ? '' : 'prow'}
+                      style={{ background: reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
+                      onClick={() => !reg && openEdit(row)}>
+                      {cell(row.dong)}
+                      {cell(row.lot_number)}
+                      {cell(row.business_name)}
+                      {cell(row.phone)}
+                      {cell(row.floor_info)}
+                      {cell(row.area_m2)}
+                      <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
+                      {cell(fmtNum(row.deposit))}
+                      {cell(fmtNum(row.monthly_rent))}
+                      {cell(row.memo, '180px')}
+                      {cell(agentName(row.agent_id))}
+                      <td className="no-print" style={{ ...tdS, textAlign: 'center', whiteSpace: 'nowrap' }}
+                        onClick={e => e.stopPropagation()}>
                         {!reg ? (
                           <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                             <button onClick={() => registerProperty(row)}
@@ -278,17 +289,92 @@ export default function ProspectsPage() {
           </div>
         )}
 
-        {/* + 추가 버튼 */}
         <div className="no-print" style={{ marginTop: '12px' }}>
-          <button onClick={addRow}
+          <button onClick={openNew}
             style={{ padding: '10px 22px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
             + 추가
           </button>
         </div>
       </div>
 
+      {/* 입력/수정 모달 */}
+      {modalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
+            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 20px', color: '#1a1a1a' }}>
+              {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
+            </h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <label style={labelS}>동</label>
+                <input style={inpS} value={form.dong} onChange={e => setForm(p => ({ ...p, dong: e.target.value }))} placeholder="예: 중동" />
+              </div>
+              <div>
+                <label style={labelS}>번지</label>
+                <input style={inpS} value={form.lot_number} onChange={e => setForm(p => ({ ...p, lot_number: e.target.value }))} placeholder="예: 123-4" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelS}>상호 / 업종</label>
+                <input style={inpS} value={form.business_name} onChange={e => setForm(p => ({ ...p, business_name: e.target.value }))} placeholder="예: 카페, 편의점" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelS}>전화번호</label>
+                <input style={inpS} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" inputMode="tel" />
+              </div>
+              <div>
+                <label style={labelS}>층 / 호수</label>
+                <input style={inpS} value={form.floor_info} onChange={e => setForm(p => ({ ...p, floor_info: e.target.value }))} placeholder="예: 1층, 201호" />
+              </div>
+              <div>
+                <label style={labelS}>
+                  면적 (㎡)
+                  {form.area_m2 !== '' && !isNaN(Number(form.area_m2)) && (
+                    <span style={{ color: '#c47c30', fontWeight: 400, marginLeft: '6px' }}>
+                      ≈ {(Number(form.area_m2) / 3.3058).toFixed(1)}평
+                    </span>
+                  )}
+                </label>
+                <input style={inpS} type="number" value={form.area_m2} onChange={e => setForm(p => ({ ...p, area_m2: e.target.value }))} placeholder="㎡" />
+              </div>
+              <div>
+                <label style={labelS}>보증금 (만원)</label>
+                <input style={inpS} type="number" value={form.deposit} onChange={e => setForm(p => ({ ...p, deposit: e.target.value }))} placeholder="만원" />
+              </div>
+              <div>
+                <label style={labelS}>월세 (만원)</label>
+                <input style={inpS} type="number" value={form.monthly_rent} onChange={e => setForm(p => ({ ...p, monthly_rent: e.target.value }))} placeholder="만원" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelS}>비고</label>
+                <textarea rows={4} style={{ ...inpS, resize: 'vertical', lineHeight: '1.5' }} value={form.memo} onChange={e => setForm(p => ({ ...p, memo: e.target.value }))} placeholder="메모" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelS}>담당자</label>
+                <select style={inpS} value={form.agent_id} onChange={e => setForm(p => ({ ...p, agent_id: e.target.value }))}>
+                  <option value="">-</option>
+                  {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '22px', justifyContent: 'flex-end' }}>
+              <button onClick={closeModal}
+                style={{ padding: '10px 20px', background: '#fff', border: '1px solid #ddd', borderRadius: '7px', fontSize: '14px', cursor: 'pointer', color: '#555' }}>
+                취소
+              </button>
+              <button onClick={saveModal} disabled={saving}
+                style={{ padding: '10px 24px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '7px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                {saving ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#1a1a1a', color: '#fff', padding: '10px 22px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, zIndex: 200 }}>
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#1a1a1a', color: '#fff', padding: '10px 22px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, zIndex: 600 }}>
           {toast}
         </div>
       )}
