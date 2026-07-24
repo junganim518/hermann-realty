@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
+declare global { interface Window { daum: any; } }
+
 type Agent = { id: string; name: string };
 type Row = {
   id: string;
   dong: string | null;
   lot_number: string | null;
+  building_name: string | null;
   business_name: string | null;
   phone: string | null;
   floor_info: string | null;
@@ -22,14 +25,16 @@ type Row = {
 };
 
 type FormState = {
-  dong: string; lot_number: string; business_name: string; phone: string;
-  floor_info: string; area_m2: string; deposit: string; monthly_rent: string;
+  dong: string; lot_number: string; building_name: string;
+  business_name: string; phone: string; floor_info: string;
+  area_m2: string; deposit: string; monthly_rent: string;
   memo: string; agent_id: string;
 };
 
 const emptyForm = (): FormState => ({
-  dong: '', lot_number: '', business_name: '', phone: '',
-  floor_info: '', area_m2: '', deposit: '', monthly_rent: '', memo: '', agent_id: '',
+  dong: '', lot_number: '', building_name: '',
+  business_name: '', phone: '', floor_info: '',
+  area_m2: '', deposit: '', monthly_rent: '', memo: '', agent_id: '',
 });
 
 const fmtPhone = (val: string) => {
@@ -66,6 +71,14 @@ export default function ProspectsPage() {
       if (!data.user) { router.replace('/login?redirect=/admin/prospects'); return; }
       setAuthChecked(true);
     });
+    // Daum Postcode 스크립트 사전 로드
+    if (!document.getElementById('daum-postcode-script')) {
+      const s = document.createElement('script');
+      s.id = 'daum-postcode-script';
+      s.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+      s.async = true;
+      document.head.appendChild(s);
+    }
   }, []);
 
   useEffect(() => {
@@ -84,6 +97,27 @@ export default function ProspectsPage() {
 
   const displayed = filterAgent ? rows.filter(r => r.agent_id === filterAgent) : rows;
 
+  const openDaumPostcode = () => {
+    if (!window.daum?.Postcode) {
+      alert('주소검색 준비 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    new window.daum.Postcode({
+      oncomplete: (data: any) => {
+        const buildingName = data.buildingName || data.apartment || '';
+        const dong = data.bname || '';
+        const jibun = data.jibunAddress || data.autoJibunAddress || '';
+        const lotNumber = jibun.split(' ').pop() || '';
+        setForm(prev => ({
+          ...prev,
+          ...(dong && { dong }),
+          ...(lotNumber && { lot_number: lotNumber }),
+          ...(buildingName && { building_name: buildingName }),
+        }));
+      },
+    }).open();
+  };
+
   const openNew = () => {
     setModalRow(null);
     setForm(emptyForm());
@@ -96,6 +130,7 @@ export default function ProspectsPage() {
     setForm({
       dong: row.dong ?? '',
       lot_number: row.lot_number ?? '',
+      building_name: row.building_name ?? '',
       business_name: row.business_name ?? '',
       phone: row.phone ?? '',
       floor_info: row.floor_info ?? '',
@@ -115,6 +150,7 @@ export default function ProspectsPage() {
     const payload = {
       dong: form.dong || null,
       lot_number: form.lot_number || null,
+      building_name: form.building_name || null,
       business_name: form.business_name || null,
       phone: form.phone || null,
       floor_info: form.floor_info || null,
@@ -182,8 +218,7 @@ export default function ProspectsPage() {
     display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px',
   };
 
-  // 화면용 헤더 (# 컬럼은 인쇄전용이라 화면에서 숨김)
-  const HEADERS = ['동', '번지', '상호(업종)', '전화번호', '층(호수)', '㎡', '평', '보증금', '월세', '비고', '담당자', ''];
+  const HEADERS = ['동', '번지', '건물명', '상호(업종)', '전화번호', '층(호수)', '㎡', '평', '보증금', '월세', '비고', '담당자', ''];
 
   return (
     <>
@@ -217,19 +252,20 @@ export default function ProspectsPage() {
             -webkit-print-color-adjust: exact;
           }
           .print-table thead th { font-weight: 700 !important; color: #222 !important; }
-          /* 담당자(12번째) 숨김, 액션(13번째)은 .no-print로 이미 처리 */
-          .print-table th:nth-child(12), .print-table td:nth-child(12) { display: none !important; }
-          /* 컬럼 너비 (A4 landscape 기준, # 컬럼 인쇄 숨김) */
+          /* 담당자(13번째) 숨김, 액션(14번째)은 .no-print */
+          .print-table th:nth-child(13), .print-table td:nth-child(13) { display: none !important; }
+          /* 컬럼 너비 (A4 landscape, # 숨김 기준) */
           .print-table th:nth-child(2)  { width: 4%; }
-          .print-table th:nth-child(3)  { width: 6%; }
-          .print-table th:nth-child(4)  { width: 12%; }
+          .print-table th:nth-child(3)  { width: 5%; }
+          .print-table th:nth-child(4)  { width: 8%; }
           .print-table th:nth-child(5)  { width: 10%; }
-          .print-table th:nth-child(6)  { width: 7%; }
-          .print-table th:nth-child(7)  { width: 5%; }
-          .print-table th:nth-child(8)  { width: 5%; }
-          .print-table th:nth-child(9)  { width: 7%; }
+          .print-table th:nth-child(6)  { width: 11%; }
+          .print-table th:nth-child(7)  { width: 7%; }
+          .print-table th:nth-child(8)  { width: 4%; }
+          .print-table th:nth-child(9)  { width: 4%; }
           .print-table th:nth-child(10) { width: 6%; }
-          .print-table th:nth-child(11) { width: 38%; }
+          .print-table th:nth-child(11) { width: 5%; }
+          .print-table th:nth-child(12) { width: 36%; }
           .print-table td span {
             white-space: normal !important; overflow: visible !important;
             text-overflow: clip !important; display: inline !important;
@@ -239,7 +275,7 @@ export default function ProspectsPage() {
         }
       `}</style>
 
-      <div className="print-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px 80px' }}>
+      <div className="print-container" style={{ maxWidth: '1600px', margin: '0 auto', padding: '20px 8px 80px' }}>
 
         {/* 화면 헤더 */}
         <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -278,10 +314,9 @@ export default function ProspectsPage() {
           <div style={{ textAlign: 'center', padding: '60px', color: '#aaa', fontSize: '14px' }}>로딩 중...</div>
         ) : (
           <div className="print-wrap" style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px', background: '#fff' }}>
-            <table className="print-table" style={{ borderCollapse: 'collapse', width: '100%', minWidth: '820px' }}>
+            <table className="print-table" style={{ borderCollapse: 'collapse', width: '100%', minWidth: '960px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #ddd' }}>
-                  {/* # 컬럼: 인쇄전용 */}
                   <th className="print-only" style={{ padding: '9px 6px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: 'center', borderRight: '1px solid #eee' }}>#</th>
                   {HEADERS.map((h, i) => (
                     <th key={i} style={{ padding: '9px 10px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: h === '' ? 'center' : 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee' }}>
@@ -293,7 +328,7 @@ export default function ProspectsPage() {
               <tbody>
                 {displayed.length === 0 && (
                   <tr>
-                    <td colSpan={14} style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: '13px' }}>
+                    <td colSpan={15} style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: '13px' }}>
                       아래 "+ 추가" 버튼으로 추가하세요.
                     </td>
                   </tr>
@@ -301,8 +336,8 @@ export default function ProspectsPage() {
                 {displayed.map((row, idx) => {
                   const reg = row.status === 'registered';
                   const tc = reg ? '#bbb' : '#333';
-                  const cell = (val: string | number | null) => (
-                    <td style={{ ...tdS, color: tc }}>
+                  const cell = (val: string | number | null, minW?: number) => (
+                    <td style={{ ...tdS, color: tc, ...(minW ? { minWidth: `${minW}px` } : {}) }}>
                       <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val ?? ''}</span>
                     </td>
                   );
@@ -310,18 +345,17 @@ export default function ProspectsPage() {
                     <tr key={row.id} className={reg ? '' : 'prow'}
                       style={{ background: reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
                       onClick={() => !reg && openEdit(row)}>
-                      {/* # 컬럼: 인쇄전용 */}
                       <td className="print-only" style={{ ...tdS, textAlign: 'center', color: '#555', fontSize: '11px' }}>{idx + 1}</td>
                       {cell(row.dong)}
                       {cell(row.lot_number)}
+                      {cell(row.building_name)}
                       {cell(row.business_name)}
-                      {cell(row.phone)}
+                      {cell(row.phone, 130)}
                       {cell(row.floor_info)}
                       {cell(row.area_m2)}
                       <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
-                      {/* 비고: 화면에서 2줄 제한, 인쇄에서 전체 표시 */}
                       <td style={{ ...tdS, color: tc, maxWidth: '260px', minWidth: '200px' }} title={row.memo ?? undefined}>
                         <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', whiteSpace: 'normal', lineHeight: '1.4', wordBreak: 'break-all' }}>{row.memo ?? ''}</span>
                       </td>
@@ -351,7 +385,6 @@ export default function ProspectsPage() {
           </div>
         )}
 
-        {/* 화면: + 추가 버튼 */}
         <div className="no-print" style={{ marginTop: '12px' }}>
           <button onClick={openNew}
             style={{ padding: '10px 22px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
@@ -382,6 +415,18 @@ export default function ProspectsPage() {
               <div>
                 <label style={labelS}>번지</label>
                 <input style={inpS} value={form.lot_number} onChange={e => setForm(p => ({ ...p, lot_number: e.target.value }))} placeholder="예: 123-4" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelS}>건물명</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input style={{ ...inpS, flex: 1 }} value={form.building_name}
+                    onChange={e => setForm(p => ({ ...p, building_name: e.target.value }))} placeholder="예: 삼성빌딩" />
+                  <button type="button" onClick={openDaumPostcode}
+                    style={{ whiteSpace: 'nowrap', padding: '0 14px', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '5px', fontSize: '13px', cursor: 'pointer', color: '#444', fontWeight: 600 }}>
+                    주소 검색
+                  </button>
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa' }}>주소 검색 시 동·번지·건물명 자동입력</p>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelS}>상호 / 업종</label>
