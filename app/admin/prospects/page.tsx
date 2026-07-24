@@ -168,6 +168,7 @@ export default function ProspectsPage() {
   const agentName = (id: string | null) => agents.find(a => a.id === id)?.name ?? '-';
   const pyeong = (m2: number | null) => m2 != null ? (m2 / 3.3058).toFixed(1) : '';
   const fmtNum = (v: number | null) => v != null ? v.toLocaleString() : '';
+  const printDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const tdS: React.CSSProperties = {
     padding: '8px 10px', borderRight: '1px solid #eee', verticalAlign: 'middle',
@@ -181,29 +182,68 @@ export default function ProspectsPage() {
     display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '4px',
   };
 
+  // 화면용 헤더 (# 컬럼은 인쇄전용이라 화면에서 숨김)
   const HEADERS = ['동', '번지', '상호(업종)', '전화번호', '층(호수)', '㎡', '평', '보증금', '월세', '비고', '담당자', ''];
 
   return (
     <>
       <style>{`
         .prow:hover { background: #fffbf5 !important; cursor: pointer; }
+        .print-only { display: none; }
+        @page { size: A4 landscape; margin: 15mm; }
         @media print {
           .no-print { display: none !important; }
-          .ptitle { display: block !important; }
+          .print-only { display: table-cell !important; }
+          .print-header { display: block !important; }
+          .print-footer { display: block !important; }
           header, footer, nav, .MobileTabBar { display: none !important; }
-          body { padding: 0; margin: 0; }
-          .print-container { max-width: 100% !important; padding: 8px !important; }
+          body { padding: 0; margin: 0; background: #fff; }
+          .print-container { max-width: 100% !important; padding: 0 !important; }
           .print-wrap { overflow: visible !important; border: none !important; border-radius: 0 !important; }
-          .print-table { min-width: 0 !important; width: 100% !important; table-layout: fixed; border-collapse: collapse !important; }
-          .print-table th, .print-table td { border: 1px solid #999 !important; padding: 3px 5px !important; font-size: 10px !important; word-break: break-word !important; overflow: visible !important; }
-          .print-table thead tr { background: #eee !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-          .print-table th:nth-child(11), .print-table td:nth-child(11),
+          .print-table {
+            min-width: 0 !important; width: 100% !important;
+            table-layout: fixed; border-collapse: collapse !important;
+          }
+          .print-table th, .print-table td {
+            border: 1px solid #bbb !important;
+            padding: 4px 5px !important;
+            font-size: 10px !important;
+            word-break: break-word !important;
+            overflow: visible !important;
+            white-space: normal !important;
+          }
+          .print-table thead tr {
+            background: #f0f0f0 !important;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+          .print-table thead th { font-weight: 700 !important; color: #222 !important; }
+          /* 담당자(12번째) 숨김, 액션(13번째)은 .no-print로 이미 처리 */
           .print-table th:nth-child(12), .print-table td:nth-child(12) { display: none !important; }
-          .print-table td span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; display: inline !important; -webkit-line-clamp: unset !important; }
+          /* 컬럼 너비 (A4 landscape 기준) */
+          .print-table th:nth-child(1)  { width: 4%; }
+          .print-table th:nth-child(2)  { width: 6%; }
+          .print-table th:nth-child(3)  { width: 7%; }
+          .print-table th:nth-child(4)  { width: 14%; }
+          .print-table th:nth-child(5)  { width: 11%; }
+          .print-table th:nth-child(6)  { width: 7%; }
+          .print-table th:nth-child(7)  { width: 5%; }
+          .print-table th:nth-child(8)  { width: 5%; }
+          .print-table th:nth-child(9)  { width: 9%; }
+          .print-table th:nth-child(10) { width: 9%; }
+          .print-table th:nth-child(11) { width: 23%; }
+          .print-table td span {
+            white-space: normal !important; overflow: visible !important;
+            text-overflow: clip !important; display: inline !important;
+            -webkit-line-clamp: unset !important;
+          }
+          .prow:hover { background: inherit !important; }
         }
       `}</style>
 
       <div className="print-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px 80px' }}>
+
+        {/* 화면 헤더 */}
         <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <button onClick={() => router.push('/admin')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666', padding: 0 }}>←</button>
@@ -221,8 +261,19 @@ export default function ProspectsPage() {
           </button>
         </div>
 
-        <div className="ptitle" style={{ display: 'none', marginBottom: '10px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>임장 후보 매물 목록</h2>
+        {/* 인쇄 전용 헤더 */}
+        <div className="print-header" style={{ display: 'none', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: '#111' }}>임장 후보 매물 목록</h2>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#111' }}>헤르만부동산</div>
+              <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>출력일: {printDate}</div>
+            </div>
+          </div>
+          <div style={{ marginTop: '8px', paddingBottom: '8px', borderBottom: '2px solid #222', fontSize: '12px', color: '#444' }}>
+            담당자: <strong>{filterAgent ? agentName(filterAgent) : '전체'}</strong>
+            &nbsp;&nbsp;|&nbsp;&nbsp;총 <strong>{displayed.length}건</strong>
+          </div>
         </div>
 
         {loading ? (
@@ -232,6 +283,8 @@ export default function ProspectsPage() {
             <table className="print-table" style={{ borderCollapse: 'collapse', width: '100%', minWidth: '820px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #ddd' }}>
+                  {/* # 컬럼: 인쇄전용 */}
+                  <th className="print-only" style={{ padding: '9px 6px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: 'center', borderRight: '1px solid #eee' }}>#</th>
                   {HEADERS.map((h, i) => (
                     <th key={i} style={{ padding: '9px 10px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: h === '' ? 'center' : 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee' }}>
                       {h}
@@ -242,7 +295,7 @@ export default function ProspectsPage() {
               <tbody>
                 {displayed.length === 0 && (
                   <tr>
-                    <td colSpan={12} style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: '13px' }}>
+                    <td colSpan={14} style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: '13px' }}>
                       아래 "+ 추가" 버튼으로 추가하세요.
                     </td>
                   </tr>
@@ -250,8 +303,8 @@ export default function ProspectsPage() {
                 {displayed.map((row, idx) => {
                   const reg = row.status === 'registered';
                   const tc = reg ? '#bbb' : '#333';
-                  const cell = (val: string | number | null, maxW?: string) => (
-                    <td style={{ ...tdS, color: tc, ...(maxW ? { maxWidth: maxW } : {}) }}>
+                  const cell = (val: string | number | null) => (
+                    <td style={{ ...tdS, color: tc }}>
                       <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val ?? ''}</span>
                     </td>
                   );
@@ -259,6 +312,8 @@ export default function ProspectsPage() {
                     <tr key={row.id} className={reg ? '' : 'prow'}
                       style={{ background: reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
                       onClick={() => !reg && openEdit(row)}>
+                      {/* # 컬럼: 인쇄전용 */}
+                      <td className="print-only" style={{ ...tdS, textAlign: 'center', color: '#555', fontSize: '11px' }}>{idx + 1}</td>
                       {cell(row.dong)}
                       {cell(row.lot_number)}
                       {cell(row.business_name)}
@@ -268,6 +323,7 @@ export default function ProspectsPage() {
                       <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
+                      {/* 비고: 화면에서 2줄 제한, 인쇄에서 전체 표시 */}
                       <td style={{ ...tdS, color: tc, maxWidth: '260px', minWidth: '200px' }} title={row.memo ?? undefined}>
                         <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', whiteSpace: 'normal', lineHeight: '1.4', wordBreak: 'break-all' }}>{row.memo ?? ''}</span>
                       </td>
@@ -297,11 +353,17 @@ export default function ProspectsPage() {
           </div>
         )}
 
+        {/* 화면: + 추가 버튼 */}
         <div className="no-print" style={{ marginTop: '12px' }}>
           <button onClick={openNew}
             style={{ padding: '10px 22px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
             + 추가
           </button>
+        </div>
+
+        {/* 인쇄 전용 푸터 */}
+        <div className="print-footer" style={{ display: 'none', marginTop: '16px', borderTop: '1px solid #ccc', paddingTop: '8px', textAlign: 'center', fontSize: '11px', color: '#555' }}>
+          헤르만부동산 &nbsp;·&nbsp; 010-8680-8151
         </div>
       </div>
 
