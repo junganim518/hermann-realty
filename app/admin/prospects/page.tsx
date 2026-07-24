@@ -422,15 +422,15 @@ export default function ProspectsPage() {
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
                       {/* 비고 — 인라인 편집 */}
-                      <td style={{ ...tdS, color: tc, width: '35%', minWidth: '300px', height: '40px', overflow: 'hidden', cursor: isEditingMemo ? 'default' : 'text' }}
+                      <td style={{ ...tdS, color: tc, width: '35%', minWidth: '300px', cursor: isEditingMemo ? 'default' : 'text' }}
                         onClick={e => { e.stopPropagation(); if (!isEditingMemo) { setEditingMemoId(row.id); setMemoEdit(row.memo ?? ''); } }}>
                         {isEditingMemo ? (
-                          <textarea autoFocus value={memoEdit}
+                          <textarea autoFocus value={memoEdit} rows={2}
                             onChange={e => setMemoEdit(e.target.value)}
                             onBlur={() => saveMemo(row.id)}
                             onKeyDown={e => { if (e.key === 'Escape') setEditingMemoId(null); }}
                             onClick={e => e.stopPropagation()}
-                            style={{ width: 'calc(100% + 20px)', height: 'calc(100% + 16px)', margin: '-8px -10px', border: 'none', borderLeft: '3px solid #c47c30', outline: 'none', resize: 'none', fontSize: '12px', padding: '8px 10px', boxSizing: 'border-box', lineHeight: '1.5', background: '#fffdf8', display: 'block' }} />
+                            style={{ width: '100%', border: '1px solid #c47c30', borderRadius: '4px', padding: '3px 6px', fontSize: '12px', outline: 'none', boxSizing: 'border-box', resize: 'none', lineHeight: '1.5' }} />
                         ) : (
                           <span style={{ color: row.memo ? tc : '#ccc', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.5' }}>
                             {row.memo || '—'}
