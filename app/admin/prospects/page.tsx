@@ -402,35 +402,38 @@ export default function ProspectsPage() {
       {modalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500 }}>
           <div style={{
-            position: 'fixed', top: '80px', left: '20px', right: '20px', bottom: '20px',
-            margin: 'auto', maxWidth: '480px', maxHeight: 'calc(100vh - 100px)',
-            height: 'fit-content', display: 'flex', flexDirection: 'column',
+            position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
+            width: '560px', maxWidth: 'calc(100vw - 40px)', maxHeight: 'calc(100vh - 100px)',
+            display: 'flex', flexDirection: 'column',
             background: '#fff', borderRadius: '12px', overflow: 'hidden',
           }}>
-            {/* 제목 — 항상 상단 고정 */}
-            <div style={{ flexShrink: 0, padding: '20px 24px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>
-                {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
-              </h2>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999', lineHeight: 1, padding: '0 2px' }}>×</button>
+
+            {/* 상단 고정: 제목 + 주소 검색 */}
+            <div style={{ flexShrink: 0, padding: '20px 24px 16px', borderBottom: '2px solid #f0f0f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>
+                  {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
+                </h2>
+                <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999', lineHeight: 1, padding: '0 2px' }}>×</button>
+              </div>
+              <div>
+                <label style={labelS}>주소</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input readOnly value={[form.dong, form.lot_number].filter(Boolean).join(' ') || ''}
+                    placeholder="주소를 검색하세요"
+                    style={{ ...inpS, flex: 1, background: '#f9f9f9', color: '#555', cursor: 'default' }} />
+                  <button type="button" onClick={openDaumPostcode}
+                    style={{ height: '40px', padding: '0 20px', background: '#e2a06e', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    주소 검색
+                  </button>
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa' }}>동·번지·건물명 자동입력</p>
+              </div>
             </div>
 
             {/* 스크롤 가능한 본문 */}
-            <div style={{ overflowY: 'auto', flex: 1, padding: '20px 24px 24px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                {/* 주소 검색 버튼 */}
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input readOnly value={[form.dong, form.lot_number].filter(Boolean).join(' ') || ''}
-                      placeholder="주소를 검색하세요"
-                      style={{ ...inpS, flex: 1, background: '#f9f9f9', color: '#555', cursor: 'default' }} />
-                    <button type="button" onClick={openDaumPostcode}
-                      style={{ whiteSpace: 'nowrap', padding: '0 16px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                      주소 검색
-                    </button>
-                  </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa' }}>동·번지·건물명 자동입력</p>
-                </div>
                 {/* 동 / 번지 */}
                 <div>
                   <label style={labelS}>동</label>
@@ -495,17 +498,18 @@ export default function ProspectsPage() {
                   </select>
                 </div>
               </div>
+            </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '22px', justifyContent: 'flex-end' }}>
-                <button onClick={closeModal}
-                  style={{ padding: '10px 20px', background: '#fff', border: '1px solid #ddd', borderRadius: '7px', fontSize: '14px', cursor: 'pointer', color: '#555' }}>
-                  취소
-                </button>
-                <button onClick={saveModal} disabled={saving}
-                  style={{ padding: '10px 24px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '7px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
-                  {saving ? '저장 중...' : '저장'}
-                </button>
-              </div>
+            {/* 하단 고정: 취소/저장 */}
+            <div style={{ flexShrink: 0, padding: '14px 24px', borderTop: '1px solid #f0f0f0', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={closeModal}
+                style={{ padding: '10px 20px', background: '#fff', border: '1px solid #ddd', borderRadius: '7px', fontSize: '14px', cursor: 'pointer', color: '#555' }}>
+                취소
+              </button>
+              <button onClick={saveModal} disabled={saving}
+                style={{ padding: '10px 24px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '7px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                {saving ? '저장 중...' : '저장'}
+              </button>
             </div>
           </div>
         </div>
