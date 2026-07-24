@@ -54,6 +54,8 @@ export default function ProspectsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactMemoEdit, setContactMemoEdit] = useState('');
+  const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
+  const [memoEdit, setMemoEdit] = useState('');
   const [printingSelected, setPrintingSelected] = useState(false);
 
   const showToast = (msg: string) => {
@@ -210,6 +212,13 @@ export default function ProspectsPage() {
     await supabase.from('prospect_properties').update({ contact_memo: value }).eq('id', id);
     setRows(prev => prev.map(r => r.id === id ? { ...r, contact_memo: value } : r));
     setEditingContactId(null);
+  };
+
+  const saveMemo = async (id: string) => {
+    const value = memoEdit.trim() || null;
+    await supabase.from('prospect_properties').update({ memo: value }).eq('id', id);
+    setRows(prev => prev.map(r => r.id === id ? { ...r, memo: value } : r));
+    setEditingMemoId(null);
   };
 
   if (!authChecked) return null;
@@ -380,6 +389,7 @@ export default function ProspectsPage() {
                   const tc = reg ? '#bbb' : '#333';
                   const isSelected = selectedIds.has(row.id);
                   const isEditingContact = editingContactId === row.id;
+                  const isEditingMemo = editingMemoId === row.id;
                   const cell = (val: string | number | null) => (
                     <td style={{ ...tdS, color: tc }}>
                       <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val ?? ''}</span>
@@ -411,9 +421,21 @@ export default function ProspectsPage() {
                       <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
-                      {/* 비고 — 전체 표시 */}
-                      <td style={{ ...tdS, color: tc, minWidth: '240px' }} title={row.memo ?? undefined}>
-                        <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.5' }}>{row.memo ?? ''}</span>
+                      {/* 비고 — 인라인 편집 */}
+                      <td style={{ ...tdS, color: tc, minWidth: '240px', cursor: isEditingMemo ? 'default' : 'text' }}
+                        onClick={e => { e.stopPropagation(); if (!isEditingMemo) { setEditingMemoId(row.id); setMemoEdit(row.memo ?? ''); } }}>
+                        {isEditingMemo ? (
+                          <textarea autoFocus value={memoEdit} rows={3}
+                            onChange={e => setMemoEdit(e.target.value)}
+                            onBlur={() => saveMemo(row.id)}
+                            onKeyDown={e => { if (e.key === 'Escape') setEditingMemoId(null); }}
+                            onClick={e => e.stopPropagation()}
+                            style={{ width: '100%', border: '1px solid #c47c30', borderRadius: '4px', padding: '4px 6px', fontSize: '12px', outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: '1.5' }} />
+                        ) : (
+                          <span style={{ color: row.memo ? tc : '#ccc', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.5' }}>
+                            {row.memo || '—'}
+                          </span>
+                        )}
                       </td>
                       {/* 담당자 (화면만) */}
                       <td className="no-print" style={{ ...tdS, color: tc }}>
