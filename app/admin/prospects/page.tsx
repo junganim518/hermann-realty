@@ -193,7 +193,7 @@ export default function ProspectsPage() {
   const deleteSelected = async () => {
     if (selectedIds.size === 0) return;
     if (!confirm(`${selectedIds.size}건을 삭제하시겠습니까?`)) return;
-    const ids = [...selectedIds];
+    const ids = Array.from(selectedIds);
     await supabase.from('prospect_properties').delete().in('id', ids);
     setRows(prev => prev.filter(r => !selectedIds.has(r.id)));
     setSelectedIds(new Set());
