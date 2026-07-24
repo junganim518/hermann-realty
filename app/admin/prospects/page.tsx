@@ -262,7 +262,9 @@ export default function ProspectsPage() {
                       <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
-                      {cell(row.memo, '180px')}
+                      <td style={{ ...tdS, color: tc, maxWidth: '260px', minWidth: '200px' }} title={row.memo ?? undefined}>
+                        <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', whiteSpace: 'normal', lineHeight: '1.4', wordBreak: 'break-all' }}>{row.memo ?? ''}</span>
+                      </td>
                       {cell(agentName(row.agent_id))}
                       <td className="no-print" style={{ ...tdS, textAlign: 'center', whiteSpace: 'nowrap' }}
                         onClick={e => e.stopPropagation()}>
