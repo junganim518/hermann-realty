@@ -211,10 +211,12 @@ export default function ProspectsPage() {
   const secureSelected = async () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
-    await supabase.from('prospect_properties').update({ is_secured: true }).in('id', ids);
-    setRows(prev => prev.map(r => selectedIds.has(r.id) ? { ...r, is_secured: true } : r));
+    const allSecured = ids.every(id => rows.find(r => r.id === id)?.is_secured === true);
+    const newValue = !allSecured;
+    await supabase.from('prospect_properties').update({ is_secured: newValue }).in('id', ids);
+    setRows(prev => prev.map(r => selectedIds.has(r.id) ? { ...r, is_secured: newValue } : r));
     setSelectedIds(new Set());
-    showToast(`${ids.length}건 매물확보 처리되었습니다.`);
+    showToast(newValue ? `${ids.length}건 매물확보 처리되었습니다.` : `${ids.length}건 확보취소 처리되었습니다.`);
   };
 
   const saveContactMemo = async (id: string) => {
@@ -268,6 +270,7 @@ export default function ProspectsPage() {
   };
 
   const hasSelection = selectedIds.size > 0;
+  const allSelectedSecured = hasSelection && Array.from(selectedIds).every(id => rows.find(r => r.id === id)?.is_secured === true);
 
   return (
     <>
@@ -341,8 +344,8 @@ export default function ProspectsPage() {
             삭제
           </button>
           <button onClick={secureSelected} disabled={!hasSelection}
-            style={{ height: '34px', padding: '0 14px', background: hasSelection ? '#16a34a' : '#f5f5f5', color: hasSelection ? '#fff' : '#ccc', border: hasSelection ? 'none' : '1px solid #eee', borderRadius: '6px', fontSize: '13px', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 600 }}>
-            매물확보
+            style={{ height: '34px', padding: '0 14px', background: hasSelection ? (allSelectedSecured ? '#6b7280' : '#16a34a') : '#f5f5f5', color: hasSelection ? '#fff' : '#ccc', border: hasSelection ? 'none' : '1px solid #eee', borderRadius: '6px', fontSize: '13px', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 600 }}>
+            {allSelectedSecured ? '확보취소' : '매물확보'}
           </button>
           <button onClick={doPrintSelected} disabled={!hasSelection}
             style={{ height: '34px', padding: '0 14px', background: hasSelection ? '#1a1a1a' : '#f5f5f5', color: hasSelection ? '#e2a06e' : '#ccc', border: hasSelection ? 'none' : '1px solid #eee', borderRadius: '6px', fontSize: '13px', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 600 }}>
