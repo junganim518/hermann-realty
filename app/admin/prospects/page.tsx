@@ -190,14 +190,20 @@ export default function ProspectsPage() {
         @media print {
           .no-print { display: none !important; }
           .ptitle { display: block !important; }
-          body { padding: 0; font-size: 11px; }
-          table { border-collapse: collapse !important; width: 100% !important; }
-          th, td { border: 1px solid #aaa !important; padding: 4px 6px !important; font-size: 11px !important; }
-          thead tr { background: #eee !important; print-color-adjust: exact; }
+          header, footer, nav, .MobileTabBar { display: none !important; }
+          body { padding: 0; margin: 0; }
+          .print-container { max-width: 100% !important; padding: 8px !important; }
+          .print-wrap { overflow: visible !important; border: none !important; border-radius: 0 !important; }
+          .print-table { min-width: 0 !important; width: 100% !important; table-layout: fixed; border-collapse: collapse !important; }
+          .print-table th, .print-table td { border: 1px solid #999 !important; padding: 3px 5px !important; font-size: 10px !important; word-break: break-word !important; overflow: visible !important; }
+          .print-table thead tr { background: #eee !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+          .print-table th:nth-child(11), .print-table td:nth-child(11),
+          .print-table th:nth-child(12), .print-table td:nth-child(12) { display: none !important; }
+          .print-table td span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; display: inline !important; -webkit-line-clamp: unset !important; }
         }
       `}</style>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px 80px' }}>
+      <div className="print-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px 80px' }}>
         <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <button onClick={() => router.push('/admin')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666', padding: 0 }}>←</button>
@@ -222,8 +228,8 @@ export default function ProspectsPage() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: '#aaa', fontSize: '14px' }}>로딩 중...</div>
         ) : (
-          <div style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px', background: '#fff' }}>
-            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '820px' }}>
+          <div className="print-wrap" style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px', background: '#fff' }}>
+            <table className="print-table" style={{ borderCollapse: 'collapse', width: '100%', minWidth: '820px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #ddd' }}>
                   {HEADERS.map((h, i) => (
