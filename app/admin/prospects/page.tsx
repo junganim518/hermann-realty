@@ -392,8 +392,8 @@ export default function ProspectsPage() {
                   ))}
                   {/* 담당자 (화면만) */}
                   <th className="no-print" style={{ padding: '9px 10px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee' }}>담당자</th>
-                  {/* 통화/방문 (화면+인쇄) */}
-                  <th style={{ padding: '9px 10px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee' }}>통화/방문</th>
+                  {/* 통화/방문 (화면만) */}
+                  <th className="no-print" style={{ padding: '9px 10px', fontSize: '12px', fontWeight: 700, color: '#555', textAlign: 'left', whiteSpace: 'nowrap', borderRight: '1px solid #eee' }}>통화/방문</th>
                 </tr>
               </thead>
               <tbody>
@@ -461,8 +461,8 @@ export default function ProspectsPage() {
                       <td className="no-print" style={{ ...tdS, color: tc }}>
                         <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentName(row.agent_id)}</span>
                       </td>
-                      {/* 통화/방문 — 인라인 편집 */}
-                      <td style={{ ...tdS, minWidth: '120px', cursor: isEditingContact ? 'default' : 'text' }}
+                      {/* 통화/방문 — 인라인 편집 (화면만) */}
+                      <td className="no-print" style={{ ...tdS, minWidth: '120px', cursor: isEditingContact ? 'default' : 'text' }}
                         onClick={e => { e.stopPropagation(); if (!isEditingContact) { setEditingContactId(row.id); setContactMemoEdit(row.contact_memo ?? ''); } }}>
                         {isEditingContact ? (
                           <input autoFocus value={contactMemoEdit}
