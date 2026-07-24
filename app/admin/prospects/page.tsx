@@ -400,98 +400,111 @@ export default function ProspectsPage() {
 
       {/* 입력/수정 모달 */}
       {modalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500, overflowY: 'auto', padding: '20px' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', margin: '0 auto', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500 }}>
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: 'calc(100% - 40px)', maxWidth: '480px', maxHeight: 'calc(100vh - 40px)',
+            display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden',
+          }}>
+            {/* 제목 — 항상 상단 고정 */}
+            <div style={{ flexShrink: 0, padding: '20px 24px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>
                 {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
               </h2>
               <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999', lineHeight: 1, padding: '0 2px' }}>×</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              {/* 주소 검색 버튼 (맨 위) */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <button type="button" onClick={openDaumPostcode}
-                  style={{ width: '100%', padding: '10px', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', color: '#444', fontWeight: 700 }}>
-                  주소 검색
-                </button>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa', textAlign: 'center' }}>동·번지·건물명 자동입력</p>
+            {/* 스크롤 가능한 본문 */}
+            <div style={{ overflowY: 'auto', flex: 1, padding: '20px 24px 24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                {/* 주소 검색 버튼 */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input readOnly value={[form.dong, form.lot_number].filter(Boolean).join(' ') || ''}
+                      placeholder="주소를 검색하세요"
+                      style={{ ...inpS, flex: 1, background: '#f9f9f9', color: '#555', cursor: 'default' }} />
+                    <button type="button" onClick={openDaumPostcode}
+                      style={{ whiteSpace: 'nowrap', padding: '0 16px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                      주소 검색
+                    </button>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa' }}>동·번지·건물명 자동입력</p>
+                </div>
+                {/* 동 / 번지 */}
+                <div>
+                  <label style={labelS}>동</label>
+                  <input style={inpS} value={form.dong} onChange={e => setForm(p => ({ ...p, dong: e.target.value }))} placeholder="예: 중동" />
+                </div>
+                <div>
+                  <label style={labelS}>번지</label>
+                  <input style={inpS} value={form.lot_number} onChange={e => setForm(p => ({ ...p, lot_number: e.target.value }))} placeholder="예: 123-4" />
+                </div>
+                {/* 건물명 */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelS}>건물명</label>
+                  <input style={inpS} value={form.building_name}
+                    onChange={e => setForm(p => ({ ...p, building_name: e.target.value }))} placeholder="예: 삼성빌딩" />
+                </div>
+                {/* 상호/업종 */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelS}>상호 / 업종</label>
+                  <input style={inpS} value={form.business_name} onChange={e => setForm(p => ({ ...p, business_name: e.target.value }))} placeholder="예: 카페, 편의점" />
+                </div>
+                {/* 전화번호 */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelS}>전화번호</label>
+                  <input style={inpS} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" inputMode="tel" />
+                </div>
+                {/* 층/호수 / 면적 */}
+                <div>
+                  <label style={labelS}>층 / 호수</label>
+                  <input style={inpS} value={form.floor_info} onChange={e => setForm(p => ({ ...p, floor_info: e.target.value }))} placeholder="예: 1층, 201호" />
+                </div>
+                <div>
+                  <label style={labelS}>
+                    면적 (㎡)
+                    {form.area_m2 !== '' && !isNaN(Number(form.area_m2)) && (
+                      <span style={{ color: '#c47c30', fontWeight: 400, marginLeft: '6px' }}>
+                        ≈ {(Number(form.area_m2) / 3.3058).toFixed(1)}평
+                      </span>
+                    )}
+                  </label>
+                  <input style={inpS} type="number" value={form.area_m2} onChange={e => setForm(p => ({ ...p, area_m2: e.target.value }))} placeholder="㎡" />
+                </div>
+                {/* 보증금 / 월세 */}
+                <div>
+                  <label style={labelS}>보증금 (만원)</label>
+                  <input style={inpS} type="number" value={form.deposit} onChange={e => setForm(p => ({ ...p, deposit: e.target.value }))} placeholder="만원" />
+                </div>
+                <div>
+                  <label style={labelS}>월세 (만원)</label>
+                  <input style={inpS} type="number" value={form.monthly_rent} onChange={e => setForm(p => ({ ...p, monthly_rent: e.target.value }))} placeholder="만원" />
+                </div>
+                {/* 비고 */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelS}>비고</label>
+                  <textarea rows={4} style={{ ...inpS, resize: 'vertical', lineHeight: '1.5' }} value={form.memo} onChange={e => setForm(p => ({ ...p, memo: e.target.value }))} placeholder="메모" />
+                </div>
+                {/* 담당자 */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelS}>담당자</label>
+                  <select style={inpS} value={form.agent_id} onChange={e => setForm(p => ({ ...p, agent_id: e.target.value }))}>
+                    <option value="">-</option>
+                    {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
               </div>
-              {/* 동 / 번지 */}
-              <div>
-                <label style={labelS}>동</label>
-                <input style={inpS} value={form.dong} onChange={e => setForm(p => ({ ...p, dong: e.target.value }))} placeholder="예: 중동" />
-              </div>
-              <div>
-                <label style={labelS}>번지</label>
-                <input style={inpS} value={form.lot_number} onChange={e => setForm(p => ({ ...p, lot_number: e.target.value }))} placeholder="예: 123-4" />
-              </div>
-              {/* 건물명 */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelS}>건물명</label>
-                <input style={inpS} value={form.building_name}
-                  onChange={e => setForm(p => ({ ...p, building_name: e.target.value }))} placeholder="예: 삼성빌딩" />
-              </div>
-              {/* 상호/업종 */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelS}>상호 / 업종</label>
-                <input style={inpS} value={form.business_name} onChange={e => setForm(p => ({ ...p, business_name: e.target.value }))} placeholder="예: 카페, 편의점" />
-              </div>
-              {/* 전화번호 */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelS}>전화번호</label>
-                <input style={inpS} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" inputMode="tel" />
-              </div>
-              {/* 층/호수 / 면적 */}
-              <div>
-                <label style={labelS}>층 / 호수</label>
-                <input style={inpS} value={form.floor_info} onChange={e => setForm(p => ({ ...p, floor_info: e.target.value }))} placeholder="예: 1층, 201호" />
-              </div>
-              <div>
-                <label style={labelS}>
-                  면적 (㎡)
-                  {form.area_m2 !== '' && !isNaN(Number(form.area_m2)) && (
-                    <span style={{ color: '#c47c30', fontWeight: 400, marginLeft: '6px' }}>
-                      ≈ {(Number(form.area_m2) / 3.3058).toFixed(1)}평
-                    </span>
-                  )}
-                </label>
-                <input style={inpS} type="number" value={form.area_m2} onChange={e => setForm(p => ({ ...p, area_m2: e.target.value }))} placeholder="㎡" />
-              </div>
-              {/* 보증금 / 월세 */}
-              <div>
-                <label style={labelS}>보증금 (만원)</label>
-                <input style={inpS} type="number" value={form.deposit} onChange={e => setForm(p => ({ ...p, deposit: e.target.value }))} placeholder="만원" />
-              </div>
-              <div>
-                <label style={labelS}>월세 (만원)</label>
-                <input style={inpS} type="number" value={form.monthly_rent} onChange={e => setForm(p => ({ ...p, monthly_rent: e.target.value }))} placeholder="만원" />
-              </div>
-              {/* 비고 */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelS}>비고</label>
-                <textarea rows={4} style={{ ...inpS, resize: 'vertical', lineHeight: '1.5' }} value={form.memo} onChange={e => setForm(p => ({ ...p, memo: e.target.value }))} placeholder="메모" />
-              </div>
-              {/* 담당자 */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelS}>담당자</label>
-                <select style={inpS} value={form.agent_id} onChange={e => setForm(p => ({ ...p, agent_id: e.target.value }))}>
-                  <option value="">-</option>
-                  {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '22px', justifyContent: 'flex-end' }}>
-              <button onClick={closeModal}
-                style={{ padding: '10px 20px', background: '#fff', border: '1px solid #ddd', borderRadius: '7px', fontSize: '14px', cursor: 'pointer', color: '#555' }}>
-                취소
-              </button>
-              <button onClick={saveModal} disabled={saving}
-                style={{ padding: '10px 24px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '7px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
-                {saving ? '저장 중...' : '저장'}
-              </button>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '22px', justifyContent: 'flex-end' }}>
+                <button onClick={closeModal}
+                  style={{ padding: '10px 20px', background: '#fff', border: '1px solid #ddd', borderRadius: '7px', fontSize: '14px', cursor: 'pointer', color: '#555' }}>
+                  취소
+                </button>
+                <button onClick={saveModal} disabled={saving}
+                  style={{ padding: '10px 24px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '7px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  {saving ? '저장 중...' : '저장'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
