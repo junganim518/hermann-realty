@@ -402,9 +402,10 @@ export default function ProspectsPage() {
       {modalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500 }}>
           <div style={{
-            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 'calc(100% - 40px)', maxWidth: '480px', maxHeight: 'calc(100vh - 40px)',
-            display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden',
+            position: 'fixed', top: '80px', left: '20px', right: '20px', bottom: '20px',
+            margin: 'auto', maxWidth: '480px', maxHeight: 'calc(100vh - 100px)',
+            height: 'fit-content', display: 'flex', flexDirection: 'column',
+            background: '#fff', borderRadius: '12px', overflow: 'hidden',
           }}>
             {/* 제목 — 항상 상단 고정 */}
             <div style={{ flexShrink: 0, padding: '20px 24px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
