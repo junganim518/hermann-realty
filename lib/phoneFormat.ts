@@ -1,5 +1,15 @@
 export function formatPhone(value: string): string {
-  const d = value.replace(/\D/g, '').slice(0, 11);
+  const raw = value.replace(/\D/g, '');
+
+  // 0507-xxxx-xxxx (12자리)
+  if (raw.startsWith('0507')) {
+    const d = raw.slice(0, 12);
+    if (d.length <= 4) return d;
+    if (d.length <= 8) return `${d.slice(0, 4)}-${d.slice(4)}`;
+    return `${d.slice(0, 4)}-${d.slice(4, 8)}-${d.slice(8)}`;
+  }
+
+  const d = raw.slice(0, 11);
 
   if (d.startsWith('02')) {
     if (d.length <= 2) return d;

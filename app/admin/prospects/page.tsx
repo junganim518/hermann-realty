@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { formatPhone } from '@/lib/phoneFormat';
 
 declare global { interface Window { daum: any; } }
 
@@ -37,16 +38,6 @@ const emptyForm = (): FormState => ({
   area_m2: '', deposit: '', monthly_rent: '', memo: '', agent_id: '',
 });
 
-const fmtPhone = (val: string) => {
-  const d = val.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.startsWith('02')) {
-    if (d.length <= 6) return `${d.slice(0, 2)}-${d.slice(2)}`;
-    return `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6)}`;
-  }
-  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-};
 
 export default function ProspectsPage() {
   const router = useRouter();
@@ -350,13 +341,13 @@ export default function ProspectsPage() {
                       {cell(row.lot_number)}
                       {cell(row.building_name)}
                       {cell(row.business_name)}
-                      {cell(row.phone, 130)}
+                      <td style={{ ...tdS, color: tc, whiteSpace: 'nowrap', minWidth: '130px' }}>{row.phone ?? ''}</td>
                       {cell(row.floor_info)}
                       {cell(row.area_m2)}
                       <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
-                      <td style={{ ...tdS, color: tc, maxWidth: '260px', minWidth: '200px' }} title={row.memo ?? undefined}>
+                      <td style={{ ...tdS, color: tc, minWidth: '240px' }} title={row.memo ?? undefined}>
                         <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', whiteSpace: 'normal', lineHeight: '1.4', wordBreak: 'break-all' }}>{row.memo ?? ''}</span>
                       </td>
                       {cell(agentName(row.agent_id))}
@@ -457,7 +448,7 @@ export default function ProspectsPage() {
                 {/* 전화번호 */}
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelS}>전화번호</label>
-                  <input style={inpS} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" inputMode="tel" />
+                  <input style={inpS} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: formatPhone(e.target.value) }))} placeholder="010-0000-0000" inputMode="tel" />
                 </div>
                 {/* 층/호수 / 면적 */}
                 <div>
