@@ -400,8 +400,8 @@ export default function ProspectsPage() {
 
       {/* 입력/수정 모달 */}
       {modalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 500, overflowY: 'auto', padding: '20px' }}>
+          <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', margin: '0 auto', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: '#1a1a1a' }}>
                 {modalRow ? '임장 매물 수정' : '임장 매물 추가'}
@@ -410,6 +410,15 @@ export default function ProspectsPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              {/* 주소 검색 버튼 (맨 위) */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <button type="button" onClick={openDaumPostcode}
+                  style={{ width: '100%', padding: '10px', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', color: '#444', fontWeight: 700 }}>
+                  주소 검색
+                </button>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa', textAlign: 'center' }}>동·번지·건물명 자동입력</p>
+              </div>
+              {/* 동 / 번지 */}
               <div>
                 <label style={labelS}>동</label>
                 <input style={inpS} value={form.dong} onChange={e => setForm(p => ({ ...p, dong: e.target.value }))} placeholder="예: 중동" />
@@ -418,26 +427,23 @@ export default function ProspectsPage() {
                 <label style={labelS}>번지</label>
                 <input style={inpS} value={form.lot_number} onChange={e => setForm(p => ({ ...p, lot_number: e.target.value }))} placeholder="예: 123-4" />
               </div>
+              {/* 건물명 */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelS}>건물명</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input style={{ ...inpS, flex: 1 }} value={form.building_name}
-                    onChange={e => setForm(p => ({ ...p, building_name: e.target.value }))} placeholder="예: 삼성빌딩" />
-                  <button type="button" onClick={openDaumPostcode}
-                    style={{ whiteSpace: 'nowrap', padding: '0 14px', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '5px', fontSize: '13px', cursor: 'pointer', color: '#444', fontWeight: 600 }}>
-                    주소 검색
-                  </button>
-                </div>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#aaa' }}>주소 검색 시 동·번지·건물명 자동입력</p>
+                <input style={inpS} value={form.building_name}
+                  onChange={e => setForm(p => ({ ...p, building_name: e.target.value }))} placeholder="예: 삼성빌딩" />
               </div>
+              {/* 상호/업종 */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelS}>상호 / 업종</label>
                 <input style={inpS} value={form.business_name} onChange={e => setForm(p => ({ ...p, business_name: e.target.value }))} placeholder="예: 카페, 편의점" />
               </div>
+              {/* 전화번호 */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelS}>전화번호</label>
                 <input style={inpS} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" inputMode="tel" />
               </div>
+              {/* 층/호수 / 면적 */}
               <div>
                 <label style={labelS}>층 / 호수</label>
                 <input style={inpS} value={form.floor_info} onChange={e => setForm(p => ({ ...p, floor_info: e.target.value }))} placeholder="예: 1층, 201호" />
@@ -453,6 +459,7 @@ export default function ProspectsPage() {
                 </label>
                 <input style={inpS} type="number" value={form.area_m2} onChange={e => setForm(p => ({ ...p, area_m2: e.target.value }))} placeholder="㎡" />
               </div>
+              {/* 보증금 / 월세 */}
               <div>
                 <label style={labelS}>보증금 (만원)</label>
                 <input style={inpS} type="number" value={form.deposit} onChange={e => setForm(p => ({ ...p, deposit: e.target.value }))} placeholder="만원" />
@@ -461,10 +468,12 @@ export default function ProspectsPage() {
                 <label style={labelS}>월세 (만원)</label>
                 <input style={inpS} type="number" value={form.monthly_rent} onChange={e => setForm(p => ({ ...p, monthly_rent: e.target.value }))} placeholder="만원" />
               </div>
+              {/* 비고 */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelS}>비고</label>
                 <textarea rows={4} style={{ ...inpS, resize: 'vertical', lineHeight: '1.5' }} value={form.memo} onChange={e => setForm(p => ({ ...p, memo: e.target.value }))} placeholder="메모" />
               </div>
+              {/* 담당자 */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelS}>담당자</label>
                 <select style={inpS} value={form.agent_id} onChange={e => setForm(p => ({ ...p, agent_id: e.target.value }))}>
