@@ -21,6 +21,7 @@ type Row = {
   monthly_rent: number | null;
   memo: string | null;
   contact_memo: string | null;
+  is_secured: boolean | null;
   agent_id: string | null;
   status: 'prospect' | 'registered';
   created_at: string;
@@ -207,6 +208,15 @@ export default function ProspectsPage() {
     setTimeout(() => { window.print(); setPrintingSelected(false); }, 100);
   };
 
+  const secureSelected = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    await supabase.from('prospect_properties').update({ is_secured: true }).in('id', ids);
+    setRows(prev => prev.map(r => selectedIds.has(r.id) ? { ...r, is_secured: true } : r));
+    setSelectedIds(new Set());
+    showToast(`${ids.length}건 매물확보 처리되었습니다.`);
+  };
+
   const saveContactMemo = async (id: string) => {
     const value = contactMemoEdit.trim() || null;
     await supabase.from('prospect_properties').update({ contact_memo: value }).eq('id', id);
@@ -323,13 +333,13 @@ export default function ProspectsPage() {
             style={{ height: '34px', padding: '0 14px', background: hasSelection ? '#dc2626' : '#f5f5f5', color: hasSelection ? '#fff' : '#ccc', border: hasSelection ? 'none' : '1px solid #eee', borderRadius: '6px', fontSize: '13px', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 600 }}>
             삭제
           </button>
+          <button onClick={secureSelected} disabled={!hasSelection}
+            style={{ height: '34px', padding: '0 14px', background: hasSelection ? '#16a34a' : '#f5f5f5', color: hasSelection ? '#fff' : '#ccc', border: hasSelection ? 'none' : '1px solid #eee', borderRadius: '6px', fontSize: '13px', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 600 }}>
+            매물확보
+          </button>
           <button onClick={doPrintSelected} disabled={!hasSelection}
             style={{ height: '34px', padding: '0 14px', background: hasSelection ? '#1a1a1a' : '#f5f5f5', color: hasSelection ? '#e2a06e' : '#ccc', border: hasSelection ? 'none' : '1px solid #eee', borderRadius: '6px', fontSize: '13px', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 600 }}>
             인쇄(선택)
-          </button>
-          <button onClick={() => window.print()}
-            style={{ height: '34px', padding: '0 14px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: '#555', fontWeight: 600 }}>
-            인쇄(전체)
           </button>
           <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)}
             style={{ height: '34px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 10px', fontSize: '13px', cursor: 'pointer', outline: 'none' }}>
@@ -398,7 +408,7 @@ export default function ProspectsPage() {
                   return (
                     <tr key={row.id}
                       className={`${!reg ? 'prow' : ''} ${printingSelected && !isSelected ? 'print-exclude' : ''}`}
-                      style={{ background: isSelected ? '#fffbf0' : reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
+                      style={{ background: isSelected ? '#fffbf0' : row.is_secured ? '#f0fdf4' : reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
                       onClick={() => !reg && openEdit(row)}>
                       {/* 체크박스 */}
                       <td className="no-print" style={{ ...tdS, textAlign: 'center', width: '36px' }} onClick={e => e.stopPropagation()}>
@@ -418,7 +428,7 @@ export default function ProspectsPage() {
                       <td style={{ ...tdS, color: tc, whiteSpace: 'nowrap', minWidth: '130px' }}>{row.phone ?? ''}</td>
                       {cell(row.floor_info)}
                       {cell(row.area_m2)}
-                      <td style={{ ...tdS, color: '#888' }}>{pyeong(row.area_m2)}</td>
+                      <td style={{ ...tdS, color: '#374151', fontWeight: 600 }}>{pyeong(row.area_m2)}</td>
                       {cell(fmtNum(row.deposit))}
                       {cell(fmtNum(row.monthly_rent))}
                       {/* 비고 — 인라인 편집 */}
