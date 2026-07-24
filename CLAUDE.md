@@ -37,7 +37,6 @@ app/
     ├── contracts/                    # 계약 관리
     ├── landlords/[new|edit|page]     # 임대인 관리
     ├── trash/page.tsx                # 휴지통 (소프트 삭제된 매물 복구/영구삭제)
-    ├── field-trips/page.tsx          # 임장노트 (지도 기반 임장 매물 관리)
     ├── agents/page.tsx               # 담당자 관리 (추가/수정/비활성화)
     └── account/page.tsx              # 내 계정 — 비밀번호 변경 (로그인 필요, 현재 비밀번호 재인증 후 변경)
 ├── login/page.tsx                    # 로그인 (하단에 "비밀번호를 잊으셨나요?" 링크)
@@ -144,28 +143,6 @@ lib/
 - kakao_url (TEXT) — 카카오톡 오픈채팅 링크
 - is_active (BOOLEAN) — 활성 여부 (비활성 시 드롭다운에서 숨김)
 - created_at, updated_at
-
-### field_trips (임장 노트)
-
-- id (UUID, PK)
-- title (TEXT) — 임장 내용/제목
-- trip_date (DATE)
-- agent_id (UUID, FK → agents)
-- status (TEXT) — planned/completed
-- created_at, updated_at
-
-### field_trip_items (임장 매물 항목)
-
-- id (UUID, PK)
-- field_trip_id (UUID, FK → field_trips)
-- property_id (UUID, nullable FK → properties)
-- address, building_name (TEXT)
-- order_num (INTEGER) — 예정 순서
-- status (TEXT) — planned/completed
-- memo (TEXT)
-- checklist (JSONB) — 9개 항목 boolean (층수/전용면적/권리금/화장실/주차/엘리베이터/임차여부/관리비/입주가능일)
-- latitude, longitude (FLOAT)
-- created_at
 
 ### customers (손님)
 
@@ -322,45 +299,11 @@ lib/
 - **모바일 카드 순서**: 찾는매물(16px bold) → 전화번호(15px bold 골드 tel:링크) → 메모(14px #444 3줄) → 관심매물·예산·지역(12px) → 날짜(12px #aaa) → 상세/삭제 버튼
 - **연락처**: `formatPhone()` (lib/phoneFormat.ts) 로 표시, `href="tel:숫자만"`
 
-## 임장노트 (app/admin/field-trips/page.tsx)
-
-### 기능 개요
-
-카카오맵 기반 임장 매물 관리. 지도에서 주소를 클릭하거나 검색해 임장 매물 추가.
-
-### 레이아웃
-
-- **PC (768px+)**: 좌측 지도(flex:1) + 우측 패널 360px (ft-outer flex-row)
-- **모바일 (<768px)**: 지도 전체화면, 우측 패널 숨김, 좌상단 ← 뒤로가기 버튼 오버레이
-- 지도 위 검색바 (ft-search-bar): 모바일에서 `left: 54px` (뒤로가기 버튼과 겹침 방지)
-- 푸터 숨김: `body.ft-hide-footer footer{display:none!important}` 동적 주입 (useEffect 마운트/언마운트)
-
-### 마커 (CustomOverlay만 사용, Marker 없음)
-
-- 기본(예정): 파란 원(`#3b82f6`) — PC 22px, 모바일 36px (CSS 클래스 `ft-marker-default`)
-- 선택: 골드 원(`#c47c30`) — PC 28px, 모바일 40px (CSS 클래스 `ft-marker-selected`)
-- 클릭 이벤트: `clickable:true` + div에 id(`ftm_{uuid without hyphens}`) 부여 → `setMap` 후 `setTimeout(0)`으로 `document.getElementById(id).addEventListener('click', ...)`
-- `overlaysRef`로 관리, 상태 변경 시 기존 overlay `setMap(null)` 후 재생성
-- 내 위치 마커: 초록 원 `#22c55e` + 반투명 초록 링 (`myLocationOverlayRef`로 1개만 유지)
-
-### 모바일 플로팅 카드 (`ft-floating-card`)
-
-- 마커 클릭 → `floatingCard` state 설정 → `position:fixed; bottom:64px` (탭바 위)
-- 주소/건물명, 내용·날짜·담당자, 메모, 메모/완료/삭제 버튼
-- PC에서 `display:none!important` (CSS)
-- 지도 클릭/드래그/completeItem/deleteItem 시 닫힘
-
-### bounds 재조정
-
-- `prevPlannedRef`로 reference 비교 — `plannedItems` 배열이 실제로 바뀔 때만 `setBounds` 실행
-- 선택 변경(`selectedItemId`) 시 bounds 재조정 안 함
-
 ## 담당자 시스템 (agents)
 
 - **관리**: `/admin/agents` — 담당자 추가/수정/비활성화
 - **매물 연결**: `properties.agent_id` (FK → agents) — 매물별 담당 직원 지정
 - **관리자 대시보드**: 매물 카드에서 담당자 인라인 변경 가능
-- **임장노트**: `field_trips.agent_id`로 임장 담당자 지정
 - **드롭다운 표시**: `is_active = true`인 담당자만 노출 (`eq('is_active', true)`)
 - **문의 연결**: 매물 상세 페이지에서 담당자 카카오톡(`kakao_url`) 연결
 
