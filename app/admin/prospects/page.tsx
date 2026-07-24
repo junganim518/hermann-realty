@@ -193,7 +193,6 @@ export default function ProspectsPage() {
         @page { size: A4 landscape; margin: 15mm; }
         @media print {
           .no-print { display: none !important; }
-          .print-only { display: table-cell !important; }
           .print-header { display: block !important; }
           .print-footer { display: block !important; }
           header, footer, nav, .MobileTabBar { display: none !important; }
@@ -220,18 +219,17 @@ export default function ProspectsPage() {
           .print-table thead th { font-weight: 700 !important; color: #222 !important; }
           /* 담당자(12번째) 숨김, 액션(13번째)은 .no-print로 이미 처리 */
           .print-table th:nth-child(12), .print-table td:nth-child(12) { display: none !important; }
-          /* 컬럼 너비 (A4 landscape 기준) */
-          .print-table th:nth-child(1)  { width: 4%; }
-          .print-table th:nth-child(2)  { width: 6%; }
-          .print-table th:nth-child(3)  { width: 7%; }
-          .print-table th:nth-child(4)  { width: 14%; }
-          .print-table th:nth-child(5)  { width: 11%; }
+          /* 컬럼 너비 (A4 landscape 기준, # 컬럼 인쇄 숨김) */
+          .print-table th:nth-child(2)  { width: 4%; }
+          .print-table th:nth-child(3)  { width: 6%; }
+          .print-table th:nth-child(4)  { width: 12%; }
+          .print-table th:nth-child(5)  { width: 10%; }
           .print-table th:nth-child(6)  { width: 7%; }
           .print-table th:nth-child(7)  { width: 5%; }
           .print-table th:nth-child(8)  { width: 5%; }
-          .print-table th:nth-child(9)  { width: 9%; }
-          .print-table th:nth-child(10) { width: 9%; }
-          .print-table th:nth-child(11) { width: 23%; }
+          .print-table th:nth-child(9)  { width: 7%; }
+          .print-table th:nth-child(10) { width: 6%; }
+          .print-table th:nth-child(11) { width: 38%; }
           .print-table td span {
             white-space: normal !important; overflow: visible !important;
             text-overflow: clip !important; display: inline !important;
