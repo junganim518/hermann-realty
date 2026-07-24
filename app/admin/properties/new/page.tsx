@@ -268,6 +268,26 @@ export default function NewPropertyPage() {
   // ── 폼 업데이트 헬퍼
   const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
+  // 임장 후보 리스트(/admin/prospects)에서 "매물 등록" 클릭 시 데이터 자동 채움
+  useEffect(() => {
+    const raw = sessionStorage.getItem('prospect_prefill');
+    if (!raw) return;
+    sessionStorage.removeItem('prospect_prefill');
+    try {
+      const p = JSON.parse(raw);
+      setForm(prev => ({
+        ...prev,
+        ...(p.address && { address: p.address }),
+        ...(p.business_name && { business_name: p.business_name }),
+        ...(p.landlord_phone && { landlord_phone: p.landlord_phone }),
+        ...(p.current_floor && { current_floor: p.current_floor }),
+        ...(p.exclusive_area && { exclusive_area: p.exclusive_area }),
+        ...(p.deposit && { deposit: p.deposit }),
+        ...(p.monthly_rent && { monthly_rent: p.monthly_rent }),
+      }));
+    } catch {}
+  }, []);
+
   // ── 카카오 주소검색 + 좌표 변환
   const searchAddress = () => {
     console.log('[주소검색] window.daum:', !!window.daum, 'Postcode:', !!window.daum?.Postcode);

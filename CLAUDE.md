@@ -38,6 +38,7 @@ app/
     ├── landlords/[new|edit|page]     # 임대인 관리
     ├── trash/page.tsx                # 휴지통 (소프트 삭제된 매물 복구/영구삭제)
     ├── agents/page.tsx               # 담당자 관리 (추가/수정/비활성화)
+    ├── prospects/page.tsx            # 임장 후보 매물 리스트 (구글시트형 테이블, 인라인 편집)
     └── account/page.tsx              # 내 계정 — 비밀번호 변경 (로그인 필요, 현재 비밀번호 재인증 후 변경)
 ├── login/page.tsx                    # 로그인 (하단에 "비밀번호를 잊으셨나요?" 링크)
 ├── login/reset/page.tsx              # 비밀번호 재설정 — 이메일 입력 → supabase.auth.resetPasswordForEmail()
@@ -143,6 +144,26 @@ lib/
 - kakao_url (TEXT) — 카카오톡 오픈채팅 링크
 - is_active (BOOLEAN) — 활성 여부 (비활성 시 드롭다운에서 숨김)
 - created_at, updated_at
+
+### prospect_properties (임장 후보 매물)
+
+- id (UUID, PK)
+- dong (TEXT) — 동
+- lot_number (TEXT) — 번지
+- business_name (TEXT) — 상호/업종
+- phone (TEXT) — 연락처
+- floor_info (TEXT) — 층/호수
+- area_m2 (FLOAT) — 전용면적(㎡), 평수는 ÷3.3058 자동계산
+- deposit, monthly_rent (BIGINT) — 보증금/월세
+- is_advertised (BOOLEAN) — 광고 여부
+- memo (TEXT) — 비고
+- agent_id (UUID, FK → agents)
+- status (TEXT) — prospect(예정) / registered(매물 등록 완료)
+- created_at
+
+**임장리스트 → 매물 등록 연동**
+- "매물 등록" 버튼 클릭 → `sessionStorage['prospect_prefill']`에 데이터 저장 → `status='registered'` 업데이트 → `/admin/properties/new` 이동
+- `/admin/properties/new` 마운트 시 sessionStorage 읽어 address/business_name/landlord_phone/current_floor/exclusive_area/deposit/monthly_rent 자동 채움
 
 ### customers (손님)
 
