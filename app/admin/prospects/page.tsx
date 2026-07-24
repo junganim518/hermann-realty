@@ -235,7 +235,14 @@ export default function ProspectsPage() {
 
   const agentName = (id: string | null) => agents.find(a => a.id === id)?.name ?? '-';
   const pyeong = (m2: number | null) => m2 != null ? (m2 / 3.3058).toFixed(1) : '';
-  const fmtNum = (v: number | null) => v != null ? v.toLocaleString() : '';
+  const fmtMoney = (v: number | null) => {
+    if (v == null) return '';
+    if (v < 10000) return `${v.toLocaleString()}만`;
+    const eok = Math.floor(v / 10000);
+    const man = v % 10000;
+    const manStr = man > 0 ? `${man >= 1000 ? Math.floor(man / 1000) + '천' : ''}${man % 1000 > 0 ? (man % 1000) + '' : ''}만` : '';
+    return `${eok}억${man > 0 ? manStr : ''}`;
+  };
   const printDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const eligibleIds = displayed.filter(r => r.status !== 'registered').map(r => r.id);
@@ -408,7 +415,7 @@ export default function ProspectsPage() {
                   return (
                     <tr key={row.id}
                       className={`${!reg ? 'prow' : ''} ${printingSelected && !isSelected ? 'print-exclude' : ''}`}
-                      style={{ background: isSelected ? '#fffbf0' : row.is_secured ? '#f0fdf4' : reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
+                      style={{ background: isSelected ? '#fffbf0' : row.is_secured ? '#dbeafe' : reg ? '#f7f7f7' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #eee' }}
                       onClick={() => !reg && openEdit(row)}>
                       {/* 체크박스 */}
                       <td className="no-print" style={{ ...tdS, textAlign: 'center', width: '36px' }} onClick={e => e.stopPropagation()}>
@@ -429,8 +436,8 @@ export default function ProspectsPage() {
                       {cell(row.floor_info)}
                       {cell(row.area_m2)}
                       <td style={{ ...tdS, color: '#374151', fontWeight: 600 }}>{pyeong(row.area_m2)}</td>
-                      {cell(fmtNum(row.deposit))}
-                      {cell(fmtNum(row.monthly_rent))}
+                      {cell(fmtMoney(row.deposit))}
+                      {cell(fmtMoney(row.monthly_rent))}
                       {/* 비고 — 인라인 편집 */}
                       <td style={{ ...tdS, color: tc, width: '35%', minWidth: '300px', cursor: isEditingMemo ? 'default' : 'text' }}
                         onClick={e => { e.stopPropagation(); if (!isEditingMemo) { setEditingMemoId(row.id); setMemoEdit(row.memo ?? ''); } }}>
