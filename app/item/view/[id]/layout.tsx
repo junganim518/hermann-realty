@@ -84,6 +84,7 @@ export async function generateMetadata(
   return {
     title: { absolute: title },
     description,
+    alternates: { canonical: `https://hermann-realty.com/item/view/${property.id}` },
     ...(noIndex && { robots: { index: false, follow: false } }),
     openGraph: { title, description, images: [{ url: firstImage }] },
     twitter: { card: 'summary_large_image', title, description, images: [firstImage] },
