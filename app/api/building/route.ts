@@ -15,11 +15,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'sigunguCd, bjdongCd, bun 은 필수입니다.' }, { status: 400 });
   }
 
+  // TEMP: 2026-07-01 인천 서구→서해구 개편으로 국토부 건축물대장 API가
+  // 아직 신규 법정동코드(28275)를 인식하지 못해 구코드(28260)로 매핑.
+  // 국토부 API가 신규 코드를 지원하면 이 매핑 제거 필요.
+  const SIGUNGU_LEGACY_MAP: Record<string, string> = {
+    '28275': '28260', // 서해구(신규) → 서구(구코드)
+  };
+  const apiSigunguCd = SIGUNGU_LEGACY_MAP[sigunguCd] ?? sigunguCd;
+  if (apiSigunguCd !== sigunguCd) {
+    console.log(`[건축물대장] sigunguCd 매핑: ${sigunguCd} → ${apiSigunguCd}`);
+  }
+
   const SERVICE_KEY = process.env.NEXT_PUBLIC_BUILDING_API_KEY;
 
-  const titleBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json`;
-  const exposBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&dongNm=${encodeURIComponent(dong)}&hoNm=${encodeURIComponent(ho)}&_type=json`;
-  const flrUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrFlrOulnInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=100&pageNo=1`;
+  const titleBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${apiSigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json`;
+  const exposBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${apiSigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&dongNm=${encodeURIComponent(dong)}&hoNm=${encodeURIComponent(ho)}&_type=json`;
+  const flrUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrFlrOulnInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${apiSigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=100&pageNo=1`;
 
   const titleUrl = titleBaseUrl + '&numOfRows=1&pageNo=1';
   const firstExposUrl = exposBaseUrl + '&numOfRows=100&pageNo=1';
@@ -114,7 +125,7 @@ export async function GET(req: NextRequest) {
     // 전유공용면적 (호수 파라미터 있을 때만 조회)
     let areaItems: any[] = [];
     if (ho) {
-      const areaUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&dongNm=${encodeURIComponent(dong)}&hoNm=${encodeURIComponent(ho)}&numOfRows=10&pageNo=1&_type=json`;
+      const areaUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${apiSigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&dongNm=${encodeURIComponent(dong)}&hoNm=${encodeURIComponent(ho)}&numOfRows=10&pageNo=1&_type=json`;
       const areaRes = await fetch(areaUrl);
       const areaData = await areaRes.json();
       const areaRaw = areaData?.response?.body?.items?.item;
