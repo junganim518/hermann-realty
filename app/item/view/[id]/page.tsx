@@ -1933,8 +1933,10 @@ export default function PropertyDetailPage() {
           <div className="print-date">인쇄일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
         </div>
         <div className="print-footer-right">
-          <div className="print-footer-name">헤르만부동산</div>
-          <div className="print-footer-phone">010-8680-8151</div>
+          <div className="print-footer-name">
+            {agent?.name ?? '황정아'}{agent?.title ? ` · ${agent.title}` : ''}
+          </div>
+          <div className="print-footer-phone">{agent?.phone ?? '010-8680-8151'}</div>
         </div>
       </div>
 
