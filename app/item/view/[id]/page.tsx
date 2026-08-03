@@ -1061,7 +1061,7 @@ export default function PropertyDetailPage() {
             overflow: hidden;
           }
           .print-title-block .print-pnum {
-            font-size: 26px !important;
+            font-size: 14px !important;
             color: #1a1a1a;
             font-weight: 700;
           }
