@@ -658,7 +658,6 @@ export default function PropertyDetailPage() {
       {/* ── 인쇄 전용 매물 타이틀 + 매물번호 ── */}
       {property && (
         <div className="print-only print-title-block">
-          <h1 className="print-title">{property.title || '(제목 없음)'}</h1>
           <div className="print-pnum">매물번호 {property.property_number ?? '-'}</div>
         </div>
       )}
@@ -1062,9 +1061,9 @@ export default function PropertyDetailPage() {
             overflow: hidden;
           }
           .print-title-block .print-pnum {
-            font-size: 13.5px !important;
-            color: #888;
-            font-weight: 500;
+            font-size: 26px !important;
+            color: #1a1a1a;
+            font-weight: 700;
           }
 
           /* 3) 사진 — 큼 */
