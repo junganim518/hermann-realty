@@ -24,11 +24,11 @@ const CONDITIONS = [
   { Icon: Users,     label: '배후세대', value: '1,000세대 이상' },
 ];
 
-const BIZ_TYPES = ['창고형 약국', '식자재마트', '아울렛·복합상가', '헬스클럽', '학원·교육센터', '의류 아울렛'];
+const BIZ_TYPES = ['창고형 약국', '식자재마트', '아울렛·복합상가', '헬스클럽', '학원·교육센터', '의류 아울렛', '자동차 전시장'];
 
 // Unsplash — 무료 상업 이미지 (CC0)
-const HERO_IMG  = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1400&q=80&auto=format&fit=crop&crop=center';
-const BAND_IMG  = 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&q=75&auto=format&fit=crop&crop=center';
+// 대형 매장 건물 전면 + 넓은 주차장 구도
+const HERO_IMG = 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=1400&q=80&auto=format&fit=crop&crop=center';
 
 const PAGE_CSS = `
   /* ── 대형매장부지 랜딩 스타일 ── */
@@ -85,17 +85,17 @@ const PAGE_CSS = `
   .ls-biz-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     margin: 24px 0 36px;
   }
   .ls-biz-chip {
     background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: #ccc;
-    font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #ddd;
+    font-size: 14px;
     font-weight: 600;
-    padding: 5px 13px;
-    border-radius: 20px;
+    padding: 8px 18px;
+    border-radius: 24px;
   }
 
   /* CTA 버튼 */
@@ -114,43 +114,24 @@ const PAGE_CSS = `
   }
   .ls-cta-btn:hover { background: #a8642a; }
 
-  /* 중간 이미지 배너 */
+  /* 수치 강조 배너 (단색, 이미지 없음) */
   .ls-band {
-    position: relative;
-    height: 300px;
-    overflow: hidden;
-    background: #1a1a1a;
-  }
-  .ls-band img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 40%;
-    display: block;
-  }
-  .ls-band-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.58);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-    color: #fff;
+    background: #161616;
+    padding: 48px 0;
   }
   .ls-band-stats {
     display: flex;
     gap: 0;
-    margin-top: 28px;
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
     overflow: hidden;
+    max-width: 720px;
+    margin: 0 auto;
   }
   .ls-band-stat {
-    padding: 16px 32px;
-    border-right: 1px solid rgba(255,255,255,0.2);
+    flex: 1;
+    padding: 28px 20px;
+    border-right: 1px solid rgba(255,255,255,0.1);
     text-align: center;
   }
   .ls-band-stat:last-child { border-right: none; }
@@ -212,8 +193,7 @@ const PAGE_CSS = `
     .ls-hero-left  { padding: 60px 40px 60px 20px; }
     .ls-cond-grid  { grid-template-columns: repeat(4, 1fr); gap: 12px; }
     .ls-prop-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .ls-band       { height: 240px; }
-    .ls-band-stat  { padding: 14px 24px; }
+    .ls-band-stat  { padding: 22px 16px; }
     .ls-wrap       { padding: 0 20px; }
   }
 
@@ -223,11 +203,12 @@ const PAGE_CSS = `
     .ls-hero-right { height: 220px; order: -1; }
     .ls-hero-overlay { background: rgba(0,0,0,0.2); }
     .ls-hero-left  { padding: 36px 20px 44px; }
-    .ls-biz-chips  { gap: 6px; }
+    .ls-biz-chips  { gap: 8px; }
+    .ls-biz-chip   { font-size: 13px; padding: 7px 15px; }
     .ls-cta-btn    { display: block; width: 100%; text-align: center; padding: 14px 20px; box-sizing: border-box; }
-    .ls-band       { height: 200px; }
-    .ls-band-stats { flex-direction: column; border-radius: 4px; }
-    .ls-band-stat  { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px 24px; }
+    .ls-band       { padding: 32px 0; }
+    .ls-band-stats { flex-direction: column; max-width: 100%; border-radius: 4px; }
+    .ls-band-stat  { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 18px 20px; }
     .ls-band-stat:last-child { border-bottom: none; }
     .ls-cond-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .ls-cond-card  { padding: 24px 16px 20px; }
@@ -300,7 +281,7 @@ export default async function LargeStorePage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={HERO_IMG}
-              alt="대형 매장 부지 — 100평 이상 대형 상가 내부"
+              alt="대형 매장 건물 전면 — 넓은 주차장을 갖춘 대형 상가 부지"
               loading="eager"
             />
             <div className="ls-hero-overlay" />
@@ -308,33 +289,21 @@ export default async function LargeStorePage() {
         </div>
       </section>
 
-      {/* ── 중간 이미지 배너 ── */}
+      {/* ── 수치 강조 배너 (단색, 이미지 없음) ── */}
       <div className="ls-band">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={BAND_IMG}
-          alt="창고형 대형 상가 부지 — 넓은 공간, 충분한 주차 확보"
-          loading="lazy"
-        />
-        <div className="ls-band-overlay">
-          <p style={{ fontSize: 'clamp(11px, 1.5vw, 13px)', color: '#e2a06e', fontWeight: 700, letterSpacing: '2px', margin: '0 0 12px', textTransform: 'uppercase' }}>
-            We Find Your Space
-          </p>
-          <h2 style={{ fontSize: 'clamp(18px, 3vw, 28px)', fontWeight: 800, margin: '0', lineHeight: 1.35 }}>
-            넓은 공간 · 충분한 주차 · 배후세대까지
-          </h2>
+        <div className="ls-wrap">
           <div className="ls-band-stats">
             <div className="ls-band-stat">
-              <div style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 900, color: '#c47c30' }}>100평+</div>
-              <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px', letterSpacing: '0.5px' }}>전용면적</div>
+              <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>100평+</div>
+              <div style={{ fontSize: '12px', color: '#888', marginTop: '8px', letterSpacing: '0.5px' }}>전용면적 기준</div>
             </div>
             <div className="ls-band-stat">
-              <div style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 900, color: '#c47c30' }}>30대+</div>
-              <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px', letterSpacing: '0.5px' }}>주차대수</div>
+              <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>30대+</div>
+              <div style={{ fontSize: '12px', color: '#888', marginTop: '8px', letterSpacing: '0.5px' }}>주차대수 확보</div>
             </div>
             <div className="ls-band-stat">
-              <div style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 900, color: '#c47c30' }}>1,000세대+</div>
-              <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px', letterSpacing: '0.5px' }}>배후세대</div>
+              <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>1,000세대+</div>
+              <div style={{ fontSize: '12px', color: '#888', marginTop: '8px', letterSpacing: '0.5px' }}>배후세대 권역</div>
             </div>
           </div>
         </div>
