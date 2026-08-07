@@ -902,7 +902,7 @@ export default function Home() {
               {/* 하단 버튼 영역 */}
               <div style={{ padding: '10px 14px', background: '#1a1a1a' }}>
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '10px 0', background: '#c47c30', color: '#fff', fontSize: '14px', fontWeight: 700, borderRadius: '6px' }}>
-                  전문 페이지 보기 →
+                  전용페이지 보기 →
                 </span>
               </div>
             </Link>
