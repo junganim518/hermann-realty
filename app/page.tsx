@@ -298,12 +298,12 @@ export default function Home() {
         /* ── PC 1200px 이상: 사이드바 유연 폭 ── */
         @media (min-width: 1200px) {
           .sidebar-left {
-            min-width: clamp(160px, 15vw, 220px) !important;
-            max-width: clamp(160px, 15vw, 220px) !important;
+            min-width: clamp(160px, 14vw, 200px) !important;
+            max-width: clamp(160px, 14vw, 200px) !important;
           }
           .sidebar-right {
-            min-width: clamp(160px, 15vw, 220px) !important;
-            max-width: clamp(160px, 15vw, 220px) !important;
+            min-width: clamp(260px, 22vw, 300px) !important;
+            max-width: clamp(260px, 22vw, 300px) !important;
           }
         }
 
@@ -589,7 +589,7 @@ export default function Home() {
         {/* 좌측 사이드바 220px - lg 이상에서만 표시 */}
         <aside
           className="sidebar-left shrink-0 border border-gray-200 bg-white"
-          style={{ minWidth: '220px', maxWidth: '220px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
+          style={{ minWidth: '200px', maxWidth: '200px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 
           {/* 매물 종류 */}
@@ -839,7 +839,7 @@ export default function Home() {
         {/* 우측 패널 260px - xl 이상에서만 표시 */}
         <aside
           className="sidebar-right shrink-0 border border-gray-200 bg-white"
-          style={{ minWidth: '260px', maxWidth: '260px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
+          style={{ minWidth: '300px', maxWidth: '300px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 
           {/* 대표전화 헤더 */}
@@ -890,16 +890,20 @@ export default function Home() {
           {/* 대형매장부지 전문 배너 (데스크톱 사이드바 전용) */}
           <div className="sidebar-large-store" style={{ borderTop: '1px solid #f0f0f0' }}>
             <Link href="/properties/large-store" style={{ display: 'block', textDecoration: 'none' }}>
-              <div style={{ height: '72px', backgroundImage: 'url(https://images.unsplash.com/photo-1644079446600-219068676743?w=400&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.52)' }} />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 12px', gap: '4px' }}>
-                  <span style={{ background: '#c47c30', color: '#fff', fontSize: '9.5px', fontWeight: 700, padding: '1px 7px', borderRadius: '10px', letterSpacing: '0.3px', alignSelf: 'flex-start' }}>대형 매장 부지 전문</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>100평+ 매장 부지 찾기 →</span>
+              {/* 배경 이미지 영역 */}
+              <div style={{ height: '140px', backgroundImage: 'url(https://images.unsplash.com/photo-1644079446600-219068676743?w=600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '14px 14px', gap: '6px' }}>
+                  <span style={{ background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', letterSpacing: '0.3px', alignSelf: 'flex-start' }}>대형 매장 부지 전문</span>
+                  <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', lineHeight: 1.3 }}>100평+ 매장 부지 찾기</span>
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)' }}>창고형 약국 · 식자재마트 · 아울렛</span>
                 </div>
               </div>
-              <div style={{ padding: '8px 12px', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)' }}>창고형 약국 · 마트 · 아울렛</span>
-                <span style={{ fontSize: '11px', color: '#c47c30', fontWeight: 600 }}>전문 페이지 ›</span>
+              {/* 하단 버튼 영역 */}
+              <div style={{ padding: '10px 14px', background: '#1a1a1a' }}>
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '10px 0', background: '#c47c30', color: '#fff', fontSize: '14px', fontWeight: 700, borderRadius: '6px' }}>
+                  전문 페이지 보기 →
+                </span>
               </div>
             </Link>
           </div>
