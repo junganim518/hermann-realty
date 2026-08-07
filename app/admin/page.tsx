@@ -49,9 +49,9 @@ const THEME_DISPLAY: Record<string, string> = {
   '1층상가': '1층 상가', '2층이상상가': '2층 이상 상가',
 };
 const THEME_GROUPS = [
-  { label: '매물 특성', themes: ALL_THEMES.slice(0, 8) },
-  { label: '위치·조건', themes: ALL_THEMES.slice(8, 17) },
-  { label: '업종', themes: ALL_THEMES.slice(17) },
+  { label: '매물 특성', themes: ALL_THEMES.slice(0, 9) },
+  { label: '위치·조건', themes: ALL_THEMES.slice(9, 18) },
+  { label: '업종', themes: ALL_THEMES.slice(18) },
 ];
 
 

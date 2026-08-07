@@ -12,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/properties`, lastModified: SITE_UPDATED, changeFrequency: 'daily', priority: 0.8 },
     { url: `${BASE_URL}/map`, lastModified: SITE_UPDATED, changeFrequency: 'daily', priority: 0.8 },
     { url: `${BASE_URL}/news`, lastModified: SITE_UPDATED, changeFrequency: 'daily', priority: 0.5 },
+    { url: `${BASE_URL}/properties/large-store`, lastModified: SITE_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
   ];
 
   const { data: properties } = await supabase
