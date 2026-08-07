@@ -72,6 +72,7 @@ export default function Home() {
       title: '헤르만부동산',
       desc: '공인중개사사무소',
       body: '상가와 사무실 중개의 모든 것을 헤르만부동산이 책임집니다.\n고객의 이익을 최우선으로, 언제나 정직하게 임하겠습니다.',
+      largeStore: false,
     },
     {
       image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80',
@@ -79,6 +80,15 @@ export default function Home() {
       title: '믿을 수 있는 중개',
       desc: '헤르만부동산이 함께하겠습니다',
       body: '화려한 말보다 진심 어린 행동으로 증명합니다.\n헤르만부동산은 성실한 중개로 고객과 신뢰를 쌓아갑니다.',
+      largeStore: false,
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1644079446600-219068676743?w=1600&q=80',
+      sub: '창고형 약국 · 식자재마트 · 아울렛 등',
+      title: '대형 매장 부지 전문 중개',
+      desc: '100평 이상 대형 상가 부지를 찾아드립니다',
+      body: '주차 30대 이상 · 1층 단독건물 · 1,000세대 이상 배후세대\n헤르만부동산이 부천 전역의 대형 부지를 전문으로 중개합니다.',
+      largeStore: true,
     },
   ];
 
@@ -460,9 +470,15 @@ export default function Home() {
 
         {/* 레이어 3: 버튼 (슬라이드와 독립적으로 항상 표시) */}
         <div className="hero-btns" style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 3, display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '400px', padding: '0 20px' }}>
-          <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg transition" style={{ textDecoration: 'none', width: '160px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '15px', fontWeight: 700 }}>
-            매물 검색하기
-          </a>
+          {heroSlides[heroIndex].largeStore ? (
+            <Link href="/properties/large-store" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg transition" style={{ textDecoration: 'none', width: '160px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '15px', fontWeight: 700 }}>
+              전문 페이지 보기
+            </Link>
+          ) : (
+            <a href="/map" className="bg-[#e2a06e] hover:bg-[#A06828] text-white rounded-lg transition" style={{ textDecoration: 'none', width: '160px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontSize: '15px', fontWeight: 700 }}>
+              매물 검색하기
+            </a>
+          )}
           <div ref={contactRef} style={{ position: 'relative', width: '160px' }}>
             <button
               onClick={() => setContactOpen(!contactOpen)}
@@ -561,19 +577,6 @@ export default function Home() {
           </button>
         </div>
       </section>
-
-      {/* 대형매장부지 진입 배너 */}
-      <div style={{ background: '#1a1a1a', borderBottom: '1px solid #2a2a2a' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto', padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>대형 매장 부지 전문</span>
-            <span style={{ fontSize: '15px', fontWeight: 600, color: '#eee' }}>100평+ 상가 부지를 찾고 계신가요?</span>
-          </div>
-          <Link href="/properties/large-store" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#c47c30', color: '#fff', fontSize: '13px', fontWeight: 700, padding: '8px 18px', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-            전문 페이지 보기 ›
-          </Link>
-        </div>
-      </div>
 
       {/* 3열 레이아웃: 좌측 사이드바 + 중앙 콘텐츠 + 우측 패널 */}
       <div className="main-layout flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
