@@ -363,6 +363,14 @@ function PropertiesPageInner() {
             </p>
           </div>
 
+          {/* 대형매장부지 진입 링크 */}
+          <div style={{ background: '#fff8f2', border: '1px solid #f0dcc8', borderRadius: '6px', padding: '10px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '14px', color: '#666' }}>100평 이상 대형 매장 부지를 찾고 계신가요?</span>
+            <Link href="/properties/large-store" style={{ fontSize: '13px', fontWeight: 700, color: '#c47c30', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              전문 페이지 바로가기 →
+            </Link>
+          </div>
+
           {/* 검색바 */}
           <div style={{ marginBottom: '16px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '6px', overflow: 'hidden', maxWidth: '600px', margin: '0 auto 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 10px', background: '#fff', color: '#aaa' }}>

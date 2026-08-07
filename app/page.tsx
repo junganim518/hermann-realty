@@ -562,6 +562,19 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 대형매장부지 진입 배너 */}
+      <div style={{ background: '#1a1a1a', borderBottom: '1px solid #2a2a2a' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto', padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>대형 매장 부지 전문</span>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: '#eee' }}>100평+ 상가 부지를 찾고 계신가요?</span>
+          </div>
+          <Link href="/properties/large-store" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#c47c30', color: '#fff', fontSize: '13px', fontWeight: 700, padding: '8px 18px', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            전문 페이지 보기 ›
+          </Link>
+        </div>
+      </div>
+
       {/* 3열 레이아웃: 좌측 사이드바 + 중앙 콘텐츠 + 우측 패널 */}
       <div className="main-layout flex items-start" style={{ width: 'calc(100% - 32px)', margin: '0 16px' }}>
 
