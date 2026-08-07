@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Ruler, Car, Building2, Users } from 'lucide-react';
+import { Ruler, Car, Building2, Users, Phone, ClipboardList } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import PropertyCard from '@/components/PropertyCard';
 
@@ -129,21 +129,48 @@ const PAGE_CSS = `
     border-radius: 24px;
   }
 
-  /* CTA 버튼 */
+  /* CTA 버튼 그룹 */
+  .ls-cta-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  /* 주 버튼 */
   .ls-cta-btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     background: #c47c30;
     color: #fff;
     font-size: 15px;
     font-weight: 700;
-    padding: 14px 40px;
+    padding: 14px 32px;
     border-radius: 4px;
     text-decoration: none;
     letter-spacing: 0.3px;
     transition: background 0.15s;
-    width: fit-content;
+    white-space: nowrap;
   }
   .ls-cta-btn:hover { background: #a8642a; }
+  /* 보조 버튼 (outline) */
+  .ls-cta-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.35);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 4px;
+    text-decoration: none;
+    letter-spacing: 0.3px;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .ls-cta-btn-outline:hover { border-color: #c47c30; color: #c47c30; }
 
   /* 조건 카드 그리드 — 2×2 */
   .ls-cond-grid {
@@ -215,7 +242,9 @@ const PAGE_CSS = `
     .ls-hero-left  { padding: 36px 20px 44px; }
     .ls-biz-chips  { gap: 8px; }
     .ls-biz-chip   { font-size: 13px; padding: 7px 15px; }
-    .ls-cta-btn    { display: block; width: 100%; text-align: center; padding: 14px 20px; box-sizing: border-box; }
+    .ls-cta-group  { flex-direction: column; }
+    .ls-cta-btn    { display: flex; justify-content: center; width: 100%; padding: 14px 20px; box-sizing: border-box; }
+    .ls-cta-btn-outline { display: flex; justify-content: center; width: 100%; padding: 14px 20px; box-sizing: border-box; }
     .ls-cond-grid  { grid-template-columns: 1fr; gap: 14px; }
     .ls-cond-card-body { padding: 20px 20px 24px; }
     .ls-prop-grid  { grid-template-columns: 1fr; gap: 12px; }
@@ -277,9 +306,16 @@ export default async function LargeStorePage() {
               ))}
             </div>
 
-            <a href="tel:01086808151" className="ls-cta-btn">
-              지금 문의하기
-            </a>
+            <div className="ls-cta-group">
+              <a href="tel:01086808151" className="ls-cta-btn">
+                <Phone size={16} strokeWidth={2} />
+                전화로 빠른 상담
+              </a>
+              <a href="/inquiry" className="ls-cta-btn-outline">
+                <ClipboardList size={16} strokeWidth={1.8} />
+                희망 조건 등록하기
+              </a>
+            </div>
           </div>
 
           {/* 우측: 이미지 */}
@@ -376,9 +412,16 @@ export default async function LargeStorePage() {
           <p style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 32px', color: '#c47c30' }}>
             헤르만부동산에 맡기세요
           </p>
-          <a href="tel:01086808151" className="ls-cta-btn" style={{ fontSize: '16px', padding: '16px 48px' }}>
-            010-8680-8151 전화 문의
-          </a>
+          <div className="ls-cta-group" style={{ justifyContent: 'center' }}>
+            <a href="tel:01086808151" className="ls-cta-btn" style={{ fontSize: '16px', padding: '16px 36px' }}>
+              <Phone size={16} strokeWidth={2} />
+              지금 전화하기
+            </a>
+            <a href="/inquiry" className="ls-cta-btn-outline" style={{ fontSize: '16px', padding: '16px 28px' }}>
+              <ClipboardList size={16} strokeWidth={1.8} />
+              희망 조건 등록하기
+            </a>
+          </div>
         </div>
       </section>
     </main>
