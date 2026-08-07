@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '대형 매장 부지 전문 중개 | 헤르만부동산',
     description:
-      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대. 부천·인천 지역 대형매장부지 전문 중개.',
+      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대. 전국 대형매장부지 전문 중개.',
     url: 'https://hermann-realty.com/properties/large-store',
   },
 };
@@ -163,29 +163,6 @@ const PAGE_CSS = `
     gap: 20px;
   }
 
-  /* 빈 상태 */
-  .ls-empty {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2a1f0e 100%);
-    border-radius: 8px;
-    padding: 80px 24px;
-    text-align: center;
-    color: #fff;
-  }
-
-  /* 다크 CTA 버튼 */
-  .ls-cta-btn-dark {
-    display: inline-block;
-    background: rgba(255,255,255,0.12);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.25);
-    font-size: 14px;
-    font-weight: 700;
-    padding: 12px 32px;
-    border-radius: 4px;
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .ls-cta-btn-dark:hover { background: rgba(255,255,255,0.2); }
 
   /* ── 태블릿 (768 ~ 1199px) ── */
   @media (min-width: 768px) and (max-width: 1199px) {
@@ -261,7 +238,7 @@ export default async function LargeStorePage() {
             </h1>
             <p style={{ fontSize: 'clamp(14px, 1.8vw, 17px)', color: '#bbb', lineHeight: 1.7, margin: '0' }}>
               100평 이상 상가를 찾는 업체에<br />
-              부천·인천 최적 입지를 직접 발굴해 안내합니다.
+              전국 최적 입지를 직접 발굴해 안내합니다.
             </p>
 
             {/* 업종 칩 */}
@@ -295,15 +272,15 @@ export default async function LargeStorePage() {
           <div className="ls-band-stats">
             <div className="ls-band-stat">
               <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>100평+</div>
-              <div style={{ fontSize: '12px', color: '#888', marginTop: '8px', letterSpacing: '0.5px' }}>전용면적 기준</div>
+              <div style={{ fontSize: '14px', color: '#888', marginTop: '8px', letterSpacing: '0.3px' }}>전용면적 기준</div>
             </div>
             <div className="ls-band-stat">
               <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>30대+</div>
-              <div style={{ fontSize: '12px', color: '#888', marginTop: '8px', letterSpacing: '0.5px' }}>주차대수 확보</div>
+              <div style={{ fontSize: '14px', color: '#888', marginTop: '8px', letterSpacing: '0.3px' }}>주차대수 확보</div>
             </div>
             <div className="ls-band-stat">
               <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>1,000세대+</div>
-              <div style={{ fontSize: '12px', color: '#888', marginTop: '8px', letterSpacing: '0.5px' }}>배후세대 권역</div>
+              <div style={{ fontSize: '14px', color: '#888', marginTop: '8px', letterSpacing: '0.3px' }}>배후세대 권역</div>
             </div>
           </div>
         </div>
@@ -323,7 +300,7 @@ export default async function LargeStorePage() {
             margin: '0 0 36px',
             letterSpacing: '-0.3px',
           }}>
-            헤르만이 찾는 <span style={{ color: '#c47c30' }}>입지 조건</span>
+            이런 조건의 매장 부지를 <span style={{ color: '#c47c30' }}>찾아드립니다</span>
           </h2>
           <div className="ls-cond-grid">
             {CONDITIONS.map(({ Icon, label, value }) => (
@@ -371,30 +348,20 @@ export default async function LargeStorePage() {
               ))}
             </div>
           ) : (
-            <div className="ls-empty">
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '68px',
-                height: '68px',
-                background: 'rgba(196,124,48,0.15)',
-                borderRadius: '50%',
-                margin: '0 auto 24px',
-                border: '1px solid rgba(196,124,48,0.3)',
-              }}>
-                <Store size={30} color="#c47c30" strokeWidth={1.5} />
-              </div>
-              <p style={{ fontSize: 'clamp(16px, 2vw, 18px)', fontWeight: 700, color: '#fff', margin: '0 0 10px' }}>
-                준비 중인 대형 매장 부지가 있습니다
+            <div style={{
+              background: '#fff',
+              border: '1px solid #e8e8e8',
+              borderRadius: '8px',
+              padding: '48px 24px',
+              textAlign: 'center',
+            }}>
+              <div style={{ marginBottom: '16px' }}><Store size={28} color="#c47c30" strokeWidth={1.5} /></div>
+              <p style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>
+                현재 등록된 매물이 없습니다
               </p>
-              <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 32px', lineHeight: 1.65 }}>
-                현재 사이트에 올라오지 않은 매물도 다수 보유 중입니다.<br />
-                원하는 조건을 알려주시면 맞춤 안내해 드립니다.
+              <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>
+                아래에서 직접 문의하시면 조건에 맞는 부지를 안내해 드립니다.
               </p>
-              <a href="tel:01086808151" className="ls-cta-btn">
-                조건 직접 문의하기
-              </a>
             </div>
           )}
         </div>
