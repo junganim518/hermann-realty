@@ -145,28 +145,6 @@ const PAGE_CSS = `
   }
   .ls-cta-btn:hover { background: #a8642a; }
 
-  /* 수치 강조 배너 (단색, 이미지 없음) */
-  .ls-band {
-    background: #161616;
-    padding: 48px 0;
-  }
-  .ls-band-stats {
-    display: flex;
-    gap: 0;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    max-width: 720px;
-    margin: 0 auto;
-  }
-  .ls-band-stat {
-    flex: 1;
-    padding: 28px 20px;
-    border-right: 1px solid rgba(255,255,255,0.1);
-    text-align: center;
-  }
-  .ls-band-stat:last-child { border-right: none; }
-
   /* 조건 카드 그리드 — 2×2 */
   .ls-cond-grid {
     display: grid;
@@ -226,7 +204,6 @@ const PAGE_CSS = `
     .ls-cond-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .ls-cond-card-body { padding: 20px 22px 24px; }
     .ls-prop-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .ls-band-stat  { padding: 22px 16px; }
     .ls-wrap       { padding: 0 20px; }
   }
 
@@ -239,10 +216,6 @@ const PAGE_CSS = `
     .ls-biz-chips  { gap: 8px; }
     .ls-biz-chip   { font-size: 13px; padding: 7px 15px; }
     .ls-cta-btn    { display: block; width: 100%; text-align: center; padding: 14px 20px; box-sizing: border-box; }
-    .ls-band       { padding: 32px 0; }
-    .ls-band-stats { flex-direction: column; max-width: 100%; border-radius: 4px; }
-    .ls-band-stat  { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 18px 20px; }
-    .ls-band-stat:last-child { border-bottom: none; }
     .ls-cond-grid  { grid-template-columns: 1fr; gap: 14px; }
     .ls-cond-card-body { padding: 20px 20px 24px; }
     .ls-prop-grid  { grid-template-columns: 1fr; gap: 12px; }
@@ -321,26 +294,6 @@ export default async function LargeStorePage() {
           </div>
         </div>
       </section>
-
-      {/* ── 수치 강조 배너 (단색, 이미지 없음) ── */}
-      <div className="ls-band">
-        <div className="ls-wrap">
-          <div className="ls-band-stats">
-            <div className="ls-band-stat">
-              <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>100평+</div>
-              <div style={{ fontSize: '14px', color: '#888', marginTop: '8px', letterSpacing: '0.3px' }}>전용면적 기준</div>
-            </div>
-            <div className="ls-band-stat">
-              <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>30대+</div>
-              <div style={{ fontSize: '14px', color: '#888', marginTop: '8px', letterSpacing: '0.3px' }}>주차대수 확보</div>
-            </div>
-            <div className="ls-band-stat">
-              <div style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 900, color: '#c47c30', lineHeight: 1 }}>1,000세대+</div>
-              <div style={{ fontSize: '14px', color: '#888', marginTop: '8px', letterSpacing: '0.3px' }}>배후세대 권역</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ── 조건 카드 섹션 (확장) ── */}
       <section style={{ padding: '80px 0 88px', background: '#f4f4f4' }}>
