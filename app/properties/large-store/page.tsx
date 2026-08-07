@@ -187,7 +187,7 @@ const PAGE_CSS = `
   }
   .ls-cond-card-img {
     width: 100%;
-    height: 210px;
+    aspect-ratio: 4/3;
     object-fit: cover;
     display: block;
   }
@@ -224,7 +224,6 @@ const PAGE_CSS = `
     .ls-hero-split { grid-template-columns: 52fr 48fr; min-height: 480px; }
     .ls-hero-left  { padding: 60px 40px 60px 20px; }
     .ls-cond-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .ls-cond-card-img { height: 180px; }
     .ls-cond-card-body { padding: 20px 22px 24px; }
     .ls-prop-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .ls-band-stat  { padding: 22px 16px; }
@@ -245,7 +244,6 @@ const PAGE_CSS = `
     .ls-band-stat  { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 18px 20px; }
     .ls-band-stat:last-child { border-bottom: none; }
     .ls-cond-grid  { grid-template-columns: 1fr; gap: 14px; }
-    .ls-cond-card-img { height: 200px; }
     .ls-cond-card-body { padding: 20px 20px 24px; }
     .ls-prop-grid  { grid-template-columns: 1fr; gap: 12px; }
     .ls-wrap       { padding: 0 16px; }
