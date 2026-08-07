@@ -109,7 +109,7 @@ export default function Home() {
   useEffect(() => {
     const timer = setInterval(() => {
       setHeroIndex((p) => (p + 1) % heroSlides.length);
-    }, 5000);
+    }, 3500);
     return () => clearInterval(timer);
   }, []);
 
@@ -292,6 +292,8 @@ export default function Home() {
         .theme-arrow-right { right: -10px; }
         .sidebar-left  { display: block; }
         .sidebar-right { display: block; }
+        .sidebar-large-store { display: block; }
+        .mobile-large-store-banner { display: none; }
 
         /* ── PC 1200px 이상: 사이드바 유연 폭 ── */
         @media (min-width: 1200px) {
@@ -311,6 +313,8 @@ export default function Home() {
         /* ── 태블릿 (768px ~ 1199px) ── */
         @media (min-width: 768px) and (max-width: 1199px) {
           .sidebar-left { display: none !important; }
+          .sidebar-large-store { display: none !important; }
+          .mobile-large-store-banner { display: block !important; }
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; }
           .grid-theme .theme-card {
             flex: 0 0 calc((100% - 24px) / 3) !important;
@@ -349,6 +353,7 @@ export default function Home() {
         @media (max-width: 767px) {
           .sidebar-left  { display: none !important; }
           .sidebar-right { display: none !important; }
+          .mobile-large-store-banner { display: block !important; }
 
           /* 매물종류: 3열 그리드 (컴팩트) */
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
@@ -633,6 +638,20 @@ export default function Home() {
         {/* 중앙 콘텐츠 flex-1 */}
         <div className="center-content flex-1 min-w-0 px-4">
 
+          {/* 모바일/태블릿: 대형매장부지 진입 배너 (데스크톱은 사이드바 배너로 대체) */}
+          <div className="mobile-large-store-banner" style={{ display: 'none', padding: '8px 0' }}>
+            <Link
+              href="/properties/large-store"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', background: '#1a1a1a', borderRadius: '6px', padding: '11px 14px', textDecoration: 'none' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap' }}>대형 매장 부지 전문</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#eee' }}>100평+ 상가 부지 전문 페이지</span>
+              </div>
+              <span style={{ color: '#c47c30', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '16px' }}>›</span>
+            </Link>
+          </div>
+
           {/* 매물 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
             <h2 className="section-title" style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', marginBottom: '24px', color: '#1a1a1a' }}>매물종류</h2>
@@ -866,6 +885,23 @@ export default function Home() {
                 카카오톡 문의
               </a>
             </div>
+          </div>
+
+          {/* 대형매장부지 전문 배너 (데스크톱 사이드바 전용) */}
+          <div className="sidebar-large-store" style={{ borderTop: '1px solid #f0f0f0' }}>
+            <Link href="/properties/large-store" style={{ display: 'block', textDecoration: 'none' }}>
+              <div style={{ height: '72px', backgroundImage: 'url(https://images.unsplash.com/photo-1644079446600-219068676743?w=400&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.52)' }} />
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 12px', gap: '4px' }}>
+                  <span style={{ background: '#c47c30', color: '#fff', fontSize: '9.5px', fontWeight: 700, padding: '1px 7px', borderRadius: '10px', letterSpacing: '0.3px', alignSelf: 'flex-start' }}>대형 매장 부지 전문</span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>100평+ 매장 부지 찾기 →</span>
+                </div>
+              </div>
+              <div style={{ padding: '8px 12px', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)' }}>창고형 약국 · 마트 · 아울렛</span>
+                <span style={{ fontSize: '11px', color: '#c47c30', fontWeight: 600 }}>전문 페이지 ›</span>
+              </div>
+            </Link>
           </div>
         </aside>
 
