@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import PropertyCard from '@/components/PropertyCard';
+import { LargeStoreSidebarBanner, LargeStoreMobileBanner } from '@/components/LargeStoreBanner';
 
 export default function Home() {
   const [headerHeight, setHeaderHeight] = useState(200);
@@ -639,18 +640,7 @@ export default function Home() {
         <div className="center-content flex-1 min-w-0 px-4">
 
           {/* 모바일/태블릿: 대형매장부지 진입 배너 (데스크톱은 사이드바 배너로 대체) */}
-          <div className="mobile-large-store-banner" style={{ display: 'none', padding: '8px 0' }}>
-            <Link
-              href="/properties/large-store"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', background: '#1a1a1a', borderRadius: '6px', padding: '11px 14px', textDecoration: 'none' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap' }}>대형 매장 부지 전문</span>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#eee' }}>100평+ 상가 부지 전문 페이지</span>
-              </div>
-              <span style={{ color: '#c47c30', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '16px' }}>›</span>
-            </Link>
-          </div>
+          <LargeStoreMobileBanner className="mobile-large-store-banner" />
 
           {/* 매물 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
@@ -888,25 +878,7 @@ export default function Home() {
           </div>
 
           {/* 대형매장부지 전문 배너 (데스크톱 사이드바 전용) */}
-          <div className="sidebar-large-store" style={{ borderTop: '1px solid #f0f0f0' }}>
-            <Link href="/properties/large-store" style={{ display: 'block', textDecoration: 'none' }}>
-              {/* 배경 이미지 영역 */}
-              <div style={{ height: '140px', backgroundImage: 'url(https://images.unsplash.com/photo-1644079446600-219068676743?w=600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '14px 14px', gap: '6px' }}>
-                  <span style={{ background: '#c47c30', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', letterSpacing: '0.3px', alignSelf: 'flex-start' }}>대형 매장 부지 전문</span>
-                  <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', lineHeight: 1.3 }}>100평+ 매장 부지 찾기</span>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)' }}>창고형 약국 · 식자재마트 · 아울렛</span>
-                </div>
-              </div>
-              {/* 하단 버튼 영역 */}
-              <div style={{ padding: '10px 14px', background: '#1a1a1a' }}>
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '10px 0', background: '#c47c30', color: '#fff', fontSize: '14px', fontWeight: 700, borderRadius: '6px' }}>
-                  전용페이지 보기 →
-                </span>
-              </div>
-            </Link>
-          </div>
+          <LargeStoreSidebarBanner className="sidebar-large-store" />
         </aside>
 
       </div>

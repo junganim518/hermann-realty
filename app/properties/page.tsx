@@ -8,6 +8,7 @@ import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
 import { FILTER_THEMES } from '@/lib/themeUtils';
+import { LargeStoreSidebarBanner, LargeStoreMobileBanner } from '@/components/LargeStoreBanner';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -238,6 +239,7 @@ function PropertiesPageInner() {
         /* ── 기본 (PC 1200px+) ── */
         .prop-sidebar-left  { display: block; }
         .prop-sidebar-right { display: block; }
+        .prop-large-store-mobile { display: none; }
         .prop-grid { grid-template-columns: repeat(4, 1fr); }
         .prop-card-mobile { display: block; }
         .prop-card-content-row { display: block; }
@@ -259,6 +261,7 @@ function PropertiesPageInner() {
           .prop-sidebar-left { min-width: 160px !important; max-width: 160px !important; }
           .prop-sidebar-left a { font-size: 14px !important; padding: 8px 12px !important; }
           .prop-sidebar-right { display: none !important; }
+          .prop-large-store-mobile { display: block !important; }
           .prop-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .prop-card-img { height: 200px !important; }
         }
@@ -267,6 +270,7 @@ function PropertiesPageInner() {
         @media (max-width: 767px) {
           .prop-sidebar-left  { display: none !important; }
           .prop-sidebar-right { display: none !important; }
+          .prop-large-store-mobile { display: block !important; }
           .prop-layout { width: 100% !important; margin: 0 !important; }
           .prop-center { padding: 0 8px !important; }
           .prop-title h1 { font-size: 22px !important; }
@@ -363,13 +367,8 @@ function PropertiesPageInner() {
             </p>
           </div>
 
-          {/* 대형매장부지 진입 링크 */}
-          <div style={{ background: '#fff8f2', border: '1px solid #f0dcc8', borderRadius: '6px', padding: '10px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '14px', color: '#666' }}>100평 이상 대형 매장 부지를 찾고 계신가요?</span>
-            <Link href="/properties/large-store" style={{ fontSize: '13px', fontWeight: 700, color: '#c47c30', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-              전문 페이지 바로가기 →
-            </Link>
-          </div>
+          {/* 태블릿/모바일: 대형매장부지 배너 (데스크톱은 사이드바 배너로 대체) */}
+          <LargeStoreMobileBanner className="prop-large-store-mobile" />
 
           {/* 검색바 */}
           <div style={{ marginBottom: '16px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '6px', overflow: 'hidden', maxWidth: '600px', margin: '0 auto 16px' }}>
@@ -627,6 +626,7 @@ function PropertiesPageInner() {
               </a>
             </div>
           </div>
+          <LargeStoreSidebarBanner />
         </aside>
 
       </div>
