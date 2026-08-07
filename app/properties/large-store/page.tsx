@@ -3,15 +3,28 @@ import { Ruler, Car, Building2, Users, Phone, ClipboardList } from 'lucide-react
 import { supabase } from '@/lib/supabase';
 import PropertyCard from '@/components/PropertyCard';
 
+const OG_IMAGE = 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=1400&q=80&auto=format&fit=crop&crop=center';
+
 export const metadata: Metadata = {
   title: '대형 매장 부지 전문 중개 | 헤르만부동산',
   description:
     '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대 전문 중개. 넓은 주차 공간과 1층 단독 건물을 갖춘 대형매장부지를 헤르만부동산이 찾아드립니다.',
+  alternates: {
+    canonical: 'https://hermann-realty.com/properties/large-store',
+  },
   openGraph: {
     title: '대형 매장 부지 전문 중개 | 헤르만부동산',
     description:
       '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대. 전국 대형매장부지 전문 중개.',
     url: 'https://hermann-realty.com/properties/large-store',
+    images: [{ url: OG_IMAGE }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '대형 매장 부지 전문 중개 | 헤르만부동산',
+    description:
+      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대. 전국 대형매장부지 전문 중개.',
+    images: [OG_IMAGE],
   },
 };
 
