@@ -23,16 +23,16 @@ const CONDITIONS = [
     label: '전용면적',
     value: '100평 이상',
     desc: '창고형 매장 운영에 충분한 넓이 확보',
-    // Unsplash — 대형 마트/슈퍼마켓 내부 (넓은 진열 공간)
-    img: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80&auto=format&fit=crop',
-    imgAlt: '대형 매장 넓은 내부 공간 — 100평 이상 전용면적 상가',
+    // Unsplash — IKEA식 창고형 대형 매장 내부, 높은 천장·넓은 진열대
+    img: 'https://images.unsplash.com/photo-1644079446600-219068676743?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '창고형 대형 매장 내부 — 천장 높고 넓은 진열대, 100평 이상 전용면적',
   },
   {
     Icon: Car,
     label: '주차대수',
     value: '30대 이상',
     desc: '방문 고객을 위한 충분한 주차 공간 필수',
-    // Unsplash — 대형 주차장 외부
+    // Unsplash — 대형 주차장 항공 뷰
     img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&q=80&auto=format&fit=crop',
     imgAlt: '대형 주차장 — 30대 이상 주차 가능한 대형 상가 부지',
   },
@@ -41,18 +41,18 @@ const CONDITIONS = [
     label: '건물형태',
     value: '1층 · 단독건물',
     desc: '접근성과 브랜드 노출에 유리한 독립 건물',
-    // Unsplash — 상업용 단독 건물 외관
-    img: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80&auto=format&fit=crop',
-    imgAlt: '1층 단독 상업용 건물 외관 — 대형 매장 부지',
+    // Unsplash — 대형 상가 건물 외관 + 주차장 (modern retail buildings with parking lot)
+    img: 'https://images.unsplash.com/photo-1764801341736-ea42131f484c?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '대형 상가 건물 외관과 주차장 — 1층 단독건물 형태 대형 매장 부지',
   },
   {
     Icon: Users,
     label: '배후세대',
     value: '1,000세대 이상',
     desc: '안정적 유동 고객을 확보할 수 있는 주거 밀집 권역',
-    // Unsplash — 아파트 단지 전경
-    img: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80&auto=format&fit=crop',
-    imgAlt: '아파트 단지 — 1,000세대 이상 배후세대 권역',
+    // Unsplash — 조감도로 본 대규모 주거 건물군 (bird's eye view of residential buildings)
+    img: 'https://images.unsplash.com/photo-1509856508843-3488c191938f?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '대규모 주거 단지 조감도 — 1,000세대 이상 배후세대 권역',
   },
 ];
 
