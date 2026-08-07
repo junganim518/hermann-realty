@@ -295,15 +295,15 @@ export default function Home() {
         .sidebar-large-store { display: block; }
         .mobile-large-store-banner { display: none; }
 
-        /* ── PC 1200px 이상: 사이드바 유연 폭 ── */
+        /* ── PC 1200px 이상: 좌우 사이드바 동일 폭 ── */
         @media (min-width: 1200px) {
           .sidebar-left {
-            min-width: clamp(160px, 14vw, 200px) !important;
-            max-width: clamp(160px, 14vw, 200px) !important;
+            min-width: clamp(200px, 18vw, 240px) !important;
+            max-width: clamp(200px, 18vw, 240px) !important;
           }
           .sidebar-right {
-            min-width: clamp(260px, 22vw, 300px) !important;
-            max-width: clamp(260px, 22vw, 300px) !important;
+            min-width: clamp(200px, 18vw, 240px) !important;
+            max-width: clamp(200px, 18vw, 240px) !important;
           }
         }
 
@@ -589,7 +589,7 @@ export default function Home() {
         {/* 좌측 사이드바 220px - lg 이상에서만 표시 */}
         <aside
           className="sidebar-left shrink-0 border border-gray-200 bg-white"
-          style={{ minWidth: '200px', maxWidth: '200px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
+          style={{ minWidth: '240px', maxWidth: '240px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 
           {/* 매물 종류 */}
@@ -839,7 +839,7 @@ export default function Home() {
         {/* 우측 패널 260px - xl 이상에서만 표시 */}
         <aside
           className="sidebar-right shrink-0 border border-gray-200 bg-white"
-          style={{ minWidth: '300px', maxWidth: '300px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
+          style={{ minWidth: '240px', maxWidth: '240px', position: 'sticky', top: headerHeight, height: `calc(100vh - ${headerHeight}px)`, overflowY: 'auto', alignSelf: 'flex-start' }}
         >
 
           {/* 대표전화 헤더 */}
