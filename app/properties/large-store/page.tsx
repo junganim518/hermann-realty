@@ -24,23 +24,78 @@ const CONDITIONS = [
   { Icon: Users,     label: '배후세대', value: '1,000세대 이상' },
 ];
 
+const BIZ_TYPES = ['창고형 약국', '식자재마트', '아울렛·복합상가', '헬스클럽', '학원·교육센터', '의류 아울렛'];
+
+// Unsplash — 무료 상업 이미지 (CC0)
+const HERO_IMG  = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1400&q=80&auto=format&fit=crop&crop=center';
+const BAND_IMG  = 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&q=75&auto=format&fit=crop&crop=center';
+
 const PAGE_CSS = `
   /* ── 대형매장부지 랜딩 스타일 ── */
-  .ls-wrap    { width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 24px; box-sizing: border-box; }
-  .ls-hero-inner { max-width: 820px; margin: 0 auto; position: relative; }
+  .ls-wrap { width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 24px; box-sizing: border-box; }
 
-  /* 조건 카드 그리드: PC 기본 4열 */
-  .ls-cond-grid {
+  /* 히어로 분할 */
+  .ls-hero-split {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    grid-template-columns: 55fr 45fr;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 580px;
+  }
+  .ls-hero-left {
+    padding: 80px 56px 80px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .ls-hero-right {
+    position: relative;
+    overflow: hidden;
+  }
+  .ls-hero-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+  .ls-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(17,17,17,0.7) 0%, rgba(17,17,17,0.1) 50%, transparent 100%);
+    pointer-events: none;
   }
 
-  /* 매물 그리드: 기본 3열 */
-  .ls-prop-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+  /* 배지 */
+  .ls-badge {
+    display: inline-block;
+    background: rgba(196,124,48,0.18);
+    border: 1px solid rgba(196,124,48,0.4);
+    color: #e2a06e;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    padding: 5px 16px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    width: fit-content;
+  }
+
+  /* 업종 칩 */
+  .ls-biz-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 24px 0 36px;
+  }
+  .ls-biz-chip {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ccc;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 13px;
+    border-radius: 20px;
   }
 
   /* CTA 버튼 */
@@ -48,20 +103,100 @@ const PAGE_CSS = `
     display: inline-block;
     background: #c47c30;
     color: #fff;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     padding: 14px 40px;
     border-radius: 4px;
     text-decoration: none;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     transition: background 0.15s;
+    width: fit-content;
   }
   .ls-cta-btn:hover { background: #a8642a; }
 
+  /* 중간 이미지 배너 */
+  .ls-band {
+    position: relative;
+    height: 300px;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  .ls-band img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 40%;
+    display: block;
+  }
+  .ls-band-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.58);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    color: #fff;
+  }
+  .ls-band-stats {
+    display: flex;
+    gap: 0;
+    margin-top: 28px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .ls-band-stat {
+    padding: 16px 32px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    text-align: center;
+  }
+  .ls-band-stat:last-child { border-right: none; }
+
+  /* 조건 카드 그리드 */
+  .ls-cond-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .ls-cond-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 32px 20px 28px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .ls-cond-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+    transform: translateY(-2px);
+  }
+
+  /* 매물 그리드 */
+  .ls-prop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  /* 빈 상태 */
+  .ls-empty {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a1f0e 100%);
+    border-radius: 8px;
+    padding: 80px 24px;
+    text-align: center;
+    color: #fff;
+  }
+
+  /* 다크 CTA 버튼 */
   .ls-cta-btn-dark {
     display: inline-block;
-    background: #1a1a1a;
+    background: rgba(255,255,255,0.12);
     color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
     font-size: 14px;
     font-weight: 700;
     padding: 12px 32px;
@@ -69,30 +204,35 @@ const PAGE_CSS = `
     text-decoration: none;
     transition: background 0.15s;
   }
-  .ls-cta-btn-dark:hover { background: #333; }
+  .ls-cta-btn-dark:hover { background: rgba(255,255,255,0.2); }
 
-  /* ── 태블릿 (768px ~ 1199px) ── */
-  @media (max-width: 1199px) {
-    .ls-cond-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  /* ── 태블릿 (768 ~ 1199px) ── */
+  @media (min-width: 768px) and (max-width: 1199px) {
+    .ls-hero-split { grid-template-columns: 52fr 48fr; min-height: 480px; }
+    .ls-hero-left  { padding: 60px 40px 60px 20px; }
+    .ls-cond-grid  { grid-template-columns: repeat(4, 1fr); gap: 12px; }
     .ls-prop-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .ls-wrap { padding: 0 20px; }
+    .ls-band       { height: 240px; }
+    .ls-band-stat  { padding: 14px 24px; }
+    .ls-wrap       { padding: 0 20px; }
   }
 
   /* ── 모바일 (767px 이하) ── */
   @media (max-width: 767px) {
-    .ls-cond-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .ls-hero-split { grid-template-columns: 1fr; min-height: auto; }
+    .ls-hero-right { height: 220px; order: -1; }
+    .ls-hero-overlay { background: rgba(0,0,0,0.2); }
+    .ls-hero-left  { padding: 36px 20px 44px; }
+    .ls-biz-chips  { gap: 6px; }
+    .ls-cta-btn    { display: block; width: 100%; text-align: center; padding: 14px 20px; box-sizing: border-box; }
+    .ls-band       { height: 200px; }
+    .ls-band-stats { flex-direction: column; border-radius: 4px; }
+    .ls-band-stat  { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px 24px; }
+    .ls-band-stat:last-child { border-bottom: none; }
+    .ls-cond-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .ls-cond-card  { padding: 24px 16px 20px; }
     .ls-prop-grid  { grid-template-columns: 1fr; gap: 12px; }
-    .ls-wrap { padding: 0 16px; }
-    .ls-cta-btn {
-      display: block;
-      width: 100%;
-      text-align: center;
-      padding: 14px 20px;
-      box-sizing: border-box;
-    }
-    .ls-hero-text { font-size: clamp(24px, 8vw, 38px) !important; }
-    .ls-hero-sub  { font-size: 14px !important; }
-    .ls-section-pad { padding: 36px 0 !important; }
+    .ls-wrap       { padding: 0 16px; }
   }
 `;
 
@@ -121,69 +261,91 @@ export default async function LargeStorePage() {
     <main style={{ minHeight: '100vh', background: '#fafafa' }}>
       <style dangerouslySetInnerHTML={{ __html: PAGE_CSS }} />
 
-      {/* ── 히어로 섹션 ── */}
-      <section style={{
-        background: 'linear-gradient(135deg, #111 0%, #1e1e1e 60%, #2a1f0e 100%)',
-        color: '#fff',
-        padding: 'clamp(56px, 8vw, 96px) 20px',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.04,
-          backgroundImage: 'repeating-linear-gradient(45deg, #c47c30 0, #c47c30 1px, transparent 0, transparent 50%)',
-          backgroundSize: '24px 24px',
-        }} />
-        <div className="ls-hero-inner">
-          <div style={{
-            display: 'inline-block',
-            background: 'rgba(196,124,48,0.18)',
-            border: '1px solid rgba(196,124,48,0.45)',
-            color: '#e2a06e',
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '2.5px',
-            padding: '5px 16px',
-            borderRadius: '20px',
-            marginBottom: '28px',
-          }}>
-            LARGE STORE SPECIALIST
-          </div>
-          <h1
-            className="ls-hero-text"
-            style={{
-              fontSize: 'clamp(32px, 5.5vw, 56px)',
+      {/* ── 히어로: 좌우 분할 ── */}
+      <section style={{ background: '#111', color: '#fff' }}>
+        <div className="ls-hero-split">
+
+          {/* 좌측: 텍스트 */}
+          <div className="ls-hero-left">
+            <div className="ls-badge">LARGE STORE SPECIALIST</div>
+            <h1 style={{
+              fontSize: 'clamp(28px, 4.5vw, 50px)',
               fontWeight: 900,
               lineHeight: 1.18,
-              margin: '0 0 22px',
+              margin: '0 0 16px',
               letterSpacing: '-0.5px',
-            }}
-          >
-            대형 매장 부지<br />
-            <span style={{ color: '#c47c30' }}>전문 중개</span>
-          </h1>
-          <p
-            className="ls-hero-sub"
-            style={{
-              fontSize: 'clamp(15px, 2.2vw, 19px)',
-              color: '#ccc',
-              lineHeight: 1.7,
-              margin: '0 0 40px',
-            }}
-          >
-            창고형 약국, 식자재마트, 아울렛 등<br />
-            100평 이상 대형 매장에 적합한 상가를 찾아드립니다
-          </p>
-          <a href="tel:01086808151" className="ls-cta-btn">
-            지금 문의하기
-          </a>
+            }}>
+              대형 매장 부지<br />
+              <span style={{ color: '#c47c30' }}>전문 중개</span>
+            </h1>
+            <p style={{ fontSize: 'clamp(14px, 1.8vw, 17px)', color: '#bbb', lineHeight: 1.7, margin: '0' }}>
+              100평 이상 상가를 찾는 업체에<br />
+              부천·인천 최적 입지를 직접 발굴해 안내합니다.
+            </p>
+
+            {/* 업종 칩 */}
+            <div className="ls-biz-chips">
+              {BIZ_TYPES.map(b => (
+                <span key={b} className="ls-biz-chip">{b}</span>
+              ))}
+            </div>
+
+            <a href="tel:01086808151" className="ls-cta-btn">
+              지금 문의하기
+            </a>
+          </div>
+
+          {/* 우측: 이미지 */}
+          <div className="ls-hero-right">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={HERO_IMG}
+              alt="대형 매장 부지 — 100평 이상 대형 상가 내부"
+              loading="eager"
+            />
+            <div className="ls-hero-overlay" />
+          </div>
         </div>
       </section>
 
+      {/* ── 중간 이미지 배너 ── */}
+      <div className="ls-band">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={BAND_IMG}
+          alt="창고형 대형 상가 부지 — 넓은 공간, 충분한 주차 확보"
+          loading="lazy"
+        />
+        <div className="ls-band-overlay">
+          <p style={{ fontSize: 'clamp(11px, 1.5vw, 13px)', color: '#e2a06e', fontWeight: 700, letterSpacing: '2px', margin: '0 0 12px', textTransform: 'uppercase' }}>
+            We Find Your Space
+          </p>
+          <h2 style={{ fontSize: 'clamp(18px, 3vw, 28px)', fontWeight: 800, margin: '0', lineHeight: 1.35 }}>
+            넓은 공간 · 충분한 주차 · 배후세대까지
+          </h2>
+          <div className="ls-band-stats">
+            <div className="ls-band-stat">
+              <div style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 900, color: '#c47c30' }}>100평+</div>
+              <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px', letterSpacing: '0.5px' }}>전용면적</div>
+            </div>
+            <div className="ls-band-stat">
+              <div style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 900, color: '#c47c30' }}>30대+</div>
+              <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px', letterSpacing: '0.5px' }}>주차대수</div>
+            </div>
+            <div className="ls-band-stat">
+              <div style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 900, color: '#c47c30' }}>1,000세대+</div>
+              <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px', letterSpacing: '0.5px' }}>배후세대</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── 조건 카드 섹션 ── */}
-      <section className="ls-section-pad" style={{ padding: '64px 0' }}>
+      <section style={{ padding: '72px 0', background: '#f4f4f4' }}>
         <div className="ls-wrap">
+          <p style={{ fontSize: '12px', color: '#c47c30', fontWeight: 700, letterSpacing: '2px', textAlign: 'center', margin: '0 0 10px', textTransform: 'uppercase' }}>
+            Location Criteria
+          </p>
           <h2 style={{
             textAlign: 'center',
             fontSize: 'clamp(18px, 2.5vw, 22px)',
@@ -196,28 +358,23 @@ export default async function LargeStorePage() {
           </h2>
           <div className="ls-cond-grid">
             {CONDITIONS.map(({ Icon, label, value }) => (
-              <div key={label} style={{
-                background: '#fff',
-                border: '1px solid #e8e8e8',
-                borderRadius: '8px',
-                padding: '32px 20px 28px',
-                textAlign: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}>
+              <div key={label} className="ls-cond-card">
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '48px',
-                  height: '48px',
+                  width: '52px',
+                  height: '52px',
                   background: '#fff8f2',
                   borderRadius: '50%',
                   margin: '0 auto 16px',
+                  border: '1px solid #f0dcc8',
                 }}>
                   <Icon size={22} color="#c47c30" strokeWidth={1.8} />
                 </div>
-                <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>{label}</div>
-                <div style={{ fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 800, color: '#1a1a1a' }}>{value}</div>
+                <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</div>
+                <div style={{ width: '28px', height: '2px', background: '#c47c30', margin: '0 auto 10px' }} />
+                <div style={{ fontSize: 'clamp(15px, 1.8vw, 18px)', fontWeight: 800, color: '#1a1a1a' }}>{value}</div>
               </div>
             ))}
           </div>
@@ -225,9 +382,9 @@ export default async function LargeStorePage() {
       </section>
 
       {/* ── 매물 목록 섹션 ── */}
-      <section style={{ padding: '0 0 80px' }}>
+      <section style={{ padding: '64px 0 80px', background: '#fafafa' }}>
         <div className="ls-wrap">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
             <h2 style={{ fontSize: 'clamp(18px, 2.5vw, 20px)', fontWeight: 800, color: '#1a1a1a', margin: 0, letterSpacing: '-0.3px' }}>
               대형매장부지 매물
             </h2>
@@ -245,33 +402,29 @@ export default async function LargeStorePage() {
               ))}
             </div>
           ) : (
-            <div style={{
-              background: '#fff',
-              border: '1px solid #e8e8e8',
-              borderRadius: '8px',
-              padding: '64px 24px',
-              textAlign: 'center',
-            }}>
+            <div className="ls-empty">
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '64px',
-                height: '64px',
-                background: '#f5f0eb',
+                width: '68px',
+                height: '68px',
+                background: 'rgba(196,124,48,0.15)',
                 borderRadius: '50%',
-                margin: '0 auto 20px',
+                margin: '0 auto 24px',
+                border: '1px solid rgba(196,124,48,0.3)',
               }}>
-                <Store size={28} color="#c47c30" strokeWidth={1.5} />
+                <Store size={30} color="#c47c30" strokeWidth={1.5} />
               </div>
-              <p style={{ fontSize: '17px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>
-                준비 중인 매물이 더 있습니다
+              <p style={{ fontSize: 'clamp(16px, 2vw, 18px)', fontWeight: 700, color: '#fff', margin: '0 0 10px' }}>
+                준비 중인 대형 매장 부지가 있습니다
               </p>
-              <p style={{ fontSize: '14px', color: '#666', margin: '0 0 28px', lineHeight: 1.6 }}>
-                문의 주시면 조건에 맞는 대형 매장 부지를 안내드립니다
+              <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 32px', lineHeight: 1.65 }}>
+                현재 사이트에 올라오지 않은 매물도 다수 보유 중입니다.<br />
+                원하는 조건을 알려주시면 맞춤 안내해 드립니다.
               </p>
-              <a href="tel:01086808151" className="ls-cta-btn-dark">
-                010-8680-8151
+              <a href="tel:01086808151" className="ls-cta-btn">
+                조건 직접 문의하기
               </a>
             </div>
           )}
@@ -282,18 +435,21 @@ export default async function LargeStorePage() {
       <section style={{
         background: '#111',
         color: '#fff',
-        padding: 'clamp(40px, 6vw, 64px) 20px',
+        padding: 'clamp(48px, 7vw, 80px) 20px',
         textAlign: 'center',
       }}>
         <div style={{ maxWidth: '560px', margin: '0 auto' }}>
-          <p style={{ fontSize: '14px', color: '#888', margin: '0 0 8px', letterSpacing: '0.5px' }}>
-            원하는 조건의 매물을 직접 의뢰하세요
+          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+            직접 의뢰 · 맞춤 탐색
           </p>
-          <p style={{ fontSize: 'clamp(18px, 3.5vw, 24px)', fontWeight: 800, margin: '0 0 28px', color: '#e2a06e' }}>
-            헤르만부동산 010-8680-8151
+          <p style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 8px', color: '#fff' }}>
+            원하는 조건의 대형 매장 부지,
           </p>
-          <a href="tel:01086808151" className="ls-cta-btn">
-            전화 문의
+          <p style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 32px', color: '#c47c30' }}>
+            헤르만부동산에 맡기세요
+          </p>
+          <a href="tel:01086808151" className="ls-cta-btn" style={{ fontSize: '16px', padding: '16px 48px' }}>
+            010-8680-8151 전화 문의
           </a>
         </div>
       </section>
