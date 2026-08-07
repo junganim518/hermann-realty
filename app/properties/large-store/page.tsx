@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Ruler, Car, Building2, Users, Store } from 'lucide-react';
+import { Ruler, Car, Building2, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import PropertyCard from '@/components/PropertyCard';
 
@@ -18,16 +18,47 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONDITIONS = [
-  { Icon: Ruler,     label: '전용면적', value: '100평 이상' },
-  { Icon: Car,       label: '주차대수', value: '30대 이상' },
-  { Icon: Building2, label: '건물형태', value: '1층 · 단독건물' },
-  { Icon: Users,     label: '배후세대', value: '1,000세대 이상' },
+  {
+    Icon: Ruler,
+    label: '전용면적',
+    value: '100평 이상',
+    desc: '창고형 매장 운영에 충분한 넓이 확보',
+    // Unsplash — 대형 마트/슈퍼마켓 내부 (넓은 진열 공간)
+    img: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '대형 매장 넓은 내부 공간 — 100평 이상 전용면적 상가',
+  },
+  {
+    Icon: Car,
+    label: '주차대수',
+    value: '30대 이상',
+    desc: '방문 고객을 위한 충분한 주차 공간 필수',
+    // Unsplash — 대형 주차장 외부
+    img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '대형 주차장 — 30대 이상 주차 가능한 대형 상가 부지',
+  },
+  {
+    Icon: Building2,
+    label: '건물형태',
+    value: '1층 · 단독건물',
+    desc: '접근성과 브랜드 노출에 유리한 독립 건물',
+    // Unsplash — 상업용 단독 건물 외관
+    img: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '1층 단독 상업용 건물 외관 — 대형 매장 부지',
+  },
+  {
+    Icon: Users,
+    label: '배후세대',
+    value: '1,000세대 이상',
+    desc: '안정적 유동 고객을 확보할 수 있는 주거 밀집 권역',
+    // Unsplash — 아파트 단지 전경
+    img: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80&auto=format&fit=crop',
+    imgAlt: '아파트 단지 — 1,000세대 이상 배후세대 권역',
+  },
 ];
 
 const BIZ_TYPES = ['창고형 약국', '식자재마트', '아울렛·복합상가', '헬스클럽', '학원·교육센터', '의류 아울렛', '자동차 전시장'];
 
-// Unsplash — 무료 상업 이미지 (CC0)
-// 대형 매장 건물 전면 + 넓은 주차장 구도
+// Unsplash — 무료 상업 이미지 (CC0), 대형 매장 건물 전면 + 넓은 주차장 구도
 const HERO_IMG = 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=1400&q=80&auto=format&fit=crop&crop=center';
 
 const PAGE_CSS = `
@@ -136,24 +167,49 @@ const PAGE_CSS = `
   }
   .ls-band-stat:last-child { border-right: none; }
 
-  /* 조건 카드 그리드 */
+  /* 조건 카드 그리드 — 2×2 */
   .ls-cond-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
   .ls-cond-card {
     background: #fff;
     border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    padding: 32px 20px 28px;
-    text-align: center;
+    border-radius: 12px;
+    overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     transition: box-shadow 0.15s, transform 0.15s;
   }
   .ls-cond-card:hover {
-    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     transform: translateY(-2px);
+  }
+  .ls-cond-card-img {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    display: block;
+  }
+  .ls-cond-card-body {
+    padding: 24px 28px 28px;
+  }
+  .ls-cond-card-icon-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .ls-cond-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #fff8f2;
+    border-radius: 50%;
+    border: 1px solid #f0dcc8;
+    flex-shrink: 0;
   }
 
   /* 매물 그리드 */
@@ -163,12 +219,13 @@ const PAGE_CSS = `
     gap: 20px;
   }
 
-
   /* ── 태블릿 (768 ~ 1199px) ── */
   @media (min-width: 768px) and (max-width: 1199px) {
     .ls-hero-split { grid-template-columns: 52fr 48fr; min-height: 480px; }
     .ls-hero-left  { padding: 60px 40px 60px 20px; }
-    .ls-cond-grid  { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .ls-cond-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .ls-cond-card-img { height: 180px; }
+    .ls-cond-card-body { padding: 20px 22px 24px; }
     .ls-prop-grid  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .ls-band-stat  { padding: 22px 16px; }
     .ls-wrap       { padding: 0 20px; }
@@ -187,8 +244,9 @@ const PAGE_CSS = `
     .ls-band-stats { flex-direction: column; max-width: 100%; border-radius: 4px; }
     .ls-band-stat  { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 18px 20px; }
     .ls-band-stat:last-child { border-bottom: none; }
-    .ls-cond-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .ls-cond-card  { padding: 24px 16px 20px; }
+    .ls-cond-grid  { grid-template-columns: 1fr; gap: 14px; }
+    .ls-cond-card-img { height: 200px; }
+    .ls-cond-card-body { padding: 20px 20px 24px; }
     .ls-prop-grid  { grid-template-columns: 1fr; gap: 12px; }
     .ls-wrap       { padding: 0 16px; }
   }
@@ -286,86 +344,69 @@ export default async function LargeStorePage() {
         </div>
       </div>
 
-      {/* ── 조건 카드 섹션 ── */}
-      <section style={{ padding: '72px 0', background: '#f4f4f4' }}>
+      {/* ── 조건 카드 섹션 (확장) ── */}
+      <section style={{ padding: '80px 0 88px', background: '#f4f4f4' }}>
         <div className="ls-wrap">
           <p style={{ fontSize: '12px', color: '#c47c30', fontWeight: 700, letterSpacing: '2px', textAlign: 'center', margin: '0 0 10px', textTransform: 'uppercase' }}>
             Location Criteria
           </p>
           <h2 style={{
             textAlign: 'center',
-            fontSize: 'clamp(18px, 2.5vw, 22px)',
+            fontSize: 'clamp(18px, 2.5vw, 24px)',
             fontWeight: 800,
             color: '#1a1a1a',
-            margin: '0 0 36px',
+            margin: '0 0 8px',
             letterSpacing: '-0.3px',
           }}>
             이런 조건의 매장 부지를 <span style={{ color: '#c47c30' }}>찾아드립니다</span>
           </h2>
+          <p style={{ textAlign: 'center', fontSize: '14px', color: '#888', margin: '0 0 40px', lineHeight: 1.6 }}>
+            이런 곳을 직접 발굴해서 안내해 드립니다
+          </p>
           <div className="ls-cond-grid">
-            {CONDITIONS.map(({ Icon, label, value }) => (
+            {CONDITIONS.map(({ Icon, label, value, desc, img, imgAlt }) => (
               <div key={label} className="ls-cond-card">
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '52px',
-                  height: '52px',
-                  background: '#fff8f2',
-                  borderRadius: '50%',
-                  margin: '0 auto 16px',
-                  border: '1px solid #f0dcc8',
-                }}>
-                  <Icon size={22} color="#c47c30" strokeWidth={1.8} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img} alt={imgAlt} className="ls-cond-card-img" loading="lazy" />
+                <div className="ls-cond-card-body">
+                  <div className="ls-cond-card-icon-row">
+                    <div className="ls-cond-card-icon">
+                      <Icon size={20} color="#c47c30" strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '3px' }}>{label}</div>
+                      <div style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', fontWeight: 800, color: '#1a1a1a', lineHeight: 1 }}>{value}</div>
+                    </div>
+                  </div>
+                  <div style={{ width: '28px', height: '2px', background: '#c47c30', marginBottom: '12px' }} />
+                  <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.65, margin: 0 }}>{desc}</p>
                 </div>
-                <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, letterSpacing: '1px', marginBottom: '8px', textTransform: 'uppercase' }}>{label}</div>
-                <div style={{ width: '28px', height: '2px', background: '#c47c30', margin: '0 auto 10px' }} />
-                <div style={{ fontSize: 'clamp(15px, 1.8vw, 18px)', fontWeight: 800, color: '#1a1a1a' }}>{value}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 매물 목록 섹션 ── */}
-      <section style={{ padding: '64px 0 80px', background: '#fafafa' }}>
-        <div className="ls-wrap">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
-            <h2 style={{ fontSize: 'clamp(18px, 2.5vw, 20px)', fontWeight: 800, color: '#1a1a1a', margin: 0, letterSpacing: '-0.3px' }}>
-              대형매장부지 매물
-            </h2>
-            {properties.length > 0 && (
+      {/* ── 매물 목록 섹션 (매물 있을 때만 표시) ── */}
+      {properties.length > 0 && (
+        <section style={{ padding: '64px 0 80px', background: '#fafafa' }}>
+          <div className="ls-wrap">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+              <h2 style={{ fontSize: 'clamp(18px, 2.5vw, 20px)', fontWeight: 800, color: '#1a1a1a', margin: 0, letterSpacing: '-0.3px' }}>
+                대형매장부지 매물
+              </h2>
               <span style={{ background: '#c47c30', color: '#fff', fontSize: '12px', fontWeight: 700, padding: '2px 10px', borderRadius: '12px' }}>
                 {properties.length}건
               </span>
-            )}
-          </div>
-
-          {properties.length > 0 ? (
+            </div>
             <div className="ls-prop-grid">
               {properties.map((p: any) => (
                 <PropertyCard key={p.id} property={p} showNewBadge />
               ))}
             </div>
-          ) : (
-            <div style={{
-              background: '#fff',
-              border: '1px solid #e8e8e8',
-              borderRadius: '8px',
-              padding: '48px 24px',
-              textAlign: 'center',
-            }}>
-              <div style={{ marginBottom: '16px' }}><Store size={28} color="#c47c30" strokeWidth={1.5} /></div>
-              <p style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>
-                현재 등록된 매물이 없습니다
-              </p>
-              <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>
-                아래에서 직접 문의하시면 조건에 맞는 부지를 안내해 드립니다.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* ── 하단 CTA ── */}
       <section style={{
