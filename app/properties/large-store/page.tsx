@@ -304,7 +304,7 @@ export default async function LargeStorePage() {
               margin: '0 0 16px',
               letterSpacing: '-0.5px',
             }}>
-              대형 매장 자리<br />
+              대형 매장 공간<br />
               <span style={{ color: '#c47c30' }}>전문 중개</span>
             </h1>
             <p style={{ fontSize: 'clamp(14px, 1.8vw, 17px)', color: '#bbb', lineHeight: 1.7, margin: '0' }}>
