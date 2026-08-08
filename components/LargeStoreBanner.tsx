@@ -26,9 +26,12 @@ export function LargeStoreMobileBanner({ className }: { className?: string }) {
   return (
     <div className={className} style={{ display: 'none', padding: '8px 0' }}>
       <Link href="/properties/large-store" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', background: '#1a1a1a', borderRadius: '6px', padding: '11px 14px', textDecoration: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap' }}>대형 매장 중개 전문</span>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#eee' }}>100평+ 대형 매장 찾기</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap' }}>대형 매장 중개 전문</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#eee' }}>100평+ 대형 매장 찾기</span>
+          </div>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>창고형 약국 · 식자재마트 · 아울렛 등</span>
         </div>
         <span style={{ color: '#c47c30', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '16px' }}>›</span>
       </Link>
