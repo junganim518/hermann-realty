@@ -86,7 +86,7 @@ export default function Home() {
     {
       image: 'https://images.unsplash.com/photo-1644079446600-219068676743?w=1600&q=80',
       sub: '창고형 약국 · 식자재마트 · 아울렛 등',
-      title: '대형 매장 부지 전문 중개',
+      title: '대형 매장 중개 전문',
       desc: '100평 이상 대형 상가 부지를 찾아드립니다',
       body: '주차 30대 이상 · 1층 단독건물 · 1,000세대 이상 배후세대\n헤르만부동산이 부천 전역의 대형 부지를 전문으로 중개합니다.',
       largeStore: true,
