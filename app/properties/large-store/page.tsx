@@ -6,24 +6,24 @@ import PropertyCard from '@/components/PropertyCard';
 const OG_IMAGE = 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=1400&q=80&auto=format&fit=crop&crop=center';
 
 export const metadata: Metadata = {
-  title: '대형 매장 부지 전문 중개 | 헤르만부동산',
+  title: '창고형 약국 자리 임대 | 대형 매장 전문 - 헤르만부동산',
   description:
-    '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대 전문 중개. 넓은 주차 공간과 1층 단독 건물을 갖춘 대형매장부지를 헤르만부동산이 찾아드립니다.',
+    '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 매장 자리를 전문으로 중개합니다. 단독 건물부터 대형마트·쇼핑몰 내 입점까지, 넓은 공간을 갖춘 전국 매장 자리를 헤르만부동산이 찾아드립니다.',
   alternates: {
     canonical: 'https://hermann-realty.com/properties/large-store',
   },
   openGraph: {
-    title: '대형 매장 부지 전문 중개 | 헤르만부동산',
+    title: '창고형 약국 자리 임대 | 대형 매장 전문 - 헤르만부동산',
     description:
-      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대. 전국 대형매장부지 전문 중개.',
+      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 매장 자리 전문 중개. 단독건물부터 쇼핑몰 입점까지 헤르만부동산이 찾아드립니다.',
     url: 'https://hermann-realty.com/properties/large-store',
     images: [{ url: OG_IMAGE }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '대형 매장 부지 전문 중개 | 헤르만부동산',
+    title: '창고형 약국 자리 임대 | 대형 매장 전문 - 헤르만부동산',
     description:
-      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 상가 임대. 전국 대형매장부지 전문 중개.',
+      '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 매장 자리 전문 중개. 단독건물부터 쇼핑몰 입점까지 헤르만부동산이 찾아드립니다.',
     images: [OG_IMAGE],
   },
 };
@@ -47,7 +47,7 @@ const CONDITIONS = [
     desc: '방문 고객을 위한 충분한 주차 공간 필수',
     // Unsplash — 대형 주차장 항공 뷰
     img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&q=80&auto=format&fit=crop',
-    imgAlt: '대형 주차장 — 30대 이상 주차 가능한 대형 상가 부지',
+    imgAlt: '대형 주차장 — 30대 이상 주차 가능한 대형 상가 자리',
   },
   {
     Icon: Building2,
@@ -56,7 +56,7 @@ const CONDITIONS = [
     desc: '접근성과 브랜드 노출에 유리한 독립 건물',
     // Unsplash — 대형 상가 건물 외관 + 주차장 (modern retail buildings with parking lot)
     img: 'https://images.unsplash.com/photo-1764801341736-ea42131f484c?w=800&q=80&auto=format&fit=crop',
-    imgAlt: '대형 상가 건물 외관과 주차장 — 1층 단독건물 형태 대형 매장 부지',
+    imgAlt: '대형 상가 건물 외관과 주차장 — 1층 단독건물 형태 대형 매장 공간',
   },
   {
     Icon: Users,
@@ -304,7 +304,7 @@ export default async function LargeStorePage() {
               margin: '0 0 16px',
               letterSpacing: '-0.5px',
             }}>
-              대형 매장 부지<br />
+              대형 매장 자리<br />
               <span style={{ color: '#c47c30' }}>전문 중개</span>
             </h1>
             <p style={{ fontSize: 'clamp(14px, 1.8vw, 17px)', color: '#bbb', lineHeight: 1.7, margin: '0' }}>
@@ -336,7 +336,7 @@ export default async function LargeStorePage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={HERO_IMG}
-              alt="대형 매장 건물 전면 — 넓은 주차장을 갖춘 대형 상가 부지"
+              alt="대형 매장 건물 전면 — 넓은 주차장을 갖춘 대형 상가 자리"
               loading="eager"
             />
             <div className="ls-hero-overlay" />
@@ -358,7 +358,7 @@ export default async function LargeStorePage() {
             margin: '0 0 8px',
             letterSpacing: '-0.3px',
           }}>
-            이런 조건의 매장 부지를 <span style={{ color: '#c47c30' }}>찾아드립니다</span>
+            이런 조건의 매장 자리를 <span style={{ color: '#c47c30' }}>찾아드립니다</span>
           </h2>
           <p style={{ textAlign: 'center', fontSize: '14px', color: '#888', margin: '0 0 40px', lineHeight: 1.6 }}>
             이런 곳을 직접 발굴해서 안내해 드립니다
@@ -420,7 +420,7 @@ export default async function LargeStorePage() {
             직접 의뢰 · 맞춤 탐색
           </p>
           <p style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 8px', color: '#fff' }}>
-            원하는 조건의 대형 매장 부지,
+            원하는 조건의 대형 매장 자리,
           </p>
           <p style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 32px', color: '#c47c30' }}>
             헤르만부동산에 맡기세요
