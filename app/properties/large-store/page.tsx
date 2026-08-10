@@ -8,7 +8,7 @@ const OG_IMAGE = 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w
 export const metadata: Metadata = {
   title: '창고형 약국 자리 임대 | 대형 매장 전문 - 헤르만부동산',
   description:
-    '창고형 약국, 병의원, 식자재마트, 아울렛 등 100평 이상 대형 매장 자리를 전문으로 중개합니다. 단독 건물부터 대형마트·쇼핑몰 내 입점까지, 넓은 공간을 갖춘 전국 매장 자리를 헤르만부동산이 찾아드립니다.',
+    '창고형 약국, 병의원(병원·의원), 식자재마트, 아울렛 등 100평 이상 대형 매장 자리를 전문으로 중개합니다. 단독 건물부터 대형마트·쇼핑몰 내 입점까지, 넓은 공간을 갖춘 전국 매장 자리를 헤르만부동산이 찾아드립니다.',
   alternates: {
     canonical: 'https://hermann-realty.com/properties/large-store',
   },
