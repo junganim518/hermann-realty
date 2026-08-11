@@ -9,17 +9,17 @@ import PageViewTracker from '@/components/PageViewTracker';
 export const metadata: Metadata = {
   metadataBase: new URL('https://hermann-realty.com'),
   title: {
-    default: '부천 상가 사무실 전문 부동산 - 헤르만부동산',
+    default: '부천 상가·사무실 임대 전문 | 헤르만부동산',
     template: '%s | 헤르만부동산',
   },
-  description: '부천 상가, 사무실 전문 부동산',
+  description: '경기도 부천시 중동·상동 상가, 사무실 임대 및 매매 전문. 즉시입주, 무권리 매물부터 대형 매장 부지까지 헤르만부동산이 찾아드립니다.',
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
     url: 'https://hermann-realty.com',
     siteName: '헤르만부동산',
-    title: '헤르만부동산',
-    description: '부천 상가, 사무실 전문 부동산',
+    title: '부천 상가·사무실 임대 전문 | 헤르만부동산',
+    description: '경기도 부천시 중동·상동 상가, 사무실 임대 및 매매 전문. 즉시입주, 무권리 매물부터 대형 매장 부지까지 헤르만부동산이 찾아드립니다.',
     images: [
       {
         url: '/og-image.png',
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: '헤르만부동산',
-    description: '부천 상가, 사무실 전문 부동산',
+    title: '부천 상가·사무실 임대 전문 | 헤르만부동산',
+    description: '경기도 부천시 중동·상동 상가, 사무실 임대 및 매매 전문. 즉시입주, 무권리 매물부터 대형 매장 부지까지 헤르만부동산이 찾아드립니다.',
     images: ['/og-image.png'],
   },
   icons: {
