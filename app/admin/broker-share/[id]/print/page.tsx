@@ -136,15 +136,15 @@ export default function BrokerSharePrintPage() {
           }
         }
 
-        .broker-table { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.4; }
-        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 6px 4px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; }
-        .broker-table td { padding: 6px 4px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle; word-break: keep-all; }
+        .broker-table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
+        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; }
+        .broker-table td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle; word-break: keep-all; }
         .broker-table tr:nth-child(even) td { background: #fafafa; }
 
         @media print {
-          .broker-table { font-size: 10px; }
+          .broker-table { font-size: 12px; }
           .broker-table thead { display: table-header-group; }
-          .broker-table tr { page-break-inside: avoid; }
+          .broker-table tr { page-break-inside: avoid; break-inside: avoid; }
         }
       ` }} />
 
