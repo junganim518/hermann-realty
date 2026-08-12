@@ -96,13 +96,38 @@ export default function BrokerSharePrintPage() {
   const handleSaveImage = async () => {
     if (!sheetRef.current || properties.length === 0) return;
     setSaving(true);
+
+    const sheet = sheetRef.current;
+    const wrapEl = sheet.querySelector('.broker-sheet-table-wrap') as HTMLElement | null;
+    const tableEl = sheet.querySelector('.broker-table') as HTMLElement | null;
+
+    // 모바일: overflow-x:auto wrapper 안 표가 sheet보다 넓으면
+    // 캡처 전 sheet를 표 실제 폭으로 임시 확장해 우측 잘림 방지
+    const tableScrollW = tableEl?.scrollWidth ?? 0;
+    const sheetClientW = sheet.clientWidth;
+    const needsExpand = tableScrollW > sheetClientW;
+
+    const saved = {
+      wrapOverflow: wrapEl?.style.overflowX ?? '',
+      sheetMaxWidth: sheet.style.maxWidth,
+      sheetWidth: sheet.style.width,
+    };
+
+    if (needsExpand && wrapEl) {
+      const cs = getComputedStyle(sheet);
+      const padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      wrapEl.style.overflowX = 'visible';
+      sheet.style.maxWidth = 'none';
+      sheet.style.width = `${tableScrollW + padH}px`;
+    }
+
+    // 확장 후 실제 렌더 높이 읽기 (reflow 반영)
+    const trEls = Array.from(sheet.querySelectorAll('tr')) as HTMLElement[];
+    const trHeights = trEls.map(tr => tr.getBoundingClientRect().height);
+
     try {
       const html2canvas = (await import('html2canvas')).default;
-
-      const trEls = Array.from(sheetRef.current.querySelectorAll('tr')) as HTMLElement[];
-      const trHeights = trEls.map(tr => tr.getBoundingClientRect().height);
-
-      const canvas = await html2canvas(sheetRef.current, {
+      const canvas = await html2canvas(sheet, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
@@ -136,6 +161,12 @@ export default function BrokerSharePrintPage() {
       a.download = `공동중개매물_${safeName}_${today}.png`;
       a.click();
     } finally {
+      // 성공/실패 모두 DOM 복원
+      if (needsExpand && wrapEl) {
+        wrapEl.style.overflowX = saved.wrapOverflow;
+        sheet.style.maxWidth = saved.sheetMaxWidth;
+        sheet.style.width = saved.sheetWidth;
+      }
       setSaving(false);
     }
   };
