@@ -180,9 +180,19 @@ export default function BrokerSharePrintPage() {
           .broker-table { font-size: 10px; table-layout: auto; }
           .broker-table th { padding: 5px 3px; }
           .broker-table td { padding: 5px 3px; }
-          .broker-sheet-header h1 { font-size: 16px; }
-          .broker-sheet-header p  { font-size: 11px; }
           .broker-print-toolbar { padding: 0 4px; }
+
+          /* 헤더: 좌우 → 위아래 스택, 텍스트 축소 */
+          .broker-sheet-header-inner { flex-direction: column; align-items: flex-start; gap: 6px; }
+          .broker-sheet-header-inner > div:last-child { text-align: left; }
+          .broker-sheet-header h1 { font-size: 14px; }
+          .broker-sheet-header h1 span { font-size: 11px; }
+          .broker-sheet-header p { font-size: 11px; }
+          .broker-sheet-header-right p:first-child { font-size: 12px; }
+          .broker-sheet-header-right p:last-child  { font-size: 10px; }
+
+          /* 푸터: 좌우 → 위아래 스택 */
+          .broker-sheet-footer { flex-direction: column; gap: 2px; }
         }
 
         /* ── 인쇄 ── */
@@ -253,21 +263,20 @@ export default function BrokerSharePrintPage() {
       {/* 캡처 영역 */}
       <div ref={sheetRef} className="broker-sheet">
         {/* 헤더 */}
-        <div
-          className="broker-sheet-header"
-          style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '12px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}
-        >
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
-              {listName} <span style={{ fontSize: '14px', fontWeight: 500, color: '#888' }}>공동중개 매물 리스트</span>
-            </h1>
-            <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0' }}>
-              총 <strong style={{ color: '#e2a06e' }}>{properties.length}개</strong>
-            </p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>헤르만부동산</p>
-            <p style={{ fontSize: '11px', color: '#888', margin: '2px 0 0' }}>출력일 {fmtDate(new Date().toISOString())}</p>
+        <div className="broker-sheet-header" style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '12px', marginBottom: '14px' }}>
+          <div className="broker-sheet-header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div>
+              <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+                {listName} <span style={{ fontSize: '14px', fontWeight: 500, color: '#888' }}>공동중개 매물 리스트</span>
+              </h1>
+              <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0' }}>
+                총 <strong style={{ color: '#e2a06e' }}>{properties.length}개</strong>
+              </p>
+            </div>
+            <div className="broker-sheet-header-right" style={{ textAlign: 'right', flexShrink: 0 }}>
+              <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: 0, whiteSpace: 'nowrap' }}>헤르만부동산</p>
+              <p style={{ fontSize: '11px', color: '#888', margin: '2px 0 0', whiteSpace: 'nowrap' }}>출력일 {fmtDate(new Date().toISOString())}</p>
+            </div>
           </div>
         </div>
 
@@ -321,8 +330,8 @@ export default function BrokerSharePrintPage() {
         )}
 
         {/* 푸터 */}
-        <div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888' }}>
-          <span>📞 010-8680-8151</span>
+        <div className="broker-sheet-footer" style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888' }}>
+          <span style={{ whiteSpace: 'nowrap' }}>📞 010-8680-8151</span>
           <span>※ 가격은 변동될 수 있으며, 자세한 정보는 담당자에게 문의 바랍니다.</span>
         </div>
       </div>
