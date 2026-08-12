@@ -136,13 +136,13 @@ export default function BrokerSharePrintPage() {
           }
         }
 
-        .broker-table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
+        .broker-table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.45; }
         .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; }
         .broker-table td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle; word-break: keep-all; }
         .broker-table tr:nth-child(even) td { background: #fafafa; }
 
         @media print {
-          .broker-table { font-size: 12px; }
+          .broker-table { font-size: 13px; }
           .broker-table thead { display: table-header-group; }
           .broker-table tr { page-break-inside: avoid; break-inside: avoid; }
         }
@@ -199,18 +199,19 @@ export default function BrokerSharePrintPage() {
         ) : (
           <table className="broker-table">
             <colgroup>
-              <col style={{ width: '32px' }} />
-              <col style={{ width: '60px' }} />
-              <col style={{ width: '46px' }} />
-              <col style={{ width: '54px' }} />
-              <col style={{ width: '90px' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '60px' }} />
-              <col style={{ width: '52px' }} />
-              <col style={{ width: '52px' }} />
-              <col style={{ width: '60px' }} />
-              <col style={{ width: '54px' }} />
-              <col />
+              <col style={{ width: '28px' }} />
+              <col style={{ width: '58px' }} />
+              <col style={{ width: '42px' }} />
+              <col style={{ width: '50px' }} />
+              <col style={{ width: '85px' }} />
+              <col style={{ width: '150px' }} />
+              <col style={{ width: '95px' }} />
+              <col style={{ width: '58px' }} />
+              <col style={{ width: '48px' }} />
+              <col style={{ width: '48px' }} />
+              <col style={{ width: '55px' }} />
+              <col style={{ width: '50px' }} />
+              <col style={{ width: '42px' }} />
             </colgroup>
             <thead>
               <tr>
@@ -220,6 +221,7 @@ export default function BrokerSharePrintPage() {
                 <th>종류</th>
                 <th>상호명</th>
                 <th>주소</th>
+                <th>건물명</th>
                 <th>보증금<br/>(만)</th>
                 <th>월세<br/>(만)</th>
                 <th>권리금<br/>(만)</th>
@@ -236,7 +238,8 @@ export default function BrokerSharePrintPage() {
                   <td>{fmtTx(p.transaction_type)}</td>
                   <td>{p.property_type ?? '-'}</td>
                   <td>{p.business_name?.trim() || '-'}</td>
-                  <td style={{ fontSize: '10px' }}>{shortAddr(p.address)}</td>
+                  <td>{shortAddr(p.address)}</td>
+                  <td>{p.building_name?.trim() || '-'}</td>
                   <td>{fmtMan(p.deposit)}</td>
                   <td>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
                   <td>{fmtPremium(p.premium)}</td>
