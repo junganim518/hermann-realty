@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Star, MessageSquare, Pencil, Trash2, Plus, X, Printer } from 'lucide-react';
+import { Star, MessageSquare, Pencil, Trash2, Plus, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { findMatches, hasConditions, type DesiredConditions, type MatchedProperty } from '@/lib/matchProperties';
 import ThemeBadges from '@/components/ThemeBadges';
 import PropertyCard from '@/components/PropertyCard';
+import PropertyPickModal, { type PickedItem } from '@/components/PropertyPickModal';
 
 const STATUS_COLORS: Record<string, string> = {
   '상담중': '#2196F3', '방문예정': '#e2a06e', '방문완료': '#4caf50',
@@ -51,13 +52,7 @@ export default function CustomerDetailPage() {
 
   // 매물 추가 모달
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('전체');
-  const [filterTx, setFilterTx] = useState('전체');
-  const [includeSold, setIncludeSold] = useState(false);
   const [allProperties, setAllProperties] = useState<any[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [addMemos, setAddMemos] = useState<Record<string, string>>({});
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -68,14 +63,6 @@ export default function CustomerDetailPage() {
     });
   }, []);
 
-  // 모달 열릴 때 body 스크롤 잠금 (배경 페이지가 스크롤되지 않게)
-  useEffect(() => {
-    if (addModalOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = prev; };
-    }
-  }, [addModalOpen]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -127,14 +114,14 @@ export default function CustomerDetailPage() {
   };
 
   // 픽 매물 추가 (선택한 매물들을 customer_recommendations에 upsert)
-  const addPicks = async () => {
-    if (selectedIds.size === 0) return;
+  const addPicks = async (picks: PickedItem[]) => {
+    if (picks.length === 0) return;
     setAdding(true);
-    const rows = Array.from(selectedIds).map(propertyId => ({
+    const rows = picks.map(({ id: propertyId, memo }) => ({
       customer_id: customerId,
       property_id: propertyId,
       is_recommended: true,
-      reason_memo: addMemos[propertyId]?.trim() || null,
+      reason_memo: memo?.trim() || null,
     }));
     const { error } = await supabase
       .from('customer_recommendations')
@@ -149,7 +136,7 @@ export default function CustomerDetailPage() {
     });
     setRecs(newRecs);
     const newPicked = [...picked];
-    Array.from(selectedIds).forEach(pid => {
+    picks.forEach(({ id: pid }) => {
       if (!newPicked.find(p => p.id === pid)) {
         const prop = allProperties.find(p => p.id === pid);
         if (prop) newPicked.push(prop);
@@ -158,7 +145,7 @@ export default function CustomerDetailPage() {
     setPicked(newPicked);
 
     // 추가된 매물 이미지 보충
-    const missingIds = Array.from(selectedIds).filter(pid => !pickedImages[pid]);
+    const missingIds = picks.map(p => p.id).filter(pid => !pickedImages[pid]);
     if (missingIds.length > 0) {
       const { data: imgs } = await supabase
         .from('property_images')
@@ -171,11 +158,7 @@ export default function CustomerDetailPage() {
       setPropImages(prev => ({ ...prev, ...additions }));
     }
 
-    // 모달 닫고 초기화
     setAddModalOpen(false);
-    setSelectedIds(new Set());
-    setAddMemos({});
-    setSearchQuery('');
   };
 
   // 픽 매물 제거 (is_recommended=false 로 set, 메모는 유지)
@@ -533,171 +516,14 @@ export default function CustomerDetailPage() {
       ` }} />
 
       {/* ⭐ 픽 매물 추가 모달 */}
-      {addModalOpen && (() => {
-        const q = searchQuery.trim().toLowerCase();
-        const filteredResults = allProperties.filter(p => {
-          if (!includeSold && p.is_sold) return false;
-          if (filterType !== '전체' && p.property_type !== filterType) return false;
-          if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
-          if (q) {
-            const hay = `${p.property_number ?? ''} ${p.address ?? ''} ${p.title ?? ''} ${p.theme_type ?? ''} ${p.building_name ?? ''} ${p.business_name ?? ''}`.toLowerCase();
-            if (!hay.includes(q)) return false;
-          }
-          return true;
-        }).slice(0, 80);
-
-        const toggleSelect = (pid: string) => {
-          setSelectedIds(prev => {
-            const next = new Set(prev);
-            if (next.has(pid)) next.delete(pid);
-            else next.add(pid);
-            return next;
-          });
-        };
-
-        return (
-          <div
-            onClick={() => setAddModalOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflow: 'auto' }}
-          >
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '760px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 'auto' }}
-            >
-              {/* 헤더 */}
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>
-                  매물 추가 <span style={{ fontSize: '13px', fontWeight: 500, color: '#888' }}>({selectedIds.size}개 선택)</span>
-                </h3>
-                <button type="button" onClick={() => setAddModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#666' }}>
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* 검색/필터 */}
-              <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
-                <input
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="매물번호 / 주소 / 건물명 / 키워드"
-                  style={{ height: '36px', padding: '0 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                />
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ height: '32px', padding: '0 8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
-                    {['전체', '상가', '사무실', '오피스텔', '아파트', '건물', '기타'].map(t => <option key={t} value={t}>{t === '전체' ? '매물종류 전체' : t}</option>)}
-                  </select>
-                  <select value={filterTx} onChange={e => setFilterTx(e.target.value)} style={{ height: '32px', padding: '0 8px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
-                    {['전체', '월세', '전세', '매매'].map(t => <option key={t} value={t}>{t === '전체' ? '거래유형 전체' : t}</option>)}
-                  </select>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#555', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={includeSold} onChange={e => setIncludeSold(e.target.checked)} />
-                    거래완료 포함
-                  </label>
-                  <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#888' }}>
-                    {filteredResults.length === 80 ? '80개 (이상 일부)' : `${filteredResults.length}개`}
-                  </span>
-                </div>
-              </div>
-
-              {/* 결과 */}
-              <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px', minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
-                {filteredResults.length === 0 ? (
-                  <p style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: '13px' }}>일치하는 매물이 없습니다</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {filteredResults.map(p => {
-                      const isSelected = selectedIds.has(p.id);
-                      const isAlreadyPicked = !!recs[p.id]?.is_recommended;
-                      const priceStr = (() => {
-                        if (p.transaction_type === '매매') {
-                          const v = p.sale_price || p.deposit;
-                          return v ? `매매 ${(v).toLocaleString()}` : '-';
-                        }
-                        const parts: string[] = [];
-                        if (p.deposit) parts.push(`보 ${(p.deposit).toLocaleString()}`);
-                        if (p.monthly_rent) parts.push(`월 ${(p.monthly_rent).toLocaleString()}`);
-                        return parts.length ? parts.join('/') : '-';
-                      })();
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => !isAlreadyPicked && toggleSelect(p.id)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '8px 10px', borderRadius: '6px',
-                            background: isAlreadyPicked ? '#f5f5f5' : isSelected ? '#fff8f2' : '#fff',
-                            border: `1px solid ${isAlreadyPicked ? '#e5e5e5' : isSelected ? '#e2a06e' : '#eee'}`,
-                            cursor: isAlreadyPicked ? 'not-allowed' : 'pointer',
-                            opacity: isAlreadyPicked ? 0.55 : 1,
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            disabled={isAlreadyPicked}
-                            onChange={() => !isAlreadyPicked && toggleSelect(p.id)}
-                            onClick={e => e.stopPropagation()}
-                            style={{ width: '16px', height: '16px', accentColor: '#e2a06e', cursor: isAlreadyPicked ? 'not-allowed' : 'pointer', flexShrink: 0 }}
-                          />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 700 }}>{p.property_number}</span>
-                              {p.transaction_type && <span style={{ fontSize: '10px', color: '#e2a06e', fontWeight: 700 }}>{p.transaction_type}</span>}
-                              {p.property_type && <span style={{ fontSize: '10px', color: '#666', padding: '1px 5px', background: '#f5f5f5', borderRadius: '3px' }}>{p.property_type}</span>}
-                              {p.business_name && (
-                                <span title={p.business_name_public ? '공개' : '비공개 (관리자만 표시)'} style={{ fontSize: '11px', fontWeight: 600, color: p.business_name_public ? '#374151' : '#92400e', whiteSpace: 'nowrap' }}>
-                                  {p.business_name_public ? '🏪' : '🔒'} {p.business_name}
-                                </span>
-                              )}
-                              <span style={{ fontSize: '11px', fontWeight: 600 }}>{priceStr}</span>
-                              {p.is_sold && <span style={{ fontSize: '10px', color: '#e05050', fontWeight: 700 }}>거래완료</span>}
-                              {isAlreadyPicked && <span style={{ fontSize: '10px', color: '#888', fontWeight: 700, padding: '1px 5px', background: '#f0f0f0', borderRadius: '3px' }}>이미 추가됨</span>}
-                            </div>
-                            <p style={{ fontSize: '11px', color: '#666', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {p.address ?? '-'}
-                              {p.building_name && <span style={{ color: '#e2a06e', marginLeft: '4px' }}>{p.building_name}</span>}
-                            </p>
-                            {isSelected && (
-                              <input
-                                value={addMemos[p.id] ?? ''}
-                                onChange={e => setAddMemos(prev => ({ ...prev, [p.id]: e.target.value }))}
-                                onClick={e => e.stopPropagation()}
-                                placeholder="추천 이유 (선택)"
-                                style={{ marginTop: '4px', width: '100%', height: '26px', fontSize: '11px', padding: '0 8px', border: '1px solid #e2a06e', borderRadius: '4px', outline: 'none', background: '#fff' }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* 푸터 */}
-              <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => { setAddModalOpen(false); setSelectedIds(new Set()); setAddMemos({}); }}
-                  style={{ padding: '8px 14px', background: '#fff', color: '#666', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                >취소</button>
-                <button
-                  type="button"
-                  onClick={addPicks}
-                  disabled={selectedIds.size === 0 || adding}
-                  style={{
-                    padding: '8px 18px',
-                    background: selectedIds.size === 0 || adding ? '#ccc' : '#e2a06e',
-                    color: '#fff', border: 'none', borderRadius: '6px',
-                    fontSize: '13px', fontWeight: 700,
-                    cursor: selectedIds.size === 0 || adding ? 'not-allowed' : 'pointer',
-                  }}
-                >{adding ? '추가 중...' : `${selectedIds.size}개 추가`}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      <PropertyPickModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        allProperties={allProperties}
+        alreadyPickedIds={new Set(Object.keys(recs).filter(id => recs[id]?.is_recommended))}
+        onAdd={addPicks}
+        adding={adding}
+      />
     </main>
   );
 }
