@@ -162,8 +162,8 @@ export default function BrokerSharePrintPage() {
         }
 
         .broker-table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.45; }
-        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; vertical-align: middle; }
-        .broker-table td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle; word-break: keep-all; }
+        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; vertical-align: middle !important; line-height: 1.4; }
+        .broker-table td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle !important; word-break: keep-all; line-height: 1.4; }
         .broker-table tr:nth-child(even) td { background: #fafafa; }
 
         @media print {
@@ -258,37 +258,37 @@ export default function BrokerSharePrintPage() {
             </colgroup>
             <thead>
               <tr>
-                <th>#</th>
-                <th>매물번호</th>
-                <th>거래</th>
-                <th>종류</th>
-                <th>상호명</th>
-                <th>주소</th>
-                <th>건물명</th>
-                <th>보증금<br/>(만)</th>
-                <th>월세<br/>(만)</th>
-                <th>권리금<br/>(만)</th>
-                <th>관리비</th>
-                <th>면적</th>
-                <th>층수</th>
+                <th style={{ verticalAlign: 'middle' }}>#</th>
+                <th style={{ verticalAlign: 'middle' }}>매물번호</th>
+                <th style={{ verticalAlign: 'middle' }}>거래</th>
+                <th style={{ verticalAlign: 'middle' }}>종류</th>
+                <th style={{ verticalAlign: 'middle' }}>상호명</th>
+                <th style={{ verticalAlign: 'middle' }}>주소</th>
+                <th style={{ verticalAlign: 'middle' }}>건물명</th>
+                <th style={{ verticalAlign: 'middle' }}>보증금<br/>(만)</th>
+                <th style={{ verticalAlign: 'middle' }}>월세<br/>(만)</th>
+                <th style={{ verticalAlign: 'middle' }}>권리금<br/>(만)</th>
+                <th style={{ verticalAlign: 'middle' }}>관리비</th>
+                <th style={{ verticalAlign: 'middle' }}>면적</th>
+                <th style={{ verticalAlign: 'middle' }}>층수</th>
               </tr>
             </thead>
             <tbody>
               {properties.map((p, idx) => (
                 <tr key={p.id}>
-                  <td>{idx + 1}</td>
-                  <td>{p.property_number ?? '-'}</td>
-                  <td>{fmtTx(p.transaction_type)}</td>
-                  <td>{p.property_type ?? '-'}</td>
-                  <td>{p.business_name?.trim() || '-'}</td>
-                  <td>{shortAddr(p.address)}</td>
-                  <td>{p.building_name?.trim() || '-'}</td>
-                  <td>{fmtMan(p.deposit)}</td>
-                  <td>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
-                  <td>{fmtPremium(p.premium)}</td>
-                  <td>{formatMaintenance(p.maintenance_fee)}</td>
-                  <td>{fmtArea(p.exclusive_area)}</td>
-                  <td>{fmtFloor(p.current_floor)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{idx + 1}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{p.property_number ?? '-'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{fmtTx(p.transaction_type)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{p.property_type ?? '-'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{p.business_name?.trim() || '-'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{shortAddr(p.address)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{p.building_name?.trim() || '-'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{fmtMan(p.deposit)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{fmtPremium(p.premium)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{formatMaintenance(p.maintenance_fee)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{fmtArea(p.exclusive_area)}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{fmtFloor(p.current_floor)}</td>
                 </tr>
               ))}
             </tbody>
