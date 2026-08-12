@@ -108,23 +108,39 @@ export default function BrokerSharePrintPage() {
     try {
       const html2canvas = (await import('html2canvas')).default;
 
-      // html2canvas는 table row height가 암묵적(content-driven)이면
-      // vertical-align: middle을 무시하고 top 기준으로 렌더링함.
-      // 캡처 전 실제 렌더링 높이를 읽어 명시적으로 지정 후 복원.
-      const trList = Array.from(sheetRef.current.querySelectorAll('tr')) as HTMLElement[];
-      const savedHeights = trList.map(tr => tr.style.height);
-      trList.forEach(tr => {
-        tr.style.height = `${tr.getBoundingClientRect().height}px`;
-      });
+      // onclone 전에 원본 DOM에서 실제 렌더링 높이를 미리 읽어둠
+      const trEls = Array.from(sheetRef.current.querySelectorAll('tr')) as HTMLElement[];
+      const trHeights = trEls.map(tr => tr.getBoundingClientRect().height);
 
       const canvas = await html2canvas(sheetRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         logging: false,
-      });
+        onclone: (clonedDoc, clonedEl) => {
+          // 1. 복제된 tr에 명시적 height 지정 (html2canvas vertical-align 인식용)
+          const clonedTrs = Array.from(clonedEl.querySelectorAll('tr')) as HTMLElement[];
+          clonedTrs.forEach((tr, i) => {
+            if (trHeights[i] != null) tr.style.height = `${trHeights[i]}px`;
+          });
 
-      trList.forEach((tr, i) => { tr.style.height = savedHeights[i]; });
+          // 2. 각 셀 내용을 flex span으로 감싸 세로 중앙 정렬
+          //    (td/th display 자체는 그대로 유지해 테이블 레이아웃 보존)
+          const cells = Array.from(
+            clonedEl.querySelectorAll('.broker-table th, .broker-table td')
+          ) as HTMLElement[];
+          cells.forEach(cell => {
+            const tr = cell.closest('tr') as HTMLElement | null;
+            const h = tr?.style.height || '';
+            cell.style.padding = '0';
+            const span = clonedDoc.createElement('span');
+            span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:100%;height:${h};padding:0 6px;box-sizing:border-box;`;
+            span.innerHTML = cell.innerHTML;
+            cell.innerHTML = '';
+            cell.appendChild(span);
+          });
+        },
+      });
 
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
