@@ -14,11 +14,6 @@ const fmtDate = (iso: string | null | undefined) => {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
 };
 
-const fmtTx = (tx: string | null | undefined): string => {
-  if (!tx) return '-';
-  return (tx === '월세' || tx === '전세') ? '임대' : tx;
-};
-
 const fmtMan = (v: number | null | undefined): string => {
   if (!v || v === 0) return '-';
   return v.toLocaleString();
@@ -284,28 +279,20 @@ export default function BrokerSharePrintPage() {
             <table className="broker-table">
               <colgroup>
                 <col style={{ width: '28px' }} />
-                <col style={{ width: '58px' }} />
-                <col style={{ width: '42px' }} />
-                <col style={{ width: '50px' }} />
-                <col style={{ width: '100px' }} />
-                <col style={{ width: '105px' }} />
-                <col style={{ width: '70px' }} />
-                <col style={{ width: '58px' }} />
-                <col style={{ width: '48px' }} />
-                <col style={{ width: '48px' }} />
+                <col style={{ width: '160px' }} />
+                <col style={{ width: '150px' }} />
+                <col style={{ width: '65px' }} />
                 <col style={{ width: '55px' }} />
-                <col style={{ width: '50px' }} />
-                <col style={{ width: '42px' }} />
+                <col style={{ width: '55px' }} />
+                <col style={{ width: '60px' }} />
+                <col style={{ width: '55px' }} />
+                <col style={{ width: '45px' }} />
               </colgroup>
               <thead>
                 <tr>
                   <th style={{ verticalAlign: 'middle' }}>#</th>
-                  <th style={{ verticalAlign: 'middle' }}>매물번호</th>
-                  <th style={{ verticalAlign: 'middle' }}>거래</th>
-                  <th style={{ verticalAlign: 'middle' }}>종류</th>
-                  <th style={{ verticalAlign: 'middle' }}>상호명</th>
                   <th style={{ verticalAlign: 'middle' }}>주소</th>
-                  <th style={{ verticalAlign: 'middle' }}>건물명</th>
+                  <th style={{ verticalAlign: 'middle' }}>상호명</th>
                   <th style={{ verticalAlign: 'middle' }}>보증금<br/>(만)</th>
                   <th style={{ verticalAlign: 'middle' }}>월세<br/>(만)</th>
                   <th style={{ verticalAlign: 'middle' }}>권리금<br/>(만)</th>
@@ -318,12 +305,8 @@ export default function BrokerSharePrintPage() {
                 {properties.map((p, idx) => (
                   <tr key={p.id}>
                     <td style={{ verticalAlign: 'middle' }}>{idx + 1}</td>
-                    <td style={{ verticalAlign: 'middle' }}>{p.property_number ?? '-'}</td>
-                    <td style={{ verticalAlign: 'middle' }}>{fmtTx(p.transaction_type)}</td>
-                    <td style={{ verticalAlign: 'middle' }}>{p.property_type ?? '-'}</td>
-                    <td style={{ verticalAlign: 'middle' }}>{p.business_name?.trim() || '-'}</td>
                     <td style={{ verticalAlign: 'middle' }}>{shortAddr(p.address)}</td>
-                    <td style={{ verticalAlign: 'middle' }}>{p.building_name?.trim() || '-'}</td>
+                    <td style={{ verticalAlign: 'middle' }}>{p.business_name?.trim() || '-'}</td>
                     <td style={{ verticalAlign: 'middle' }}>{fmtMan(p.deposit)}</td>
                     <td style={{ verticalAlign: 'middle' }}>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
                     <td style={{ verticalAlign: 'middle' }}>{fmtPremium(p.premium)}</td>
