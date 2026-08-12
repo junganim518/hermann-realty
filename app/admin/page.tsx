@@ -156,6 +156,12 @@ function AdminDashboardInner() {
   const typesDDRef = useRef<HTMLDivElement | null>(null);
   const themesDDRef = useRef<HTMLDivElement | null>(null);
 
+  // 공동중개 리스트 선택
+  const [brokerSelectedIds, setBrokerSelectedIds] = useState<Set<string>>(new Set());
+  const [brokerModalOpen, setBrokerModalOpen] = useState(false);
+  const [brokerName, setBrokerName] = useState('');
+  const [brokerCreating, setBrokerCreating] = useState(false);
+
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
     const buildRows = (rows: RawView[]): RefTableRow[] => {
@@ -582,6 +588,31 @@ function AdminDashboardInner() {
     showToast('휴지통으로 이동되었습니다');
   };
 
+  const createBrokerList = async () => {
+    if (brokerSelectedIds.size === 0 || !brokerName.trim()) return;
+    setBrokerCreating(true);
+    try {
+      const { data: list, error: listErr } = await supabase
+        .from('broker_share_lists')
+        .insert({ name: brokerName.trim() })
+        .select('id')
+        .single();
+      if (listErr || !list) { alert(`생성 실패: ${listErr?.message}`); return; }
+      const items = Array.from(brokerSelectedIds).map(propertyId => ({
+        list_id: list.id,
+        property_id: propertyId,
+      }));
+      const { error: itemsErr } = await supabase.from('broker_share_list_items').insert(items);
+      if (itemsErr) { alert(`매물 저장 실패: ${itemsErr.message}`); return; }
+      setBrokerModalOpen(false);
+      setBrokerSelectedIds(new Set());
+      setBrokerName('');
+      router.push(`/admin/broker-share/${list.id}/print`);
+    } finally {
+      setBrokerCreating(false);
+    }
+  };
+
   // 필터링
   const filtered = properties.filter(p => {
     if (filterTypes.length > 0 && !filterTypes.includes(p.property_type)) return false;
@@ -940,6 +971,54 @@ function AdminDashboardInner() {
         </div>
       )}
 
+      {/* 공동중개 리스트 이름 입력 모달 */}
+      {brokerModalOpen && (
+        <div
+          onClick={() => setBrokerModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '12px', padding: '24px', maxWidth: '380px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          >
+            <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px', color: '#1a1a1a' }}>🤝 공동중개 리스트 만들기</h3>
+            <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>선택된 매물 {brokerSelectedIds.size}개 · 상대 부동산 이름을 입력하세요</p>
+            <input
+              type="text"
+              value={brokerName}
+              onChange={e => setBrokerName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') createBrokerList(); }}
+              placeholder="예: ○○공인중개사사무소"
+              autoFocus
+              style={{ width: '100%', height: '42px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 12px', fontSize: '14px', marginBottom: '20px', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button onClick={() => { setBrokerModalOpen(false); setBrokerName(''); }} style={{ padding: '8px 18px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+              <button
+                onClick={createBrokerList}
+                disabled={!brokerName.trim() || brokerCreating}
+                style={{ padding: '8px 18px', border: 'none', borderRadius: '6px', background: !brokerName.trim() || brokerCreating ? '#ccc' : '#1a1a1a', color: !brokerName.trim() || brokerCreating ? '#fff' : '#e2a06e', fontSize: '13px', fontWeight: 700, cursor: !brokerName.trim() || brokerCreating ? 'not-allowed' : 'pointer' }}
+              >{brokerCreating ? '생성 중...' : '리스트 만들기 →'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 공동중개 선택 플로팅 바 */}
+      {brokerSelectedIds.size > 0 && (
+        <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, display: 'flex', alignItems: 'center', gap: '12px', background: '#1a1a1a', color: '#fff', padding: '12px 20px', borderRadius: '999px', boxShadow: '0 4px 20px rgba(0,0,0,0.35)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600 }}>🤝 {brokerSelectedIds.size}개 선택됨</span>
+          <button
+            onClick={() => setBrokerModalOpen(true)}
+            style={{ padding: '6px 16px', background: '#e2a06e', color: '#1a1a1a', border: 'none', borderRadius: '999px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+          >공동중개 리스트 만들기</button>
+          <button
+            onClick={() => setBrokerSelectedIds(new Set())}
+            style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '999px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >선택 해제</button>
+        </div>
+      )}
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', color: '#1a1a1a', display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
           관리자 대시보드
@@ -1278,7 +1357,22 @@ function AdminDashboardInner() {
               {displayed.map(p => {
                 const tx = TX_COLORS[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                 return (
-                  <div key={p.id} className="admin-prop-row" style={{ background: (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : 1 }}>
+                  <div key={p.id} className="admin-prop-row" style={{ background: brokerSelectedIds.has(p.id) ? '#fff8f2' : (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : 1, outline: brokerSelectedIds.has(p.id) ? '2px solid #e2a06e' : 'none' }}>
+                    {/* 공동중개 체크박스 */}
+                    <input
+                      type="checkbox"
+                      checked={brokerSelectedIds.has(p.id)}
+                      onChange={() => {
+                        setBrokerSelectedIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
+                          return next;
+                        });
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      className="admin-prop-checkbox"
+                      style={{ width: '16px', height: '16px', accentColor: '#e2a06e', cursor: 'pointer', flexShrink: 0, alignSelf: 'center' }}
+                    />
                     {/* 썸네일 */}
                     <Link href={`/item/view/${p.property_number}`} prefetch={false} className="admin-prop-thumbnail" style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#f0f0f0', display: 'block', cursor: 'pointer' }}>
                       {propImages[p.id] ? (
