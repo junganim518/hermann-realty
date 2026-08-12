@@ -229,7 +229,7 @@ export default function BrokerSharePrintPage() {
         /* ── 인쇄 ── */
         @media print {
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          @page { size: A4 landscape; margin: 8mm; }
+          @page { size: A4 portrait; margin: 8mm; }
           html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
           header, footer, .tab-bar, .broker-print-toolbar { display: none !important; }
           .broker-print-main { background: #fff !important; padding: 0 !important; min-height: auto !important; }
@@ -243,6 +243,11 @@ export default function BrokerSharePrintPage() {
           .broker-table td { padding: 8px 6px; }
           .broker-table thead { display: table-header-group; }
           .broker-table tr { page-break-inside: avoid; break-inside: avoid; }
+          /* A4 세로 기준: 주소·상호명 컬럼만 좁혀서 표 전체 폭(~590px) ≪ 인쇄 폭(~730px) */
+          .broker-table col:nth-child(2) { width: 120px !important; }
+          .broker-table col:nth-child(3) { width: 110px !important; }
+          .broker-table th:nth-child(2), .broker-table td:nth-child(2) { width: 120px !important; }
+          .broker-table th:nth-child(3), .broker-table td:nth-child(3) { width: 110px !important; }
         }
       ` }} />
 
