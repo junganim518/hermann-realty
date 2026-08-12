@@ -162,7 +162,7 @@ export default function BrokerSharePrintPage() {
         }
 
         .broker-table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.45; }
-        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; }
+        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; vertical-align: middle; }
         .broker-table td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle; word-break: keep-all; }
         .broker-table tr:nth-child(even) td { background: #fafafa; }
 
@@ -246,9 +246,9 @@ export default function BrokerSharePrintPage() {
               <col style={{ width: '58px' }} />
               <col style={{ width: '42px' }} />
               <col style={{ width: '50px' }} />
-              <col style={{ width: '85px' }} />
-              <col style={{ width: '150px' }} />
-              <col style={{ width: '95px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '105px' }} />
+              <col style={{ width: '70px' }} />
               <col style={{ width: '58px' }} />
               <col style={{ width: '48px' }} />
               <col style={{ width: '48px' }} />
