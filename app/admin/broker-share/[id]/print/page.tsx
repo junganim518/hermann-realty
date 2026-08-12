@@ -14,19 +14,30 @@ const fmtDate = (iso: string | null | undefined) => {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
 };
 
-const fmtTx = (tx: string | null | undefined): string => {
-  if (!tx) return '-';
-  return (tx === '월세' || tx === '전세') ? '임대' : tx;
+const formatPrice = (v: number | null | undefined): string => {
+  if (!v || v === 0) return '-';
+  const uk = Math.floor(v / 10000);
+  const man = v % 10000;
+  if (uk > 0) return man > 0 ? `${uk}억 ${man.toLocaleString()}만` : `${uk}억`;
+  return `${v.toLocaleString()}만`;
 };
 
-const fmtMan = (v: number | null | undefined): string => {
-  if (!v || v === 0) return '-';
-  return v.toLocaleString();
+const buildPriceLabel = (p: any): string => {
+  if (p.transaction_type === '매매') {
+    return p.sale_price ? `매매 ${formatPrice(p.sale_price)}` : '-';
+  }
+  if (p.transaction_type === '전세') {
+    return p.deposit ? `보증금 ${formatPrice(p.deposit)}` : '-';
+  }
+  const parts: string[] = [];
+  if (p.deposit) parts.push(`보 ${formatPrice(p.deposit)}`);
+  if (p.monthly_rent) parts.push(`월 ${formatPrice(p.monthly_rent)}`);
+  return parts.length > 0 ? parts.join(' / ') : '-';
 };
 
 const fmtPremium = (v: number | null | undefined): string => {
   if (!v || v === 0) return '무';
-  return v.toLocaleString();
+  return formatPrice(v) ?? '무';
 };
 
 const shortAddr = (addr: string | null | undefined): string => {
@@ -38,16 +49,22 @@ const shortAddr = (addr: string | null | undefined): string => {
 };
 
 const fmtArea = (sqm: string | null | undefined): string => {
-  if (!sqm) return '-';
+  if (!sqm) return '';
   const n = parseFloat(sqm);
-  if (isNaN(n) || n <= 0) return '-';
+  if (isNaN(n) || n <= 0) return '';
   return `${(n / 3.3058).toFixed(1)}평`;
 };
 
 const fmtFloor = (floor: string | null | undefined): string => {
-  if (!floor) return '-';
+  if (!floor) return '';
   const s = String(floor).trim();
   return s.endsWith('층') ? s : `${s}층`;
+};
+
+const TX_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  '월세': { bg: '#fff8f2', border: '#e2a06e', text: '#c47c30' },
+  '전세': { bg: '#eef4ff', border: '#4a80e8', text: '#4a80e8' },
+  '매매': { bg: '#fff0f0', border: '#e05050', text: '#e05050' },
 };
 
 export default function BrokerSharePrintPage() {
@@ -93,11 +110,7 @@ export default function BrokerSharePrintPage() {
         .in('id', ids)
         .is('deleted_at', null);
       const propMap = new Map<string, any>((props ?? []).map(p => [p.id, p]));
-
-      const merged = rows
-        .map(r => propMap.get(r.property_id))
-        .filter(Boolean);
-      setProperties(merged);
+      setProperties(rows.map(r => propMap.get(r.property_id)).filter(Boolean));
       setLoading(false);
     })();
   }, [authChecked]);
@@ -107,41 +120,12 @@ export default function BrokerSharePrintPage() {
     setSaving(true);
     try {
       const html2canvas = (await import('html2canvas')).default;
-
-      // onclone 전에 원본 DOM에서 실제 렌더링 높이를 미리 읽어둠
-      const trEls = Array.from(sheetRef.current.querySelectorAll('tr')) as HTMLElement[];
-      const trHeights = trEls.map(tr => tr.getBoundingClientRect().height);
-
       const canvas = await html2canvas(sheetRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         logging: false,
-        onclone: (clonedDoc, clonedEl) => {
-          // 1. 복제된 tr에 명시적 height 지정 (html2canvas vertical-align 인식용)
-          const clonedTrs = Array.from(clonedEl.querySelectorAll('tr')) as HTMLElement[];
-          clonedTrs.forEach((tr, i) => {
-            if (trHeights[i] != null) tr.style.height = `${trHeights[i]}px`;
-          });
-
-          // 2. 각 셀 내용을 flex span으로 감싸 세로 중앙 정렬
-          //    (td/th display 자체는 그대로 유지해 테이블 레이아웃 보존)
-          const cells = Array.from(
-            clonedEl.querySelectorAll('.broker-table th, .broker-table td')
-          ) as HTMLElement[];
-          cells.forEach(cell => {
-            const tr = cell.closest('tr') as HTMLElement | null;
-            const h = tr?.style.height || '';
-            cell.style.padding = '0';
-            const span = clonedDoc.createElement('span');
-            span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:100%;height:${h};padding:0 6px;box-sizing:border-box;`;
-            span.innerHTML = cell.innerHTML;
-            cell.innerHTML = '';
-            cell.appendChild(span);
-          });
-        },
       });
-
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       const safeName = listName.replace(/[/\\:*?"<>|]/g, '-');
@@ -155,179 +139,194 @@ export default function BrokerSharePrintPage() {
   };
 
   if (!authChecked || loading) {
-    return <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</main>;
+    return (
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: '#888' }}>
+        로딩 중...
+      </main>
+    );
   }
 
   return (
-    <main className="broker-print-main" style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
+    <main style={{ background: '#e8e8e8', minHeight: '100vh', padding: '16px 0 40px' }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        .broker-print-main { font-family: 'Pretendard', sans-serif; }
-        .broker-sheet {
-          background: #fff;
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 24px 28px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-          border-radius: 8px;
-        }
-
         @media print {
+          .print-hide { display: none !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          @page { size: A4 landscape; margin: 8mm; }
+          @page { size: A4 portrait; margin: 10mm; }
           html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-          header, footer, .tab-bar, .broker-print-toolbar { display: none !important; }
-          .broker-print-main {
-            background: #fff !important;
-            padding: 0 !important;
-            min-height: auto !important;
-          }
-          .broker-sheet {
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 0 !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-          }
-        }
-
-        .broker-table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.45; }
-        .broker-table th { background: #f3f4f6; color: #1a1a1a; font-weight: 700; padding: 8px 6px; border: 1px solid #d1d5db; text-align: center; white-space: nowrap; vertical-align: middle !important; line-height: 1.4; }
-        .broker-table td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; vertical-align: middle !important; word-break: keep-all; line-height: 1.4; }
-        .broker-table tr:nth-child(even) td { background: #fafafa; }
-
-        @media print {
-          .broker-table { font-size: 13px; }
-          .broker-table thead { display: table-header-group; }
-          .broker-table tr { page-break-inside: avoid; break-inside: avoid; }
+          header, footer, .tab-bar { display: none !important; }
+          main { background: #fff !important; padding: 0 !important; }
         }
       ` }} />
 
-      {/* 화면용 툴바 (인쇄 시 숨김) */}
-      <div className="broker-print-toolbar" style={{ maxWidth: '1200px', margin: '0 auto 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* 화면용 툴바 */}
+      <div
+        className="print-hide"
+        style={{
+          maxWidth: '460px', margin: '0 auto 10px', padding: '0 12px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px',
+        }}
+      >
         <button
           type="button"
           onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#fff', color: '#666', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            padding: '7px 12px', background: '#fff', color: '#555',
+            border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+          }}
         >
-          <ArrowLeft size={14} /> 뒤로
+          <ArrowLeft size={13} /> 뒤로
         </button>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
           <button
             type="button"
             onClick={handleSaveImage}
             disabled={properties.length === 0 || saving}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '10px 18px',
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              padding: '7px 14px',
               background: properties.length === 0 || saving ? '#ccc' : '#fff',
               color: properties.length === 0 || saving ? '#fff' : '#1a1a1a',
-              border: '1px solid #ddd', borderRadius: '6px',
-              fontSize: '14px', fontWeight: 700,
+              border: '1px solid #ccc', borderRadius: '6px',
+              fontSize: '13px', fontWeight: 700,
               cursor: properties.length === 0 || saving ? 'not-allowed' : 'pointer',
             }}
           >
-            <Download size={16} /> {saving ? '저장 중…' : '이미지 저장'}
+            <Download size={13} /> {saving ? '저장 중…' : '이미지 저장'}
           </button>
           <button
             type="button"
             onClick={() => window.print()}
             disabled={properties.length === 0}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '10px 18px',
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              padding: '7px 14px',
               background: properties.length === 0 ? '#ccc' : '#1a1a1a',
               color: properties.length === 0 ? '#fff' : '#e2a06e',
               border: 'none', borderRadius: '6px',
-              fontSize: '14px', fontWeight: 700,
+              fontSize: '13px', fontWeight: 700,
               cursor: properties.length === 0 ? 'not-allowed' : 'pointer',
             }}
           >
-            <Printer size={16} /> 인쇄
+            <Printer size={13} /> 인쇄
           </button>
         </div>
       </div>
 
-      {/* 인쇄 영역 */}
-      <div ref={sheetRef} className="broker-sheet">
+      {/* 캡처 영역 — 460px 고정 */}
+      <div
+        ref={sheetRef}
+        style={{
+          width: '460px',
+          maxWidth: '100%',
+          margin: '0 auto',
+          background: '#fff',
+          padding: '20px 16px 24px',
+          boxSizing: 'border-box',
+        }}
+      >
         {/* 헤더 */}
-        <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '12px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '12px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
-              {listName} <span style={{ fontSize: '14px', fontWeight: 500, color: '#888' }}>공동중개 매물 리스트</span>
+            <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#1a1a1a', margin: '0 0 3px' }}>
+              {listName}
             </h1>
-            <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0' }}>
-              총 <strong style={{ color: '#e2a06e' }}>{properties.length}개</strong>
+            <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
+              공동중개 매물 &nbsp;·&nbsp; 총 <strong style={{ color: '#c47c30' }}>{properties.length}개</strong>
             </p>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>헤르만부동산</p>
-            <p style={{ fontSize: '11px', color: '#888', margin: '2px 0 0' }}>출력일 {fmtDate(new Date().toISOString())}</p>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <p style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a1a', margin: '0 0 2px' }}>헤르만부동산</p>
+            <p style={{ fontSize: '11px', color: '#aaa', margin: 0 }}>{fmtDate(new Date().toISOString())}</p>
           </div>
         </div>
 
-        {/* 빈 상태 또는 표 */}
+        {/* 카드 목록 */}
         {properties.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '60px 0', color: '#888', fontSize: '14px' }}>매물이 없습니다.</p>
+          <p style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: '14px' }}>매물이 없습니다.</p>
         ) : (
-          <table className="broker-table">
-            <colgroup>
-              <col style={{ width: '28px' }} />
-              <col style={{ width: '58px' }} />
-              <col style={{ width: '42px' }} />
-              <col style={{ width: '50px' }} />
-              <col style={{ width: '100px' }} />
-              <col style={{ width: '105px' }} />
-              <col style={{ width: '70px' }} />
-              <col style={{ width: '58px' }} />
-              <col style={{ width: '48px' }} />
-              <col style={{ width: '48px' }} />
-              <col style={{ width: '55px' }} />
-              <col style={{ width: '50px' }} />
-              <col style={{ width: '42px' }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th style={{ verticalAlign: 'middle' }}>#</th>
-                <th style={{ verticalAlign: 'middle' }}>매물번호</th>
-                <th style={{ verticalAlign: 'middle' }}>거래</th>
-                <th style={{ verticalAlign: 'middle' }}>종류</th>
-                <th style={{ verticalAlign: 'middle' }}>상호명</th>
-                <th style={{ verticalAlign: 'middle' }}>주소</th>
-                <th style={{ verticalAlign: 'middle' }}>건물명</th>
-                <th style={{ verticalAlign: 'middle' }}>보증금<br/>(만)</th>
-                <th style={{ verticalAlign: 'middle' }}>월세<br/>(만)</th>
-                <th style={{ verticalAlign: 'middle' }}>권리금<br/>(만)</th>
-                <th style={{ verticalAlign: 'middle' }}>관리비</th>
-                <th style={{ verticalAlign: 'middle' }}>면적</th>
-                <th style={{ verticalAlign: 'middle' }}>층수</th>
-              </tr>
-            </thead>
-            <tbody>
-              {properties.map((p, idx) => (
-                <tr key={p.id}>
-                  <td style={{ verticalAlign: 'middle' }}>{idx + 1}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{p.property_number ?? '-'}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{fmtTx(p.transaction_type)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{p.property_type ?? '-'}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{p.business_name?.trim() || '-'}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{shortAddr(p.address)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{p.building_name?.trim() || '-'}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{fmtMan(p.deposit)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{fmtPremium(p.premium)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{formatMaintenance(p.maintenance_fee)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{fmtArea(p.exclusive_area)}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{fmtFloor(p.current_floor)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {properties.map((p, idx) => {
+              const tx = TX_COLORS[p.transaction_type] ?? { bg: '#f5f5f5', border: '#ccc', text: '#666' };
+              const area = fmtArea(p.exclusive_area);
+              const floor = fmtFloor(p.current_floor);
+              const maintenance = formatMaintenance(p.maintenance_fee);
+
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '11px 13px',
+                    background: '#fff',
+                  }}
+                >
+                  {/* 번호 + 뱃지 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#bbb' }}>#{idx + 1}</span>
+                    {p.property_number && (
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#555' }}>{p.property_number}</span>
+                    )}
+                    <span style={{
+                      fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px',
+                      background: tx.bg, border: `1px solid ${tx.border}`, color: tx.text,
+                    }}>
+                      {p.transaction_type}
+                    </span>
+                    {p.property_type && (
+                      <span style={{
+                        fontSize: '11px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px',
+                        background: '#f5f5f5', color: '#666', border: '1px solid #e0e0e0',
+                      }}>
+                        {p.property_type}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 상호명 */}
+                  {p.business_name?.trim() && (
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#1a1a1a', marginBottom: '2px', lineHeight: 1.3 }}>
+                      {p.business_name.trim()}
+                    </div>
+                  )}
+
+                  {/* 주소 */}
+                  <div style={{ fontSize: '12px', color: '#999', marginBottom: '9px' }}>
+                    {shortAddr(p.address)}
+                    {p.building_name?.trim() ? ` · ${p.building_name.trim()}` : ''}
+                  </div>
+
+                  {/* 가격 */}
+                  <div style={{ borderTop: '1px solid #f2f2f2', paddingTop: '8px' }}>
+                    <div style={{ fontSize: '17px', fontWeight: 800, color: '#1a1a1a', marginBottom: '4px', letterSpacing: '-0.3px' }}>
+                      {buildPriceLabel(p)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#888', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>권리금 {fmtPremium(p.premium)}</span>
+                      <span style={{ color: '#ccc' }}>|</span>
+                      <span>관리비 {maintenance}</span>
+                    </div>
+                  </div>
+
+                  {/* 면적 · 층수 */}
+                  {(area || floor) && (
+                    <div style={{ marginTop: '6px', fontSize: '12px', color: '#777', display: 'flex', gap: '8px' }}>
+                      {area && <span>{area}</span>}
+                      {area && floor && <span style={{ color: '#ccc' }}>·</span>}
+                      {floor && <span>{floor}</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
 
         {/* 푸터 */}
-        <div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888' }}>
-          <span>📞 010-8680-8151</span>
-          <span>※ 가격은 변동될 수 있으며, 자세한 정보는 담당자에게 문의 바랍니다.</span>
+        <div style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px solid #eee', textAlign: 'center', fontSize: '11px', color: '#bbb' }}>
+          헤르만부동산 &nbsp;·&nbsp; 📞 010-8680-8151 &nbsp;·&nbsp; 가격은 변동될 수 있습니다
         </div>
       </div>
     </main>
