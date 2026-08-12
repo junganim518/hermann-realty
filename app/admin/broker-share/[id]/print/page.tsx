@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Printer, ArrowLeft } from 'lucide-react';
+import { Printer, ArrowLeft, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
 
@@ -59,6 +59,8 @@ export default function BrokerSharePrintPage() {
   const [loading, setLoading] = useState(true);
   const [listName, setListName] = useState('');
   const [properties, setProperties] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -99,6 +101,29 @@ export default function BrokerSharePrintPage() {
       setLoading(false);
     })();
   }, [authChecked]);
+
+  const handleSaveImage = async () => {
+    if (!sheetRef.current || properties.length === 0) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(sheetRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      const safeName = listName.replace(/[/\\:*?"<>|]/g, '-');
+      const today = new Date().toLocaleDateString('en-CA').replace(/-/g, '');
+      a.href = url;
+      a.download = `공동중개매물_${safeName}_${today}.png`;
+      a.click();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!authChecked || loading) {
     return <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>로딩 중...</main>;
@@ -157,26 +182,44 @@ export default function BrokerSharePrintPage() {
         >
           <ArrowLeft size={14} /> 뒤로
         </button>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          disabled={properties.length === 0}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '10px 18px',
-            background: properties.length === 0 ? '#ccc' : '#1a1a1a',
-            color: properties.length === 0 ? '#fff' : '#e2a06e',
-            border: 'none', borderRadius: '6px',
-            fontSize: '14px', fontWeight: 700,
-            cursor: properties.length === 0 ? 'not-allowed' : 'pointer',
-          }}
-        >
-          <Printer size={16} /> 인쇄
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={handleSaveImage}
+            disabled={properties.length === 0 || saving}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '10px 18px',
+              background: properties.length === 0 || saving ? '#ccc' : '#fff',
+              color: properties.length === 0 || saving ? '#fff' : '#1a1a1a',
+              border: '1px solid #ddd', borderRadius: '6px',
+              fontSize: '14px', fontWeight: 700,
+              cursor: properties.length === 0 || saving ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <Download size={16} /> {saving ? '저장 중…' : '이미지 저장'}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            disabled={properties.length === 0}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '10px 18px',
+              background: properties.length === 0 ? '#ccc' : '#1a1a1a',
+              color: properties.length === 0 ? '#fff' : '#e2a06e',
+              border: 'none', borderRadius: '6px',
+              fontSize: '14px', fontWeight: 700,
+              cursor: properties.length === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <Printer size={16} /> 인쇄
+          </button>
+        </div>
       </div>
 
       {/* 인쇄 영역 */}
-      <div className="broker-sheet">
+      <div ref={sheetRef} className="broker-sheet">
         {/* 헤더 */}
         <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '12px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
