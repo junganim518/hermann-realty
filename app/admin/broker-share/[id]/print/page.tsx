@@ -107,12 +107,25 @@ export default function BrokerSharePrintPage() {
     setSaving(true);
     try {
       const html2canvas = (await import('html2canvas')).default;
+
+      // html2canvas는 table row height가 암묵적(content-driven)이면
+      // vertical-align: middle을 무시하고 top 기준으로 렌더링함.
+      // 캡처 전 실제 렌더링 높이를 읽어 명시적으로 지정 후 복원.
+      const trList = Array.from(sheetRef.current.querySelectorAll('tr')) as HTMLElement[];
+      const savedHeights = trList.map(tr => tr.style.height);
+      trList.forEach(tr => {
+        tr.style.height = `${tr.getBoundingClientRect().height}px`;
+      });
+
       const canvas = await html2canvas(sheetRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         logging: false,
       });
+
+      trList.forEach((tr, i) => { tr.style.height = savedHeights[i]; });
+
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       const safeName = listName.replace(/[/\\:*?"<>|]/g, '-');
