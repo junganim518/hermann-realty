@@ -611,7 +611,7 @@ function AdminDashboardInner() {
       setBrokerModalOpen(false);
       setBrokerSelectedIds(new Set());
       setBrokerName('');
-      router.push(`/admin/broker-share/${list.id}/print`);
+      router.push(`/admin/broker-share/${list.id}`);
     } finally {
       setBrokerCreating(false);
     }

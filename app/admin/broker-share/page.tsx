@@ -115,7 +115,7 @@ export default function BrokerShareListPage() {
             {rows.map(row => (
               <div
                 key={row.id}
-                onClick={() => router.push(`/admin/broker-share/${row.id}/print`)}
+                onClick={() => router.push(`/admin/broker-share/${row.id}`)}
                 style={{
                   background: '#fff',
                   border: '1px solid #e5e7eb',
