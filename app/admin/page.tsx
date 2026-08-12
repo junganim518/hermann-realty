@@ -161,6 +161,10 @@ function AdminDashboardInner() {
   const [brokerModalOpen, setBrokerModalOpen] = useState(false);
   const [brokerName, setBrokerName] = useState('');
   const [brokerCreating, setBrokerCreating] = useState(false);
+  const [brokerAddModalOpen, setBrokerAddModalOpen] = useState(false);
+  const [existingLists, setExistingLists] = useState<{ id: string; name: string; created_at: string; item_count: number }[]>([]);
+  const [brokerAddListId, setBrokerAddListId] = useState('');
+  const [brokerAdding, setBrokerAdding] = useState(false);
 
   const referralRows = useMemo((): RefTableRow[] => {
     if (rawViews.length === 0) return [];
@@ -613,6 +617,55 @@ function AdminDashboardInner() {
     }
   };
 
+  const openAddToExistingList = async () => {
+    const { data: lists } = await supabase
+      .from('broker_share_lists')
+      .select('id, name, created_at')
+      .order('created_at', { ascending: false });
+    if (!lists || lists.length === 0) {
+      alert('기존 공동중개 리스트가 없습니다. 먼저 리스트를 만들어주세요.');
+      return;
+    }
+    const { data: counts } = await supabase
+      .from('broker_share_list_items')
+      .select('list_id')
+      .in('list_id', lists.map(l => l.id));
+    const countMap: Record<string, number> = {};
+    (counts ?? []).forEach(r => { countMap[r.list_id] = (countMap[r.list_id] ?? 0) + 1; });
+    setExistingLists(lists.map(l => ({ ...l, item_count: countMap[l.id] ?? 0 })));
+    setBrokerAddListId(lists[0].id);
+    setBrokerAddModalOpen(true);
+  };
+
+  const addToExistingList = async () => {
+    if (!brokerAddListId || brokerSelectedIds.size === 0) return;
+    setBrokerAdding(true);
+    try {
+      const { data: existing } = await supabase
+        .from('broker_share_list_items')
+        .select('property_id')
+        .eq('list_id', brokerAddListId);
+      const existingSet = new Set((existing ?? []).map((r: any) => r.property_id));
+      const newIds = Array.from(brokerSelectedIds).filter(id => !existingSet.has(id));
+      if (newIds.length === 0) {
+        showToast('선택한 매물이 이미 모두 담겨 있습니다');
+        setBrokerAddModalOpen(false);
+        setBrokerSelectedIds(new Set());
+        return;
+      }
+      const items = newIds.map(propertyId => ({ list_id: brokerAddListId, property_id: propertyId }));
+      const { error } = await supabase.from('broker_share_list_items').insert(items);
+      if (error) { alert(`추가 실패: ${error.message}`); return; }
+      const skipped = brokerSelectedIds.size - newIds.length;
+      showToast(skipped > 0 ? `${newIds.length}개 추가됨 (${skipped}개는 이미 있음)` : `${newIds.length}개 매물이 추가되었습니다`);
+      setBrokerAddModalOpen(false);
+      setBrokerSelectedIds(new Set());
+      setBrokerAddListId('');
+    } finally {
+      setBrokerAdding(false);
+    }
+  };
+
   // 필터링
   const filtered = properties.filter(p => {
     if (filterTypes.length > 0 && !filterTypes.includes(p.property_type)) return false;
@@ -1004,6 +1057,31 @@ function AdminDashboardInner() {
         </div>
       )}
 
+      {/* 기존 공동중개 리스트에 추가 모달 */}
+      {brokerAddModalOpen && (
+        <div onClick={() => setBrokerAddModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '12px', padding: '24px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px', color: '#1a1a1a' }}>🤝 기존 리스트에 추가</h3>
+            <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>선택된 매물 {brokerSelectedIds.size}개 · 추가할 리스트를 선택하세요</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto', marginBottom: '20px' }}>
+              {existingLists.map(list => (
+                <label key={list.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: `2px solid ${brokerAddListId === list.id ? '#e2a06e' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: brokerAddListId === list.id ? '#fff8f2' : '#fff', transition: 'border-color 0.15s' }}>
+                  <input type="radio" name="broker-list" value={list.id} checked={brokerAddListId === list.id} onChange={() => setBrokerAddListId(list.id)} style={{ accentColor: '#e2a06e', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</div>
+                    <div style={{ fontSize: '12px', color: '#888' }}>{list.item_count}개 매물 · {new Date(list.created_at).toLocaleDateString('ko-KR')}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button onClick={() => { setBrokerAddModalOpen(false); setBrokerAddListId(''); }} style={{ padding: '8px 18px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+              <button onClick={addToExistingList} disabled={!brokerAddListId || brokerAdding} style={{ padding: '8px 18px', border: 'none', borderRadius: '6px', background: !brokerAddListId || brokerAdding ? '#ccc' : '#1a1a1a', color: !brokerAddListId || brokerAdding ? '#fff' : '#e2a06e', fontSize: '13px', fontWeight: 700, cursor: !brokerAddListId || brokerAdding ? 'not-allowed' : 'pointer' }}>{brokerAdding ? '추가 중...' : '추가하기 →'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 공동중개 선택 플로팅 바 */}
       {brokerSelectedIds.size > 0 && (
         <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, display: 'flex', alignItems: 'center', gap: '12px', background: '#1a1a1a', color: '#fff', padding: '12px 20px', borderRadius: '999px', boxShadow: '0 4px 20px rgba(0,0,0,0.35)', whiteSpace: 'nowrap' }}>
@@ -1013,8 +1091,12 @@ function AdminDashboardInner() {
             style={{ padding: '6px 16px', background: '#e2a06e', color: '#1a1a1a', border: 'none', borderRadius: '999px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
           >공동중개 리스트 만들기</button>
           <button
+            onClick={openAddToExistingList}
+            style={{ padding: '6px 16px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '999px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+          >기존 리스트에 추가</button>
+          <button
             onClick={() => setBrokerSelectedIds(new Set())}
-            style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '999px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '999px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
           >선택 해제</button>
         </div>
       )}
