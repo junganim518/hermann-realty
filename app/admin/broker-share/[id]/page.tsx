@@ -91,6 +91,7 @@ export default function BrokerShareEditPage() {
     setCreatedAt(listData.created_at);
 
     const rows = items ?? [];
+    console.log('[브로커편집] items 개수:', rows.length, rows.map(r => r.property_id));
     if (rows.length === 0) {
       setProperties([]);
       setLoading(false);
@@ -98,14 +99,16 @@ export default function BrokerShareEditPage() {
     }
 
     const ids = rows.map(r => r.property_id);
-    const { data: props } = await supabase
+    const { data: props, error: propsErr } = await supabase
       .from('properties')
-      .select('id, property_number, transaction_type, property_type, business_name, business_name_public, address, building_name, dong_ho, current_floor, exclusive_area, deposit, monthly_rent, sale_price, premium, maintenance_fee, is_sold, status, created_at, updated_at')
+      .select('*')
       .in('id', ids)
       .is('deleted_at', null);
+    console.log('[브로커편집] properties 조회 결과:', props?.length ?? 0, '/ error:', propsErr?.message);
 
     const propMap = new Map<string, any>((props ?? []).map(p => [p.id, p]));
     const merged = rows.map(r => propMap.get(r.property_id)).filter(Boolean);
+    console.log('[브로커편집] merged 최종:', merged.length);
     setProperties(merged);
 
     if (merged.length > 0) {
