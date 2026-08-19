@@ -1181,7 +1181,6 @@ function AdminDashboardInner() {
           {[
             { label: '매물 등록', href: '/admin/properties/new' },
             { label: '손님 관리', href: '/admin/customers' },
-            { label: '공동중개 리스트', href: '/admin/broker-share' },
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
           ].map(link => (
@@ -1768,7 +1767,7 @@ function AdminDashboardInner() {
           .admin-stats { grid-template-columns: repeat(6, 1fr) !important; gap: 8px !important; }
           .admin-stats > div { padding: 12px 8px !important; }
           .admin-stats > div p:last-child { font-size: 24px !important; }
-          .admin-shortcuts { grid-template-columns: repeat(5, 1fr) !important; }
+          .admin-shortcuts { grid-template-columns: repeat(4, 1fr) !important; }
         }
 
         @media (max-width: 767px) {
