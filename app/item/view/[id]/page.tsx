@@ -222,7 +222,7 @@ export default function PropertyDetailPage() {
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [adminMenuPos, setAdminMenuPos] = useState<{ bottom: number; right: number } | null>(null);
   const adminMenuBtnRef = useRef<HTMLButtonElement>(null);
-  const captureRef = useRef<HTMLDivElement>(null);
+  const printAreaRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
@@ -648,16 +648,18 @@ export default function PropertyDetailPage() {
     if (window.history.length > 1) { router.back(); } else { router.push('/properties'); }
   };
 
-  const CAPTURE_WIDTH = 1040;
   const handleSaveImage = async () => {
-    if (!captureRef.current || !property) return;
+    if (!printAreaRef.current || !property) return;
     setSaving(true);
+    document.body.classList.add('image-saving');
+    // CSS 적용 대기 (2 rAF)
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
     try {
-      const captureEl = captureRef.current;
+      const captureEl = printAreaRef.current;
       const imgEls = Array.from(captureEl.querySelectorAll<HTMLImageElement>('img'));
       const origSrcs = imgEls.map(el => el.src);
 
-      // fetch → blob → base64 변환 후 img.onload까지 대기 (CORS 완전 우회)
+      // fetch → blob → base64 (CORS 완전 우회), img.onload까지 대기
       await Promise.all(imgEls.map(async (img, i) => {
         const src = origSrcs[i];
         if (!src || src.startsWith('data:')) return;
@@ -671,7 +673,6 @@ export default function PropertyDetailPage() {
             fr.onerror = rej;
             fr.readAsDataURL(blob);
           });
-          // base64 설정 후 실제 로드 완료까지 대기
           await new Promise<void>((res) => {
             img.onload = () => res();
             img.onerror = () => res();
@@ -680,7 +681,6 @@ export default function PropertyDetailPage() {
           });
         } catch (err) {
           console.warn('[이미지저장] 변환 실패:', src, err);
-          // 회색 placeholder
           img.style.background = '#d0d0d0';
           img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
         }
@@ -693,8 +693,6 @@ export default function PropertyDetailPage() {
         useCORS: false,
         allowTaint: false,
         logging: false,
-        width: CAPTURE_WIDTH,
-        windowWidth: CAPTURE_WIDTH,
       });
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -702,18 +700,20 @@ export default function PropertyDetailPage() {
       a.download = `헤르만부동산_${property.property_number ?? id}.png`;
       a.click();
 
-      // 원본 src·스타일 복원
       imgEls.forEach((img, i) => {
         img.style.background = '';
         img.src = origSrcs[i];
       });
     } finally {
+      document.body.classList.remove('image-saving');
       setSaving(false);
     }
   };
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
+      {/* ── 인쇄/저장 공용 출력 영역 ── */}
+      <div ref={printAreaRef} id="print-area">
 
       {/* ── 인쇄 전용 헤더 (화면에서는 숨김) ── */}
       <div className="print-only print-header">
@@ -847,6 +847,22 @@ export default function PropertyDetailPage() {
           </table>
         </div>
       )}
+
+      {/* ── 인쇄 전용 푸터 (화면에서는 숨김) ── */}
+      <div className="print-only print-footer">
+        <div className="print-footer-left">
+          <div>사무소: 부천시 신흥로 223 101동 712호</div>
+          <div>등록번호: 제41192-2024-00113호</div>
+          <div className="print-date">인쇄일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+        </div>
+        <div className="print-footer-right">
+          <div className="print-footer-name">
+            {agent?.name ?? '황정아'}{agent?.title ? ` · ${agent.title}` : ''}
+          </div>
+          <div className="print-footer-phone">{agent?.phone ?? '010-8680-8151'}</div>
+        </div>
+      </div>
+      </div>{/* /print-area */}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .detail-carousel-thumbs::-webkit-scrollbar { display: none; }
@@ -1040,6 +1056,45 @@ export default function PropertyDetailPage() {
         /* 화면에서는 인쇄 전용 요소 숨김 */
         .print-only { display: none !important; }
 
+        /* ═══ 이미지 저장 모드: print-area를 화면 밖에 렌더링 ═══ */
+        body.image-saving #print-area {
+          position: absolute; left: -9999px; top: 0;
+          width: 793px; background: #fff;
+          display: flex; flex-direction: column;
+          overflow: hidden; box-sizing: border-box;
+        }
+        body.image-saving .print-only { display: block !important; }
+        body.image-saving .print-header {
+          text-align: center; padding: 6mm 10mm 5mm;
+          border-top: 3px solid #e2a06e; border-bottom: 1px solid #e2a06e;
+        }
+        body.image-saving .print-logo { font-size: 22px; font-weight: 800; color: #000; letter-spacing: 2px; }
+        body.image-saving .print-tagline { font-size: 9px; letter-spacing: 4px; color: #e2a06e; margin-top: 3px; font-weight: 600; }
+        body.image-saving .print-title-block { padding: 3mm 8mm 1mm; }
+        body.image-saving .print-pnum { font-size: 14px !important; font-weight: 700; color: #1a1a1a; }
+        body.image-saving .print-photos {
+          display: flex !important; padding: 0 8mm; margin-bottom: 2mm;
+          gap: 2px; height: 95mm; align-items: stretch; flex-shrink: 0;
+        }
+        body.image-saving .print-photo-main { width: 65%; height: 100%; object-fit: cover; display: block; border: 1px solid #ccc; flex-shrink: 0; }
+        body.image-saving .print-photo-col { display: flex !important; flex-direction: column; gap: 2px; flex: 1; height: 100%; }
+        body.image-saving .print-photo-col img { flex: 1; min-height: 0; width: 100%; object-fit: cover; border: 1px solid #ccc; }
+        body.image-saving .print-info-block { display: flex !important; flex-direction: column; flex-shrink: 0; padding: 0 8mm 2mm; overflow: hidden; }
+        body.image-saving .print-info-title { font-size: 17px !important; font-weight: 700; color: #1a1a1a; margin: 0 0 4px; padding: 0 0 3px; border-bottom: 2px solid #e2a06e; }
+        body.image-saving .print-info-table { width: 100%; border-collapse: collapse; font-size: 14px !important; table-layout: fixed; }
+        body.image-saving .print-info-table th, body.image-saving .print-info-table td { border: 1px solid #d0d0d0; padding: 5px 9px; vertical-align: middle; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
+        body.image-saving .print-info-table th { width: 16%; background: #f3f3f3; color: #555; font-weight: 600; font-size: 13px !important; text-align: left; }
+        body.image-saving .print-info-table td { width: 34%; color: #000; font-weight: 500; }
+        body.image-saving .print-footer {
+          display: flex !important; justify-content: space-between; align-items: center;
+          padding: 5mm 10mm 6mm; border-top: 3px solid #e2a06e; margin-top: auto; gap: 10mm;
+        }
+        body.image-saving .print-footer-left { text-align: left; line-height: 1.6; color: #999; font-size: 9.5px; }
+        body.image-saving .print-footer-right { text-align: right; line-height: 1.25; }
+        body.image-saving .print-footer-name { font-size: 18px; font-weight: 800; color: #000; letter-spacing: 1px; margin-bottom: 2px; }
+        body.image-saving .print-footer-phone { font-size: 17px; font-weight: 700; color: #1a1a1a; letter-spacing: 0.5px; }
+        body.image-saving .print-date { color: #bbb; margin-top: 2px; font-size: 9px; }
+
         @media print {
           /* 모든 요소에 색상 보정 강제 (배경/보더 정확히 인쇄) */
           * {
@@ -1081,6 +1136,14 @@ export default function PropertyDetailPage() {
             overflow: hidden !important;
             padding: 0 !important;
             margin: 0 !important;
+          }
+
+          /* print-area: main의 flex:1 자식으로 세로 꽉 채움 */
+          #print-area {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 !important;
+            min-height: 0 !important;
           }
 
           /* 인쇄 전용 요소 표시 */
@@ -2005,144 +2068,6 @@ export default function PropertyDetailPage() {
 
         </aside>
 
-      </div>
-
-      {/* ── 캡처 전용 (화면 밖 고정폭, html2canvas 대상) ── */}
-      {property && (
-        <div
-          ref={captureRef}
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            top: 0,
-            width: `${CAPTURE_WIDTH}px`,
-            background: '#fff',
-            fontFamily: "'Pretendard', sans-serif",
-            boxSizing: 'border-box',
-            overflow: 'hidden',
-          }}
-        >
-          {/* 헤더 */}
-          <div style={{ borderTop: '3px solid #e2a06e', borderBottom: '1px solid #e2a06e', textAlign: 'center', padding: '14px 20px' }}>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#000', letterSpacing: '2px' }}>헤르만부동산</div>
-            <div style={{ fontSize: '9px', letterSpacing: '4px', color: '#e2a06e', marginTop: '3px', fontWeight: 600 }}>REAL ESTATE &amp; INVESTMENTS</div>
-          </div>
-
-          {/* 매물번호 */}
-          <div style={{ padding: '10px 20px 4px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>매물번호 {property.property_number ?? '-'}</div>
-          </div>
-
-          {/* 사진: 좌우 2단 (왼쪽 65% + 오른쪽 최대 2장 세로 배치) */}
-          {images.length > 0 && (
-            <div style={{ padding: '0 20px 6px', display: 'flex', gap: '2px', height: '488px', alignItems: 'stretch' }}>
-              <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: images.length === 1 ? '100%' : '65%', height: '100%', objectFit: 'cover', display: 'block', border: '1px solid #ccc', flexShrink: 0 }} />
-              {images.length > 1 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, height: '100%' }}>
-                  {images.slice(1, 3).map((src, i) => (
-                    <img key={i} src={src} alt="" crossOrigin="anonymous" style={{ width: '100%', flex: 1, minHeight: 0, objectFit: 'cover', border: '1px solid #ccc' }} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 매물 정보 표 */}
-          <div style={{ padding: '0 20px 8px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', marginBottom: '6px', paddingBottom: '4px', borderBottom: '2px solid #e2a06e' }}>📋 매물 정보</div>
-            {(() => {
-              const th: React.CSSProperties = { background: '#f3f3f3', color: '#555', fontWeight: 600, fontSize: '12px', padding: '6px 8px', border: '1px solid #d0d0d0', width: '16%', textAlign: 'left', verticalAlign: 'middle' };
-              const td: React.CSSProperties = { color: '#000', fontWeight: 500, fontSize: '13px', padding: '6px 8px', border: '1px solid #d0d0d0', width: '34%', verticalAlign: 'middle', wordBreak: 'break-word' };
-              const isBuilding = property.property_type === '건물' && property.transaction_type === '매매';
-              const floorVal = isBuilding
-                ? [property.total_floor ? `지상${formatFloor(property.total_floor)}` : '', property.current_floor != null && property.current_floor !== '' ? `지하${Math.abs(parseInt(String(property.current_floor)))}층` : ''].filter(Boolean).join(' / ') || '-'
-                : [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
-              const areaVal = isBuilding
-                ? [property.land_area ? `대지 ${property.land_area}㎡` : '', property.total_floor_area ? `연면적 ${property.total_floor_area}㎡` : ''].filter(Boolean).join(' / ') || '-'
-                : [property.supply_area ? `공급 ${property.supply_area}㎡` : '', property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : ''].filter(Boolean).join(' / ') || '-';
-              const parkingVal = property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-';
-              const elevatorVal = property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-';
-              return (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
-                  <tbody>
-                    <tr>
-                      <th style={th}>주소</th>
-                      <td style={td}>{normalizeAddr(property.address ?? '-')}{(property.building_name || property.unit_number) ? ` ${formatBuildingUnit(property.building_name, property.unit_number)}` : ''}</td>
-                      <th style={th}>매물종류</th>
-                      <td style={td}>{property.property_type ?? '-'}</td>
-                    </tr>
-                    <tr>
-                      <th style={th}>거래유형</th>
-                      <td style={td}>{property.transaction_type ?? '-'}</td>
-                      <th style={th}>금액</th>
-                      <td style={td}>{buildPriceStr(property)}</td>
-                    </tr>
-                    <tr>
-                      <th style={th}>권리금</th>
-                      <td style={td}>{property.premium ? formatPrice(property.premium) : '무권리'}</td>
-                      <th style={th}>관리비</th>
-                      <td style={td}>{formatMaintenance(property.maintenance_fee)}</td>
-                    </tr>
-                    <tr>
-                      <th style={th}>면적</th>
-                      <td style={td}>{areaVal}</td>
-                      <th style={th}>{isBuilding ? '지상/지하층수' : '층수'}</th>
-                      <td style={td}>{floorVal}</td>
-                    </tr>
-                    <tr>
-                      <th style={th}>방향</th>
-                      <td style={td}>{property.direction ?? '-'}</td>
-                      <th style={th}>입주가능일</th>
-                      <td style={td}>{property.available_date ?? '-'}</td>
-                    </tr>
-                    <tr>
-                      <th style={th}>주차</th>
-                      <td style={td}>{parkingVal}</td>
-                      <th style={th}>엘리베이터</th>
-                      <td style={td}>{elevatorVal}</td>
-                    </tr>
-                    <tr>
-                      <th style={th}>용도</th>
-                      <td style={td}>{property.usage_type ?? '-'}</td>
-                      <th style={th}>사용승인일</th>
-                      <td style={td}>{property.approval_date ?? '-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              );
-            })()}
-          </div>
-
-          {/* 푸터 */}
-          <div style={{ borderTop: '3px solid #e2a06e', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '9.5px', color: '#999', lineHeight: 1.6 }}>
-              <div>사무소: 부천시 신흥로 223 101동 712호</div>
-              <div>등록번호: 제41192-2024-00113호</div>
-              <div style={{ color: '#bbb', fontSize: '9px' }}>저장일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#000', letterSpacing: '1px' }}>
-                {agent?.name ?? '황정아'}{agent?.title ? ` · ${agent.title}` : ''}
-              </div>
-              <div style={{ fontSize: '17px', fontWeight: 700, color: '#1a1a1a' }}>{agent?.phone ?? '010-8680-8151'}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 인쇄 전용 푸터 (화면에서는 숨김) ── */}
-      <div className="print-only print-footer">
-        <div className="print-footer-left">
-          <div>사무소: 부천시 신흥로 223 101동 712호</div>
-          <div>등록번호: 제41192-2024-00113호</div>
-          <div className="print-date">인쇄일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
-        </div>
-        <div className="print-footer-right">
-          <div className="print-footer-name">
-            {agent?.name ?? '황정아'}{agent?.title ? ` · ${agent.title}` : ''}
-          </div>
-          <div className="print-footer-phone">{agent?.phone ?? '010-8680-8151'}</div>
-        </div>
       </div>
 
       {/* 모바일 우측 하단 FAB (뒤로가기 + 위로이동) */}
