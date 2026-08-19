@@ -38,6 +38,12 @@ export default function AgentsPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login?redirect=/admin/agents'); return; }
+      const role = (data.user.user_metadata as Record<string, string> | null)?.role;
+      if (role !== 'owner') {
+        alert('접근 권한이 없습니다.');
+        router.replace('/admin');
+        return;
+      }
       setAuthChecked(true);
     });
   }, []);
