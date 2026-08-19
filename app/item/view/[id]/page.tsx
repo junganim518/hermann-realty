@@ -653,28 +653,45 @@ export default function PropertyDetailPage() {
     if (!captureRef.current || !property) return;
     setSaving(true);
     try {
-      // 이미지 base64 변환으로 CORS 문제 우회
-      const imgEls = Array.from(captureRef.current.querySelectorAll<HTMLImageElement>('img'));
+      const captureEl = captureRef.current;
+      const imgEls = Array.from(captureEl.querySelectorAll<HTMLImageElement>('img'));
       const origSrcs = imgEls.map(el => el.src);
-      await Promise.all(imgEls.map(async (el, i) => {
+
+      // fetch → blob → base64 변환 후 img.onload까지 대기 (CORS 완전 우회)
+      await Promise.all(imgEls.map(async (img, i) => {
+        const src = origSrcs[i];
+        if (!src || src.startsWith('data:')) return;
         try {
-          const resp = await fetch(origSrcs[i]);
+          const resp = await fetch(src);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const blob = await resp.blob();
-          el.src = await new Promise<string>((res, rej) => {
+          const b64 = await new Promise<string>((res, rej) => {
             const fr = new FileReader();
             fr.onload = () => res(fr.result as string);
             fr.onerror = rej;
             fr.readAsDataURL(blob);
           });
-        } catch { /* 실패 시 원본 URL 유지 */ }
+          // base64 설정 후 실제 로드 완료까지 대기
+          await new Promise<void>((res) => {
+            img.onload = () => res();
+            img.onerror = () => res();
+            img.src = b64;
+            if (img.complete && img.naturalWidth > 0) res();
+          });
+        } catch (err) {
+          console.warn('[이미지저장] 변환 실패:', src, err);
+          // 회색 placeholder
+          img.style.background = '#d0d0d0';
+          img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        }
       }));
-      await new Promise(r => setTimeout(r, 100));
 
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(captureRef.current, {
+      const canvas = await html2canvas(captureEl, {
         backgroundColor: '#ffffff',
         scale: 2,
-        useCORS: true,
+        useCORS: false,
+        allowTaint: false,
         logging: false,
         width: CAPTURE_WIDTH,
         windowWidth: CAPTURE_WIDTH,
@@ -685,8 +702,11 @@ export default function PropertyDetailPage() {
       a.download = `헤르만부동산_${property.property_number ?? id}.png`;
       a.click();
 
-      // 원본 src 복원
-      imgEls.forEach((el, i) => { el.src = origSrcs[i]; });
+      // 원본 src·스타일 복원
+      imgEls.forEach((img, i) => {
+        img.style.background = '';
+        img.src = origSrcs[i];
+      });
     } finally {
       setSaving(false);
     }
