@@ -125,13 +125,9 @@ export default function AgentsPage() {
       : `"${a.name}" 담당자를 정말 삭제하시겠습니까?`;
     if (!window.confirm(confirmMsg)) return;
 
-    // agent_id FK 참조 테이블 전체 해제 (properties + prospect_properties)
-    const [{ error: unlinkErr1 }, { error: unlinkErr2 }] = await Promise.all([
-      supabase.from('properties').update({ agent_id: null }).eq('agent_id', a.id),
-      supabase.from('prospect_properties').update({ agent_id: null }).eq('agent_id', a.id),
-    ]);
-    if (unlinkErr1) { alert(`매물 담당자 해제 실패: ${unlinkErr1.message}`); return; }
-    if (unlinkErr2) { alert(`임장 후보 담당자 해제 실패: ${unlinkErr2.message}`); return; }
+    const { error: unlinkErr } = await supabase
+      .from('properties').update({ agent_id: null }).eq('agent_id', a.id);
+    if (unlinkErr) { alert(`매물 담당자 해제 실패: ${unlinkErr.message}`); return; }
 
     const { error } = await supabase.from('agents').delete().eq('id', a.id);
     if (error) { alert(`삭제 실패: ${error.message}`); return; }
