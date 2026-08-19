@@ -222,6 +222,8 @@ export default function PropertyDetailPage() {
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [adminMenuPos, setAdminMenuPos] = useState<{ bottom: number; right: number } | null>(null);
   const adminMenuBtnRef = useRef<HTMLButtonElement>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
+  const [saving, setSaving] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -644,6 +646,30 @@ export default function PropertyDetailPage() {
     alert('휴지통으로 이동되었습니다.');
     window.scrollTo(0, 0);
     if (window.history.length > 1) { router.back(); } else { router.push('/properties'); }
+  };
+
+  const CAPTURE_WIDTH = 780;
+  const handleSaveImage = async () => {
+    if (!captureRef.current || !property) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(captureRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: CAPTURE_WIDTH,
+        windowWidth: CAPTURE_WIDTH,
+      });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `헤르만부동산_${property.property_number ?? id}.png`;
+      a.click();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1727,6 +1753,11 @@ export default function PropertyDetailPage() {
                       style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#1a1a1a', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', textAlign: 'left' }}>
                       인쇄
                     </button>
+                    <button onClick={() => { setShowAdminMenu(false); setAdminMenuPos(null); handleSaveImage(); }}
+                      disabled={saving}
+                      style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#1a1a1a', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', cursor: saving ? 'not-allowed' : 'pointer', textAlign: 'left', opacity: saving ? 0.6 : 1 }}>
+                      {saving ? '저장 중...' : '이미지 저장'}
+                    </button>
                     <button onClick={() => { setShowAdminMenu(false); setAdminMenuPos(null); handleDeleteProperty(); }}
                       style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#e05050', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                       매물 삭제
@@ -1912,6 +1943,13 @@ export default function PropertyDetailPage() {
                 인쇄
               </button>
               <button
+                onClick={handleSaveImage}
+                disabled={saving}
+                style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#fff', border: '1px solid #1a1a1a', borderRadius: '4px', color: '#1a1a1a', fontSize: '15px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+              >
+                {saving ? '저장 중...' : '이미지 저장'}
+              </button>
+              <button
                 onClick={handleDeleteProperty}
                 style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#fff', border: '1px solid #e05050', borderRadius: '4px', color: '#e05050', fontSize: '15px', fontWeight: 600, cursor: 'pointer' }}
               >
@@ -1923,6 +1961,128 @@ export default function PropertyDetailPage() {
         </aside>
 
       </div>
+
+      {/* ── 캡처 전용 (화면 밖 고정폭, html2canvas 대상) ── */}
+      {property && (
+        <div
+          ref={captureRef}
+          style={{
+            position: 'absolute',
+            left: '-9999px',
+            top: 0,
+            width: '780px',
+            background: '#fff',
+            fontFamily: "'Pretendard', sans-serif",
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* 헤더 */}
+          <div style={{ borderTop: '3px solid #e2a06e', borderBottom: '1px solid #e2a06e', textAlign: 'center', padding: '14px 20px' }}>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#000', letterSpacing: '2px' }}>헤르만부동산</div>
+            <div style={{ fontSize: '9px', letterSpacing: '4px', color: '#e2a06e', marginTop: '3px', fontWeight: 600 }}>REAL ESTATE &amp; INVESTMENTS</div>
+          </div>
+
+          {/* 매물번호 */}
+          <div style={{ padding: '10px 20px 4px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>매물번호 {property.property_number ?? '-'}</div>
+          </div>
+
+          {/* 사진 */}
+          {images.length > 0 && (
+            <div style={{ padding: '0 20px 6px' }}>
+              <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: '100%', height: '260px', objectFit: 'cover', display: 'block', border: '1px solid #ccc' }} />
+              {images.length > 1 && (
+                <div style={{ display: 'flex', gap: '2px', marginTop: '2px' }}>
+                  {images.slice(1, 3).map((src, i) => (
+                    <img key={i} src={src} alt="" crossOrigin="anonymous" style={{ width: '50%', height: '130px', objectFit: 'cover', border: '1px solid #ccc' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 매물 정보 표 */}
+          <div style={{ padding: '0 20px 8px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: '#1a1a1a', marginBottom: '6px', paddingBottom: '4px', borderBottom: '2px solid #e2a06e' }}>📋 매물 정보</div>
+            {(() => {
+              const th: React.CSSProperties = { background: '#f3f3f3', color: '#555', fontWeight: 600, fontSize: '12px', padding: '6px 8px', border: '1px solid #d0d0d0', width: '16%', textAlign: 'left', verticalAlign: 'middle' };
+              const td: React.CSSProperties = { color: '#000', fontWeight: 500, fontSize: '13px', padding: '6px 8px', border: '1px solid #d0d0d0', width: '34%', verticalAlign: 'middle', wordBreak: 'break-word' };
+              const isBuilding = property.property_type === '건물' && property.transaction_type === '매매';
+              const floorVal = isBuilding
+                ? [property.total_floor ? `지상${formatFloor(property.total_floor)}` : '', property.current_floor != null && property.current_floor !== '' ? `지하${Math.abs(parseInt(String(property.current_floor)))}층` : ''].filter(Boolean).join(' / ') || '-'
+                : [property.current_floor && formatFloor(property.current_floor), property.total_floor && `전체 ${formatFloor(property.total_floor)}`].filter(Boolean).join(' / ') || '-';
+              const areaVal = isBuilding
+                ? [property.land_area ? `대지 ${property.land_area}㎡` : '', property.total_floor_area ? `연면적 ${property.total_floor_area}㎡` : ''].filter(Boolean).join(' / ') || '-'
+                : [property.supply_area ? `공급 ${property.supply_area}㎡` : '', property.exclusive_area ? `전용 ${property.exclusive_area}㎡ (${toPyeong(parseFloat(property.exclusive_area))}평)` : ''].filter(Boolean).join(' / ') || '-';
+              const parkingVal = property.parking === true || property.parking === '가능' ? '가능' : property.parking === false || property.parking === '불가' ? '불가' : property.parking ?? '-';
+              const elevatorVal = property.elevator === true || property.elevator === '있음' ? '있음' : property.elevator === false || property.elevator === '없음' ? '없음' : property.elevator ?? '-';
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
+                  <tbody>
+                    <tr>
+                      <th style={th}>주소</th>
+                      <td style={td}>{normalizeAddr(property.address ?? '-')}{(property.building_name || property.unit_number) ? ` ${formatBuildingUnit(property.building_name, property.unit_number)}` : ''}</td>
+                      <th style={th}>매물종류</th>
+                      <td style={td}>{property.property_type ?? '-'}</td>
+                    </tr>
+                    <tr>
+                      <th style={th}>거래유형</th>
+                      <td style={td}>{property.transaction_type ?? '-'}</td>
+                      <th style={th}>금액</th>
+                      <td style={td}>{buildPriceStr(property)}</td>
+                    </tr>
+                    <tr>
+                      <th style={th}>권리금</th>
+                      <td style={td}>{property.premium ? formatPrice(property.premium) : '무권리'}</td>
+                      <th style={th}>관리비</th>
+                      <td style={td}>{formatMaintenance(property.maintenance_fee)}</td>
+                    </tr>
+                    <tr>
+                      <th style={th}>면적</th>
+                      <td style={td}>{areaVal}</td>
+                      <th style={th}>{isBuilding ? '지상/지하층수' : '층수'}</th>
+                      <td style={td}>{floorVal}</td>
+                    </tr>
+                    <tr>
+                      <th style={th}>방향</th>
+                      <td style={td}>{property.direction ?? '-'}</td>
+                      <th style={th}>입주가능일</th>
+                      <td style={td}>{property.available_date ?? '-'}</td>
+                    </tr>
+                    <tr>
+                      <th style={th}>주차</th>
+                      <td style={td}>{parkingVal}</td>
+                      <th style={th}>엘리베이터</th>
+                      <td style={td}>{elevatorVal}</td>
+                    </tr>
+                    <tr>
+                      <th style={th}>용도</th>
+                      <td style={td}>{property.usage_type ?? '-'}</td>
+                      <th style={th}>사용승인일</th>
+                      <td style={td}>{property.approval_date ?? '-'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              );
+            })()}
+          </div>
+
+          {/* 푸터 */}
+          <div style={{ borderTop: '3px solid #e2a06e', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '9.5px', color: '#999', lineHeight: 1.6 }}>
+              <div>사무소: 부천시 신흥로 223 101동 712호</div>
+              <div>등록번호: 제41192-2024-00113호</div>
+              <div style={{ color: '#bbb', fontSize: '9px' }}>저장일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#000', letterSpacing: '1px' }}>
+                {agent?.name ?? '황정아'}{agent?.title ? ` · ${agent.title}` : ''}
+              </div>
+              <div style={{ fontSize: '17px', fontWeight: 700, color: '#1a1a1a' }}>{agent?.phone ?? '010-8680-8151'}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 인쇄 전용 푸터 (화면에서는 숨김) ── */}
       <div className="print-only print-footer">
