@@ -28,6 +28,7 @@ const agentLabel = (a: Pick<Agent, 'name' | 'title' | 'license'>) =>
 export default function AgentsPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
+  const [selfAgentId, setSelfAgentId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [addForm, setAddForm] = useState(EMPTY_FORM);
@@ -38,12 +39,13 @@ export default function AgentsPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login?redirect=/admin/agents'); return; }
-      const role = (data.user.user_metadata as Record<string, string> | null)?.role;
-      if (role !== 'owner') {
+      const meta = data.user.user_metadata as Record<string, string> | null;
+      if (meta?.role !== 'owner') {
         alert('접근 권한이 없습니다.');
         router.replace('/admin');
         return;
       }
+      setSelfAgentId(meta?.agent_id ?? null);
       setAuthChecked(true);
     });
   }, []);
@@ -107,6 +109,26 @@ export default function AgentsPage() {
     const { error } = await supabase.from('agents').update({ is_active: !current }).eq('id', id);
     if (error) { alert(`상태 변경 실패: ${error.message}`); return; }
     setAgents(prev => prev.map(a => a.id === id ? { ...a, is_active: !current } : a));
+  };
+
+  const handleDelete = async (a: Agent) => {
+    const { count } = await supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('agent_id', a.id)
+      .is('deleted_at', null);
+
+    const propCount = count ?? 0;
+    const extraMsg = propCount > 0
+      ? `\n\n⚠️ 이 담당자는 ${propCount}개 매물에 연결되어 있습니다.\n삭제 시 해당 매물의 담당자 정보가 사라집니다.`
+      : '';
+
+    const ok = window.confirm(`"${a.name}" 담당자를 정말 삭제하시겠습니까?${extraMsg}`);
+    if (!ok) return;
+
+    const { error } = await supabase.from('agents').delete().eq('id', a.id);
+    if (error) { alert(`삭제 실패: ${error.message}`); return; }
+    setAgents(prev => prev.filter(x => x.id !== a.id));
   };
 
   if (!authChecked) return null;
@@ -230,6 +252,12 @@ export default function AgentsPage() {
                     >
                       {a.is_active ? '비활성화' : '활성화'}
                     </button>
+                    {a.id !== selfAgentId && (
+                      <button
+                        onClick={() => handleDelete(a)}
+                        style={{ padding: '5px 12px', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#fee2e2', color: '#991b1b' }}
+                      >삭제</button>
+                    )}
                   </div>
                 </div>
               )}
