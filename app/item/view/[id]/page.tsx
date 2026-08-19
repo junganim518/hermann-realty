@@ -1139,7 +1139,7 @@ export default function PropertyDetailPage() {
             flex-shrink: 0;
             display: flex !important;
             gap: 2px;
-            height: 280px;
+            height: 95mm;
             align-items: stretch;
           }
           .print-photo-main {
@@ -2035,7 +2035,7 @@ export default function PropertyDetailPage() {
 
           {/* 사진: 좌우 2단 (왼쪽 65% + 오른쪽 최대 2장 세로 배치) */}
           {images.length > 0 && (
-            <div style={{ padding: '0 20px 6px', display: 'flex', gap: '2px', height: '280px', alignItems: 'stretch' }}>
+            <div style={{ padding: '0 20px 6px', display: 'flex', gap: '2px', height: '488px', alignItems: 'stretch' }}>
               <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: images.length === 1 ? '100%' : '65%', height: '100%', objectFit: 'cover', display: 'block', border: '1px solid #ccc', flexShrink: 0 }} />
               {images.length > 1 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, height: '100%' }}>
