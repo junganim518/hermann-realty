@@ -121,7 +121,8 @@ export default function BrokerSharePrintPage() {
       sheet.style.width = `${tableScrollW + padH}px`;
     }
 
-    // 확장 후 실제 렌더 높이 읽기 (reflow 반영)
+    // 확장 후 실제 캡처 폭·렌더 높이 읽기 (reflow 반영)
+    const captureWidth = sheet.scrollWidth;
     const trEls = Array.from(sheet.querySelectorAll('tr')) as HTMLElement[];
     const trHeights = trEls.map(tr => tr.getBoundingClientRect().height);
 
@@ -132,6 +133,8 @@ export default function BrokerSharePrintPage() {
         scale: 2,
         useCORS: true,
         logging: false,
+        width: captureWidth,
+        windowWidth: captureWidth,
         onclone: (clonedDoc, clonedEl) => {
           const clonedTrs = Array.from(clonedEl.querySelectorAll('tr')) as HTMLElement[];
           clonedTrs.forEach((tr, i) => {
