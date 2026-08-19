@@ -120,20 +120,17 @@ export default function AgentsPage() {
 
     const propCount = count ?? 0;
 
-    if (propCount > 0) {
-      const ok = window.confirm(
-        `"${a.name}" 담당자는 ${propCount}개 매물에 연결되어 있습니다.\n삭제하면 해당 매물들의 담당자가 '미지정'으로 변경됩니다.\n계속하시겠습니까?`
-      );
-      if (!ok) return;
-      const { error: unlinkErr } = await supabase
-        .from('properties')
-        .update({ agent_id: null })
-        .eq('agent_id', a.id);
-      if (unlinkErr) { alert(`매물 담당자 해제 실패: ${unlinkErr.message}`); return; }
-    } else {
-      const ok = window.confirm(`"${a.name}" 담당자를 정말 삭제하시겠습니까?`);
-      if (!ok) return;
-    }
+    const confirmMsg = propCount > 0
+      ? `"${a.name}" 담당자는 ${propCount}개 매물에 연결되어 있습니다.\n삭제하면 해당 매물들의 담당자가 '미지정'으로 변경됩니다.\n계속하시겠습니까?`
+      : `"${a.name}" 담당자를 정말 삭제하시겠습니까?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    // 소프트 삭제 포함 모든 매물의 agent_id를 먼저 해제 (FK 제약 방지)
+    const { error: unlinkErr } = await supabase
+      .from('properties')
+      .update({ agent_id: null })
+      .eq('agent_id', a.id);
+    if (unlinkErr) { alert(`매물 담당자 해제 실패: ${unlinkErr.message}`); return; }
 
     const { error } = await supabase.from('agents').delete().eq('id', a.id);
     if (error) { alert(`삭제 실패: ${error.message}`); return; }
