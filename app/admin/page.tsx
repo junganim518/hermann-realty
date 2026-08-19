@@ -1181,8 +1181,6 @@ function AdminDashboardInner() {
           {[
             { label: '매물 등록', href: '/admin/properties/new' },
             { label: '손님 관리', href: '/admin/customers' },
-            { label: '공동중개 리스트', href: '/admin/broker-share' },
-            { label: '담당자 관리', href: '/admin/agents' },
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
           ].map(link => (
@@ -1202,6 +1200,12 @@ function AdminDashboardInner() {
             <div className="prop-mgmt-title-row">
               <span>매물 관리 ({filtered.length})</span>
               <a href="/admin/properties/new" className="prop-mgmt-register-m" style={{ fontSize: '13px', color: '#e2a06e', textDecoration: 'none', fontWeight: 600 }}>+ 매물 등록</a>
+            </div>
+            {/* 모바일 전용: 공동중개리스트/담당자관리/휴지통 칩 링크 */}
+            <div className="prop-mgmt-mobile-links">
+              <a href="/admin/broker-share">🤝 공동중개 리스트</a>
+              <a href="/admin/agents">👤 담당자 관리</a>
+              <a href="/admin/trash">🗑️ 휴지통{trashCount > 0 ? ` (${trashCount})` : ''}</a>
             </div>
             {/* 컨트롤 그룹 */}
             <div className="prop-mgmt-controls">
@@ -1763,13 +1767,14 @@ function AdminDashboardInner() {
         .prop-mgmt-register-m { display: none; }
         .prop-mgmt-controls { display: flex; align-items: center; gap: 8px; }
         .prop-mgmt-filter-row { display: flex; align-items: center; gap: 8px; }
+        .prop-mgmt-mobile-links { display: none; }
 
         @media (min-width: 768px) and (max-width: 1199px) {
           main > div { max-width: 100% !important; padding: 0 16px !important; }
           .admin-stats { grid-template-columns: repeat(6, 1fr) !important; gap: 8px !important; }
           .admin-stats > div { padding: 12px 8px !important; }
           .admin-stats > div p:last-child { font-size: 24px !important; }
-          .admin-shortcuts { grid-template-columns: repeat(3, 1fr) !important; }
+          .admin-shortcuts { grid-template-columns: repeat(4, 1fr) !important; }
         }
 
         @media (max-width: 767px) {
@@ -1782,6 +1787,8 @@ function AdminDashboardInner() {
           .admin-filters select { min-width: 90px !important; font-size: 12px !important; }
           .admin-shortcuts { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
           .admin-shortcuts a { padding: 10px !important; font-size: 13px !important; }
+          .prop-mgmt-mobile-links { display: flex !important; gap: 6px; overflow-x: auto; padding-bottom: 2px; width: 100%; }
+          .prop-mgmt-mobile-links a { flex-shrink: 0; padding: 5px 12px; background: #f3f4f6; color: #444; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
           /* 모바일 매물 카드: 썸네일(64px) 좌측 + 정보 우측 가로 배치, 액션 하단 전체 너비 */
           .admin-prop-thumbnail { display: block !important; width: 64px !important; height: 64px !important; flex-shrink: 0 !important; }
           .admin-prop-title { display: none !important; }
