@@ -1139,15 +1139,17 @@ export default function PropertyDetailPage() {
             flex-shrink: 0;
             display: flex;
             gap: 2px;
+            height: 280px;
+            align-items: stretch;
           }
           .print-photo-main {
-            width: 65%; height: 280px; object-fit: cover;
+            width: 65%; height: 100%; object-fit: cover;
             display: block; border: 1px solid #ccc;
             flex-shrink: 0;
           }
-          .print-photo-col { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+          .print-photo-col { display: flex; flex-direction: column; gap: 2px; flex: 1; height: 100%; }
           .print-photo-col img {
-            flex: 1; width: 100%; object-fit: cover;
+            flex: 1; min-height: 0; width: 100%; object-fit: cover;
             border: 1px solid #ccc;
           }
 
@@ -2032,12 +2034,12 @@ export default function PropertyDetailPage() {
 
           {/* 사진: 좌우 2단 (왼쪽 65% + 오른쪽 최대 2장 세로 배치) */}
           {images.length > 0 && (
-            <div style={{ padding: '0 20px 6px', display: 'flex', gap: '2px' }}>
-              <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: images.length === 1 ? '100%' : '65%', height: '280px', objectFit: 'cover', display: 'block', border: '1px solid #ccc', flexShrink: 0 }} />
+            <div style={{ padding: '0 20px 6px', display: 'flex', gap: '2px', height: '280px', alignItems: 'stretch' }}>
+              <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: images.length === 1 ? '100%' : '65%', height: '100%', objectFit: 'cover', display: 'block', border: '1px solid #ccc', flexShrink: 0 }} />
               {images.length > 1 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, height: '100%' }}>
                   {images.slice(1, 3).map((src, i) => (
-                    <img key={i} src={src} alt="" crossOrigin="anonymous" style={{ width: '100%', flex: 1, objectFit: 'cover', border: '1px solid #ccc' }} />
+                    <img key={i} src={src} alt="" crossOrigin="anonymous" style={{ width: '100%', flex: 1, minHeight: 0, objectFit: 'cover', border: '1px solid #ccc' }} />
                   ))}
                 </div>
               )}
