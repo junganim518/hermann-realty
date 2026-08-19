@@ -94,7 +94,7 @@ export default function BrokerSharePrintPage() {
     })();
   }, [authChecked]);
 
-  const CAPTURE_WIDTH = 900;
+  const CAPTURE_WIDTH = 780;
 
   const handleSaveImage = async () => {
     if (!captureRef.current || properties.length === 0) return;
@@ -350,26 +350,47 @@ export default function BrokerSharePrintPage() {
             <p style={{ fontSize: '11px', color: '#888', margin: '2px 0 0', whiteSpace: 'nowrap' }}>출력일 {fmtDate(new Date().toISOString())}</p>
           </div>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', lineHeight: 1.45 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', lineHeight: 1.45, tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '32px' }} />
+            <col style={{ width: '115px' }} />
+            <col style={{ width: '150px' }} />
+            <col style={{ width: '82px' }} />
+            <col style={{ width: '72px' }} />
+            <col style={{ width: '82px' }} />
+            <col style={{ width: '72px' }} />
+            <col style={{ width: '65px' }} />
+            <col style={{ width: '52px' }} />
+          </colgroup>
           <thead>
             <tr>
-              {['#', '주소', '상호명', '보증금(만)', '월세(만)', '권리금(만)', '관리비', '면적', '층수'].map((h, i) => (
-                <th key={i} style={{ background: '#f3f4f6', color: '#1a1a1a', fontWeight: 700, padding: '8px 6px', border: '1px solid #d1d5db', textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{h}</th>
+              {[
+                ['#', '32px'],
+                ['주소', '115px'],
+                ['상호명', '150px'],
+                ['보증금(만)', '82px'],
+                ['월세(만)', '72px'],
+                ['권리금(만)', '82px'],
+                ['관리비', '72px'],
+                ['면적', '65px'],
+                ['층수', '52px'],
+              ].map(([h], i) => (
+                <th key={i} style={{ background: '#f3f4f6', color: '#1a1a1a', fontWeight: 700, padding: '8px 6px', border: '1px solid #d1d5db', textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle', overflow: 'hidden' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {properties.map((p, idx) => (
               <tr key={p.id} style={{ background: idx % 2 === 1 ? '#fafafa' : '#fff' }}>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{idx + 1}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', wordBreak: 'keep-all' }}>{shortAddr(p.address)}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', wordBreak: 'keep-all' }}>{p.business_name?.trim() || '-'}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtMan(p.deposit)}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtPremium(p.premium)}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{formatMaintenance(p.maintenance_fee)}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtArea(p.exclusive_area)}</td>
-                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtFloor(p.current_floor)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{idx + 1}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{shortAddr(p.address)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.business_name?.trim() || '-'}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{fmtMan(p.deposit)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{fmtPremium(p.premium)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{formatMaintenance(p.maintenance_fee)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{fmtArea(p.exclusive_area)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>{fmtFloor(p.current_floor)}</td>
               </tr>
             ))}
           </tbody>
