@@ -648,7 +648,7 @@ export default function PropertyDetailPage() {
     if (window.history.length > 1) { router.back(); } else { router.push('/properties'); }
   };
 
-  const CAPTURE_WIDTH = 780;
+  const CAPTURE_WIDTH = 1040;
   const handleSaveImage = async () => {
     if (!captureRef.current || !property) return;
     setSaving(true);
@@ -689,7 +689,7 @@ export default function PropertyDetailPage() {
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(captureEl, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: 1,
         useCORS: false,
         allowTaint: false,
         logging: false,
@@ -1137,7 +1137,7 @@ export default function PropertyDetailPage() {
             padding: 0 8mm;
             margin-bottom: 2mm;
             flex-shrink: 0;
-            display: flex;
+            display: flex !important;
             gap: 2px;
             height: 280px;
             align-items: stretch;
@@ -1147,7 +1147,7 @@ export default function PropertyDetailPage() {
             display: block; border: 1px solid #ccc;
             flex-shrink: 0;
           }
-          .print-photo-col { display: flex; flex-direction: column; gap: 2px; flex: 1; height: 100%; }
+          .print-photo-col { display: flex !important; flex-direction: column; gap: 2px; flex: 1; height: 100%; }
           .print-photo-col img {
             flex: 1; min-height: 0; width: 100%; object-fit: cover;
             border: 1px solid #ccc;
@@ -1157,7 +1157,7 @@ export default function PropertyDetailPage() {
           .print-info-block {
             flex-shrink: 0 !important;
             padding: 0 8mm 2mm;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             overflow: hidden;
           }
@@ -2015,10 +2015,11 @@ export default function PropertyDetailPage() {
             position: 'absolute',
             left: '-9999px',
             top: 0,
-            width: '780px',
+            width: `${CAPTURE_WIDTH}px`,
             background: '#fff',
             fontFamily: "'Pretendard', sans-serif",
             boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
           {/* 헤더 */}
