@@ -56,6 +56,7 @@ export default function BrokerSharePrintPage() {
   const [properties, setProperties] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -93,69 +94,21 @@ export default function BrokerSharePrintPage() {
     })();
   }, [authChecked]);
 
+  const CAPTURE_WIDTH = 900;
+
   const handleSaveImage = async () => {
-    if (!sheetRef.current || properties.length === 0) return;
+    if (!captureRef.current || properties.length === 0) return;
     setSaving(true);
-
-    const sheet = sheetRef.current;
-    const wrapEl = sheet.querySelector('.broker-sheet-table-wrap') as HTMLElement | null;
-    const tableEl = sheet.querySelector('.broker-table') as HTMLElement | null;
-
-    // 모바일: overflow-x:auto wrapper 안 표가 sheet보다 넓으면
-    // 캡처 전 sheet를 표 실제 폭으로 임시 확장해 우측 잘림 방지
-    const tableScrollW = tableEl?.scrollWidth ?? 0;
-    const sheetClientW = sheet.clientWidth;
-    const needsExpand = tableScrollW > sheetClientW;
-
-    const saved = {
-      wrapOverflow: wrapEl?.style.overflowX ?? '',
-      sheetMaxWidth: sheet.style.maxWidth,
-      sheetWidth: sheet.style.width,
-    };
-
-    if (needsExpand && wrapEl) {
-      const cs = getComputedStyle(sheet);
-      const padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-      wrapEl.style.overflowX = 'visible';
-      sheet.style.maxWidth = 'none';
-      sheet.style.width = `${tableScrollW + padH}px`;
-    }
-
-    // 확장 후 실제 캡처 폭·렌더 높이 읽기 (reflow 반영)
-    const captureWidth = sheet.scrollWidth;
-    const trEls = Array.from(sheet.querySelectorAll('tr')) as HTMLElement[];
-    const trHeights = trEls.map(tr => tr.getBoundingClientRect().height);
-
     try {
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(sheet, {
+      const canvas = await html2canvas(captureRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         logging: false,
-        width: captureWidth,
-        windowWidth: captureWidth,
-        onclone: (clonedDoc, clonedEl) => {
-          const clonedTrs = Array.from(clonedEl.querySelectorAll('tr')) as HTMLElement[];
-          clonedTrs.forEach((tr, i) => {
-            if (trHeights[i] != null) tr.style.height = `${trHeights[i]}px`;
-          });
-          const cells = Array.from(
-            clonedEl.querySelectorAll('.broker-table th, .broker-table td')
-          ) as HTMLElement[];
-          cells.forEach(cell => {
-            const tr = cell.closest('tr') as HTMLElement | null;
-            const h = tr?.style.height || '';
-            cell.style.padding = '0';
-            const span = clonedDoc.createElement('span');
-            span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:100%;height:${h};padding:0 6px;box-sizing:border-box;`;
-            span.innerHTML = cell.innerHTML;
-            cell.innerHTML = '';
-            cell.appendChild(span);
-          });
-        },
+        width: CAPTURE_WIDTH,
+        windowWidth: CAPTURE_WIDTH,
       });
-
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       const safeName = listName.replace(/[/\\:*?"<>|]/g, '-');
@@ -164,12 +117,6 @@ export default function BrokerSharePrintPage() {
       a.download = `공동중개매물_${safeName}_${today}.png`;
       a.click();
     } finally {
-      // 성공/실패 모두 DOM 복원
-      if (needsExpand && wrapEl) {
-        wrapEl.style.overflowX = saved.wrapOverflow;
-        sheet.style.maxWidth = saved.sheetMaxWidth;
-        sheet.style.width = saved.sheetWidth;
-      }
       setSaving(false);
     }
   };
@@ -370,6 +317,64 @@ export default function BrokerSharePrintPage() {
 
         {/* 푸터 */}
         <div className="broker-sheet-footer" style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888' }}>
+          <span style={{ whiteSpace: 'nowrap' }}>📞 010-8680-8151</span>
+          <span>※ 가격은 변동될 수 있으며, 자세한 정보는 담당자에게 문의 바랍니다.</span>
+        </div>
+      </div>
+
+      {/* 캡처 전용 — 화면 밖 고정폭 900px, 반응형 CSS 영향 없음 */}
+      <div
+        ref={captureRef}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: 0,
+          width: `${CAPTURE_WIDTH}px`,
+          background: '#fff',
+          padding: '24px 28px',
+          fontFamily: "'Pretendard', sans-serif",
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '12px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+              {listName} <span style={{ fontSize: '14px', fontWeight: 500, color: '#888' }}>공동중개 매물 리스트</span>
+            </div>
+            <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0' }}>
+              총 <strong style={{ color: '#e2a06e' }}>{properties.length}개</strong>
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a', margin: 0, whiteSpace: 'nowrap' }}>헤르만부동산</p>
+            <p style={{ fontSize: '11px', color: '#888', margin: '2px 0 0', whiteSpace: 'nowrap' }}>출력일 {fmtDate(new Date().toISOString())}</p>
+          </div>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', lineHeight: 1.45 }}>
+          <thead>
+            <tr>
+              {['#', '주소', '상호명', '보증금(만)', '월세(만)', '권리금(만)', '관리비', '면적', '층수'].map((h, i) => (
+                <th key={i} style={{ background: '#f3f4f6', color: '#1a1a1a', fontWeight: 700, padding: '8px 6px', border: '1px solid #d1d5db', textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {properties.map((p, idx) => (
+              <tr key={p.id} style={{ background: idx % 2 === 1 ? '#fafafa' : '#fff' }}>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{idx + 1}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', wordBreak: 'keep-all' }}>{shortAddr(p.address)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle', wordBreak: 'keep-all' }}>{p.business_name?.trim() || '-'}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtMan(p.deposit)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{p.transaction_type === '매매' ? '-' : fmtMan(p.monthly_rent)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtPremium(p.premium)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{formatMaintenance(p.maintenance_fee)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtArea(p.exclusive_area)}</td>
+                <td style={{ padding: '8px 6px', border: '1px solid #e5e7eb', textAlign: 'center', verticalAlign: 'middle' }}>{fmtFloor(p.current_floor)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888' }}>
           <span style={{ whiteSpace: 'nowrap' }}>📞 010-8680-8151</span>
           <span>※ 가격은 변동될 수 있으며, 자세한 정보는 담당자에게 문의 바랍니다.</span>
         </div>
