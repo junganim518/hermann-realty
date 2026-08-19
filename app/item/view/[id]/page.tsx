@@ -653,6 +653,23 @@ export default function PropertyDetailPage() {
     if (!captureRef.current || !property) return;
     setSaving(true);
     try {
+      // 이미지 base64 변환으로 CORS 문제 우회
+      const imgEls = Array.from(captureRef.current.querySelectorAll<HTMLImageElement>('img'));
+      const origSrcs = imgEls.map(el => el.src);
+      await Promise.all(imgEls.map(async (el, i) => {
+        try {
+          const resp = await fetch(origSrcs[i]);
+          const blob = await resp.blob();
+          el.src = await new Promise<string>((res, rej) => {
+            const fr = new FileReader();
+            fr.onload = () => res(fr.result as string);
+            fr.onerror = rej;
+            fr.readAsDataURL(blob);
+          });
+        } catch { /* 실패 시 원본 URL 유지 */ }
+      }));
+      await new Promise(r => setTimeout(r, 100));
+
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(captureRef.current, {
         backgroundColor: '#ffffff',
@@ -667,6 +684,9 @@ export default function PropertyDetailPage() {
       a.href = url;
       a.download = `헤르만부동산_${property.property_number ?? id}.png`;
       a.click();
+
+      // 원본 src 복원
+      imgEls.forEach((el, i) => { el.src = origSrcs[i]; });
     } finally {
       setSaving(false);
     }
@@ -688,12 +708,12 @@ export default function PropertyDetailPage() {
         </div>
       )}
 
-      {/* ── 인쇄 전용 사진 섹션 (대표 1장 + 보조 2장) ── */}
+      {/* ── 인쇄 전용 사진 섹션 (좌우 2단: 왼쪽 큰 사진 + 오른쪽 최대 2장) ── */}
       {property && images.length > 0 && (
         <div className="print-only print-photos">
-          <img src={images[0]} alt="대표 사진" className="print-photo-main" />
+          <img src={images[0]} alt="대표 사진" className="print-photo-main" style={images.length === 1 ? { width: '100%' } : undefined} />
           {images.length > 1 && (
-            <div className="print-photo-row">
+            <div className="print-photo-col">
               {images.slice(1, 3).map((src, i) => (
                 <img key={`print-photo-${i}`} src={src} alt="" className="print-photo-sub" />
               ))}
@@ -1092,19 +1112,22 @@ export default function PropertyDetailPage() {
             font-weight: 700;
           }
 
-          /* 3) 사진 — 큼 */
+          /* 3) 사진 — 좌우 2단 */
           .print-photos {
             padding: 0 8mm;
             margin-bottom: 2mm;
             flex-shrink: 0;
+            display: flex;
+            gap: 2px;
           }
           .print-photo-main {
-            width: 100%; height: 260px; object-fit: cover;
+            width: 65%; height: 280px; object-fit: cover;
             display: block; border: 1px solid #ccc;
+            flex-shrink: 0;
           }
-          .print-photo-row { display: flex; gap: 2px; margin-top: 2px; }
-          .print-photo-row img {
-            width: 50%; height: 130px; object-fit: cover;
+          .print-photo-col { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+          .print-photo-col img {
+            flex: 1; width: 100%; object-fit: cover;
             border: 1px solid #ccc;
           }
 
@@ -1987,14 +2010,14 @@ export default function PropertyDetailPage() {
             <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>매물번호 {property.property_number ?? '-'}</div>
           </div>
 
-          {/* 사진 */}
+          {/* 사진: 좌우 2단 (왼쪽 65% + 오른쪽 최대 2장 세로 배치) */}
           {images.length > 0 && (
-            <div style={{ padding: '0 20px 6px' }}>
-              <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: '100%', height: '260px', objectFit: 'cover', display: 'block', border: '1px solid #ccc' }} />
+            <div style={{ padding: '0 20px 6px', display: 'flex', gap: '2px' }}>
+              <img src={images[0]} alt="대표 사진" crossOrigin="anonymous" style={{ width: images.length === 1 ? '100%' : '65%', height: '280px', objectFit: 'cover', display: 'block', border: '1px solid #ccc', flexShrink: 0 }} />
               {images.length > 1 && (
-                <div style={{ display: 'flex', gap: '2px', marginTop: '2px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
                   {images.slice(1, 3).map((src, i) => (
-                    <img key={i} src={src} alt="" crossOrigin="anonymous" style={{ width: '50%', height: '130px', objectFit: 'cover', border: '1px solid #ccc' }} />
+                    <img key={i} src={src} alt="" crossOrigin="anonymous" style={{ width: '100%', flex: 1, objectFit: 'cover', border: '1px solid #ccc' }} />
                   ))}
                 </div>
               )}
