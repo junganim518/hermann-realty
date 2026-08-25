@@ -728,16 +728,20 @@ export default function PropertyDetailPage() {
         </div>
       )}
 
-      {/* ── 인쇄 전용 사진 섹션 (좌우 2단: 왼쪽 큰 사진 + 오른쪽 최대 2장) ── */}
-      {property && images.length > 0 && (
+      {/* ── 인쇄 전용 사진 섹션 (2x2 그리드: 사진 최대 3장 + 위치 지도) ── */}
+      {property && (images.length > 0 || (property.latitude && property.longitude)) && (
         <div className="print-only print-photos">
-          <img src={images[0]} alt="대표 사진" className="print-photo-main" style={images.length === 1 ? { width: '100%' } : undefined} />
-          {images.length > 1 && (
-            <div className="print-photo-col">
-              {images.slice(1, 3).map((src, i) => (
-                <img key={`print-photo-${i}`} src={src} alt="" className="print-photo-sub" />
-              ))}
-            </div>
+          {images.slice(0, 3).map((src, i) => (
+            <img key={`print-photo-${i}`} src={src} alt="" className="print-photo-cell" />
+          ))}
+          {property.latitude && property.longitude ? (
+            <img
+              src={`/api/staticmap?lat=${property.latitude}&lng=${property.longitude}`}
+              alt="위치 지도"
+              className="print-photo-cell"
+            />
+          ) : (
+            <div className="print-photo-cell print-map-placeholder" />
           )}
         </div>
       )}
@@ -1073,12 +1077,11 @@ export default function PropertyDetailPage() {
         body.image-saving .print-title-block { padding: 3mm 8mm 1mm; }
         body.image-saving .print-pnum { font-size: 14px !important; font-weight: 700; color: #1a1a1a; }
         body.image-saving .print-photos {
-          display: flex !important; padding: 0 8mm; margin-bottom: 2mm;
-          gap: 2px; height: 95mm; align-items: stretch; flex-shrink: 0;
+          display: grid !important; grid-template-columns: 1fr 1fr;
+          gap: 2px; padding: 0 8mm; margin-bottom: 2mm; flex-shrink: 0;
         }
-        body.image-saving .print-photo-main { width: 65%; height: 100%; object-fit: cover; display: block; border: 1px solid #ccc; flex-shrink: 0; }
-        body.image-saving .print-photo-col { display: flex !important; flex-direction: column; gap: 2px; flex: 1; height: 100%; }
-        body.image-saving .print-photo-col img { flex: 1; min-height: 0; width: 100%; object-fit: cover; border: 1px solid #ccc; }
+        body.image-saving .print-photo-cell { display: block !important; width: 100%; aspect-ratio: 4/3; object-fit: cover; border: 1px solid #ccc; }
+        body.image-saving .print-map-placeholder { background: #e8e8e8; }
         body.image-saving .print-info-block { display: flex !important; flex-direction: column; flex-shrink: 0; padding: 0 8mm 2mm; overflow: hidden; }
         body.image-saving .print-info-title { font-size: 17px !important; font-weight: 700; color: #1a1a1a; margin: 0 0 4px; padding: 0 0 3px; border-bottom: 2px solid #e2a06e; }
         body.image-saving .print-info-table { width: 100%; border-collapse: collapse; font-size: 14px !important; table-layout: fixed; }
@@ -1195,25 +1198,24 @@ export default function PropertyDetailPage() {
             font-weight: 700;
           }
 
-          /* 3) 사진 — 좌우 2단 */
+          /* 3) 사진 — 2x2 균등 그리드 */
           .print-photos {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
             padding: 0 8mm;
             margin-bottom: 2mm;
             flex-shrink: 0;
-            display: flex !important;
-            gap: 2px;
-            height: 95mm;
-            align-items: stretch;
           }
-          .print-photo-main {
-            width: 65%; height: 100%; object-fit: cover;
-            display: block; border: 1px solid #ccc;
-            flex-shrink: 0;
-          }
-          .print-photo-col { display: flex !important; flex-direction: column; gap: 2px; flex: 1; height: 100%; }
-          .print-photo-col img {
-            flex: 1; min-height: 0; width: 100%; object-fit: cover;
+          .print-photo-cell {
+            display: block;
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
             border: 1px solid #ccc;
+          }
+          .print-map-placeholder {
+            background: #e8e8e8;
           }
 
           /* 4) 정보 표 — 컴팩트 (자동 stretch 안 함) */
