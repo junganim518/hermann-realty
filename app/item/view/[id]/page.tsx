@@ -760,6 +760,10 @@ export default function PropertyDetailPage() {
                 <td>{property.property_type ?? '-'}</td>
               </tr>
               <tr>
+                <th>상호명</th>
+                <td colSpan={3}>{property.business_name ?? '-'}</td>
+              </tr>
+              <tr>
                 <th>거래유형</th>
                 <td>{property.transaction_type ?? '-'}</td>
                 <th>금액</th>
@@ -838,10 +842,6 @@ export default function PropertyDetailPage() {
                 <td>{property.usage_type ?? '-'}</td>
                 <th>사용승인일</th>
                 <td>{property.approval_date ?? '-'}</td>
-              </tr>
-              <tr>
-                <th>테마종류</th>
-                <td colSpan={3}>{property.theme_types ?? property.theme_type ?? '-'}</td>
               </tr>
             </tbody>
           </table>
