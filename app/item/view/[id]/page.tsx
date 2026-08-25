@@ -753,6 +753,12 @@ export default function PropertyDetailPage() {
         <div className="print-only print-info-block">
           <h2 className="print-info-title">📋 매물 정보</h2>
           <table className="print-info-table">
+            <colgroup>
+              <col style={{width:'20%'}} />
+              <col style={{width:'30%'}} />
+              <col style={{width:'20%'}} />
+              <col style={{width:'30%'}} />
+            </colgroup>
             <tbody>
               <tr>
                 <th>상호명</th>
