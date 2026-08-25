@@ -472,6 +472,12 @@ export default function CustomerDetailPage() {
                         {pyeong && <span>{pyeong}평</span>}
                         {p.current_floor && <span>{p.current_floor}층</span>}
                       </div>
+                      <div style={{ fontSize: '11px', marginTop: '2px' }}>
+                        {p.premium && p.premium > 0
+                          ? <span style={{ color: '#92400e' }}>권리금 {(p.premium as number).toLocaleString()}만</span>
+                          : <span style={{ color: '#aaa' }}>무권리</span>
+                        }
+                      </div>
                       {isMemoEditing ? (
                         <div style={{ marginTop: '6px', display: 'flex', gap: '4px' }}>
                           <input
