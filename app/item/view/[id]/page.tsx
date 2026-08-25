@@ -749,6 +749,10 @@ export default function PropertyDetailPage() {
           <table className="print-info-table">
             <tbody>
               <tr>
+                <th>상호명</th>
+                <td colSpan={3}>{property.business_name ?? '-'}</td>
+              </tr>
+              <tr>
                 <th>주소</th>
                 <td>
                   {normalizeAddr(property.address ?? '-')}
@@ -758,10 +762,6 @@ export default function PropertyDetailPage() {
                 </td>
                 <th>매물종류</th>
                 <td>{property.property_type ?? '-'}</td>
-              </tr>
-              <tr>
-                <th>상호명</th>
-                <td colSpan={3}>{property.business_name ?? '-'}</td>
               </tr>
               <tr>
                 <th>거래유형</th>
