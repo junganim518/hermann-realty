@@ -1080,7 +1080,7 @@ export default function PropertyDetailPage() {
         body.image-saving .print-pnum { font-size: 14px !important; font-weight: 700; color: #1a1a1a; }
         body.image-saving .print-photos {
           display: grid !important; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
-          height: 95mm; gap: 2px; padding: 0 8mm; margin-bottom: 5mm; flex-shrink: 0;
+          height: 108mm; gap: 2px; padding: 0 8mm; margin-bottom: 5mm; flex-shrink: 0;
           overflow: hidden;
         }
         body.image-saving .print-photo-cell { display: block !important; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; border: 1px solid #ccc; }
@@ -1089,8 +1089,8 @@ export default function PropertyDetailPage() {
         body.image-saving .print-info-title { font-size: 17px !important; font-weight: 700; color: #1a1a1a; margin: 0 0 4px; padding: 0 0 3px; border-bottom: 2px solid #e2a06e; }
         body.image-saving .print-info-table { width: 100%; border-collapse: collapse; font-size: 14px !important; table-layout: fixed; }
         body.image-saving .print-info-table th, body.image-saving .print-info-table td { border: 1px solid #d0d0d0; padding: 5px 9px; vertical-align: middle; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
-        body.image-saving .print-info-table th { width: 9%; background: #f3f3f3; color: #555; font-weight: 600; font-size: 13px !important; text-align: left; }
-        body.image-saving .print-info-table td { width: 41%; color: #000; font-weight: 500; }
+        body.image-saving .print-info-table th { width: 20%; background: #f3f3f3; color: #555; font-weight: 600; font-size: 13px !important; text-align: left; }
+        body.image-saving .print-info-table td { width: 30%; color: #000; font-weight: 500; }
         body.image-saving .print-footer {
           display: flex !important; justify-content: space-between; align-items: center;
           padding: 5mm 10mm 6mm; border-top: 3px solid #e2a06e; margin-top: auto; gap: 10mm;
@@ -1201,12 +1201,12 @@ export default function PropertyDetailPage() {
             font-weight: 700;
           }
 
-          /* 3) 사진 — 2x2 균등 그리드 (총 95mm 고정) */
+          /* 3) 사진 — 2x2 균등 그리드 (총 108mm 고정) */
           .print-photos {
             display: grid !important;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            height: 95mm;
+            height: 108mm;
             gap: 2px;
             padding: 0 8mm;
             margin-bottom: 5mm;
@@ -1265,7 +1265,7 @@ export default function PropertyDetailPage() {
             overflow-wrap: anywhere;
           }
           .print-info-table th {
-            width: 9%;
+            width: 20%;
             background: #f3f3f3 !important;
             color: #555 !important;
             font-weight: 600;
@@ -1273,7 +1273,7 @@ export default function PropertyDetailPage() {
             text-align: left;
           }
           .print-info-table td {
-            width: 41%;
+            width: 30%;
             color: #000 !important;
             font-weight: 500;
           }
