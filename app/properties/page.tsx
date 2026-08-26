@@ -9,6 +9,7 @@ import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
 import { FILTER_THEMES } from '@/lib/themeUtils';
 import { LargeStoreSidebarBanner, LargeStoreMobileBanner } from '@/components/LargeStoreBanner';
+import { PrecentSidebarBanner, PrecentMobileBanner } from '@/components/PrecentBanner';
 
 const normalizeAddr = (addr: string) =>
   addr.replace(/^경기\s/, '경기도 ').replace(/^서울\s/, '서울특별시 ');
@@ -240,6 +241,7 @@ function PropertiesPageInner() {
         .prop-sidebar-left  { display: block; }
         .prop-sidebar-right { display: block; }
         .prop-large-store-mobile { display: none; }
+        .prop-precent-mobile { display: none; }
         .prop-grid { grid-template-columns: repeat(4, 1fr); }
         .prop-card-mobile { display: block; }
         .prop-card-content-row { display: block; }
@@ -262,6 +264,7 @@ function PropertiesPageInner() {
           .prop-sidebar-left a { font-size: 14px !important; padding: 8px 12px !important; }
           .prop-sidebar-right { display: none !important; }
           .prop-large-store-mobile { display: block !important; }
+          .prop-precent-mobile { display: block !important; }
           .prop-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .prop-card-img { height: 200px !important; }
         }
@@ -271,6 +274,7 @@ function PropertiesPageInner() {
           .prop-sidebar-left  { display: none !important; }
           .prop-sidebar-right { display: none !important; }
           .prop-large-store-mobile { display: block !important; }
+          .prop-precent-mobile { display: block !important; }
           .prop-layout { width: 100% !important; margin: 0 !important; }
           .prop-center { padding: 0 8px !important; }
           .prop-title h1 { font-size: 22px !important; }
@@ -367,8 +371,9 @@ function PropertiesPageInner() {
             </p>
           </div>
 
-          {/* 태블릿/모바일: 대형매장부지 배너 (데스크톱은 사이드바 배너로 대체) */}
+          {/* 태블릿/모바일: 배너 (데스크톱은 사이드바 배너로 대체) */}
           <LargeStoreMobileBanner className="prop-large-store-mobile" />
+          <PrecentMobileBanner className="prop-precent-mobile" />
 
           {/* 검색바 */}
           <div style={{ marginBottom: '16px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: '6px', overflow: 'hidden', maxWidth: '600px', margin: '0 auto 16px' }}>
@@ -627,6 +632,7 @@ function PropertiesPageInner() {
             </div>
           </div>
           <LargeStoreSidebarBanner />
+          <PrecentSidebarBanner />
         </aside>
 
       </div>

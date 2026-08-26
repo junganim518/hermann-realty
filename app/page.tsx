@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import PropertyCard from '@/components/PropertyCard';
 import { LargeStoreSidebarBanner, LargeStoreMobileBanner } from '@/components/LargeStoreBanner';
+import { PrecentSidebarBanner, PrecentMobileBanner } from '@/components/PrecentBanner';
 
 export default function Home() {
   const [headerHeight, setHeaderHeight] = useState(200);
@@ -294,7 +295,9 @@ export default function Home() {
         .sidebar-left  { display: block; }
         .sidebar-right { display: block; }
         .sidebar-large-store { display: block; }
+        .sidebar-precent { display: block; }
         .mobile-large-store-banner { display: none; }
+        .mobile-precent-banner { display: none; }
 
         /* ── PC 1200px 이상: 좌우 사이드바 동일 폭 ── */
         @media (min-width: 1200px) {
@@ -315,7 +318,9 @@ export default function Home() {
         @media (min-width: 768px) and (max-width: 1199px) {
           .sidebar-left { display: none !important; }
           .sidebar-large-store { display: none !important; }
+          .sidebar-precent { display: none !important; }
           .mobile-large-store-banner { display: block !important; }
+          .mobile-precent-banner { display: block !important; }
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; }
           .grid-theme .theme-card {
             flex: 0 0 calc((100% - 24px) / 3) !important;
@@ -355,6 +360,7 @@ export default function Home() {
           .sidebar-left  { display: none !important; }
           .sidebar-right { display: none !important; }
           .mobile-large-store-banner { display: block !important; }
+          .mobile-precent-banner { display: block !important; }
 
           /* 매물종류: 3열 그리드 (컴팩트) */
           .grid-type  { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
@@ -639,8 +645,9 @@ export default function Home() {
         {/* 중앙 콘텐츠 flex-1 */}
         <div className="center-content flex-1 min-w-0 px-4">
 
-          {/* 모바일/태블릿: 대형매장부지 진입 배너 (데스크톱은 사이드바 배너로 대체) */}
+          {/* 모바일/태블릿: 배너 (데스크톱은 사이드바 배너로 대체) */}
           <LargeStoreMobileBanner className="mobile-large-store-banner" />
+          <PrecentMobileBanner className="mobile-precent-banner" />
 
           {/* 매물 종류 섹션 */}
           <section className="section-pad" style={{ padding: '16px', backgroundColor: '#fff' }}>
@@ -877,8 +884,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 대형매장부지 전문 배너 (데스크톱 사이드바 전용) */}
+          {/* 배너 (데스크톱 사이드바 전용) */}
           <LargeStoreSidebarBanner className="sidebar-large-store" />
+          <PrecentSidebarBanner className="sidebar-precent" />
         </aside>
 
       </div>
