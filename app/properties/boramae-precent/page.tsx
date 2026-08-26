@@ -5,20 +5,20 @@ import FloorPlan, { type PublicUnit } from './FloorPlan';
 import InquiryForm from './InquiryForm';
 
 export const metadata: Metadata = {
-  title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
+  title: '동작 보라매역 프리센트 상업시설 임대 | 병원·클리닉·학원·F&B | 헤르만부동산',
   description:
-    '7호선·신림선 보라매역 더블역세권 신축 프리센트 상업시설 임대. B1~3F 클리닉·학원·F&B·오피스 전층 공실 임대 문의 — 헤르만부동산.',
+    '7호선·신림선 보라매역 더블역세권 신축 프리센트 상업시설 임대. B1~3F 병원·클리닉·학원·F&B·오피스 전층 공실 임대 문의 — 헤르만부동산.',
   alternates: { canonical: 'https://hermann-realty.com/properties/boramae-precent' },
   openGraph: {
     title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
-    description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 클리닉·학원·F&B·오피스. 헤르만부동산.',
+    description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
     url: 'https://hermann-realty.com/properties/boramae-precent',
     images: [{ url: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
-    description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 클리닉·학원·F&B·오피스. 헤르만부동산.',
+    description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
     images: ['https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop'],
   },
 };
@@ -40,9 +40,9 @@ const HIGHLIGHTS = [
   },
   {
     Icon: Building2,
-    label: '앵커 테넌트',
-    value: '다이소 통임대',
-    desc: '다이소가 건물 내 단독 대형 임차. 방문객 집객력이 높아 주변 상권 동반 활성화.',
+    label: '다이소 인접',
+    value: '바로 옆 다이소',
+    desc: '바로 옆 건물에 다이소가 통건물로 임차 완료돼, 유동인구 유입과 상권 활성화 효과를 함께 누릴 수 있습니다.',
   },
   {
     Icon: Car,
@@ -63,9 +63,9 @@ const ZONES = [
   {
     zone: 'clinic-academy',
     floor: '2F~3F',
-    title: '2·3층 클리닉·학원존',
+    title: '2·3층 병원·클리닉·학원존',
     color: '#2563eb',
-    desc: '배후 주거 세대 1만+ 수요를 흡수하는 클리닉·교육 특화 섹션. 12~21평 독립 호실, 병의원·학원·상담센터 적합.',
+    desc: '배후 주거 세대 1만+ 수요를 흡수하는 병원·클리닉·교육 특화 섹션. 12~21평 독립 호실, 병의원·클리닉·학원·상담센터 적합.',
   },
   {
     zone: 'mid-office',
@@ -174,10 +174,10 @@ export default async function BoramaePresentPage() {
             </h1>
             <p style={{ fontSize: 'clamp(13px, 1.6vw, 16px)', color: '#aaa', lineHeight: 1.8, margin: 0 }}>
               7호선·신림선 더블역세권, 근린상업지역<br />
-              B1~3F 전층 상업시설 — 클리닉·학원·F&B·오피스
+              B1~3F 전층 상업시설 — 병원·클리닉·학원·F&B·오피스
             </p>
             <div className="pc-spec-row">
-              {['7호선·신림선 보라매역', '근린상업지역', 'B1~4F 상업시설', '주차 190대+'].map(s => (
+              {['7호선·신림선 보라매역', '근린상업지역', 'B1~3F 상업시설', '주차 190대+'].map(s => (
                 <span key={s} className="pc-spec-chip">{s}</span>
               ))}
             </div>
@@ -227,6 +227,10 @@ export default async function BoramaePresentPage() {
               </div>
             ))}
           </div>
+          {/* 건물 부가 정보 */}
+          <p style={{ textAlign: 'center', fontSize: '13px', color: '#999', margin: '28px 0 0' }}>
+            ※ 4층은 입주민 커뮤니티시설로 운영 예정 (임대 대상 아님)
+          </p>
         </div>
       </section>
 
