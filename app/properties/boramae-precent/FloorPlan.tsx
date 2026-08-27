@@ -37,24 +37,32 @@ const STATUS_LABEL: Record<string, string> = {
 
 type Rect = { id: string; x: number; y: number; w: number; h: number; confirmedBrand?: string };
 
-// ── B1 층 레이아웃 ──────────────────────────────────────────
+// ── B1 층 레이아웃 (실제 도면 기반: 상단 4대형 + 좌측 세로 9소형 + 중앙 주차코어) ──
+type CoreBox = { x: number; y: number; w: number; h: number; label1: string; label2?: string };
+
 const B1_UNITS: Rect[] = [
-  // 대형 (large zone)
-  { id: 'B110', x: 20,  y: 30, w: 200, h: 185 },
-  { id: 'B111', x: 228, y: 30, w: 145, h: 185 },
-  { id: 'B112', x: 381, y: 30, w: 145, h: 185 },
-  { id: 'B113', x: 534, y: 30, w: 160, h: 185 },
-  // 소형 (small zone) - 가로 9개
-  { id: 'B101', x: 20,  y: 275, w: 72, h: 100 },
-  { id: 'B102', x: 98,  y: 275, w: 77, h: 100 },
-  { id: 'B103', x: 181, y: 275, w: 75, h: 100 },
-  { id: 'B104', x: 262, y: 275, w: 75, h: 100 },
-  { id: 'B105', x: 343, y: 275, w: 68, h: 100 },
-  { id: 'B106', x: 417, y: 275, w: 68, h: 100 },
-  { id: 'B107', x: 491, y: 275, w: 70, h: 100 },
-  { id: 'B108', x: 567, y: 275, w: 70, h: 100 },
-  { id: 'B109', x: 643, y: 275, w: 70, h: 100 },
+  // 상단 대형 4개 (좌→우): B110, B111, B112, B113
+  { id: 'B110', x: 20,  y: 20, w: 165, h: 165 },
+  { id: 'B111', x: 187, y: 20, w: 162, h: 165 },
+  { id: 'B112', x: 351, y: 20, w: 162, h: 165 },
+  { id: 'B113', x: 515, y: 20, w: 165, h: 165 },
+  // 좌측 세로 소형 9개 (위→아래): B109 ~ B101
+  { id: 'B109', x: 20, y: 187, w: 165, h: 40 },
+  { id: 'B108', x: 20, y: 229, w: 165, h: 40 },
+  { id: 'B107', x: 20, y: 271, w: 165, h: 40 },
+  { id: 'B106', x: 20, y: 313, w: 165, h: 40 },
+  { id: 'B105', x: 20, y: 355, w: 165, h: 40 },
+  { id: 'B104', x: 20, y: 397, w: 165, h: 40 },
+  { id: 'B103', x: 20, y: 439, w: 165, h: 40 },
+  { id: 'B102', x: 20, y: 481, w: 165, h: 40 },
+  { id: 'B101', x: 20, y: 523, w: 165, h: 40 },
 ];
+
+const B1_CORE: CoreBox = {
+  x: 187, y: 187, w: 493, h: 376,
+  label1: '주차장 · 코어',
+  label2: '(계단 · 엘리베이터)',
+};
 
 // ── 1F 층 레이아웃 ──────────────────────────────────────────
 const F1_UNITS: Rect[] = [
@@ -134,8 +142,8 @@ const F3_UNITS: Rect[] = [
   { id: '322',   x: 468, y: 285, w: 86,  h: 110 },
 ];
 
-const FLOOR_CONFIG = [
-  { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 730 395' },
+const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
+  { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 720 580', core: B1_CORE },
   { key: '1F', label: '1F', rects: F1_UNITS, viewBox: '0 0 930 255' },
   { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 660 415' },
   { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 660 415' },
@@ -236,6 +244,32 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           viewBox={floor.viewBox}
           style={{ width: '100%', height: 'auto', display: 'block' }}
         >
+          {/* 주차장·코어 박스 (B1 전용) */}
+          {floor.core && (
+            <g>
+              <rect
+                x={floor.core.x} y={floor.core.y} width={floor.core.w} height={floor.core.h}
+                fill="#e5e7eb" fillOpacity={0.7} stroke="#d1d5db" strokeWidth={1.5}
+                strokeDasharray="8 4" rx={4}
+              />
+              <text
+                x={floor.core.x + floor.core.w / 2} y={floor.core.y + floor.core.h / 2 - 12}
+                textAnchor="middle" dominantBaseline="middle" fontSize={15} fontWeight="700" fill="#9ca3af"
+                style={{ pointerEvents: 'none', userSelect: 'none' }}
+              >
+                {floor.core.label1}
+              </text>
+              {floor.core.label2 && (
+                <text
+                  x={floor.core.x + floor.core.w / 2} y={floor.core.y + floor.core.h / 2 + 12}
+                  textAnchor="middle" dominantBaseline="middle" fontSize={12} fill="#b0b8c1"
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                  {floor.core.label2}
+                </text>
+              )}
+            </g>
+          )}
           {floor.rects.map(rect => {
             const confirmed = !!rect.confirmedBrand;
             const u = unitMap.get(rect.id);
