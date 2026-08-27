@@ -64,25 +64,27 @@ const B1_CORE: CoreBox = {
   label2: '(계단 · 엘리베이터)',
 };
 
-// ── 1F 층 레이아웃 (실제 도면 기반: 좌측 세로 스트립 + 우상단 스타벅스 + 우하단 109·110) ──
+// ── 1F 층 레이아웃 (실제 도면 기반: 좌측 3행 + 코어 + 우측 스타벅스 대형 블록 + 하단 109·110) ──
 const F1_UNITS: Rect[] = [
-  // 좌측 세로 스트립 (위→아래)
-  { id: '101', x: 20, y: 20,  w: 110, h: 80 },
-  { id: '102', x: 20, y: 102, w: 110, h: 85,  confirmedBrand: 'KT' },
-  { id: '103', x: 20, y: 189, w: 110, h: 127, confirmedBrand: '파리바게뜨', idLabel: '103-104' },
-  { id: '105', x: 20, y: 318, w: 110, h: 63 },
-  { id: '106', x: 20, y: 383, w: 110, h: 63,  confirmedBrand: '분식' },
-  { id: '107', x: 20, y: 448, w: 110, h: 63,  confirmedBrand: '메머드커피' },
-  { id: '108', x: 20, y: 513, w: 110, h: 67 },
-  // 우상단 스타벅스 대형 블록 (111~114 통합)
-  { id: '111', x: 132, y: 20,  w: 328, h: 195, confirmedBrand: '스타벅스', idLabel: '111~114' },
-  // 우하단
-  { id: '110', x: 300, y: 217, w: 160, h: 183 },
-  { id: '109', x: 300, y: 402, w: 160, h: 178 },
+  // 상단 단독 - 101
+  { id: '101', x: 20,  y: 20,  w: 240, h: 70 },
+  // 중앙 상단열 (좌→우): 102(KT), 103-104(파리바게뜨), 105
+  { id: '102', x: 20,  y: 92,  w: 78,  h: 120, confirmedBrand: 'KT' },
+  { id: '103', x: 100, y: 92,  w: 102, h: 120, confirmedBrand: '파리바게뜨', idLabel: '103-104' },
+  { id: '105', x: 204, y: 92,  w: 56,  h: 120 },
+  // 하단열 (좌→우): 106(분식), 107(메머드커피), 108
+  { id: '106', x: 20,  y: 214, w: 78,  h: 106, confirmedBrand: '분식' },
+  { id: '107', x: 100, y: 214, w: 102, h: 106, confirmedBrand: '메머드커피' },
+  { id: '108', x: 204, y: 214, w: 56,  h: 106 },
+  // 우측 대형 블록 - 스타벅스 111~114
+  { id: '111', x: 334, y: 20,  w: 346, h: 200, confirmedBrand: '스타벅스', idLabel: '111~114' },
+  // 우측 하단 - 109(위), 110(아래) 나란히
+  { id: '109', x: 334, y: 222, w: 173, h: 118 },
+  { id: '110', x: 509, y: 222, w: 171, h: 118 },
 ];
 
 const F1_CORE: CoreBox = {
-  x: 132, y: 217, w: 166, h: 363,
+  x: 262, y: 92, w: 70, h: 228,
   label1: '코어',
   label2: '(계단·엘리베이터)',
 };
@@ -153,7 +155,7 @@ const F3_UNITS: Rect[] = [
 
 const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
   { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 720 580', core: B1_CORE },
-  { key: '1F', label: '1F', rects: F1_UNITS, viewBox: '0 0 480 600', core: F1_CORE },
+  { key: '1F', label: '1F', rects: F1_UNITS, viewBox: '0 0 700 360', core: F1_CORE },
   { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 660 415' },
   { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 660 415' },
 ];
