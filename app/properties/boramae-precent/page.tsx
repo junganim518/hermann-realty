@@ -148,14 +148,15 @@ export default async function BoramaePresentPage() {
     units = (data ?? []) as PublicUnit[];
   }
 
-  // 존별 공실 집계
-  const vacantByZone: Record<string, { count: number; minPy: number; maxPy: number }> = {};
+  // 존별 집계 (전체 호실 수 + 공실 수)
+  const zoneStats: Record<string, { total: number; vacant: number; minPy: number; maxPy: number }> = {};
   for (const u of units) {
+    if (!zoneStats[u.zone]) zoneStats[u.zone] = { total: 0, vacant: 0, minPy: Infinity, maxPy: -Infinity };
+    zoneStats[u.zone].total++;
     if (u.status === 'vacant') {
-      if (!vacantByZone[u.zone]) vacantByZone[u.zone] = { count: 0, minPy: Infinity, maxPy: -Infinity };
-      vacantByZone[u.zone].count++;
-      vacantByZone[u.zone].minPy = Math.min(vacantByZone[u.zone].minPy, u.exclusive_area_py);
-      vacantByZone[u.zone].maxPy = Math.max(vacantByZone[u.zone].maxPy, u.exclusive_area_py);
+      zoneStats[u.zone].vacant++;
+      zoneStats[u.zone].minPy = Math.min(zoneStats[u.zone].minPy, u.exclusive_area_py);
+      zoneStats[u.zone].maxPy = Math.max(zoneStats[u.zone].maxPy, u.exclusive_area_py);
     }
   }
 
@@ -242,9 +243,19 @@ export default async function BoramaePresentPage() {
           <p style={{ textAlign: 'center', fontSize: '14px', color: '#888', margin: '0 0 36px' }}>임대조건은 문의 시 개별 안내드립니다.</p>
           <div className="pc-zone-grid">
             {ZONES.map(z => {
-              const stat = vacantByZone[z.zone];
+              const stat = zoneStats[z.zone];
+              const hasData = !!stat && stat.total > 0;
+              const fullyLeased = hasData && stat.vacant === 0;
               return (
-                <div key={z.zone} className="pc-zone-card">
+                <div key={z.zone} className="pc-zone-card" style={{ position: 'relative' }}>
+                  {/* 임대완료 배지 (공실 0개인 존) */}
+                  {fullyLeased && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, background: '#1a1a1a', color: '#fff', padding: '2px 10px', borderRadius: '10px', letterSpacing: '0.5px' }}>
+                        임대완료
+                      </span>
+                    </div>
+                  )}
                   <span className="pc-floor-badge" style={{ background: `${z.color}18`, color: z.color }}>
                     {z.floor}
                   </span>
@@ -253,10 +264,12 @@ export default async function BoramaePresentPage() {
                     <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>{z.title}</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65, margin: '0 0 14px' }}>{z.desc}</p>
-                  {stat ? (
+                  {fullyLeased ? (
+                    <span style={{ fontSize: '12px', background: '#f1f5f9', color: '#64748b', padding: '3px 10px', borderRadius: '12px', fontWeight: 600 }}>현재 공실 없음</span>
+                  ) : hasData && stat.vacant > 0 ? (
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '12px', background: '#dcfce7', color: '#166534', padding: '3px 10px', borderRadius: '12px', fontWeight: 600 }}>
-                        공실 {stat.count}개
+                        공실 {stat.vacant}개
                       </span>
                       <span style={{ fontSize: '12px', background: '#f3f4f6', color: '#374151', padding: '3px 10px', borderRadius: '12px', fontWeight: 600 }}>
                         {stat.minPy.toFixed(1)}~{stat.maxPy.toFixed(1)}평
