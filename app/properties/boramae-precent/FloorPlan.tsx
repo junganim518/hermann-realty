@@ -35,7 +35,7 @@ const STATUS_LABEL: Record<string, string> = {
   leased: '임대완료',
 };
 
-type Rect = { id: string; x: number; y: number; w: number; h: number; confirmedBrand?: string };
+type Rect = { id: string; x: number; y: number; w: number; h: number; confirmedBrand?: string; idLabel?: string };
 
 // ── B1 층 레이아웃 (실제 도면 기반: 상단 4대형 + 좌측 세로 9소형 + 중앙 주차코어) ──
 type CoreBox = { x: number; y: number; w: number; h: number; label1: string; label2?: string };
@@ -64,19 +64,28 @@ const B1_CORE: CoreBox = {
   label2: '(계단 · 엘리베이터)',
 };
 
-// ── 1F 층 레이아웃 ──────────────────────────────────────────
+// ── 1F 층 레이아웃 (실제 도면 기반: 좌측 세로 스트립 + 우상단 스타벅스 + 우하단 109·110) ──
 const F1_UNITS: Rect[] = [
-  { id: '101', x: 20,  y: 50, w: 90,  h: 155 },
-  { id: '102', x: 118, y: 50, w: 120, h: 155, confirmedBrand: '스타벅스' },
-  { id: '103', x: 246, y: 50, w: 90,  h: 155, confirmedBrand: '파리바게뜨' },
-  { id: '104', x: 344, y: 50, w: 72,  h: 155, confirmedBrand: 'KT' },
-  { id: '105', x: 424, y: 50, w: 88,  h: 155 },
-  { id: '106', x: 520, y: 50, w: 73,  h: 155, confirmedBrand: '메머드커피' },
-  { id: '107', x: 601, y: 50, w: 65,  h: 155, confirmedBrand: '분식' },
-  { id: '108', x: 674, y: 50, w: 57,  h: 155 },
-  { id: '109', x: 739, y: 50, w: 83,  h: 155 },
-  { id: '110', x: 830, y: 50, w: 83,  h: 155 },
+  // 좌측 세로 스트립 (위→아래)
+  { id: '101', x: 20, y: 20,  w: 110, h: 80 },
+  { id: '102', x: 20, y: 102, w: 110, h: 85,  confirmedBrand: 'KT' },
+  { id: '103', x: 20, y: 189, w: 110, h: 127, confirmedBrand: '파리바게뜨', idLabel: '103-104' },
+  { id: '105', x: 20, y: 318, w: 110, h: 63 },
+  { id: '106', x: 20, y: 383, w: 110, h: 63,  confirmedBrand: '분식' },
+  { id: '107', x: 20, y: 448, w: 110, h: 63,  confirmedBrand: '메머드커피' },
+  { id: '108', x: 20, y: 513, w: 110, h: 67 },
+  // 우상단 스타벅스 대형 블록 (111~114 통합)
+  { id: '111', x: 132, y: 20,  w: 328, h: 195, confirmedBrand: '스타벅스', idLabel: '111~114' },
+  // 우하단
+  { id: '110', x: 300, y: 217, w: 160, h: 183 },
+  { id: '109', x: 300, y: 402, w: 160, h: 178 },
 ];
+
+const F1_CORE: CoreBox = {
+  x: 132, y: 217, w: 166, h: 363,
+  label1: '코어',
+  label2: '(계단·엘리베이터)',
+};
 
 // ── 2F 층 레이아웃 ──────────────────────────────────────────
 const F2_UNITS: Rect[] = [
@@ -144,7 +153,7 @@ const F3_UNITS: Rect[] = [
 
 const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
   { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 720 580', core: B1_CORE },
-  { key: '1F', label: '1F', rects: F1_UNITS, viewBox: '0 0 930 255' },
+  { key: '1F', label: '1F', rects: F1_UNITS, viewBox: '0 0 480 600', core: F1_CORE },
   { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 660 415' },
   { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 660 415' },
 ];
@@ -191,7 +200,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   };
 
   const getBg = (rect: Rect) => {
-    if (rect.confirmedBrand) return '#9ca3af';
+    if (rect.confirmedBrand) return '#dc2626';
     const u = unitMap.get(rect.id);
     if (!u) return '#e5e7eb';
     const base = ZONE_COLOR[u.zone] ?? '#94a3b8';
@@ -229,8 +238,8 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           </div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#555' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#9ca3af', flexShrink: 0, display: 'inline-block' }} />
-          입점완료
+          <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#dc2626', flexShrink: 0, display: 'inline-block' }} />
+          입점확정
         </div>
       </div>
 
@@ -280,8 +289,8 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                 <rect
                   x={rect.x} y={rect.y} width={rect.w} height={rect.h}
                   fill={bg}
-                  fillOpacity={confirmed ? 0.55 : 0.85}
-                  stroke={confirmed ? '#9ca3af' : (ZONE_COLOR[zone] ?? '#94a3b8')}
+                  fillOpacity={confirmed ? 0.9 : 0.85}
+                  stroke={confirmed ? '#b91c1c' : (ZONE_COLOR[zone] ?? '#94a3b8')}
                   strokeWidth={1.5}
                   rx={3}
                   style={{ cursor: confirmed ? 'default' : 'pointer' }}
@@ -293,12 +302,12 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   y={rect.y + (confirmed ? rect.h * 0.38 : rect.h * 0.42)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={Math.min(rect.w, rect.h) < 60 ? 7 : 9}
+                  fontSize={confirmed ? Math.max(9, Math.min(Math.floor(Math.min(rect.w, rect.h) / 10), 14)) : (Math.min(rect.w, rect.h) < 60 ? 7 : 9)}
                   fontWeight="700"
-                  fill={confirmed ? '#6b7280' : '#fff'}
+                  fill="#fff"
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
-                  {rect.id}
+                  {rect.idLabel ?? rect.id}
                 </text>
                 {/* 확정 브랜드명 */}
                 {confirmed && (
@@ -307,8 +316,9 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                     y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={Math.min(rect.w, rect.h) < 60 ? 6 : 8}
-                    fill="#6b7280"
+                    fontSize={Math.max(8, Math.min(Math.floor(Math.min(rect.w, rect.h) / 9), 18))}
+                    fontWeight="700"
+                    fill="rgba(255,255,255,0.95)"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
                     {rect.confirmedBrand}
