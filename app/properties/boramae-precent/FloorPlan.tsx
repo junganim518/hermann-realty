@@ -204,7 +204,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   };
 
   const getBg = (rect: Rect) => {
-    if (rect.confirmedBrand) return '#dc2626';
+    if (rect.confirmedBrand) return '#9ca3af';
     const u = unitMap.get(rect.id);
     if (!u) return '#e5e7eb';
     const base = ZONE_COLOR[u.zone] ?? '#94a3b8';
@@ -242,8 +242,8 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           </div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#555' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#dc2626', flexShrink: 0, display: 'inline-block' }} />
-          입점확정
+          <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#9ca3af', flexShrink: 0, display: 'inline-block' }} />
+          임대완료
         </div>
       </div>
 
@@ -287,34 +287,37 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
             const confirmed = !!rect.confirmedBrand;
             const u = unitMap.get(rect.id);
             const zone = u?.zone ?? '';
+            const isLeased = !confirmed && u?.status === 'leased';
+            const unavailable = confirmed || isLeased;
             const bg = getBg(rect);
+            const secondLabel = confirmed ? rect.confirmedBrand! : isLeased ? '임대완료' : null;
             return (
               <g key={rect.id}>
                 <rect
                   x={rect.x} y={rect.y} width={rect.w} height={rect.h}
                   fill={bg}
-                  fillOpacity={confirmed ? 0.9 : 0.85}
-                  stroke={confirmed ? '#b91c1c' : (ZONE_COLOR[zone] ?? '#94a3b8')}
+                  fillOpacity={unavailable ? 0.9 : 0.85}
+                  stroke={unavailable ? '#94a3b8' : (ZONE_COLOR[zone] ?? '#94a3b8')}
                   strokeWidth={1.5}
                   rx={3}
-                  style={{ cursor: confirmed ? 'default' : 'pointer' }}
-                  onClick={confirmed ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
+                  style={{ cursor: unavailable ? 'default' : 'pointer' }}
+                  onClick={unavailable ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
                 />
                 {/* 호실 번호 */}
                 <text
                   x={rect.x + rect.w / 2}
-                  y={rect.y + (confirmed ? rect.h * 0.38 : rect.h * 0.42)}
+                  y={rect.y + (unavailable ? rect.h * 0.38 : rect.h * 0.42)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={confirmed ? Math.max(9, Math.min(Math.floor(Math.min(rect.w, rect.h) / 10), 14)) : (Math.min(rect.w, rect.h) < 60 ? 7 : 9)}
+                  fontSize={unavailable ? Math.max(9, Math.min(Math.floor(Math.min(rect.w, rect.h) / 10), 14)) : (Math.min(rect.w, rect.h) < 60 ? 7 : 9)}
                   fontWeight="700"
                   fill="#fff"
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                   {rect.idLabel ?? rect.id}
                 </text>
-                {/* 확정 브랜드명 */}
-                {confirmed && (
+                {/* 임대완료·확정브랜드 공통 하단 텍스트 */}
+                {secondLabel && (
                   <text
                     x={rect.x + rect.w / 2}
                     y={rect.y + rect.h * 0.65}
@@ -322,14 +325,14 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                     dominantBaseline="middle"
                     fontSize={Math.max(8, Math.min(Math.floor(Math.min(rect.w, rect.h) / 9), 18))}
                     fontWeight="700"
-                    fill="rgba(255,255,255,0.95)"
+                    fill="rgba(255,255,255,0.9)"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
-                    {rect.confirmedBrand}
+                    {secondLabel}
                   </text>
                 )}
-                {/* 공실 면적 표시 (빈 유닛) */}
-                {!confirmed && u && (
+                {/* 공실 면적 표시 */}
+                {!unavailable && u && (
                   <text
                     x={rect.x + rect.w / 2}
                     y={rect.y + rect.h * 0.72}
