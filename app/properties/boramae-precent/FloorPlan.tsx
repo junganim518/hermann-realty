@@ -11,22 +11,13 @@ export type PublicUnit = {
   status: string;
 };
 
-const ZONE_COLOR: Record<string, string> = {
-  large: '#d97706',
-  small: '#64748b',
-  'street-fb': '#059669',
-  'clinic-academy': '#2563eb',
-  'mid-office': '#7c3aed',
-  'section-office': '#db2777',
-};
-
-const ZONE_LABEL: Record<string, string> = {
-  large: '대형 상가',
-  small: '소형 창고',
-  'street-fb': 'F&B 스트리트',
-  'clinic-academy': '클리닉·학원',
-  'mid-office': '중형 오피스',
-  'section-office': '섹션 오피스',
+const ZONE_RECOMMEND: Record<string, string> = {
+  large: '피트니스·대형 학원·대형 F&B 등',
+  small: '창고·수납 공간 등',
+  'street-fb': '카페·식음료·테이크아웃 등',
+  'clinic-academy': '병의원·클리닉·학원·상담센터 등',
+  'mid-office': '사무실·뷰티샵·헬스케어 등',
+  'section-office': '1인 사무실·스타트업·프리랜서 등',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -203,14 +194,15 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
     });
   };
 
+  const VACANT_COLOR = '#2563eb';
+  const LEASED_COLOR = '#9ca3af';
+
   const getBg = (rect: Rect) => {
-    if (rect.confirmedBrand) return '#9ca3af';
+    if (rect.confirmedBrand) return LEASED_COLOR;
     const u = unitMap.get(rect.id);
     if (!u) return '#e5e7eb';
-    const base = ZONE_COLOR[u.zone] ?? '#94a3b8';
-    if (u.status === 'leased') return '#9ca3af';
-    if (u.status === 'inquiry') return '#fbbf24';
-    return base;
+    if (u.status === 'leased') return LEASED_COLOR;
+    return VACANT_COLOR; // vacant + inquiry 동일 강조색
   };
 
   return (
@@ -234,13 +226,11 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
       </div>
 
       {/* 범례 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-        {Object.entries(ZONE_LABEL).map(([k, v]) => (
-          <div key={k} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#555' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: ZONE_COLOR[k], flexShrink: 0, display: 'inline-block' }} />
-            {v}
-          </div>
-        ))}
+      <div style={{ display: 'flex', gap: '14px', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#555' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#2563eb', flexShrink: 0, display: 'inline-block' }} />
+          공실
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#555' }}>
           <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#9ca3af', flexShrink: 0, display: 'inline-block' }} />
           임대완료
@@ -297,7 +287,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   x={rect.x} y={rect.y} width={rect.w} height={rect.h}
                   fill={bg}
                   fillOpacity={unavailable ? 0.9 : 0.85}
-                  stroke={unavailable ? '#94a3b8' : (ZONE_COLOR[zone] ?? '#94a3b8')}
+                  stroke={unavailable ? '#94a3b8' : '#1d4ed8'}
                   strokeWidth={1.5}
                   rx={3}
                   style={{ cursor: unavailable ? 'default' : 'pointer' }}
@@ -377,11 +367,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                 {STATUS_LABEL[popover.status] ?? popover.status}
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
-              <div>
-                <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>존</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1a1a' }}>{ZONE_LABEL[popover.zone] ?? popover.zone}</div>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
               <div>
                 <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>전용면적</div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1a1a' }}>{popover.exclusivePy.toFixed(1)}평</div>
@@ -390,11 +376,14 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                 <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>계약면적</div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1a1a' }}>{popover.contractPy.toFixed(1)}평</div>
               </div>
-              <div>
-                <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>임대조건</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>문의 시 안내</div>
-              </div>
             </div>
+            {ZONE_RECOMMEND[popover.zone] && (
+              <div style={{ background: '#f0f9ff', borderRadius: '6px', padding: '7px 10px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '10px', color: '#0369a1', fontWeight: 700, marginBottom: '2px' }}>추천 업종</div>
+                <div style={{ fontSize: '11px', color: '#0c4a6e' }}>{ZONE_RECOMMEND[popover.zone]}</div>
+              </div>
+            )}
+            <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '10px', textAlign: 'center' }}>임대조건 문의 시 안내</div>
             <a
               href="#precent-inquiry"
               style={{ display: 'block', textAlign: 'center', background: '#c47c30', color: '#fff', fontWeight: 700, fontSize: '13px', padding: '9px', borderRadius: '5px', textDecoration: 'none' }}
