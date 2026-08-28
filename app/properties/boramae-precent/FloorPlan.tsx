@@ -185,48 +185,136 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   return { rects, core };
 }
 
-// ── 2F 층 레이아웃 (720×580 기준, 실제 도면 구조)
-//   왼쪽: 단일 세로열 201→211 (h=49×11)
-//   오른쪽 상단: 222,221,220,219,218-3,218-2 가로열 (y=20, h=196)
-//   오른쪽 중단: 코어(좌) + 217-2(중) + 218-1/217-1(우) (y=216, h=147)
-//   오른쪽 하단: 212,213,214,215,216 가로열 (y=363, h=196)
-const F2_UNITS: Rect[] = [
-  // ─ 왼쪽 단일 열 (x=20, w=110, h=49) ─
-  { id: '201', x: 20, y: 20,  w: 110, h: 49 },
-  { id: '202', x: 20, y: 69,  w: 110, h: 49 },
-  { id: '203', x: 20, y: 118, w: 110, h: 49 },
-  { id: '204', x: 20, y: 167, w: 110, h: 49 },
-  { id: '205', x: 20, y: 216, w: 110, h: 49 },
-  { id: '206', x: 20, y: 265, w: 110, h: 49, confirmedBrand: '부동산' },
-  { id: '207', x: 20, y: 314, w: 110, h: 49 },
-  { id: '208', x: 20, y: 363, w: 110, h: 49 },
-  { id: '209', x: 20, y: 412, w: 110, h: 49 },
-  { id: '210', x: 20, y: 461, w: 110, h: 49 },
-  { id: '211', x: 20, y: 510, w: 110, h: 49 },
-  // ─ 오른쪽 상단 가로열 (222→218-2, 좌→우, y=20, h=196) ─
-  { id: '222',   x: 132, y: 20, w: 100, h: 196 },
-  { id: '221',   x: 232, y: 20, w: 95,  h: 196 },
-  { id: '220',   x: 327, y: 20, w: 100, h: 196 },
-  { id: '219',   x: 427, y: 20, w: 120, h: 196 },
-  { id: '218-3', x: 547, y: 20, w: 85,  h: 196 },
-  { id: '218-2', x: 632, y: 20, w: 68,  h: 196 },
-  // ─ 오른쪽 중단: 217-2 + 218-1(위)/217-1(아래) (y=216, h=147) ─
-  { id: '217-2', x: 480, y: 216, w: 150, h: 147 },
-  { id: '218-1', x: 632, y: 216, w: 68,  h: 72  },
-  { id: '217-1', x: 632, y: 290, w: 68,  h: 73  },
-  // ─ 오른쪽 하단 가로열 (212→216, 좌→우, y=363, h=196) ─
-  { id: '212', x: 132, y: 363, w: 100, h: 196 },
-  { id: '213', x: 232, y: 363, w: 115, h: 196 },
-  { id: '214', x: 347, y: 363, w: 110, h: 196 },
-  { id: '215', x: 457, y: 363, w: 110, h: 196 },
-  { id: '216', x: 567, y: 363, w: 133, h: 196 },
-];
+// ── 2F 층 레이아웃: exclusive_area_py 비례 동적 계산 ──
+//   왼쪽 단일열(201~211): 높이 비례, 코어/3밴드 고정 y 위치 유지
+//   오른쪽 상단 가로열(222→218-2): 너비 비례
+//   오른쪽 중단: 코어(고정 너비) + 217-2(너비 비례) + 218-1/217-1(높이 비례)
+//   오른쪽 하단 가로열(212→216): 너비 비례
+function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } {
+  const CANVAS_W = 720;
+  const CANVAS_H = 580;
+  const LEFT_X = 20;
+  const LEFT_W = 110;
+  const TOP_MARGIN = 20;
+  const BOT_MARGIN = 21;        // 580 - 559 = 21
+  const RIGHT_X = 132;          // LEFT_X + LEFT_W + gap(2)
+  const RIGHT_W = 568;          // CANVAS_W - RIGHT_X - 20
+  const CORE_W = 346;           // 코어 고정 너비
+  const BAND_H_TOP = 196;
+  const BAND_H_MID = 147;
+  const BAND_H_BOT = 196;
+  const LEFT_TOTAL_H = CANVAS_H - TOP_MARGIN - BOT_MARGIN; // 539
 
-const F2_CORE: CoreBox = {
-  x: 132, y: 216, w: 346, h: 147,
-  label1: '코어',
-  label2: '(계단·엘리베이터)',
-};
+  const getArea = (no: string, fallback: number) =>
+    units.find(u => u.unit_no === no)?.exclusive_area_py ?? fallback;
+
+  const rects: Rect[] = [];
+
+  // ── 왼쪽 열 (201~211): 높이 비례, gap 없음 (원본 동일) ──
+  // fallback: 원본 h=49 × 11 = 539 = LEFT_TOTAL_H → 비례 유지
+  const leftSlots: { id: string; area: number; confirmedBrand?: string }[] = [
+    { id: '201', area: getArea('201', 49) },
+    { id: '202', area: getArea('202', 49) },
+    { id: '203', area: getArea('203', 49) },
+    { id: '204', area: getArea('204', 49) },
+    { id: '205', area: getArea('205', 49) },
+    { id: '206', area: getArea('206', 49), confirmedBrand: '부동산' },
+    { id: '207', area: getArea('207', 49) },
+    { id: '208', area: getArea('208', 49) },
+    { id: '209', area: getArea('209', 49) },
+    { id: '210', area: getArea('210', 49) },
+    { id: '211', area: getArea('211', 49) },
+  ];
+  const totalAreaLeft = leftSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleLeft = LEFT_TOTAL_H / totalAreaLeft;
+  let curY = TOP_MARGIN;
+  const leftHs: number[] = [];
+  for (let i = 0; i < leftSlots.length; i++) {
+    const h = i < leftSlots.length - 1
+      ? Math.round(leftSlots[i].area * scaleLeft)
+      : LEFT_TOTAL_H - leftHs.reduce((s, v) => s + v, 0);
+    leftHs.push(h);
+    const r: Rect = { id: leftSlots[i].id, x: LEFT_X, y: curY, w: LEFT_W, h };
+    if (leftSlots[i].confirmedBrand) r.confirmedBrand = leftSlots[i].confirmedBrand;
+    rects.push(r);
+    curY += h;
+  }
+
+  // ── 오른쪽 상단 가로열 (222→218-2): 너비 비례, gap 없음 ──
+  // fallback: 원본 px 폭 그대로 (합계=568=RIGHT_W → 비율 유지)
+  const topSlots: { id: string; area: number }[] = [
+    { id: '222',   area: getArea('222',   100) },
+    { id: '221',   area: getArea('221',   95)  },
+    { id: '220',   area: getArea('220',   100) },
+    { id: '219',   area: getArea('219',   120) },
+    { id: '218-3', area: getArea('218-3', 85)  },
+    { id: '218-2', area: getArea('218-2', 68)  },
+  ];
+  const totalAreaTop = topSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleTop = RIGHT_W / totalAreaTop;
+  let curX = RIGHT_X;
+  const topWs: number[] = [];
+  for (let i = 0; i < topSlots.length; i++) {
+    const w = i < topSlots.length - 1
+      ? Math.round(topSlots[i].area * scaleTop)
+      : RIGHT_W - topWs.reduce((s, v) => s + v, 0);
+    topWs.push(w);
+    rects.push({ id: topSlots[i].id, x: curX, y: TOP_MARGIN, w, h: BAND_H_TOP });
+    curX += w;
+  }
+
+  // ── 오른쪽 중단 ──
+  const MID_Y = TOP_MARGIN + BAND_H_TOP; // 216
+  const MID_INNER_GAP = 2;
+  // 코어(346) 오른쪽 나머지 = 568-346-2*GAP = 218
+  const midRightNet = RIGHT_W - CORE_W - MID_INNER_GAP * 2;
+  const area2172 = getArea('217-2', 150);
+  const area2181 = getArea('218-1', 72);
+  const area2171 = getArea('217-1', 73);
+  const totalMidRight = area2172 + area2181 + area2171;
+  const rightColW = Math.max(30, Math.round((area2181 + area2171) / totalMidRight * midRightNet));
+  const w2172 = midRightNet - rightColW;
+  const x2172 = RIGHT_X + CORE_W + MID_INNER_GAP;
+  const xRightCol = x2172 + w2172 + MID_INNER_GAP;
+
+  rects.push({ id: '217-2', x: x2172, y: MID_Y, w: w2172, h: BAND_H_MID });
+  const netMidH = BAND_H_MID - MID_INNER_GAP; // 145
+  const h2181 = Math.round(area2181 / (area2181 + area2171) * netMidH);
+  const h2171 = netMidH - h2181;
+  rects.push({ id: '218-1', x: xRightCol, y: MID_Y,                        w: rightColW, h: h2181 });
+  rects.push({ id: '217-1', x: xRightCol, y: MID_Y + h2181 + MID_INNER_GAP, w: rightColW, h: h2171 });
+
+  // ── 오른쪽 하단 가로열 (212→216): 너비 비례, gap 없음 ──
+  // fallback: 원본 px 폭 (합계=568=RIGHT_W)
+  const BOT_Y = MID_Y + BAND_H_MID; // 363
+  const botSlots: { id: string; area: number }[] = [
+    { id: '212', area: getArea('212', 100) },
+    { id: '213', area: getArea('213', 115) },
+    { id: '214', area: getArea('214', 110) },
+    { id: '215', area: getArea('215', 110) },
+    { id: '216', area: getArea('216', 133) },
+  ];
+  const totalAreaBot = botSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleBot = RIGHT_W / totalAreaBot;
+  curX = RIGHT_X;
+  const botWs: number[] = [];
+  for (let i = 0; i < botSlots.length; i++) {
+    const w = i < botSlots.length - 1
+      ? Math.round(botSlots[i].area * scaleBot)
+      : RIGHT_W - botWs.reduce((s, v) => s + v, 0);
+    botWs.push(w);
+    rects.push({ id: botSlots[i].id, x: curX, y: BOT_Y, w, h: BAND_H_BOT });
+    curX += w;
+  }
+
+  const core: CoreBox = {
+    x: RIGHT_X, y: MID_Y, w: CORE_W, h: BAND_H_MID,
+    label1: '코어',
+    label2: '(계단·엘리베이터)',
+  };
+
+  return { rects, core };
+}
 
 // ── 3F 층 레이아웃 (2F와 동일 구조, 확정 임차 다름) ─────────
 const F3_UNITS: Rect[] = [
@@ -280,10 +368,11 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
 
   const b1 = computeB1Layout(units);
   const f1 = computeF1Layout(units);
+  const f2 = computeF2Layout(units);
   const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
     { key: 'B1', label: 'B1', rects: b1.rects, viewBox: '0 0 720 580', core: b1.core },
     { key: '1F', label: '1F', rects: f1.rects, viewBox: '0 0 720 580', core: f1.core },
-    { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 720 580', core: F2_CORE },
+    { key: '2F', label: '2F', rects: f2.rects, viewBox: '0 0 720 580', core: f2.core },
     { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 720 580' },
   ];
 
