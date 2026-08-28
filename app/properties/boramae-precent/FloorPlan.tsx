@@ -31,29 +31,88 @@ type Rect = { id: string; x: number; y: number; w: number; h: number; confirmedB
 // ── B1 층 레이아웃 (실제 도면 기반: 상단 4대형 + 좌측 세로 9소형 + 중앙 주차코어) ──
 type CoreBox = { x: number; y: number; w: number; h: number; label1: string; label2?: string };
 
-const B1_UNITS: Rect[] = [
-  // 상단 대형 4개 (좌→우): B110, B111, B112, B113
-  { id: 'B110', x: 20,  y: 20, w: 165, h: 165 },
-  { id: 'B111', x: 187, y: 20, w: 162, h: 165 },
-  { id: 'B112', x: 351, y: 20, w: 162, h: 165 },
-  { id: 'B113', x: 515, y: 20, w: 165, h: 165 },
-  // 좌측 세로 소형 9개 (위→아래): B109 ~ B101
-  { id: 'B109', x: 20, y: 187, w: 165, h: 40 },
-  { id: 'B108', x: 20, y: 229, w: 165, h: 40 },
-  { id: 'B107', x: 20, y: 271, w: 165, h: 40 },
-  { id: 'B106', x: 20, y: 313, w: 165, h: 40 },
-  { id: 'B105', x: 20, y: 355, w: 165, h: 40 },
-  { id: 'B104', x: 20, y: 397, w: 165, h: 40 },
-  { id: 'B103', x: 20, y: 439, w: 165, h: 40 },
-  { id: 'B102', x: 20, y: 481, w: 165, h: 40 },
-  { id: 'B101', x: 20, y: 523, w: 165, h: 40 },
-];
+// 상단 4개(B110~B113): 너비를 exclusive_area_py 비례로 계산
+// 좌측 9개(B109~B101): 높이를 exclusive_area_py 비례로 계산
+// 코어·캔버스 크기는 기존 고정값 유지
+function computeB1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } {
+  const CANVAS_W = 720;
+  const CANVAS_H = 580;
+  const LEFT_MARGIN = 20;
+  const RIGHT_MARGIN = 40; // 우측 여백 (원본 기준 680px 우단)
+  const TOP_MARGIN = 20;
+  const BOTTOM_MARGIN = 17;
+  const UPPER_H = 165; // 상단 행 고정 높이
+  const LEFT_W = 165;  // 좌측 열 고정 너비
+  const GAP = 2;
 
-const B1_CORE: CoreBox = {
-  x: 187, y: 187, w: 493, h: 376,
-  label1: '주차장 · 코어',
-  label2: '(계단 · 엘리베이터)',
-};
+  const getArea = (no: string, fallback: number) =>
+    units.find(u => u.unit_no === no)?.exclusive_area_py ?? fallback;
+
+  // 상단 4개: 너비 비례 (원본 165:162:162:165 비율이 기본값)
+  const upperSlots = [
+    { id: 'B110', area: getArea('B110', 41.25) },
+    { id: 'B111', area: getArea('B111', 40.50) },
+    { id: 'B112', area: getArea('B112', 40.50) },
+    { id: 'B113', area: getArea('B113', 41.25) },
+  ];
+
+  const availableW = CANVAS_W - LEFT_MARGIN - RIGHT_MARGIN; // 660
+  const netW = availableW - GAP * (upperSlots.length - 1);   // 654
+  const totalAreaUpper = upperSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleW = netW / totalAreaUpper;
+
+  const rects: Rect[] = [];
+  let curX = LEFT_MARGIN;
+  const upperWidths: number[] = [];
+  for (let i = 0; i < upperSlots.length; i++) {
+    const w = i < upperSlots.length - 1
+      ? Math.round(upperSlots[i].area * scaleW)
+      : netW - upperWidths.reduce((s, v) => s + v, 0);
+    upperWidths.push(w);
+    rects.push({ id: upperSlots[i].id, x: curX, y: TOP_MARGIN, w, h: UPPER_H });
+    curX += w + GAP;
+  }
+
+  // 좌측 9개: 높이 비례 (위→아래: B109~B101, 원본은 모두 h=40으로 균등)
+  const leftSlots = [
+    { id: 'B109', area: getArea('B109', 4.44) },
+    { id: 'B108', area: getArea('B108', 4.44) },
+    { id: 'B107', area: getArea('B107', 4.44) },
+    { id: 'B106', area: getArea('B106', 4.44) },
+    { id: 'B105', area: getArea('B105', 4.44) },
+    { id: 'B104', area: getArea('B104', 4.44) },
+    { id: 'B103', area: getArea('B103', 4.44) },
+    { id: 'B102', area: getArea('B102', 4.44) },
+    { id: 'B101', area: getArea('B101', 4.44) },
+  ];
+
+  const START_Y = TOP_MARGIN + UPPER_H + GAP; // 187
+  const availableH = CANVAS_H - START_Y - BOTTOM_MARGIN; // 376
+  const netH = availableH - GAP * (leftSlots.length - 1); // 360
+  const totalAreaLeft = leftSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleH = netH / totalAreaLeft;
+
+  let curY = START_Y;
+  const leftHeights: number[] = [];
+  for (let i = 0; i < leftSlots.length; i++) {
+    const h = i < leftSlots.length - 1
+      ? Math.round(leftSlots[i].area * scaleH)
+      : netH - leftHeights.reduce((s, v) => s + v, 0);
+    leftHeights.push(h);
+    rects.push({ id: leftSlots[i].id, x: LEFT_MARGIN, y: curY, w: LEFT_W, h });
+    curY += h + GAP;
+  }
+
+  const CORE_X = LEFT_MARGIN + LEFT_W + GAP; // 187
+  const CORE_W = CANVAS_W - RIGHT_MARGIN - CORE_X; // 493
+  const core: CoreBox = {
+    x: CORE_X, y: START_Y, w: CORE_W, h: availableH,
+    label1: '주차장 · 코어',
+    label2: '(계단 · 엘리베이터)',
+  };
+
+  return { rects, core };
+}
 
 // ── 1F 층 레이아웃: exclusive_area_py 비례 동적 계산 ──
 //   왼쪽: 단일 세로열 101→108, 각 칸 높이를 면적 비례로 계산
@@ -219,9 +278,10 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
 
   useEffect(() => { setPopover(null); }, [activeFloor]);
 
+  const b1 = computeB1Layout(units);
   const f1 = computeF1Layout(units);
   const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
-    { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 720 580', core: B1_CORE },
+    { key: 'B1', label: 'B1', rects: b1.rects, viewBox: '0 0 720 580', core: b1.core },
     { key: '1F', label: '1F', rects: f1.rects, viewBox: '0 0 720 580', core: f1.core },
     { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 720 580', core: F2_CORE },
     { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 720 580' },
