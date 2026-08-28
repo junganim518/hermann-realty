@@ -42,14 +42,14 @@ function computeB1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   const RIGHT_MARGIN = 40; // 우측 여백 (원본 기준 680px 우단)
   const TOP_MARGIN = 20;
   const BOTTOM_MARGIN = 17;
-  const UPPER_H = 165; // 상단 행 고정 높이
-  const LEFT_W = 165;  // 좌측 열 고정 너비
+  const UPPER_H = 120; // 상단 행 고정 높이 (축소)
+  const LEFT_W = 120;  // 좌측 열 고정 너비 (= UPPER_H)
   const GAP = 2;
 
   const getArea = (no: string, fallback: number) =>
     units.find(u => u.unit_no === no)?.exclusive_area_py ?? fallback;
 
-    // ── 슬롯 정의 먼저 ──
+  // ── 슬롯 정의 ──
   const upperSlots = [
     { id: 'B110', area: getArea('B110', 41.25) },
     { id: 'B111', area: getArea('B111', 40.50) },
@@ -70,36 +70,47 @@ function computeB1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 
   const availableW = CANVAS_W - LEFT_MARGIN - RIGHT_MARGIN; // 660
   const netW = availableW - GAP * (upperSlots.length - 1);   // 654
-  const START_Y = TOP_MARGIN + UPPER_H + GAP;                // 187
-  const availableH = CANVAS_H - START_Y - BOTTOM_MARGIN;     // 376
-  const netH = availableH - GAP * (leftSlots.length - 1);    // 360
+  const START_Y = TOP_MARGIN + UPPER_H + GAP;                // 142
+  const availableH = CANVAS_H - START_Y - BOTTOM_MARGIN;     // 421
+  const netH = availableH - GAP * (leftSlots.length - 1);    // 405
 
   const totalAreaUpper = upperSlots.reduce((s, sl) => s + sl.area, 0);
   const totalAreaLeft  = leftSlots.reduce((s, sl) => s + sl.area, 0);
-  // 공통 스케일: UPPER_H = LEFT_W = 165 이므로 같은 S를 쓰면 픽셀 면적이 정확히 비례
-  // netW(654)와 netH(360) 중 더 빨리 채워지는 방향이 S를 결정
-  const S = Math.min(netW / totalAreaUpper, netH / totalAreaLeft);
+  const scaleW = netW / totalAreaUpper;        // 상단열 너비 스케일 (last-unit 보정)
+  const scaleH = netH / totalAreaLeft;         // 좌측열 높이 스케일
 
   const rects: Rect[] = [];
 
-  // 상단 4개: 너비 = area * S (UPPER_H=165 고정)
+  // 상단 4개: 너비 = area * scaleW, last-unit 보정으로 netW 정확히 채움
   let curX = LEFT_MARGIN;
-  for (const sl of upperSlots) {
-    const w = Math.round(sl.area * S);
-    rects.push({ id: sl.id, x: curX, y: TOP_MARGIN, w, h: UPPER_H });
+  const upperWidths: number[] = [];
+  for (let i = 0; i < upperSlots.length; i++) {
+    const w = i < upperSlots.length - 1
+      ? Math.round(upperSlots[i].area * scaleW)
+      : netW - upperWidths.reduce((s, v) => s + v, 0);
+    upperWidths.push(w);
+    rects.push({ id: upperSlots[i].id, x: curX, y: TOP_MARGIN, w, h: UPPER_H });
     curX += w + GAP;
   }
 
-  // 좌측 9개: 높이 = area * S (LEFT_W=165 고정)
+  // 좌측 9개: 최소 높이 MIN_H 보장, 비례 스케일로 netH 정확히 채움
+  const MIN_H_B1 = Math.min(47, Math.floor(netH / leftSlots.length)); // overflow 방지
+  const natHsB1 = leftSlots.map(sl => Math.round(sl.area * scaleH));
+  const clampedTotalB1 = natHsB1.reduce((s, h) => s + (h < MIN_H_B1 ? MIN_H_B1 : 0), 0);
+  const freeNatB1 = natHsB1.reduce((s, h) => s + (h >= MIN_H_B1 ? h : 0), 0);
+  const freeTargetB1 = netH - clampedTotalB1;
+  const freeScaleB1 = (freeNatB1 > 0 && freeTargetB1 > 0) ? freeTargetB1 / freeNatB1 : 1;
+
   let curY = START_Y;
-  for (const sl of leftSlots) {
-    const h = Math.round(sl.area * S);
-    rects.push({ id: sl.id, x: LEFT_MARGIN, y: curY, w: LEFT_W, h });
+  for (let i = 0; i < leftSlots.length; i++) {
+    const nat = natHsB1[i];
+    const h = nat < MIN_H_B1 ? MIN_H_B1 : Math.max(MIN_H_B1, Math.round(nat * freeScaleB1));
+    rects.push({ id: leftSlots[i].id, x: LEFT_MARGIN, y: curY, w: LEFT_W, h });
     curY += h + GAP;
   }
 
-  const CORE_X = LEFT_MARGIN + LEFT_W + GAP; // 187
-  const CORE_W = CANVAS_W - RIGHT_MARGIN - CORE_X; // 493
+  const CORE_X = LEFT_MARGIN + LEFT_W + GAP; // 142
+  const CORE_W = CANVAS_W - RIGHT_MARGIN - CORE_X; // 538
   const core: CoreBox = {
     x: CORE_X, y: START_Y, w: CORE_W, h: availableH,
     label1: '주차장 · 코어',
@@ -119,9 +130,9 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   const MARGIN = 10;
   const GAP = 2;
   const LEFT_X = 20;
-  const LEFT_W = 200;
-  const RIGHT_X = 228;
-  const RIGHT_W = 472;
+  const LEFT_W = 140;           // 축소 (was 200)
+  const RIGHT_X = 162;          // LEFT_X + LEFT_W + 2
+  const RIGHT_W = 538;          // CANVAS_W - RIGHT_X - 20
 
   const getArea = (no: string, fallback: number) =>
     units.find(u => u.unit_no === no)?.exclusive_area_py ?? fallback;
@@ -139,20 +150,30 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 
   const totalArea = leftSlots.reduce((s, sl) => s + sl.area, 0);
   const totalGap = GAP * (leftSlots.length - 1);
-  const scaleH = (CANVAS_H - MARGIN * 2 - totalGap) / totalArea;
+  const netH1F = CANVAS_H - MARGIN * 2 - totalGap;
+  const scaleH = netH1F / totalArea;
+
+  // 최소 높이 보정: 소형 호실(108 등)이 너무 얇아지지 않도록
+  const MIN_H_1F = Math.min(47, Math.floor(netH1F / leftSlots.length));
+  const natHs1F = leftSlots.map(sl => Math.round(sl.area * scaleH));
+  const clamped1F = natHs1F.reduce((s, h) => s + (h < MIN_H_1F ? MIN_H_1F : 0), 0);
+  const freeNat1F = natHs1F.reduce((s, h) => s + (h >= MIN_H_1F ? h : 0), 0);
+  const freeTarget1F = netH1F - clamped1F;
+  const freeScale1F = (freeNat1F > 0 && freeTarget1F > 0) ? freeTarget1F / freeNat1F : 1;
 
   const rects: Rect[] = [];
   const slotYs: number[] = [];
   const slotHs: number[] = [];
   let curY = MARGIN;
 
-  for (const slot of leftSlots) {
-    const h = Math.round(slot.area * scaleH);
+  for (let i = 0; i < leftSlots.length; i++) {
+    const nat = natHs1F[i];
+    const h = nat < MIN_H_1F ? MIN_H_1F : Math.max(MIN_H_1F, Math.round(nat * freeScale1F));
     slotYs.push(curY);
     slotHs.push(h);
-    const r: Rect = { id: slot.id, x: LEFT_X, y: curY, w: LEFT_W, h };
-    if (slot.confirmedBrand) r.confirmedBrand = slot.confirmedBrand;
-    if (slot.idLabel) r.idLabel = slot.idLabel;
+    const r: Rect = { id: leftSlots[i].id, x: LEFT_X, y: curY, w: LEFT_W, h };
+    if (leftSlots[i].confirmedBrand) r.confirmedBrand = leftSlots[i].confirmedBrand;
+    if (leftSlots[i].idLabel) r.idLabel = leftSlots[i].idLabel;
     rects.push(r);
     curY += h + GAP;
   }
@@ -181,22 +202,23 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 }
 
 // ── 2F 층 레이아웃: exclusive_area_py 비례 동적 계산 ──
-//   공통 수평 스케일 S_h = RIGHT_W / max(totalAreaTop, totalAreaBot)
-//   → 상단·하단 가로열이 동일한 1평당 px를 사용 (같은 면적 = 같은 너비)
-//   왼쪽 열은 별도 S_v(수직)로 항상 LEFT_TOTAL_H를 채움
+//   LEFT_W = BAND_H_TOP = BAND_H_BOT = 140 (동일 고정 축, 폭 축소로 가독성 개선)
+//   BAND_H_MID = LEFT_TOTAL_H - 2×140 = 259 (좌우 높이 동일하게 맞춤)
+//   공통 스케일 S = min(LEFT_TOTAL_H/totalAreaLeft, RIGHT_W/max(top,bot))
+//   좌측열 최소 높이(MIN_H) 보장으로 소형 호실 텍스트 겹침 방지
 function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } {
   const CANVAS_W = 720;
   const CANVAS_H = 580;
   const LEFT_X = 20;
-  const LEFT_W = 196;           // BAND_H_TOP = BAND_H_BOT 와 통일 (2×196+147=539=LEFT_TOTAL_H)
+  const LEFT_W = 140;           // 축소 (was 196), BAND_H_TOP = BAND_H_BOT 와 통일
   const TOP_MARGIN = 20;
   const BOT_MARGIN = 21;
-  const RIGHT_X = 218;          // LEFT_X + LEFT_W + 2
-  const RIGHT_W = 482;          // CANVAS_W - RIGHT_X - 20
+  const RIGHT_X = 162;          // LEFT_X + LEFT_W + 2
+  const RIGHT_W = 538;          // CANVAS_W - RIGHT_X - 20
   const CORE_W = 346;
-  const BAND_H_TOP = 196;       // = LEFT_W ✓
-  const BAND_H_MID = 147;
-  const BAND_H_BOT = 196;       // = LEFT_W ✓
+  const BAND_H_TOP = 140;       // = LEFT_W ✓
+  const BAND_H_MID = 259;       // LEFT_TOTAL_H - 2×BAND_H_TOP = 539-280
+  const BAND_H_BOT = 140;       // = LEFT_W ✓
   const LEFT_TOTAL_H = CANVAS_H - TOP_MARGIN - BOT_MARGIN; // 539
 
   const getArea = (no: string, fallback: number) =>
@@ -238,24 +260,32 @@ function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   const totalAreaLeft = leftSlots.reduce((s, sl) => s + sl.area, 0);
   const totalAreaTop  = topSlots.reduce((s, sl) => s + sl.area, 0);
   const totalAreaBot  = botSlots.reduce((s, sl) => s + sl.area, 0);
-  // 단일 공통 스케일: LEFT_W = BAND_H_TOP = BAND_H_BOT = 196 이므로
-  // S 하나로 모든 방향을 계산하면 픽셀 면적이 실제 면적에 정확히 비례
+  // LEFT_W = BAND_H_TOP = BAND_H_BOT = 140 이므로 단일 S 로 픽셀 면적이 비례
   const S = Math.min(
     LEFT_TOTAL_H / totalAreaLeft,
     RIGHT_W / Math.max(totalAreaTop, totalAreaBot)
   );
 
-  // ── 왼쪽 열: S 적용 (LEFT_W=196 고정, 높이 비례) ──
+  // ── 왼쪽 열: S 적용 + 최소 높이 MIN_H 보장 ──
+  // MIN_H: 원하는 최소값 vs 칸 수로 나눈 최대 허용값 중 작은 것 (overflow 방지)
+  const MIN_H_2F = Math.min(47, Math.floor(LEFT_TOTAL_H / leftSlots.length));
+  const natHs2F = leftSlots.map(sl => Math.round(sl.area * S));
+  const clamped2F = natHs2F.reduce((s, h) => s + (h < MIN_H_2F ? MIN_H_2F : 0), 0);
+  const freeNat2F = natHs2F.reduce((s, h) => s + (h >= MIN_H_2F ? h : 0), 0);
+  const freeTarget2F = LEFT_TOTAL_H - clamped2F;
+  const freeScale2F = (freeNat2F > 0 && freeTarget2F > 0) ? freeTarget2F / freeNat2F : 1;
+
   let curY = TOP_MARGIN;
-  for (const sl of leftSlots) {
-    const h = Math.round(sl.area * S);
-    const r: Rect = { id: sl.id, x: LEFT_X, y: curY, w: LEFT_W, h };
-    if (sl.confirmedBrand) r.confirmedBrand = sl.confirmedBrand;
+  for (let i = 0; i < leftSlots.length; i++) {
+    const nat = natHs2F[i];
+    const h = nat < MIN_H_2F ? MIN_H_2F : Math.max(MIN_H_2F, Math.round(nat * freeScale2F));
+    const r: Rect = { id: leftSlots[i].id, x: LEFT_X, y: curY, w: LEFT_W, h };
+    if (leftSlots[i].confirmedBrand) r.confirmedBrand = leftSlots[i].confirmedBrand;
     rects.push(r);
     curY += h;
   }
 
-  // ── 오른쪽 상단 가로열: S 적용 (BAND_H_TOP=196 고정, 너비 비례) ──
+  // ── 오른쪽 상단 가로열: S 적용 (BAND_H_TOP=140 고정, 너비 비례) ──
   let curX = RIGHT_X;
   for (const sl of topSlots) {
     const w = Math.round(sl.area * S);
@@ -266,7 +296,7 @@ function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   // ── 오른쪽 중단: 코어 고정 + 217-2/right-col에 S 적용 (overflow 방지) ──
   const MID_Y = TOP_MARGIN + BAND_H_TOP;
   const MID_INNER_GAP = 2;
-  const midRightNet = RIGHT_W - CORE_W - MID_INNER_GAP * 2; // 482-346-4=132
+  const midRightNet = RIGHT_W - CORE_W - MID_INNER_GAP * 2; // 538-346-4=188
   const area2172 = getArea('217-2', 150);
   const area2181 = getArea('218-1', 72);
   const area2171 = getArea('217-1', 73);
@@ -310,15 +340,15 @@ function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   const CANVAS_W = 720;
   const CANVAS_H = 580;
   const LEFT_X = 20;
-  const LEFT_W = 196;           // BAND_H_TOP = BAND_H_BOT 와 통일
+  const LEFT_W = 140;           // 축소 (was 196), BAND_H_TOP = BAND_H_BOT 와 통일
   const TOP_MARGIN = 20;
   const BOT_MARGIN = 21;
-  const RIGHT_X = 218;          // LEFT_X + LEFT_W + 2
-  const RIGHT_W = 482;          // CANVAS_W - RIGHT_X - 20
+  const RIGHT_X = 162;          // LEFT_X + LEFT_W + 2
+  const RIGHT_W = 538;          // CANVAS_W - RIGHT_X - 20
   const CORE_W = 346;
-  const BAND_H_TOP = 196;       // = LEFT_W ✓
-  const BAND_H_MID = 147;
-  const BAND_H_BOT = 196;       // = LEFT_W ✓
+  const BAND_H_TOP = 140;       // = LEFT_W ✓
+  const BAND_H_MID = 259;       // LEFT_TOTAL_H - 2×BAND_H_TOP = 539-280
+  const BAND_H_BOT = 140;       // = LEFT_W ✓
   const LEFT_TOTAL_H = CANVAS_H - TOP_MARGIN - BOT_MARGIN; // 539
 
   const getArea = (no: string, fallback: number) =>
@@ -359,18 +389,26 @@ function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   const totalAreaLeft = leftSlots.reduce((s, sl) => s + sl.area, 0);
   const totalAreaTop  = topSlots.reduce((s, sl) => s + sl.area, 0);
   const totalAreaBot  = botSlots.reduce((s, sl) => s + sl.area, 0);
-  // 단일 공통 스케일: LEFT_W = BAND_H_TOP = BAND_H_BOT = 196
+  // LEFT_W = BAND_H_TOP = BAND_H_BOT = 140 이므로 단일 S 로 픽셀 면적이 비례
   const S = Math.min(
     LEFT_TOTAL_H / totalAreaLeft,
     RIGHT_W / Math.max(totalAreaTop, totalAreaBot)
   );
 
-  // ── 왼쪽 열: S 적용 (LEFT_W=196 고정, 높이 비례) ──
+  // ── 왼쪽 열: S 적용 + 최소 높이 MIN_H 보장 ──
+  const MIN_H_3F = Math.min(47, Math.floor(LEFT_TOTAL_H / leftSlots.length));
+  const natHs3F = leftSlots.map(sl => Math.round(sl.area * S));
+  const clamped3F = natHs3F.reduce((s, h) => s + (h < MIN_H_3F ? MIN_H_3F : 0), 0);
+  const freeNat3F = natHs3F.reduce((s, h) => s + (h >= MIN_H_3F ? h : 0), 0);
+  const freeTarget3F = LEFT_TOTAL_H - clamped3F;
+  const freeScale3F = (freeNat3F > 0 && freeTarget3F > 0) ? freeTarget3F / freeNat3F : 1;
+
   let curY = TOP_MARGIN;
-  for (const sl of leftSlots) {
-    const h = Math.round(sl.area * S);
-    const r: Rect = { id: sl.id, x: LEFT_X, y: curY, w: LEFT_W, h };
-    if (sl.idLabel) r.idLabel = sl.idLabel;
+  for (let i = 0; i < leftSlots.length; i++) {
+    const nat = natHs3F[i];
+    const h = nat < MIN_H_3F ? MIN_H_3F : Math.max(MIN_H_3F, Math.round(nat * freeScale3F));
+    const r: Rect = { id: leftSlots[i].id, x: LEFT_X, y: curY, w: LEFT_W, h };
+    if (leftSlots[i].idLabel) r.idLabel = leftSlots[i].idLabel;
     rects.push(r);
     curY += h;
   }
@@ -386,7 +424,7 @@ function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   // ── 오른쪽 중단: S 적용 (overflow 방지) ──
   const MID_Y = TOP_MARGIN + BAND_H_TOP;
   const MID_INNER_GAP = 2;
-  const midRightNet = RIGHT_W - CORE_W - MID_INNER_GAP * 2; // 482-346-4=132
+  const midRightNet = RIGHT_W - CORE_W - MID_INNER_GAP * 2; // 538-346-4=188
   const area3172 = getArea('317-2', 150);
   const area3181 = getArea('318-1', 72);
   const area3171 = getArea('317-1', 73);
