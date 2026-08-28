@@ -410,27 +410,27 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   style={{ cursor: unavailable ? 'default' : 'pointer' }}
                   onClick={unavailable ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
                 />
-                {/* 호실 번호 */}
+                {/* 호실 번호 — 고정 폰트 9px */}
                 <text
                   x={rect.x + rect.w / 2}
-                  y={rect.y + (unavailable ? rect.h * 0.38 : rect.h * 0.42)}
+                  y={rect.y + (unavailable ? rect.h * 0.38 : u ? rect.h * 0.38 : rect.h * 0.5)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={unavailable ? Math.max(9, Math.min(Math.floor(Math.min(rect.w, rect.h) / 10), 14)) : (Math.min(rect.w, rect.h) < 60 ? 7 : 9)}
+                  fontSize={9}
                   fontWeight="700"
                   fill="#fff"
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                   {rect.idLabel ?? rect.id}
                 </text>
-                {/* 임대완료·확정브랜드 공통 하단 텍스트 */}
+                {/* 임대완료·확정브랜드 — 고정 폰트 10px */}
                 {secondLabel && (
                   <text
                     x={rect.x + rect.w / 2}
                     y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={Math.max(8, Math.min(Math.floor(Math.min(rect.w, rect.h) / 9), 18))}
+                    fontSize={10}
                     fontWeight="700"
                     fill="rgba(255,255,255,0.9)"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -438,14 +438,14 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                     {secondLabel}
                   </text>
                 )}
-                {/* 공실 면적 표시 */}
+                {/* 공실 면적 — 고정 폰트 8px */}
                 {!unavailable && u && (
                   <text
                     x={rect.x + rect.w / 2}
-                    y={rect.y + rect.h * 0.72}
+                    y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={Math.min(rect.w, rect.h) < 60 ? 6 : 8}
+                    fontSize={8}
                     fill="rgba(255,255,255,0.85)"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
