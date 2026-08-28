@@ -317,38 +317,132 @@ function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   return { rects, core };
 }
 
-// ── 3F 층 레이아웃 ─────────
-// confirmedBrand 하드코딩 없음 — 상태·브랜드명은 모두 DB(precent_units) 값 사용
-// 301-302: DB에 하나의 unit_no='301-302'로 관리 → 합쳐진 단일 박스
-const F3_UNITS: Rect[] = [
-  // Row 1 (y=20, h=170)
-  { id: '301-302', x: 22,  y: 20, w: 137, h: 170, idLabel: '301-302' }, // 원본 301(w=69)+gap(8)+302(w=60)
-  { id: '303', x: 168, y: 20, w: 80, h: 170 },
-  { id: '304', x: 257, y: 20, w: 60, h: 170 },
-  { id: '305', x: 325, y: 20, w: 63, h: 170 },
-  { id: '306', x: 397, y: 20, w: 33, h: 170 },
-  { id: '307', x: 439, y: 20, w: 33, h: 170 },
-  { id: '308', x: 480, y: 20, w: 33, h: 170 }, // DB: vacant → 파란색·클릭 가능
-  { id: '309', x: 521, y: 20, w: 33, h: 170 },
-  { id: '310', x: 562, y: 20, w: 33, h: 170 }, // DB: vacant → 파란색·클릭 가능
-  { id: '311', x: 604, y: 20, w: 57, h: 170 },
-  // Row 2 (y=210, h=170)
-  { id: '312',   x: 22,  y: 210, w: 98,  h: 170 },
-  { id: '313',   x: 129, y: 210, w: 113, h: 170 },
-  { id: '314',   x: 251, y: 210, w: 105, h: 170 },
-  { id: '315',   x: 364, y: 210, w: 82,  h: 170 },
-  { id: '316',   x: 455, y: 210, w: 85,  h: 170 },
-  { id: '317-1', x: 549, y: 210, w: 93,  h: 170 },
-  { id: '317-2', x: 651, y: 210, w: 44,  h: 170 },
-  // Row 3 (y=400, h=160)
-  { id: '318-1', x: 22,  y: 400, w: 51,  h: 160 },
-  { id: '318-2', x: 82,  y: 400, w: 59,  h: 160 },
-  { id: '318-3', x: 150, y: 400, w: 60,  h: 160 },
-  { id: '319',   x: 219, y: 400, w: 115, h: 160 },
-  { id: '320',   x: 342, y: 400, w: 73,  h: 160 },
-  { id: '321',   x: 424, y: 400, w: 79,  h: 160 },
-  { id: '322',   x: 512, y: 400, w: 94,  h: 160 },
-];
+// ── 3F 층 레이아웃: 2F와 동일 구조, exclusive_area_py 비례 동적 계산 ──
+//   왼쪽: 301-302(2배 높이) + 303~311 단일 세로열
+//   오른쪽 상단 가로열: 322→318-2
+//   오른쪽 중단: 코어(고정) + 317-2(중) + 318-1/317-1(우 세로)
+//   오른쪽 하단 가로열: 312→316
+function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } {
+  const CANVAS_W = 720;
+  const CANVAS_H = 580;
+  const LEFT_X = 20;
+  const LEFT_W = 110;
+  const TOP_MARGIN = 20;
+  const BOT_MARGIN = 21;
+  const RIGHT_X = 132;
+  const RIGHT_W = 568;
+  const CORE_W = 346;
+  const BAND_H_TOP = 196;
+  const BAND_H_MID = 147;
+  const BAND_H_BOT = 196;
+  const LEFT_TOTAL_H = CANVAS_H - TOP_MARGIN - BOT_MARGIN; // 539
+
+  const getArea = (no: string, fallback: number) =>
+    units.find(u => u.unit_no === no)?.exclusive_area_py ?? fallback;
+
+  const rects: Rect[] = [];
+
+  // ── 왼쪽 열: 301-302(2배) + 303~311, gap 없음 ──
+  // fallback: 301-302=98(2×49), 나머지=49 → 합=539=LEFT_TOTAL_H → scaleLeft=1.0
+  const leftSlots: { id: string; area: number; idLabel?: string }[] = [
+    { id: '301-302', area: getArea('301-302', 98), idLabel: '301-302' },
+    { id: '303', area: getArea('303', 49) },
+    { id: '304', area: getArea('304', 49) },
+    { id: '305', area: getArea('305', 49) },
+    { id: '306', area: getArea('306', 49) },
+    { id: '307', area: getArea('307', 49) },
+    { id: '308', area: getArea('308', 49) },
+    { id: '309', area: getArea('309', 49) },
+    { id: '310', area: getArea('310', 49) },
+    { id: '311', area: getArea('311', 49) },
+  ];
+  const totalAreaLeft = leftSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleLeft = LEFT_TOTAL_H / totalAreaLeft;
+  let curY = TOP_MARGIN;
+  const leftHs: number[] = [];
+  for (let i = 0; i < leftSlots.length; i++) {
+    const h = i < leftSlots.length - 1
+      ? Math.round(leftSlots[i].area * scaleLeft)
+      : LEFT_TOTAL_H - leftHs.reduce((s, v) => s + v, 0);
+    leftHs.push(h);
+    const r: Rect = { id: leftSlots[i].id, x: LEFT_X, y: curY, w: LEFT_W, h };
+    if (leftSlots[i].idLabel) r.idLabel = leftSlots[i].idLabel;
+    rects.push(r);
+    curY += h;
+  }
+
+  // ── 오른쪽 상단 가로열 (322→318-2): 너비 비례, gap 없음 ──
+  const topSlots: { id: string; area: number }[] = [
+    { id: '322',   area: getArea('322',   95) },
+    { id: '321',   area: getArea('321',   95) },
+    { id: '320',   area: getArea('320',   95) },
+    { id: '319',   area: getArea('319',   95) },
+    { id: '318-3', area: getArea('318-3', 95) },
+    { id: '318-2', area: getArea('318-2', 93) },
+  ];
+  const totalAreaTop = topSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleTop = RIGHT_W / totalAreaTop;
+  let curX = RIGHT_X;
+  const topWs: number[] = [];
+  for (let i = 0; i < topSlots.length; i++) {
+    const w = i < topSlots.length - 1
+      ? Math.round(topSlots[i].area * scaleTop)
+      : RIGHT_W - topWs.reduce((s, v) => s + v, 0);
+    topWs.push(w);
+    rects.push({ id: topSlots[i].id, x: curX, y: TOP_MARGIN, w, h: BAND_H_TOP });
+    curX += w;
+  }
+
+  // ── 오른쪽 중단 ──
+  const MID_Y = TOP_MARGIN + BAND_H_TOP; // 216
+  const MID_INNER_GAP = 2;
+  const midRightNet = RIGHT_W - CORE_W - MID_INNER_GAP * 2; // 218
+  const area3172 = getArea('317-2', 150);
+  const area3181 = getArea('318-1', 72);
+  const area3171 = getArea('317-1', 73);
+  const totalMidRight = area3172 + area3181 + area3171;
+  const rightColW = Math.max(30, Math.round((area3181 + area3171) / totalMidRight * midRightNet));
+  const w3172 = midRightNet - rightColW;
+  const x3172 = RIGHT_X + CORE_W + MID_INNER_GAP;
+  const xRightCol = x3172 + w3172 + MID_INNER_GAP;
+
+  rects.push({ id: '317-2', x: x3172, y: MID_Y, w: w3172, h: BAND_H_MID });
+  const netMidH = BAND_H_MID - MID_INNER_GAP; // 145
+  const h3181 = Math.round(area3181 / (area3181 + area3171) * netMidH);
+  const h3171 = netMidH - h3181;
+  rects.push({ id: '318-1', x: xRightCol, y: MID_Y,                         w: rightColW, h: h3181 });
+  rects.push({ id: '317-1', x: xRightCol, y: MID_Y + h3181 + MID_INNER_GAP, w: rightColW, h: h3171 });
+
+  // ── 오른쪽 하단 가로열 (312→316): 너비 비례, gap 없음 ──
+  const BOT_Y = MID_Y + BAND_H_MID; // 363
+  const botSlots: { id: string; area: number }[] = [
+    { id: '312', area: getArea('312', 113) },
+    { id: '313', area: getArea('313', 114) },
+    { id: '314', area: getArea('314', 114) },
+    { id: '315', area: getArea('315', 114) },
+    { id: '316', area: getArea('316', 113) },
+  ];
+  const totalAreaBot = botSlots.reduce((s, sl) => s + sl.area, 0);
+  const scaleBot = RIGHT_W / totalAreaBot;
+  curX = RIGHT_X;
+  const botWs: number[] = [];
+  for (let i = 0; i < botSlots.length; i++) {
+    const w = i < botSlots.length - 1
+      ? Math.round(botSlots[i].area * scaleBot)
+      : RIGHT_W - botWs.reduce((s, v) => s + v, 0);
+    botWs.push(w);
+    rects.push({ id: botSlots[i].id, x: curX, y: BOT_Y, w, h: BAND_H_BOT });
+    curX += w;
+  }
+
+  const core: CoreBox = {
+    x: RIGHT_X, y: MID_Y, w: CORE_W, h: BAND_H_MID,
+    label1: '코어',
+    label2: '(계단·엘리베이터)',
+  };
+
+  return { rects, core };
+}
 
 
 type Popover = {
@@ -371,11 +465,12 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   const b1 = computeB1Layout(units);
   const f1 = computeF1Layout(units);
   const f2 = computeF2Layout(units);
+  const f3 = computeF3Layout(units);
   const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
     { key: 'B1', label: 'B1', rects: b1.rects, viewBox: '0 0 720 580', core: b1.core },
     { key: '1F', label: '1F', rects: f1.rects, viewBox: '0 0 720 580', core: f1.core },
     { key: '2F', label: '2F', rects: f2.rects, viewBox: '0 0 720 580', core: f2.core },
-    { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 720 580' },
+    { key: '3F', label: '3F', rects: f3.rects, viewBox: '0 0 720 580', core: f3.core },
   ];
 
   const unitMap = new Map(units.map(u => [u.unit_no, u]));
