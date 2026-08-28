@@ -55,32 +55,76 @@ const B1_CORE: CoreBox = {
   label2: '(계단 · 엘리베이터)',
 };
 
-// ── 1F 층 레이아웃 (720×580 기준, 실제 도면 구조)
-//   왼쪽: 단일 세로열 (101→102→103-104(2배)→105→106→107→108)
-//   오른쪽 위: 스타벅스(111~114) — 101+102 높이
-//   오른쪽 중: 코어 — 103-104+105 높이
-//   오른쪽 아래: 110(위)+109(아래) — 106+107+108 높이
-const F1_UNITS: Rect[] = [
-  // ─ 왼쪽 단일 열 (x=20, w=200) ─
-  { id: '101', x: 20,  y: 20,  w: 200, h: 60 },
-  { id: '102', x: 20,  y: 88,  w: 200, h: 60,  confirmedBrand: 'KT' },
-  { id: '103', x: 20,  y: 156, w: 200, h: 128, confirmedBrand: '파리바게뜨', idLabel: '103-104' },
-  { id: '105', x: 20,  y: 292, w: 200, h: 60 },
-  { id: '106', x: 20,  y: 368, w: 200, h: 60,  confirmedBrand: '분식' },
-  { id: '107', x: 20,  y: 436, w: 200, h: 60,  confirmedBrand: '메머드커피' },
-  { id: '108', x: 20,  y: 504, w: 200, h: 56 },
-  // ─ 오른쪽 위: 스타벅스 (101+102 높이 = 128) ─
-  { id: '111', x: 228, y: 20,  w: 472, h: 128, confirmedBrand: '스타벅스', idLabel: '111~114' },
-  // ─ 오른쪽 아래: 110(위), 109(아래) (106~108 높이 영역) ─
-  { id: '110', x: 228, y: 368, w: 472, h: 92 },
-  { id: '109', x: 228, y: 468, w: 472, h: 92 },
-];
+// ── 1F 층 레이아웃: exclusive_area_py 비례 동적 계산 ──
+//   왼쪽: 단일 세로열 101→108, 각 칸 높이를 면적 비례로 계산
+//   오른쪽 상단: 스타벅스(111~114) — 101+102 높이 범위
+//   오른쪽 중단: 코어 — 103-104+105 높이 범위
+//   오른쪽 하단: 110(위)+109(아래) — 106+107+108 높이 범위, 면적 비례 분할
+function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } {
+  const CANVAS_H = 580;
+  const MARGIN = 10;
+  const GAP = 2;
+  const LEFT_X = 20;
+  const LEFT_W = 200;
+  const RIGHT_X = 228;
+  const RIGHT_W = 472;
 
-const F1_CORE: CoreBox = {
-  x: 228, y: 156, w: 472, h: 204,
-  label1: '코어 · 로비',
-  label2: '(계단 · 엘리베이터)',
-};
+  const getArea = (no: string, fallback: number) =>
+    units.find(u => u.unit_no === no)?.exclusive_area_py ?? fallback;
+
+  // 왼쪽 단일 열: 위→아래 순서, 확정 입점 칸은 참조 면적으로 높이 할당
+  const leftSlots: { id: string; area: number; confirmedBrand?: string; idLabel?: string }[] = [
+    { id: '101',     area: getArea('101', 10.68) },
+    { id: '102',     area: 10.0,  confirmedBrand: 'KT' },
+    { id: '103-104', area: 20.0,  confirmedBrand: '파리바게뜨', idLabel: '103-104' },
+    { id: '105',     area: getArea('105', 10.08) },
+    { id: '106',     area: 10.0,  confirmedBrand: '분식' },
+    { id: '107',     area: 10.0,  confirmedBrand: '메머드커피' },
+    { id: '108',     area: getArea('108', 6.01) },
+  ];
+
+  const totalArea = leftSlots.reduce((s, sl) => s + sl.area, 0);
+  const totalGap = GAP * (leftSlots.length - 1);
+  const scaleH = (CANVAS_H - MARGIN * 2 - totalGap) / totalArea;
+
+  const rects: Rect[] = [];
+  const slotYs: number[] = [];
+  const slotHs: number[] = [];
+  let curY = MARGIN;
+
+  for (const slot of leftSlots) {
+    const h = Math.round(slot.area * scaleH);
+    slotYs.push(curY);
+    slotHs.push(h);
+    const r: Rect = { id: slot.id, x: LEFT_X, y: curY, w: LEFT_W, h };
+    if (slot.confirmedBrand) r.confirmedBrand = slot.confirmedBrand;
+    if (slot.idLabel) r.idLabel = slot.idLabel;
+    rects.push(r);
+    curY += h + GAP;
+  }
+
+  // 오른쪽 상단 — 스타벅스(111~114): 101+102 높이 범위
+  const sbY = slotYs[0];
+  const sbH = slotYs[1] + slotHs[1] - slotYs[0];
+  rects.push({ id: '111', x: RIGHT_X, y: sbY, w: RIGHT_W, h: sbH + GAP, confirmedBrand: '스타벅스', idLabel: '111~114' });
+
+  // 오른쪽 하단 — 110(위)/109(아래): 106+107+108 높이 범위, 면적 비례 2분할
+  const bottomY = slotYs[4];
+  const bottomTotalH = slotYs[6] + slotHs[6] - slotYs[4];
+  const area110 = getArea('110', 9.56);
+  const area109 = getArea('109', 9.56);
+  const h110 = Math.round(bottomTotalH * area110 / (area110 + area109));
+  const h109 = bottomTotalH - h110 - GAP;
+  rects.push({ id: '110', x: RIGHT_X, y: bottomY, w: RIGHT_W, h: h110 });
+  rects.push({ id: '109', x: RIGHT_X, y: bottomY + h110 + GAP, w: RIGHT_W, h: h109 });
+
+  // 코어: 103-104+105 높이 범위
+  const coreY = slotYs[2];
+  const coreH = slotYs[3] + slotHs[3] - slotYs[2] + GAP;
+  const core: CoreBox = { x: RIGHT_X, y: coreY, w: RIGHT_W, h: coreH, label1: '코어 · 로비', label2: '(계단 · 엘리베이터)' };
+
+  return { rects, core };
+}
 
 // ── 2F 층 레이아웃 (720×580 기준, 실제 도면 구조)
 //   왼쪽: 단일 세로열 201→211 (h=49×11)
@@ -157,12 +201,6 @@ const F3_UNITS: Rect[] = [
   { id: '322',   x: 512, y: 400, w: 94,  h: 160 },
 ];
 
-const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
-  { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 720 580', core: B1_CORE },
-  { key: '1F', label: '1F', rects: F1_UNITS, viewBox: '0 0 720 580', core: F1_CORE },
-  { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 720 580', core: F2_CORE },
-  { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 720 580' },
-];
 
 type Popover = {
   unitNo: string;
@@ -180,6 +218,14 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => { setPopover(null); }, [activeFloor]);
+
+  const f1 = computeF1Layout(units);
+  const FLOOR_CONFIG: { key: string; label: string; rects: Rect[]; viewBox: string; core?: CoreBox }[] = [
+    { key: 'B1', label: 'B1', rects: B1_UNITS, viewBox: '0 0 720 580', core: B1_CORE },
+    { key: '1F', label: '1F', rects: f1.rects, viewBox: '0 0 720 580', core: f1.core },
+    { key: '2F', label: '2F', rects: F2_UNITS, viewBox: '0 0 720 580', core: F2_CORE },
+    { key: '3F', label: '3F', rects: F3_UNITS, viewBox: '0 0 720 580' },
+  ];
 
   const unitMap = new Map(units.map(u => [u.unit_no, u]));
   const floor = FLOOR_CONFIG.find(f => f.key === activeFloor)!;
