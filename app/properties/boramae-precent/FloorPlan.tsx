@@ -9,6 +9,7 @@ export type PublicUnit = {
   exclusive_area_py: number;
   contract_area_py: number;
   status: string;
+  memo?: string | null;
 };
 
 const ZONE_RECOMMEND: Record<string, string> = {
@@ -316,19 +317,20 @@ function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   return { rects, core };
 }
 
-// ── 3F 층 레이아웃 (2F와 동일 구조, 확정 임차 다름) ─────────
+// ── 3F 층 레이아웃 ─────────
+// confirmedBrand 하드코딩 없음 — 상태·브랜드명은 모두 DB(precent_units) 값 사용
+// 301-302: DB에 하나의 unit_no='301-302'로 관리 → 합쳐진 단일 박스
 const F3_UNITS: Rect[] = [
   // Row 1 (y=20, h=170)
-  { id: '301', x: 22,  y: 20, w: 69, h: 170, confirmedBrand: '부동산' },
-  { id: '302', x: 99,  y: 20, w: 60, h: 170, confirmedBrand: '언어발달' },
+  { id: '301-302', x: 22,  y: 20, w: 137, h: 170, idLabel: '301-302' }, // 원본 301(w=69)+gap(8)+302(w=60)
   { id: '303', x: 168, y: 20, w: 80, h: 170 },
   { id: '304', x: 257, y: 20, w: 60, h: 170 },
   { id: '305', x: 325, y: 20, w: 63, h: 170 },
   { id: '306', x: 397, y: 20, w: 33, h: 170 },
   { id: '307', x: 439, y: 20, w: 33, h: 170 },
-  { id: '308', x: 480, y: 20, w: 33, h: 170, confirmedBrand: '입점완료' },
+  { id: '308', x: 480, y: 20, w: 33, h: 170 }, // DB: vacant → 파란색·클릭 가능
   { id: '309', x: 521, y: 20, w: 33, h: 170 },
-  { id: '310', x: 562, y: 20, w: 33, h: 170, confirmedBrand: '입점완료' },
+  { id: '310', x: 562, y: 20, w: 33, h: 170 }, // DB: vacant → 파란색·클릭 가능
   { id: '311', x: 604, y: 20, w: 57, h: 170 },
   // Row 2 (y=210, h=170)
   { id: '312',   x: 22,  y: 210, w: 98,  h: 170 },
@@ -486,7 +488,9 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
             const isLeased = !confirmed && u?.status === 'leased';
             const unavailable = confirmed || isLeased;
             const bg = getBg(rect);
-            const secondLabel = confirmed ? rect.confirmedBrand! : isLeased ? '임대완료' : null;
+            // memo에서 브랜드명 추출: "치과(입점확정)" → "치과"
+            const memoLabel = u?.memo ? u.memo.replace(/\s*\(.*?\)\s*$/, '').trim() : null;
+            const secondLabel = confirmed ? rect.confirmedBrand! : isLeased ? (memoLabel ?? '임대완료') : null;
             return (
               <g key={rect.id}>
                 <rect

@@ -142,7 +142,7 @@ export default async function BoramaePresentPage() {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const { data } = await supabaseAdmin
       .from('precent_units')
-      .select('unit_no, floor, zone, exclusive_area_py, contract_area_py, status')
+      .select('unit_no, floor, zone, exclusive_area_py, contract_area_py, status, memo')
       .order('floor')
       .order('unit_no');
     units = (data ?? []) as PublicUnit[];
