@@ -6,20 +6,20 @@ import FloorPlan, { type PublicUnit } from './FloorPlan';
 import InquiryForm from './InquiryForm';
 
 export const metadata: Metadata = {
-  title: '동작 보라매역 프리센트 상업시설 임대 | 병원·클리닉·학원·F&B | 헤르만부동산',
+  title: '보라매역 상가임대 | 동작 보라매역 프리센트 병원·클리닉·학원·F&B·오피스 | 헤르만부동산',
   description:
-    '7호선·신림선 보라매역 더블역세권 신축 프리센트 상업시설 임대. B1~3F 병원·클리닉·학원·F&B·오피스 전층 공실 임대 문의 — 헤르만부동산.',
+    '동작구 보라매역 7호선·신림선 더블역세권 신축 상가임대. 프리센트 B1~3F 병원·클리닉·학원·F&B·오피스 공실 다수, 실시간 임대 문의. 헤르만부동산.',
   alternates: { canonical: 'https://hermann-realty.com/properties/boramae-precent' },
   openGraph: {
-    title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
-    description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
+    title: '보라매역 상가임대 | 동작 보라매역 프리센트 | 헤르만부동산',
+    description: '동작구 보라매역 더블역세권 신축 상가임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
     url: 'https://hermann-realty.com/properties/boramae-precent',
     images: [{ url: 'https://hermann-realty.com/hero-building-cg.png' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
-    description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
+    title: '보라매역 상가임대 | 동작 보라매역 프리센트 | 헤르만부동산',
+    description: '동작구 보라매역 더블역세권 신축 상가임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
     images: ['https://hermann-realty.com/hero-building-cg.png'],
   },
 };
