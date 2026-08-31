@@ -558,10 +558,9 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
         </div>
       </div>
 
-      {/* SVG 평면도 — 외부 스크롤 래퍼(모바일 가로 스크롤) + 720px 캡 */}
-      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+      {/* SVG 평면도 */}
       <div
-        style={{ position: 'relative', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden', background: '#f8f9fa', cursor: 'default', maxWidth: '720px', minWidth: '600px', margin: '0 auto' }}
+        style={{ position: 'relative', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden', background: '#f8f9fa', cursor: 'default', maxWidth: '828px', margin: '0 auto' }}
         onClick={() => setPopover(null)}
       >
         <svg
@@ -569,6 +568,16 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           viewBox={floor.viewBox}
           style={{ width: '100%', height: 'auto', display: 'block' }}
         >
+          <style>{`
+            .fp-id    { font-size: 14px; font-weight: 700; fill: #fff; pointer-events: none; user-select: none; }
+            .fp-brand { font-size: 12px; font-weight: 700; fill: rgba(255,255,255,0.9); pointer-events: none; user-select: none; }
+            .fp-area  { font-size: 9px;  fill: rgba(255,255,255,0.85); pointer-events: none; user-select: none; }
+            @media (max-width: 767px) {
+              .fp-id    { font-size: 11px; }
+              .fp-brand { font-size: 10px; }
+              .fp-area  { font-size: 8px; }
+            }
+          `}</style>
           {/* 주차장·코어 박스 (B1 전용) */}
           {floor.core && (
             <g>
@@ -605,6 +614,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
             // memo에서 브랜드명 추출: "치과(입점확정)" → "치과"
             const memoLabel = u?.memo ? u.memo.replace(/\s*\(.*?\)\s*$/, '').trim() : null;
             const secondLabel = confirmed ? rect.confirmedBrand! : isLeased ? (memoLabel ?? '임대완료') : null;
+            const showArea = !unavailable && !!u && rect.h >= 60;
             return (
               <g key={rect.id}>
                 <rect
@@ -617,16 +627,13 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   style={{ cursor: unavailable ? 'default' : 'pointer' }}
                   onClick={unavailable ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
                 />
-                {/* 호실 번호 */}
+                {/* 호실 번호 — showArea 여부로 y 위치 분기 */}
                 <text
                   x={rect.x + rect.w / 2}
-                  y={rect.y + (unavailable ? rect.h * 0.38 : u ? rect.h * 0.38 : rect.h * 0.5)}
+                  y={rect.y + (showArea || secondLabel ? rect.h * 0.38 : rect.h * 0.5)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={12}
-                  fontWeight="700"
-                  fill="#fff"
-                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  className="fp-id"
                 >
                   {rect.idLabel ?? rect.id}
                 </text>
@@ -637,26 +644,21 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                     y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={11}
-                    fontWeight="700"
-                    fill="rgba(255,255,255,0.9)"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    className="fp-brand"
                   >
                     {secondLabel}
                   </text>
                 )}
-                {/* 공실 면적 — 박스 높이 충분할 때만 표시 */}
-                {!unavailable && u && rect.h >= 30 && (
+                {/* 공실 면적 — 박스 높이 60 이상일 때만 표시 */}
+                {showArea && (
                   <text
                     x={rect.x + rect.w / 2}
                     y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={9}
-                    fill="rgba(255,255,255,0.85)"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    className="fp-area"
                   >
-                    {u.exclusive_area_py.toFixed(1)}평
+                    {u!.exclusive_area_py.toFixed(1)}평
                   </text>
                 )}
               </g>
@@ -725,7 +727,6 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           </div>
         )}
       </div>
-      </div>{/* /scroll wrapper */}
 
       <p style={{ fontSize: '11px', color: '#aaa', marginTop: '8px', textAlign: 'center' }}>
         * 평면도는 실제 도면과 상이할 수 있는 개략도입니다. 호실 클릭 시 상세 정보를 확인하세요.
