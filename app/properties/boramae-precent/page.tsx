@@ -101,7 +101,7 @@ const ZONES = [
 const PAGE_CSS = `
   .pc-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; box-sizing: border-box; }
   .pc-hero-split { display: grid; grid-template-columns: 55fr 45fr; max-width: 1200px; margin: 0 auto; min-height: 460px; }
-  .pc-hero-img { object-position: 60% center; }
+  .pc-hero-img { object-position: 35% center; }
   .pc-hero-left { padding: 80px 52px 80px 24px; display: flex; flex-direction: column; justify-content: center; }
   .pc-hero-right { position: relative; overflow: hidden; }
   .pc-hero-right img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
