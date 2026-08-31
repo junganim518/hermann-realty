@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Phone, MapPin, Building2, Users, Car, TrendingUp } from 'lucide-react';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import FloorPlan, { type PublicUnit } from './FloorPlan';
@@ -13,13 +14,13 @@ export const metadata: Metadata = {
     title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
     description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
     url: 'https://hermann-realty.com/properties/boramae-precent',
-    images: [{ url: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop' }],
+    images: [{ url: 'https://hermann-realty.com/hero-building-cg.png' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: '동작 보라매역 프리센트 상업시설 임대 | 헤르만부동산',
     description: '7호선·신림선 보라매역 더블역세권 신축 상업시설 임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
-    images: ['https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop'],
+    images: ['https://hermann-realty.com/hero-building-cg.png'],
   },
 };
 
@@ -193,11 +194,12 @@ export default async function BoramaePresentPage() {
             </div>
           </div>
           <div className="pc-hero-right">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1200&q=80&auto=format&fit=crop"
-              alt="동작구 보라매역 인근 신축 상업시설 외관"
-              loading="eager"
+            <Image
+              src="/hero-building-cg.png"
+              alt="동작구 보라매역 프리센트 상업시설 외관 CG 렌더링"
+              fill
+              priority
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
             />
             <div className="pc-hero-overlay" />
           </div>
