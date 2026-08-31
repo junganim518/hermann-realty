@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Phone, MapPin, Building2, Users, Car, TrendingUp } from 'lucide-react';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import FloorPlan, { type PublicUnit } from './FloorPlan';
+import Gallery, { type GalleryItem } from './Gallery';
 import InquiryForm from './InquiryForm';
 
 export const metadata: Metadata = {
@@ -152,6 +153,18 @@ export default async function BoramaePresentPage() {
     units = (data ?? []) as PublicUnit[];
   }
 
+  // 갤러리 이미지
+  let galleryItems: GalleryItem[] = [];
+  try {
+    const { data: galleryData } = await supabaseAdmin
+      .from('precent_gallery')
+      .select('id, url, caption, category, sort_order')
+      .order('sort_order');
+    galleryItems = (galleryData ?? []) as GalleryItem[];
+  } catch {
+    // 테이블 미생성 시 무시
+  }
+
   // 존별 집계 (전체 호실 수 + 공실 수)
   const zoneStats: Record<string, { total: number; vacant: number; minPy: number; maxPy: number }> = {};
   for (const u of units) {
@@ -259,6 +272,18 @@ export default async function BoramaePresentPage() {
           </p>
         </div>
       </section>
+
+      {/* ── 갤러리 ── */}
+      {galleryItems.length > 0 && (
+        <section style={{ padding: '72px 0 80px', background: '#fff' }}>
+          <div className="pc-wrap">
+            <p style={{ fontSize: '11px', color: '#c47c30', fontWeight: 700, letterSpacing: '2px', textAlign: 'center', margin: '0 0 8px', textTransform: 'uppercase' }}>Gallery</p>
+            <h2 style={{ textAlign: 'center', fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 800, color: '#1a1a1a', margin: '0 0 10px' }}>건물 내부 사진</h2>
+            <p style={{ textAlign: 'center', fontSize: '14px', color: '#888', margin: '0 0 28px' }}>클릭하면 크게 볼 수 있습니다.</p>
+            <Gallery items={galleryItems} />
+          </div>
+        </section>
+      )}
 
       {/* ── MD 존 소개 ── */}
       <section style={{ padding: '72px 0 80px', background: '#fff' }}>
