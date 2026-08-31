@@ -100,7 +100,8 @@ const ZONES = [
 
 const PAGE_CSS = `
   .pc-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; box-sizing: border-box; }
-  .pc-hero-split { display: grid; grid-template-columns: 55fr 45fr; max-width: 1200px; margin: 0 auto; min-height: 560px; }
+  .pc-hero-split { display: grid; grid-template-columns: 55fr 45fr; max-width: 1200px; margin: 0 auto; min-height: 460px; }
+  .pc-hero-img { object-position: 60% center; }
   .pc-hero-left { padding: 80px 52px 80px 24px; display: flex; flex-direction: column; justify-content: center; }
   .pc-hero-right { position: relative; overflow: hidden; }
   .pc-hero-right img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
@@ -127,6 +128,7 @@ const PAGE_CSS = `
   @media (max-width: 767px) {
     .pc-hero-split { grid-template-columns: 1fr; min-height: auto; }
     .pc-hero-right { height: 220px; order: -1; }
+    .pc-hero-img { object-position: center center; }
     .pc-hero-overlay { background: rgba(0,0,0,0.25); }
     .pc-hero-left { padding: 36px 20px 44px; }
     .pc-cta-group { flex-direction: column; }
@@ -199,7 +201,8 @@ export default async function BoramaePresentPage() {
               alt="동작구 보라매역 프리센트 상업시설 외관 CG 렌더링"
               fill
               priority
-              style={{ objectFit: 'cover', objectPosition: 'center' }}
+              className="pc-hero-img"
+              style={{ objectFit: 'cover' }}
             />
             <div className="pc-hero-overlay" />
           </div>
