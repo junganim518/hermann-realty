@@ -558,9 +558,10 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
         </div>
       </div>
 
-      {/* SVG 평면도 */}
+      {/* SVG 평면도 — 외부 스크롤 래퍼(모바일 가로 스크롤) + 720px 캡 */}
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
       <div
-        style={{ position: 'relative', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden', background: '#f8f9fa', cursor: 'default' }}
+        style={{ position: 'relative', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden', background: '#f8f9fa', cursor: 'default', maxWidth: '720px', minWidth: '600px', margin: '0 auto' }}
         onClick={() => setPopover(null)}
       >
         <svg
@@ -616,27 +617,27 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   style={{ cursor: unavailable ? 'default' : 'pointer' }}
                   onClick={unavailable ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
                 />
-                {/* 호실 번호 — 고정 폰트 9px */}
+                {/* 호실 번호 */}
                 <text
                   x={rect.x + rect.w / 2}
                   y={rect.y + (unavailable ? rect.h * 0.38 : u ? rect.h * 0.38 : rect.h * 0.5)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={9}
+                  fontSize={12}
                   fontWeight="700"
                   fill="#fff"
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                   {rect.idLabel ?? rect.id}
                 </text>
-                {/* 임대완료·확정브랜드 — 고정 폰트 10px */}
+                {/* 임대완료·확정브랜드 */}
                 {secondLabel && (
                   <text
                     x={rect.x + rect.w / 2}
                     y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={10}
+                    fontSize={11}
                     fontWeight="700"
                     fill="rgba(255,255,255,0.9)"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -644,14 +645,14 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                     {secondLabel}
                   </text>
                 )}
-                {/* 공실 면적 — 고정 폰트 8px */}
-                {!unavailable && u && (
+                {/* 공실 면적 — 박스 높이 충분할 때만 표시 */}
+                {!unavailable && u && rect.h >= 30 && (
                   <text
                     x={rect.x + rect.w / 2}
                     y={rect.y + rect.h * 0.65}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={8}
+                    fontSize={9}
                     fill="rgba(255,255,255,0.85)"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
@@ -682,13 +683,20 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ fontWeight: 800, fontSize: '15px', color: '#1a1a1a' }}>{popover.unitNo}호</span>
-              <span style={{
-                fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
-                background: popover.status === 'vacant' ? '#dcfce7' : '#fef9c3',
-                color: popover.status === 'vacant' ? '#166534' : '#92400e',
-              }}>
-                {STATUS_LABEL[popover.status] ?? popover.status}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
+                  background: popover.status === 'vacant' ? '#dcfce7' : '#fef9c3',
+                  color: popover.status === 'vacant' ? '#166534' : '#92400e',
+                }}>
+                  {STATUS_LABEL[popover.status] ?? popover.status}
+                </span>
+                <button
+                  onClick={() => setPopover(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: '16px', lineHeight: 1, padding: '2px 4px' }}
+                  aria-label="닫기"
+                >✕</button>
+              </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
               <div>
@@ -717,6 +725,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           </div>
         )}
       </div>
+      </div>{/* /scroll wrapper */}
 
       <p style={{ fontSize: '11px', color: '#aaa', marginTop: '8px', textAlign: 'center' }}>
         * 평면도는 실제 도면과 상이할 수 있는 개략도입니다. 호실 클릭 시 상세 정보를 확인하세요.
