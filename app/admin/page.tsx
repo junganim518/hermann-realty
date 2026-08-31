@@ -1183,6 +1183,7 @@ function AdminDashboardInner() {
             { label: '손님 관리', href: '/admin/customers' },
             { label: '스케줄', href: '/admin/schedule' },
             { label: '문의 관리', href: '/admin/inquiries' },
+            { label: '프리센트 호실', href: '/admin/precent-units' },
           ].map(link => (
             <a key={link.href} href={link.href} style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#1a1a1a', color: '#e2a06e', fontSize: '14px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', border: '1px solid #333', position: 'relative' }}>
               {link.label}
@@ -1205,6 +1206,7 @@ function AdminDashboardInner() {
             <div className="prop-mgmt-mobile-links">
               <a href="/admin/broker-share">🤝 공동중개 리스트</a>
               <a href="/admin/agents">👤 담당자 관리</a>
+              <a href="/admin/precent-units">🏢 프리센트 호실</a>
               <a href="/admin/trash">🗑️ 휴지통{trashCount > 0 ? ` (${trashCount})` : ''}</a>
             </div>
             {/* 컨트롤 그룹 */}
@@ -1264,6 +1266,9 @@ function AdminDashboardInner() {
                 </a>
                 <a href="/admin/agents" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   👤 담당자 관리
+                </a>
+                <a href="/admin/precent-units" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  🏢 프리센트 호실
                 </a>
                 <a href="/admin/trash" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   🗑️ 휴지통{trashCount > 0 ? ` (${trashCount})` : ''}
