@@ -571,11 +571,9 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           <style>{`
             .fp-id    { font-size: 14px; font-weight: 700; fill: #fff; pointer-events: none; user-select: none; }
             .fp-brand { font-size: 12px; font-weight: 700; fill: rgba(255,255,255,0.9); pointer-events: none; user-select: none; }
-            .fp-area  { font-size: 9px;  fill: rgba(255,255,255,0.85); pointer-events: none; user-select: none; }
             @media (max-width: 767px) {
               .fp-id    { font-size: 11px; }
               .fp-brand { font-size: 10px; }
-              .fp-area  { font-size: 8px; }
             }
           `}</style>
           {/* 주차장·코어 박스 (B1 전용) */}
@@ -614,7 +612,6 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
             // memo에서 브랜드명 추출: "치과(입점확정)" → "치과"
             const memoLabel = u?.memo ? u.memo.replace(/\s*\(.*?\)\s*$/, '').trim() : null;
             const secondLabel = confirmed ? rect.confirmedBrand! : isLeased ? (memoLabel ?? '임대완료') : null;
-            const showArea = !unavailable && !!u && rect.h >= 60;
             return (
               <g key={rect.id}>
                 <rect
@@ -627,10 +624,10 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   style={{ cursor: unavailable ? 'default' : 'pointer' }}
                   onClick={unavailable ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
                 />
-                {/* 호실 번호 — showArea 여부로 y 위치 분기 */}
+                {/* 호실 번호 */}
                 <text
                   x={rect.x + rect.w / 2}
-                  y={rect.y + (showArea || secondLabel ? rect.h * 0.38 : rect.h * 0.5)}
+                  y={rect.y + (secondLabel ? rect.h * 0.38 : rect.h * 0.5)}
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="fp-id"
@@ -647,18 +644,6 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                     className="fp-brand"
                   >
                     {secondLabel}
-                  </text>
-                )}
-                {/* 공실 면적 — 박스 높이 60 이상일 때만 표시 */}
-                {showArea && (
-                  <text
-                    x={rect.x + rect.w / 2}
-                    y={rect.y + rect.h * 0.65}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="fp-area"
-                  >
-                    {u!.exclusive_area_py.toFixed(1)}평
                   </text>
                 )}
               </g>
