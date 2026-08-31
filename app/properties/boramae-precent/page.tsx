@@ -134,6 +134,7 @@ const PAGE_CSS = `
     .pc-cta-group { flex-direction: column; }
     .pc-cta-btn, .pc-cta-outline { display: flex; justify-content: center; width: 100%; box-sizing: border-box; }
     .pc-hl-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .pc-hl-card { padding: 20px 14px; }
     .pc-zone-grid { grid-template-columns: 1fr; gap: 14px; }
     .pc-wrap { padding: 0 16px; }
   }
@@ -225,7 +226,7 @@ export default async function BoramaePresentPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: '10px', color: '#999', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</div>
-                    <div style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', fontWeight: 800, color: '#1a1a1a', lineHeight: 1 }}>{value}</div>
+                    <div style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', fontWeight: 800, color: '#1a1a1a', lineHeight: 1, whiteSpace: 'nowrap' }}>{value}</div>
                   </div>
                 </div>
                 <div style={{ width: '24px', height: '2px', background: '#c47c30', marginBottom: '10px' }} />
