@@ -164,8 +164,27 @@ export default async function BoramaePresentPage() {
     }
   }
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: '동작 보라매역 프리센트 상업시설 임대',
+    description:
+      '동작구 보라매역 7호선·신림선 더블역세권 신축 상가임대. 프리센트 B1~3F 병원·클리닉·학원·F&B·오피스 공실 다수, 실시간 임대 문의. 헤르만부동산.',
+    telephone: '010-8680-8151',
+    url: 'https://hermann-realty.com/properties/boramae-precent',
+    image: 'https://hermann-realty.com/hero-building-cg.png',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: '신대방동 377-1',
+      addressLocality: '동작구',
+      addressRegion: '서울특별시',
+      addressCountry: 'KR',
+    },
+  };
+
   return (
     <main style={{ minHeight: '100vh', background: '#fafafa' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style dangerouslySetInnerHTML={{ __html: PAGE_CSS }} />
 
       {/* ── 히어로 ── */}
