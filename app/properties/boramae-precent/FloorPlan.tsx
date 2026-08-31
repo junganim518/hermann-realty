@@ -572,7 +572,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
             .fp-id    { font-size: 14px; font-weight: 700; fill: #fff; pointer-events: none; user-select: none; }
             .fp-brand { font-size: 12px; font-weight: 700; fill: rgba(255,255,255,0.9); pointer-events: none; user-select: none; }
             @media (max-width: 767px) {
-              .fp-id    { font-size: 11px; }
+              .fp-id    { font-size: 13px; }
               .fp-brand { font-size: 10px; }
             }
           `}</style>
@@ -656,7 +656,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           <div
             style={{
               position: 'absolute',
-              left: Math.min(popover.svgX - 100, (svgRef.current?.clientWidth ?? 400) - 210),
+              left: Math.max(8, Math.min(popover.svgX - 100, (svgRef.current?.clientWidth ?? 400) - 210)),
               top: Math.max(popover.svgY - 160, 8),
               width: '200px',
               background: '#fff',
