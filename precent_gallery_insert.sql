@@ -24,5 +24,5 @@ INSERT INTO precent_gallery (id, url, caption, category, sort_order) VALUES
 ('bffa1279-3be5-4550-8fd3-f6d0d9eeea85', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/interior-KakaoTalk_20260831_151652178_20.webp', '임대 전 기본 상태 (인테리어 전)', 'interior', 20),
 ('66472577-0fdf-40b4-8bab-abcbb598428a', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/interior-KakaoTalk_20260831_151652178_26.webp', '임대 전 기본 상태 (인테리어 전)', 'interior', 21),
 ('9ccc0163-1a9e-4092-9b77-939ec7c307f8', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/interior-KakaoTalk_20260831_151652178_27.webp', '임대 전 기본 상태 (인테리어 전)', 'interior', 22),
-('8d420a70-71ac-4c58-88ce-37dd7f58f30a', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/lounge-KakaoTalk_20260831_151654930.webp', '옥상 테라스 라운지', 'lounge', 23),
-('9ae64af8-28f7-475b-b65c-8af9edf61762', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/lounge-KakaoTalk_20260831_151654930_01.webp', '옥상 테라스 라운지 (파노라마 뷰)', 'lounge', 24);
+('8d420a70-71ac-4c58-88ce-37dd7f58f30a', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/lounge-KakaoTalk_20260831_151654930.webp', '건물 내 휴게 라운지 (데크·벤치)', 'lounge', 23),
+('9ae64af8-28f7-475b-b65c-8af9edf61762', 'https://pub-f74a12fe75844385b015b3336498abe7.r2.dev/precent/lounge-KakaoTalk_20260831_151654930_01.webp', '건물 내 휴게 라운지 (파노라마 뷰)', 'lounge', 24);
