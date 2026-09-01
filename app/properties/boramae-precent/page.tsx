@@ -155,14 +155,15 @@ export default async function BoramaePresentPage() {
 
   // 갤러리 이미지
   let galleryItems: GalleryItem[] = [];
-  try {
-    const { data: galleryData } = await supabaseAdmin
+  {
+    const { data: galleryData, error: galleryError } = await supabaseAdmin
       .from('precent_gallery')
       .select('id, url, caption, category, sort_order')
       .order('sort_order');
+    if (galleryError) {
+      console.error('[precent_gallery fetch error]', galleryError);
+    }
     galleryItems = (galleryData ?? []) as GalleryItem[];
-  } catch {
-    // 테이블 미생성 시 무시
   }
 
   // 존별 집계 (전체 호실 수 + 공실 수)
