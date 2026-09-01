@@ -73,8 +73,6 @@ export default function Header() {
     { label: '매물 의뢰하기', href: '/inquiry' },
     { label: '부동산 소식', href: '/news' },
     { label: '회사소개', href: '/about' },
-    { label: '즐겨찾기', href: '/favorites' },
-    { label: '최근 본 매물', href: '/recent' },
   ];
 
   return (
@@ -189,6 +187,16 @@ export default function Header() {
 
         {/* 우: 로그인 (데스크톱) */}
         <div className="h-auth-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', justifyContent: 'flex-end' }}>
+          <a href="/favorites" title="즐겨찾기" style={{ color: '#999', display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#e2a06e')}
+            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = '#999')}>
+            <Heart size={20} strokeWidth={1.8} />
+          </a>
+          <a href="/recent" title="최근 본 매물" style={{ color: '#999', display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#e2a06e')}
+            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = '#999')}>
+            <Clock size={20} strokeWidth={1.8} />
+          </a>
           {user ? (
             <>
               <a href="/admin" style={{ background: '#e2a06e', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '4px', textDecoration: 'none', position: 'relative' }}>
