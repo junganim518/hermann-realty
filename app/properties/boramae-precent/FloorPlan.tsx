@@ -122,7 +122,7 @@ function computeB1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 
 // ── 1F 층 레이아웃: exclusive_area_py 비례 동적 계산 ──
 //   왼쪽: 단일 세로열 101→108, 각 칸 높이를 면적 비례로 계산
-//   오른쪽 상단: 스타벅스(111~114) — 101+102 높이 범위
+//   오른쪽 상단: 111~114 (개별 4호실, 가로 면적 비례) — 101+102 높이 범위
 //   오른쪽 중단: 코어 — 103-104+105 높이 범위
 //   오른쪽 하단: 110(위)+109(아래) — 106+107+108 높이 범위, 면적 비례 분할
 function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } {
@@ -140,7 +140,7 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   // 왼쪽 단일 열: 위→아래 순서, 확정 입점 칸은 참조 면적으로 높이 할당
   const leftSlots: { id: string; area: number; confirmedBrand?: string; idLabel?: string }[] = [
     { id: '101',     area: getArea('101', 10.68) },
-    { id: '102',     area: 10.0,  confirmedBrand: 'KT' },
+    { id: '102',     area: getArea('102', 10.0) },
     { id: '103-104', area: 20.0,  confirmedBrand: '파리바게뜨', idLabel: '103-104' },
     { id: '105',     area: getArea('105', 10.08) },
     { id: '106',     area: 10.0,  confirmedBrand: '분식' },
@@ -178,10 +178,27 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
     curY += h + GAP;
   }
 
-  // 오른쪽 상단 — 스타벅스(111~114): 101+102 높이 범위
+  // 오른쪽 상단 — 111~114 (개별 4호실, 가로 면적 비례): 101+102 높이 범위
   const sbY = slotYs[0];
   const sbH = slotYs[1] + slotHs[1] - slotYs[0];
-  rects.push({ id: '111', x: RIGHT_X, y: sbY, w: RIGHT_W, h: sbH + GAP, confirmedBrand: '스타벅스', idLabel: '111~114' });
+  const sbUnitH = sbH + GAP;
+  const sbSlots = [
+    { id: '111', area: getArea('111', 11.4345) },
+    { id: '112', area: getArea('112', 11.4345) },
+    { id: '113', area: getArea('113', 11.4345) },
+    { id: '114', area: getArea('114', 11.5737) },
+  ];
+  const sbTotalArea = sbSlots.reduce((s, sl) => s + sl.area, 0);
+  const sbNetW = RIGHT_W - GAP * (sbSlots.length - 1);
+  const sbScale = sbNetW / sbTotalArea;
+  let sbCurX = RIGHT_X;
+  for (let i = 0; i < sbSlots.length; i++) {
+    const w = i < sbSlots.length - 1
+      ? Math.round(sbSlots[i].area * sbScale)
+      : RIGHT_X + RIGHT_W - sbCurX;
+    rects.push({ id: sbSlots[i].id, x: sbCurX, y: sbY, w, h: sbUnitH });
+    sbCurX += w + GAP;
+  }
 
   // 오른쪽 하단 — 110(위)/109(아래): 106+107+108 높이 범위, 면적 비례 2분할
   const bottomY = slotYs[4];
