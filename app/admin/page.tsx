@@ -27,9 +27,9 @@ const getAgeDays = (updatedAt: string | null | undefined): number => {
   return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
 };
 
-// 경과일 뱃지 설정 — 거래완료/보류 매물은 null 반환
+// 경과일 뱃지 설정 — 거래완료/보류/공동중개매물은 null 반환
 const getAgeBadge = (p: { is_sold?: boolean; status?: string; updated_at?: string; created_at?: string }): { label: string; bg: string; color: string } | null => {
-  if (p.is_sold || p.status === '거래완료' || p.status === '보류') return null;
+  if (p.is_sold || p.status === '거래완료' || p.status === '보류' || p.status === '공동중개매물') return null;
   // updated_at 우선 사용, 없으면 created_at fallback (구 데이터 호환)
   const days = getAgeDays(p.updated_at ?? p.created_at);
   if (days >= 90) return { label: '90일+', bg: '#fee2e2', color: '#991b1b' };
@@ -39,7 +39,7 @@ const getAgeBadge = (p: { is_sold?: boolean; status?: string; updated_at?: strin
 };
 
 const TX_TYPES = ['전체', '월세', '전세', '매매'];
-const SOLD_TYPES = ['전체', '거래중', '보류', '거래완료'];
+const SOLD_TYPES = ['전체', '거래중', '보류', '거래완료', '공동중개매물'];
 const FLOOR_RANGES = ['전체', '지하', '1층', '2층 이상'];
 const PAGE_SIZE = 20;
 
@@ -103,7 +103,7 @@ function AdminDashboardInner() {
   const searchParams = useSearchParams();
   const readParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
   const [authChecked, setAuthChecked] = useState(false);
-  const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0, hold: 0 });
+  const [stats, setStats] = useState({ total: 0, wolse: 0, jeonse: 0, maemae: 0, sold: 0, hold: 0, cobroker: 0 });
   const [trashCount, setTrashCount] = useState(0);
   const [visitors, setVisitors] = useState({ today: 0, week: 0, total: 0 });
   type RefTableRow = { referrer: string; detail: string; page: string; count: number };
@@ -326,6 +326,7 @@ function AdminDashboardInner() {
       maemae: allProps.filter(p => p.transaction_type === '매매').length,
       sold: allProps.filter(p => p.is_sold || p.status === '거래완료').length,
       hold: allProps.filter(p => p.status === '보류').length,
+      cobroker: allProps.filter(p => p.status === '공동중개매물').length,
     });
 
     const ids = allProps.map(p => p.id);
@@ -409,7 +410,7 @@ function AdminDashboardInner() {
     setProperties(prev => prev.map(p => p.id === propertyId ? { ...p, agent_id: agentId } : p));
   };
 
-  const changeStatus = async (id: string, next: '거래중' | '보류' | '거래완료', cur: '거래중' | '보류' | '거래완료') => {
+  const changeStatus = async (id: string, next: '거래중' | '보류' | '거래완료' | '공동중개매물', cur: '거래중' | '보류' | '거래완료' | '공동중개매물') => {
     if (next === cur) return;
     const nextIsSold = next === '거래완료';
     await supabase.from('properties').update({ status: next, is_sold: nextIsSold }).eq('id', id);
@@ -587,6 +588,7 @@ function AdminDashboardInner() {
       maemae: prev.maemae - (p.transaction_type === '매매' ? 1 : 0),
       sold: prev.sold - ((p.is_sold || p.status === '거래완료') ? 1 : 0),
       hold: prev.hold - (p.status === '보류' ? 1 : 0),
+      cobroker: prev.cobroker - (p.status === '공동중개매물' ? 1 : 0),
     }));
     setTrashCount(prev => prev + 1);
     showToast('휴지통으로 이동되었습니다');
@@ -675,7 +677,7 @@ function AdminDashboardInner() {
     }
     if (filterTx !== '전체' && p.transaction_type !== filterTx) return false;
     // 매물 상태 필터 (status 우선, fallback to is_sold)
-    const ps = p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
+    const ps = p.status === '보류' || p.status === '거래완료' || p.status === '거래중' || p.status === '공동중개매물'
       ? p.status
       : (p.is_sold ? '거래완료' : '거래중');
     if (filterSold !== '전체' && filterSold !== ps) return false;
@@ -772,12 +774,12 @@ function AdminDashboardInner() {
   };
 
   const sortedFiltered = [...filtered].sort((a, b) => {
-    // 1순위: 거래중(0) → 보류(1) → 거래완료(2) 순으로 정렬
+    // 1순위: 거래중(0) → 보류(1) → 공동중개매물(2) → 거래완료(3) 순으로 정렬
     const rank = (p: any) => {
-      const s = p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
+      const s = p.status === '보류' || p.status === '거래완료' || p.status === '거래중' || p.status === '공동중개매물'
         ? p.status
         : (p.is_sold ? '거래완료' : '거래중');
-      return s === '거래중' ? 0 : s === '보류' ? 1 : 2;
+      return s === '거래중' ? 0 : s === '보류' ? 1 : s === '공동중개매물' ? 2 : 3;
     };
     const statusDiff = rank(a) - rank(b);
     if (statusDiff !== 0) return statusDiff;
@@ -1237,7 +1239,7 @@ function AdminDashboardInner() {
                 <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd', flexShrink: 0 }}>
                   {SOLD_TYPES.map(opt => {
                     const active = filterSold === opt;
-                    const activeColor = opt === '거래중' ? '#4caf50' : opt === '보류' ? '#f59e0b' : opt === '거래완료' ? '#999' : '#1a1a1a';
+                    const activeColor = opt === '거래중' ? '#4caf50' : opt === '보류' ? '#f59e0b' : opt === '거래완료' ? '#999' : opt === '공동중개매물' ? '#7c3aed' : '#1a1a1a';
                     return (
                       <button
                         key={opt}
@@ -1449,7 +1451,7 @@ function AdminDashboardInner() {
               {displayed.map(p => {
                 const tx = TX_COLORS[p.transaction_type] ?? { bg: '#f5f5f5', border: '#999', text: '#999' };
                 return (
-                  <div key={p.id} className="admin-prop-row" style={{ background: brokerSelectedIds.has(p.id) ? '#fff8f2' : (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : 1, outline: brokerSelectedIds.has(p.id) ? '2px solid #e2a06e' : 'none' }}>
+                  <div key={p.id} className="admin-prop-row" style={{ background: brokerSelectedIds.has(p.id) ? '#fff8f2' : (p.is_sold || p.status === '거래완료') ? '#fafafa' : p.status === '보류' ? '#fffbeb' : p.status === '공동중개매물' ? '#f5f3ff' : '#fff', opacity: (p.is_sold || p.status === '거래완료') ? 0.65 : p.status === '보류' ? 0.85 : p.status === '공동중개매물' ? 0.85 : 1, outline: brokerSelectedIds.has(p.id) ? '2px solid #e2a06e' : 'none' }}>
                     {/* 공동중개 체크박스 */}
                     <input
                       type="checkbox"
@@ -1479,6 +1481,9 @@ function AdminDashboardInner() {
                       )}
                       {p.status === '보류' && !p.is_sold && (
                         <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#f59e0b', color: '#fff', fontSize: '8px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', zIndex: 2 }}>보류</div>
+                      )}
+                      {p.status === '공동중개매물' && !p.is_sold && (
+                        <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#7c3aed', color: '#fff', fontSize: '8px', fontWeight: 700, padding: '1px 4px', borderRadius: '3px', zIndex: 2 }}>공동</div>
                       )}
                     </Link>
 
@@ -1556,12 +1561,13 @@ function AdminDashboardInner() {
                     <div className="admin-prop-actions">
                       {/* 상태 드롭다운 트리거 버튼 */}
                       {(() => {
-                        const ps: '거래중' | '보류' | '거래완료' =
-                          p.status === '보류' || p.status === '거래완료' || p.status === '거래중'
+                        const ps: '거래중' | '보류' | '거래완료' | '공동중개매물' =
+                          p.status === '보류' || p.status === '거래완료' || p.status === '거래중' || p.status === '공동중개매물'
                             ? p.status
                             : (p.is_sold ? '거래완료' : '거래중');
                         const pillColor = ps === '거래중' ? { bg: '#dcfce7', color: '#166534', border: '#86efac' }
                           : ps === '보류' ? { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' }
+                          : ps === '공동중개매물' ? { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd' }
                           : { bg: '#fef0ee', color: '#e04a4a', border: '#f5c2bd' };
                         const isOpen = openStatusDropdown === p.id;
                         return (
@@ -1817,14 +1823,15 @@ function AdminDashboardInner() {
       {openStatusDropdown && dropdownPos && (() => {
         const openProp = properties.find(pr => pr.id === openStatusDropdown);
         if (!openProp) return null;
-        const ps: '거래중' | '보류' | '거래완료' =
-          openProp.status === '보류' || openProp.status === '거래완료' || openProp.status === '거래중'
+        const ps: '거래중' | '보류' | '거래완료' | '공동중개매물' =
+          openProp.status === '보류' || openProp.status === '거래완료' || openProp.status === '거래중' || openProp.status === '공동중개매물'
             ? openProp.status : (openProp.is_sold ? '거래완료' : '거래중');
-        const STATUS_OPTIONS: Array<'거래중' | '보류' | '거래완료'> = ['거래중', '보류', '거래완료'];
+        const STATUS_OPTIONS: Array<'거래중' | '보류' | '거래완료' | '공동중개매물'> = ['거래중', '보류', '거래완료', '공동중개매물'];
         const OPTION_COLORS = {
-          '거래중':  { dot: '#22c55e', text: '#166534' },
-          '보류':    { dot: '#f59e0b', text: '#92400e' },
-          '거래완료': { dot: '#f87171', text: '#e04a4a' },
+          '거래중':      { dot: '#22c55e', text: '#166534' },
+          '보류':        { dot: '#f59e0b', text: '#92400e' },
+          '거래완료':    { dot: '#f87171', text: '#e04a4a' },
+          '공동중개매물': { dot: '#7c3aed', text: '#5b21b6' },
         };
         // 화면 하단 60% 아래면 드롭업
         const above = dropdownPos.top > window.innerHeight * 0.6;

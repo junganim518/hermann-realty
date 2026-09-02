@@ -123,7 +123,7 @@ export function findMatches(
 ): MatchedProperty[] {
   const minScore = opts?.minScore ?? 50;
   return properties
-    .filter(p => !p.is_sold && p.status !== '거래완료' && p.status !== '보류')
+    .filter(p => !p.is_sold && p.status !== '거래완료' && p.status !== '보류' && p.status !== '공동중개매물')
     .map(p => ({ property: p, score: matchProperty(p, conditions) }))
     .filter(m => m.score >= minScore)
     .sort((a, b) => b.score - a.score);

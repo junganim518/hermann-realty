@@ -175,7 +175,7 @@ export default function EditPropertyPage() {
     available_negotiable: false,
     approval_date: '',
     is_sold: false,
-    status: '거래중' as '거래중' | '보류' | '거래완료',
+    status: '거래중' as '거래중' | '보류' | '거래완료' | '공동중개매물',
     description: '',
     admin_memo: '',
     agent_id: '',
@@ -293,7 +293,7 @@ export default function EditPropertyPage() {
         available_negotiable: availParts.includes('협의가능'),
         approval_date: data.approval_date ?? '',
         is_sold: data.is_sold ?? false,
-        status: (data.status === '보류' || data.status === '거래완료' || data.status === '거래중')
+        status: (data.status === '보류' || data.status === '거래완료' || data.status === '거래중' || data.status === '공동중개매물')
           ? data.status
           : (data.is_sold ? '거래완료' : '거래중'),
         description: data.description ?? '',
@@ -942,10 +942,11 @@ export default function EditPropertyPage() {
 
         {/* ════════════ 매물 상태 ════════════ */}
         {(() => {
-          const statusInfo: Record<'거래중' | '보류' | '거래완료', { bg: string; border: string; text: string; desc: string }> = {
-            '거래중':   { bg: '#fff', border: '#e0e0e0', text: '#333',     desc: '사이트에 정상 노출됩니다.' },
-            '보류':     { bg: '#fffbeb', border: '#fcd34d', text: '#92400e', desc: '사이트에서 숨겨집니다 (관리자만 볼 수 있음).' },
-            '거래완료': { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a', desc: '매물 카드에 "거래완료" 도장이 표시됩니다.' },
+          const statusInfo: Record<'거래중' | '보류' | '거래완료' | '공동중개매물', { bg: string; border: string; text: string; desc: string }> = {
+            '거래중':      { bg: '#fff', border: '#e0e0e0', text: '#333',     desc: '사이트에 정상 노출됩니다.' },
+            '보류':        { bg: '#fffbeb', border: '#fcd34d', text: '#92400e', desc: '사이트에서 숨겨집니다 (관리자만 볼 수 있음).' },
+            '거래완료':    { bg: '#fff0f0', border: '#e04a4a', text: '#e04a4a', desc: '매물 카드에 "거래완료" 도장이 표시됩니다.' },
+            '공동중개매물': { bg: '#f5f3ff', border: '#c4b5fd', text: '#5b21b6', desc: '사이트에서 숨겨집니다 (관리자만 볼 수 있음).' },
           };
           const cur = statusInfo[form.status];
           return (
@@ -956,7 +957,7 @@ export default function EditPropertyPage() {
                   <p style={{ fontSize: '13px', color: '#888', marginTop: '2px' }}>{cur.desc}</p>
                 </div>
                 <div style={{ display: 'inline-flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid #ddd', flexShrink: 0 }}>
-                  {(['거래중', '보류', '거래완료'] as const).map((s, i) => {
+                  {(['거래중', '보류', '거래완료', '공동중개매물'] as const).map((s, i) => {
                     const active = form.status === s;
                     const info = statusInfo[s];
                     return (

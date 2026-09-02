@@ -30,7 +30,8 @@ export default function RecentPage() {
       .select('*')
       .in('id', ids)
       .is('deleted_at', null)
-      .neq('status', '보류'); // 보류 매물은 사이트에서 숨김
+      .neq('status', '보류') // 보류·공동중개매물은 사이트에서 숨김
+      .neq('status', '공동중개매물');
 
     const found = props ?? [];
 
