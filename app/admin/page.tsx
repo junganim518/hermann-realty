@@ -413,7 +413,12 @@ function AdminDashboardInner() {
   const changeStatus = async (id: string, next: '거래중' | '보류' | '거래완료' | '공동중개매물', cur: '거래중' | '보류' | '거래완료' | '공동중개매물') => {
     if (next === cur) return;
     const nextIsSold = next === '거래완료';
-    await supabase.from('properties').update({ status: next, is_sold: nextIsSold }).eq('id', id);
+    const { error } = await supabase.from('properties').update({ status: next, is_sold: nextIsSold }).eq('id', id);
+    if (error) {
+      console.error('[상태변경 실패]', error);
+      alert(`상태 변경 실패: ${error.message}`);
+      return;
+    }
     setProperties(prev => prev.map(p => p.id === id ? { ...p, status: next, is_sold: nextIsSold } : p));
     setStats(prev => ({ ...prev, sold: prev.sold + (cur === '거래완료' ? -1 : 0) + (next === '거래완료' ? 1 : 0) }));
   };
