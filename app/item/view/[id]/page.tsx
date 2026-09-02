@@ -224,6 +224,7 @@ export default function PropertyDetailPage() {
   const adminMenuBtnRef = useRef<HTMLButtonElement>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
+  const [printMapSrc, setPrintMapSrc] = useState<string | null>(null);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -458,6 +459,38 @@ export default function PropertyDetailPage() {
     : [];
 
   const hasImages = images.length > 0;
+
+  // ── 인쇄용 지도 좌표 결정 (lat/lng 있으면 바로, 없으면 Kakao Geocoder fallback)
+  useEffect(() => {
+    if (!property) return;
+    const lat = property.latitude ? parseFloat(String(property.latitude)) : NaN;
+    const lng = property.longitude ? parseFloat(String(property.longitude)) : NaN;
+
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      setPrintMapSrc(`/api/staticmap?lat=${lat}&lng=${lng}`);
+      return;
+    }
+    if (!property.address) return;
+
+    const geocode = (): boolean => {
+      if (typeof window.kakao?.maps?.services?.Geocoder !== 'function') return false;
+      const g = new window.kakao.maps.services.Geocoder();
+      g.addressSearch(property.address!, (result: any, status: any) => {
+        if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+          const gLat = parseFloat(result[0].y);
+          const gLng = parseFloat(result[0].x);
+          setPrintMapSrc(`/api/staticmap?lat=${gLat}&lng=${gLng}`);
+        }
+      });
+      return true;
+    };
+
+    if (geocode()) return;
+
+    // SDK 아직 안 로드됨 — 200ms 폴링으로 대기 (인터랙티브 지도 SDK 로드 후 재시도)
+    const t = setInterval(() => { if (geocode()) clearInterval(t); }, 200);
+    return () => clearInterval(t);
+  }, [property]);
 
   // ── 위치 지도 ref + 초기화
   const locationMapRef = useRef<HTMLDivElement>(null);
@@ -729,14 +762,14 @@ export default function PropertyDetailPage() {
       )}
 
       {/* ── 인쇄 전용 사진 섹션 (2x2 그리드: 사진 최대 3장 + 위치 지도) ── */}
-      {property && (images.length > 0 || (property.latitude && property.longitude)) && (
+      {property && (images.length > 0 || printMapSrc) && (
         <div className="print-only print-photos">
           {images.slice(0, 3).map((src, i) => (
             <img key={`print-photo-${i}`} src={src} alt="" className="print-photo-cell" />
           ))}
-          {property.latitude && property.longitude ? (
+          {printMapSrc ? (
             <img
-              src={`/api/staticmap?lat=${property.latitude}&lng=${property.longitude}`}
+              src={printMapSrc}
               alt="위치 지도"
               className="print-photo-cell"
               onLoad={() => console.log('[staticmap] 이미지 로드 성공')}
