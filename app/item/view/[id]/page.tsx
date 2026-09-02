@@ -224,7 +224,9 @@ export default function PropertyDetailPage() {
   const adminMenuBtnRef = useRef<HTMLButtonElement>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
-  const [printMapSrc, setPrintMapSrc] = useState<string | null>(null);
+  const [printMapCoords, setPrintMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const printMapRef = useRef<HTMLDivElement>(null);
+  const printMapObjRef = useRef<any>(null);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
   const [openSubway,   setOpenSubway]   = useState(true);
@@ -467,7 +469,7 @@ export default function PropertyDetailPage() {
     const lng = property.longitude ? parseFloat(String(property.longitude)) : NaN;
 
     if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-      setPrintMapSrc(`/api/staticmap?lat=${lat}&lng=${lng}`);
+      setPrintMapCoords({ lat, lng });
       return;
     }
     if (!property.address) return;
@@ -477,20 +479,23 @@ export default function PropertyDetailPage() {
       const g = new window.kakao.maps.services.Geocoder();
       g.addressSearch(property.address!, (result: any, status: any) => {
         if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
-          const gLat = parseFloat(result[0].y);
-          const gLng = parseFloat(result[0].x);
-          setPrintMapSrc(`/api/staticmap?lat=${gLat}&lng=${gLng}`);
+          setPrintMapCoords({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
         }
       });
       return true;
     };
 
     if (geocode()) return;
-
-    // SDK 아직 안 로드됨 — 200ms 폴링으로 대기 (인터랙티브 지도 SDK 로드 후 재시도)
     const t = setInterval(() => { if (geocode()) clearInterval(t); }, 200);
     return () => clearInterval(t);
   }, [property]);
+
+  // ── beforeprint: 카카오 인쇄 지도 relayout
+  useEffect(() => {
+    const onBeforePrint = () => { printMapObjRef.current?.relayout(); };
+    window.addEventListener('beforeprint', onBeforePrint);
+    return () => window.removeEventListener('beforeprint', onBeforePrint);
+  }, []);
 
   // ── 위치 지도 ref + 초기화
   const locationMapRef = useRef<HTMLDivElement>(null);
@@ -681,12 +686,52 @@ export default function PropertyDetailPage() {
     if (window.history.length > 1) { router.back(); } else { router.push('/properties'); }
   };
 
+  // ── 카카오 인쇄용 지도 초기화/relayout 공용 헬퍼
+  const ensurePrintMap = async () => {
+    if (!printMapCoords || !printMapRef.current) return;
+    // SDK 대기 (최대 3초)
+    let waited = 0;
+    while (typeof window.kakao?.maps?.Map !== 'function' && waited < 3000) {
+      await new Promise(r => setTimeout(r, 200));
+      waited += 200;
+    }
+    if (typeof window.kakao?.maps?.Map !== 'function') return;
+    if (!printMapObjRef.current) {
+      const pos = new window.kakao.maps.LatLng(printMapCoords.lat, printMapCoords.lng);
+      const map = new window.kakao.maps.Map(printMapRef.current, { center: pos, level: 3, minLevel: 1 });
+      printMapObjRef.current = map;
+      new window.kakao.maps.Marker({ map, position: pos });
+    } else {
+      printMapObjRef.current.relayout();
+    }
+    // 타일 로드 대기
+    await new Promise(r => setTimeout(r, 1500));
+  };
+
+  // ── 인쇄: 맵 off-screen 초기화 후 window.print() (beforeprint에서 relayout)
+  const handlePrint = async () => {
+    if (!printMapCoords || !printMapRef.current) {
+      window.print();
+      return;
+    }
+    // print-only가 display:none이므로 인쇄 전 임시 off-screen 렌더
+    const el = printMapRef.current;
+    const savedStyle = el.style.cssText;
+    el.style.cssText = 'position:fixed!important;top:-9999px!important;left:0!important;width:640px!important;height:400px!important;z-index:-1!important;display:block!important;';
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    await ensurePrintMap();
+    el.style.cssText = savedStyle;
+    window.print(); // beforeprint 이벤트에서 relayout() 자동 호출
+  };
+
   const handleSaveImage = async () => {
     if (!printAreaRef.current || !property) return;
     setSaving(true);
     document.body.classList.add('image-saving');
     // CSS 적용 대기 (2 rAF)
     await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    // 카카오 인쇄 지도 초기화 (image-saving으로 print-only가 보임)
+    await ensurePrintMap();
     try {
       const captureEl = printAreaRef.current;
       const imgEls = Array.from(captureEl.querySelectorAll<HTMLImageElement>('img'));
@@ -761,23 +806,18 @@ export default function PropertyDetailPage() {
         </div>
       )}
 
-      {/* ── 인쇄 전용 사진 섹션 (2x2 그리드: 사진 최대 3장 + 위치 지도) ── */}
-      {property && (images.length > 0 || printMapSrc) && (
+      {/* ── 인쇄 전용 사진 섹션 (2x2 그리드: 사진 최대 3장 + 카카오 인터랙티브 지도) ── */}
+      {property && images.length > 0 && (
         <div className="print-only print-photos">
           {images.slice(0, 3).map((src, i) => (
             <img key={`print-photo-${i}`} src={src} alt="" className="print-photo-cell" />
           ))}
-          {printMapSrc ? (
-            <img
-              src={printMapSrc}
-              alt="위치 지도"
-              className="print-photo-cell"
-              onLoad={() => console.log('[staticmap] 이미지 로드 성공')}
-              onError={(e) => console.error('[staticmap] 이미지 로드 실패:', (e.target as HTMLImageElement).src)}
-            />
-          ) : (
-            <div className="print-photo-cell print-map-placeholder">위치 정보 없음</div>
-          )}
+          <div className="print-photo-cell print-map-kakao-cell">
+            <div ref={printMapRef} className="print-map-kakao" />
+            {!printMapCoords && (
+              <div className="print-map-placeholder" style={{ position: 'absolute', inset: 0 }}>위치 정보 없음</div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1124,6 +1164,8 @@ export default function PropertyDetailPage() {
         }
         body.image-saving .print-photo-cell { display: block !important; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; border: 1px solid #ccc; }
         body.image-saving .print-map-placeholder { background: #e8e8e8; display: flex !important; align-items: center; justify-content: center; font-size: 11px; color: #aaa; }
+        body.image-saving .print-map-kakao-cell { position: relative; overflow: hidden; }
+        body.image-saving .print-map-kakao { display: block !important; width: 100% !important; height: 100% !important; }
         body.image-saving .print-info-block { display: flex !important; flex-direction: column; flex-shrink: 0; padding: 0 8mm 2mm; overflow: hidden; }
         body.image-saving .print-info-title { font-size: 17px !important; font-weight: 700; color: #1a1a1a; margin: 0 0 4px; padding: 0 0 3px; border-bottom: 2px solid #e2a06e; }
         body.image-saving .print-info-table { width: 100%; border-collapse: collapse; font-size: 14px !important; table-layout: fixed; }
@@ -1268,6 +1310,16 @@ export default function PropertyDetailPage() {
             justify-content: center;
             font-size: 11px;
             color: #aaa;
+          }
+          .print-map-kakao-cell {
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+          }
+          .print-map-kakao {
+            display: block;
+            width: 100%;
+            height: 100%;
           }
 
           /* 4) 정보 표 — 컴팩트 (자동 stretch 안 함) */
@@ -1911,7 +1963,7 @@ export default function PropertyDetailPage() {
                       style={{ display: 'flex', alignItems: 'center', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#16a34a', textDecoration: 'none', borderBottom: '1px solid #f0f0f0' }}>
                       📋 계약 등록
                     </a>
-                    <button onClick={() => { window.print(); setShowAdminMenu(false); setAdminMenuPos(null); }}
+                    <button onClick={() => { setShowAdminMenu(false); setAdminMenuPos(null); handlePrint(); }}
                       style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '0 16px', minHeight: '44px', fontSize: '14px', fontWeight: 600, color: '#1a1a1a', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', textAlign: 'left' }}>
                       인쇄
                     </button>
@@ -2097,7 +2149,7 @@ export default function PropertyDetailPage() {
                 📋 계약 등록
               </a>
               <button
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 style={{ flex: 1, minWidth: '90px', padding: '12px', background: '#1a1a1a', color: '#e2a06e', border: '1px solid #1a1a1a', borderRadius: '4px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 title="인쇄하기"
               >
