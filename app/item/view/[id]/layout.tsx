@@ -86,7 +86,7 @@ export async function generateMetadata(
     description,
     alternates: { canonical: `https://hermann-realty.com/item/view/${property.property_number}` },
     ...(noIndex && { robots: { index: false, follow: false } }),
-    openGraph: { title, description, images: [{ url: firstImage }] },
+    openGraph: { siteName: '헤르만부동산', title, description, images: [{ url: firstImage }] },
     twitter: { card: 'summary_large_image', title, description, images: [firstImage] },
   };
 }

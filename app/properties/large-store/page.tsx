@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     canonical: 'https://hermann-realty.com/properties/large-store',
   },
   openGraph: {
+    siteName: '헤르만부동산',
     title: '창고형 약국 자리 임대 | 대형 매장 전문 - 헤르만부동산',
     description:
       '창고형 약국, 식자재마트, 아울렛 등 100평 이상 대형 매장 자리 전문 중개. 단독건물부터 쇼핑몰 입점까지 헤르만부동산이 찾아드립니다.',
