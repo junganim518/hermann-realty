@@ -58,7 +58,7 @@ export async function generateMetadata(
 
   const firstImage = (imgs[0]?.image_url || '').trim() || 'https://hermann-realty.com/og-image.png';
   const headline = customTitle || [propertyType, transactionType].filter(Boolean).join(' ');
-  const title = `${[propertyNumber, headline].filter(Boolean).join(' ')} - 헤르만부동산`;
+  const title = `${headline} - 헤르만부동산`;
   const descPriceParts: string[] = [];
   if (transactionType === '월세') {
     if (property.deposit) descPriceParts.push(`보증금 ${Number(property.deposit).toLocaleString()}만원`);
