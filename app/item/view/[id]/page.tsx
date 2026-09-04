@@ -811,7 +811,7 @@ export default function PropertyDetailPage() {
               {property.transaction_type === '매매' && (property.current_deposit != null || property.current_rent != null) && (
               <tr>
                 <th>기보증금/월세</th>
-                <td colSpan={3}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ')}</td>
+                <td colSpan={3}>{[property.current_deposit != null ? formatPrice(property.current_deposit) : null, property.current_rent != null ? formatPrice(property.current_rent) : null].filter(Boolean).join(' / ')}</td>
               </tr>
               )}
               <tr>
@@ -1542,7 +1542,7 @@ export default function PropertyDetailPage() {
                           <tr style={rowSt}><td style={labelTd}>총 주차대수</td><td style={valTd}>{parkingCountCell}</td></tr>
                           {!isBuilding && <tr style={rowSt}><td style={labelTd}>방수/욕실수</td><td style={valTd}>{roomBathroomCell}</td></tr>}
                           {isSale && (property.current_deposit != null || property.current_rent != null) && (
-                            <tr style={rowSt}><td style={labelTd}>기보증금/월세</td><td style={valTd}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ')}</td></tr>
+                            <tr style={rowSt}><td style={labelTd}>기보증금/월세</td><td style={valTd}>{[property.current_deposit != null ? formatPrice(property.current_deposit) : null, property.current_rent != null ? formatPrice(property.current_rent) : null].filter(Boolean).join(' / ')}</td></tr>
                           )}
                           <tr style={rowSt}><td style={labelTd}>방향</td><td style={valTd}>{property.direction ?? '-'}</td></tr>
                           <tr style={rowSt}><td style={labelTd}>입주가능일</td><td style={valTd}>{availableDateCell}</td></tr>
@@ -1592,7 +1592,7 @@ export default function PropertyDetailPage() {
                             <td style={valTd}>{roomBathroomCell}</td>
                           </> : <>
                             <td style={labelTd}>기보증금/월세</td>
-                            <td style={valTd}>{[property.current_deposit != null ? `${property.current_deposit.toLocaleString()}만원` : null, property.current_rent != null ? `${property.current_rent.toLocaleString()}만원` : null].filter(Boolean).join(' / ') || '-'}</td>
+                            <td style={valTd}>{[property.current_deposit != null ? formatPrice(property.current_deposit) : null, property.current_rent != null ? formatPrice(property.current_rent) : null].filter(Boolean).join(' / ') || '-'}</td>
                           </>}
                         </tr>
                         {/* 5행: 방향 | 입주가능일 */}
