@@ -1819,7 +1819,7 @@ function AdminDashboardInner() {
           .prop-mgmt-register-m { display: block !important; }
           .prop-mgmt-controls { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; width: 100% !important; }
           .prop-mgmt-sort { overflow-x: auto; }
-          .prop-mgmt-filter-row { overflow-x: auto; flex-wrap: nowrap !important; }
+          .prop-mgmt-filter-row { overflow-x: auto; flex-wrap: nowrap !important; width: 100%; }
           .prop-mgmt-register-d { display: none !important; }
         }
       ` }} />
