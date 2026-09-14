@@ -53,16 +53,23 @@ export default function TrashPage() {
           .eq('image_url', img.image_url);
         if ((count ?? 1) <= 1) {
           try {
+            const path = new URL(img.image_url).pathname.replace(/^\//, '');
             const { data: { session } } = await supabase.auth.getSession();
-            await fetch('/api/delete-image', {
+            const res = await fetch('/api/delete-image', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
               },
-              body: JSON.stringify({ url: img.image_url }),
+              body: JSON.stringify({ path }),
             });
-          } catch {}
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              console.error('[휴지통] R2 이미지 삭제 실패:', img.image_url, data.error ?? res.status);
+            }
+          } catch (err) {
+            console.error('[휴지통] R2 이미지 삭제 실패:', img.image_url, err);
+          }
         }
       }
       await supabase.from('property_images').delete().eq('property_id', p.id);
