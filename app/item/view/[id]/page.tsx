@@ -291,18 +291,27 @@ export default function PropertyDetailPage() {
     });
   }, []);
 
-  // 관리자 전용: 임대인/임차인 연락처·내부메모는 로그인 확인 후에만 별도 조회 (손님에게 노출 방지)
+  // 관리자 전용: 임대인/임차인 연락처·내부메모·landlord_id는 로그인 확인 후에만 별도 조회 (손님에게 노출 방지)
   useEffect(() => {
     if (!isAdmin || !property?.id) return;
     let cancelled = false;
     (async () => {
       const { data: sensitive } = await supabase
         .from('properties')
-        .select('landlord_name, landlord_phone, tenant_name, tenant_phone, extra_contacts, admin_memo')
+        .select('landlord_id, landlord_name, landlord_phone, tenant_name, tenant_phone, extra_contacts, admin_memo')
         .eq('id', property.id)
         .single();
-      if (!cancelled && sensitive) {
-        setProperty(prev => (prev ? { ...prev, ...sensitive } : prev));
+      if (cancelled || !sensitive) return;
+      setProperty(prev => (prev ? { ...prev, ...sensitive } : prev));
+
+      // 임대인 연결 정보 (있을 때만)
+      if (sensitive.landlord_id) {
+        const { data: landlordData } = await supabase
+          .from('landlords')
+          .select('id, name, phone')
+          .eq('id', sensitive.landlord_id)
+          .single();
+        if (!cancelled && landlordData) setLinkedLandlord(landlordData);
       }
     })();
     return () => { cancelled = true; };
@@ -364,12 +373,12 @@ export default function PropertyDetailPage() {
       setLoading(true);
 
       // 1) 매물 조회 (임대인/임차인 연락처·내부메모는 제외 — 관리자 로그인 확인 후 별도 조회)
-      const { data } = await supabase
-        .from('properties')
-        .select(`${PUBLIC_PROPERTY_COLUMNS}, landlord_id`)
+      //    public_properties 뷰 자체가 deleted_at IS NULL만 노출하므로 별도 필터 불필요
+      const { data } = (await supabase
+        .from('public_properties')
+        .select(PUBLIC_PROPERTY_COLUMNS)
         .eq('property_number', id)
-        .is('deleted_at', null)
-        .single();
+        .single()) as { data: any };
 
       if (data) {
         // 2) property_id(uuid)로 이미지 조회
@@ -379,21 +388,13 @@ export default function PropertyDetailPage() {
           .eq('property_id', data.id)
           .order('order_index', { ascending: true });
 
-        (data as any).property_images = imgs ?? [];
+        data.property_images = imgs ?? [];
       }
 
       setProperty(data);
       setLoading(false);
 
-      // 임대인 연결 정보 (있을 때만)
-      if ((data as any)?.landlord_id) {
-        const { data: landlordData } = await supabase
-          .from('landlords')
-          .select('id, name, phone')
-          .eq('id', (data as any).landlord_id)
-          .single();
-        if (landlordData) setLinkedLandlord(landlordData);
-      }
+      // 임대인 연결 정보는 관리자 전용 민감정보 조회 useEffect에서 landlord_id 확보 후 처리
 
       // 담당자 조회 (agent_id 있으면 agents 테이블, 없으면 대표 폴백)
       const DEFAULT_AGENT = { name: '황정아', title: '대표', license: '공인중개사', phone: '010-8680-8151', kakao_url: 'https://open.kakao.com/o/s3lwiwsh' };
@@ -412,11 +413,10 @@ export default function PropertyDetailPage() {
         // 1차: 같은 property_type + transaction_type + 면적 ±50%
         const area = parseFloat(data.exclusive_area);
         let query1 = supabase
-          .from('properties')
+          .from('public_properties')
           .select(PUBLIC_PROPERTY_COLUMNS)
           .eq('property_type', data.property_type)
           .eq('status', '거래중') // 추천 매물엔 거래중만
-          .is('deleted_at', null)
           .neq('property_number', data.property_number)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -438,11 +438,10 @@ export default function PropertyDetailPage() {
           const existIds = new Set(results.map((r: any) => r.property_number));
           existIds.add(data.property_number);
           const { data: raw2 } = await supabase
-            .from('properties')
+            .from('public_properties')
             .select(PUBLIC_PROPERTY_COLUMNS)
             .eq('property_type', data.property_type)
             .eq('status', '거래중') // 추천 매물엔 거래중만
-            .is('deleted_at', null)
             .order('created_at', { ascending: false })
             .limit(10);
           const extra = (raw2 ?? []).filter((p: any) => !existIds.has(p.property_number));

@@ -507,9 +507,8 @@ function MapPageInner() {
     (async () => {
       setLoading(true);
       const { data: props } = await supabase
-        .from('properties')
+        .from('public_properties')
         .select(PUBLIC_PROPERTY_COLUMNS)
-        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       // 각 매물의 이미지를 property_id로 조회

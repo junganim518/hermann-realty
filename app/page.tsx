@@ -119,9 +119,8 @@ export default function Home() {
   useEffect(() => {
     async function fetchProperties() {
       const { data } = await supabase
-        .from('properties')
+        .from('public_properties')
         .select(PUBLIC_PROPERTY_COLUMNS)
-        .is('deleted_at', null)
         .neq('status', '보류') // 보류·공동중개매물은 사이트에서 숨김
         .neq('status', '공동중개매물')
         .order('is_sold', { ascending: true })

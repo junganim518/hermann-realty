@@ -269,9 +269,8 @@ const PAGE_CSS = `
 
 export default async function LargeStorePage() {
   const { data: props } = await supabase
-    .from('properties')
+    .from('public_properties')
     .select(PUBLIC_PROPERTY_COLUMNS)
-    .is('deleted_at', null)
     .eq('status', '거래중')
     .like('theme_type', '%대형매장부지%')
     .order('created_at', { ascending: false });
