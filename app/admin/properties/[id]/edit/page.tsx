@@ -79,8 +79,10 @@ const uploadImageToR2 = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append('file', compressed);
   formData.append('folder', 'properties');
+  const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch('/api/upload', {
     method: 'POST',
+    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     body: formData,
   });
   const data = await res.json();
@@ -93,9 +95,13 @@ const deleteImageFromR2 = async (imageUrl: string): Promise<void> => {
   try {
     const urlObj = new URL(imageUrl);
     const path = urlObj.pathname.replace(/^\//, '');
+    const { data: { session } } = await supabase.auth.getSession();
     await fetch('/api/delete-image', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
       body: JSON.stringify({ path }),
     });
   } catch (err) {

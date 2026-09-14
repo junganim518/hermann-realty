@@ -52,7 +52,17 @@ export default function TrashPage() {
           .select('*', { count: 'exact', head: true })
           .eq('image_url', img.image_url);
         if ((count ?? 1) <= 1) {
-          try { await fetch('/api/delete-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: img.image_url }) }); } catch {}
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            await fetch('/api/delete-image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+              },
+              body: JSON.stringify({ url: img.image_url }),
+            });
+          } catch {}
         }
       }
       await supabase.from('property_images').delete().eq('property_id', p.id);

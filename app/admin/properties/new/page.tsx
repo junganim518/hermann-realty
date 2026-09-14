@@ -78,8 +78,10 @@ const uploadImageToR2 = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append('file', compressed);
   formData.append('folder', 'properties');
+  const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch('/api/upload', {
     method: 'POST',
+    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     body: formData,
   });
   const data = await res.json();
