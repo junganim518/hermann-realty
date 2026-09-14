@@ -509,6 +509,8 @@ function MapPageInner() {
       const { data: props } = await supabase
         .from('public_properties')
         .select(PUBLIC_PROPERTY_COLUMNS)
+        .neq('status', '보류') // 보류·공동중개매물은 사이트에서 숨김
+        .neq('status', '공동중개매물')
         .order('created_at', { ascending: false });
 
       // 각 매물의 이미지를 property_id로 조회
