@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_PROPERTY_COLUMNS } from '@/lib/publicPropertyFields';
 import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
 import { formatMaintenance } from '@/lib/formatProperty';
@@ -183,7 +184,7 @@ function PropertiesPageInner() {
       setLoading(true);
       let query = supabase
         .from('properties')
-        .select('*')
+        .select(PUBLIC_PROPERTY_COLUMNS)
         .is('deleted_at', null)
         .neq('status', '보류') // 보류·공동중개매물은 사이트에서 숨김
         .neq('status', '공동중개매물')

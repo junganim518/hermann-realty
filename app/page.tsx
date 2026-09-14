@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_PROPERTY_COLUMNS } from '@/lib/publicPropertyFields';
 import PropertyCard from '@/components/PropertyCard';
 import { LargeStoreSidebarBanner, LargeStoreMobileBanner } from '@/components/LargeStoreBanner';
 import { PrecentSidebarBanner, PrecentMobileBanner } from '@/components/PrecentBanner';
@@ -119,7 +120,7 @@ export default function Home() {
     async function fetchProperties() {
       const { data } = await supabase
         .from('properties')
-        .select('*')
+        .select(PUBLIC_PROPERTY_COLUMNS)
         .is('deleted_at', null)
         .neq('status', '보류') // 보류·공동중개매물은 사이트에서 숨김
         .neq('status', '공동중개매물')

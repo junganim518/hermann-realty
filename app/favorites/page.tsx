@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Heart, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_PROPERTY_COLUMNS } from '@/lib/publicPropertyFields';
 import {
   getFavorites,
   removeFavorite,
@@ -28,7 +29,7 @@ export default function FavoritesPage() {
     const ids = favs.map(f => f.propertyId);
     const { data: props } = await supabase
       .from('properties')
-      .select('*')
+      .select(PUBLIC_PROPERTY_COLUMNS)
       .in('id', ids)
       .is('deleted_at', null)
       .neq('status', '보류') // 보류·공동중개매물은 사이트에서 숨김

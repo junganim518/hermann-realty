@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Ruler, Car, Building2, Users, Phone, ClipboardList } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_PROPERTY_COLUMNS } from '@/lib/publicPropertyFields';
 import PropertyCard from '@/components/PropertyCard';
 
 const OG_IMAGE = 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=1400&q=80&auto=format&fit=crop&crop=center';
@@ -269,7 +270,7 @@ const PAGE_CSS = `
 export default async function LargeStorePage() {
   const { data: props } = await supabase
     .from('properties')
-    .select('*')
+    .select(PUBLIC_PROPERTY_COLUMNS)
     .is('deleted_at', null)
     .eq('status', '거래중')
     .like('theme_type', '%대형매장부지%')

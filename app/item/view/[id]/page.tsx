@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Link as LinkIcon, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_PROPERTY_COLUMNS } from '@/lib/publicPropertyFields';
 import { isNewProperty } from '@/lib/isNewProperty';
 import { addRecentlyViewed } from '@/lib/recentlyViewed';
 import { isBot } from '@/lib/isBot';
@@ -290,6 +291,23 @@ export default function PropertyDetailPage() {
     });
   }, []);
 
+  // 관리자 전용: 임대인/임차인 연락처·내부메모는 로그인 확인 후에만 별도 조회 (손님에게 노출 방지)
+  useEffect(() => {
+    if (!isAdmin || !property?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data: sensitive } = await supabase
+        .from('properties')
+        .select('landlord_name, landlord_phone, tenant_name, tenant_phone, extra_contacts, admin_memo')
+        .eq('id', property.id)
+        .single();
+      if (!cancelled && sensitive) {
+        setProperty(prev => (prev ? { ...prev, ...sensitive } : prev));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin, property?.id]);
+
   // 매물 조회수 +1 + 최근 본 매물 기록 (봇/관리자 제외, localStorage 24시간 중복 방지)
   useEffect(() => {
     const propId = property?.id;
@@ -345,10 +363,10 @@ export default function PropertyDetailPage() {
     async function fetchProperty() {
       setLoading(true);
 
-      // 1) 매물 조회
+      // 1) 매물 조회 (임대인/임차인 연락처·내부메모는 제외 — 관리자 로그인 확인 후 별도 조회)
       const { data } = await supabase
         .from('properties')
-        .select('*')
+        .select(`${PUBLIC_PROPERTY_COLUMNS}, landlord_id`)
         .eq('property_number', id)
         .is('deleted_at', null)
         .single();
@@ -361,7 +379,7 @@ export default function PropertyDetailPage() {
           .eq('property_id', data.id)
           .order('order_index', { ascending: true });
 
-        data.property_images = imgs ?? [];
+        (data as any).property_images = imgs ?? [];
       }
 
       setProperty(data);
@@ -395,7 +413,7 @@ export default function PropertyDetailPage() {
         const area = parseFloat(data.exclusive_area);
         let query1 = supabase
           .from('properties')
-          .select('*')
+          .select(PUBLIC_PROPERTY_COLUMNS)
           .eq('property_type', data.property_type)
           .eq('status', '거래중') // 추천 매물엔 거래중만
           .is('deleted_at', null)
@@ -421,7 +439,7 @@ export default function PropertyDetailPage() {
           existIds.add(data.property_number);
           const { data: raw2 } = await supabase
             .from('properties')
-            .select('*')
+            .select(PUBLIC_PROPERTY_COLUMNS)
             .eq('property_type', data.property_type)
             .eq('status', '거래중') // 추천 매물엔 거래중만
             .is('deleted_at', null)

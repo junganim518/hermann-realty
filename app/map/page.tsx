@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_PROPERTY_COLUMNS } from '@/lib/publicPropertyFields';
 import Link from 'next/link';
 import { isNewProperty } from '@/lib/isNewProperty';
 import ThemeBadges from '@/components/ThemeBadges';
@@ -507,7 +508,7 @@ function MapPageInner() {
       setLoading(true);
       const { data: props } = await supabase
         .from('properties')
-        .select('*')
+        .select(PUBLIC_PROPERTY_COLUMNS)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
