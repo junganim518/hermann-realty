@@ -183,17 +183,15 @@ export default function Home() {
       await Promise.all([
         ...types.map(async (t) => {
           const { count } = await supabase
-            .from('properties')
+            .from('public_properties')
             .select('*', { count: 'exact', head: true })
-            .is('deleted_at', null)
             .eq('property_type', t);
           tc[t] = count ?? 0;
         }),
         ...themes.map(async (t) => {
           const { count } = await supabase
-            .from('properties')
+            .from('public_properties')
             .select('*', { count: 'exact', head: true })
-            .is('deleted_at', null)
             .ilike('theme_type', `%${t}%`);
           hc[t] = count ?? 0;
         }),
