@@ -16,11 +16,11 @@ function safeJsonLd(obj: object): string {
 }
 
 async function fetchProperty(propertyNumber: string) {
+  // anon은 properties 테이블 SELECT 권한이 없음 (RLS 제거 후 public_properties 뷰로만 접근 가능)
   const { data: raw, error } = await supabase
-    .from('properties')
+    .from('public_properties')
     .select(PROPERTY_SELECT)
     .eq('property_number', propertyNumber)
-    .is('deleted_at', null)
     .single();
   if (error) console.error('[JSON-LD] property fetch error:', error.message);
   return (raw as Record<string, any>) ?? null;
