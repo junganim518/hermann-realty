@@ -78,7 +78,12 @@ export default function PageViewTracker() {
       }
       supabase
         .from('page_views')
-        .insert({ page: pathname, device: detectDevice(), referrer: categorizeReferrer() })
+        .insert({
+          page: pathname,
+          device: detectDevice(),
+          referrer: categorizeReferrer(),
+          user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+        })
         .then(({ error }) => {
           if (error) console.warn('[PageViewTracker]', error.message);
         });
