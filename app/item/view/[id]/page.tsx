@@ -117,6 +117,17 @@ const formatPrice = (v: number) => {
   return `${v.toLocaleString()}만원`;
 };
 
+/* ── 인쇄(PDF 저장) 파일명: {매물번호}_{동}{지번} — 시/구/건물명/호수는 제외 ── */
+const INVALID_FILENAME_CHARS = /[\\/:*?"<>|]/g;
+const buildPrintFilename = (property: Record<string, any> | null): string => {
+  const pnum = (property?.property_number || '').trim();
+  const addr = (property?.address || '').trim();
+  const match = addr.match(/([가-힣]+동)\s*(\d+(?:-\d+)?)/);
+  const dongJibun = match ? `${match[1]}${match[2]}` : '';
+  const raw = dongJibun ? `${pnum}_${dongJibun}` : pnum;
+  return raw.replace(INVALID_FILENAME_CHARS, '') || '매물';
+};
+
 const buildPriceStr = (p: any) => {
   if (p.transaction_type === '매매') {
     return p.sale_price ? `매매가 ${formatPrice(p.sale_price)}` : '-';
@@ -224,6 +235,8 @@ export default function PropertyDetailPage() {
   const [adminMenuPos, setAdminMenuPos] = useState<{ bottom: number; right: number } | null>(null);
   const adminMenuBtnRef = useRef<HTMLButtonElement>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const propertyRef = useRef<Property | null>(null);
+  const originalTitleRef = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [openInfo,     setOpenInfo]     = useState(true);
   const [openDesc,     setOpenDesc]     = useState(true);
@@ -289,6 +302,30 @@ export default function PropertyDetailPage() {
     supabase.auth.getUser().then(({ data }) => {
       setIsAdmin(!!data.user);
     });
+  }, []);
+
+  // 인쇄(PDF 저장) 시 기본 파일명을 "매물번호_동지번"으로 — document.title을 잠깐 바꿨다가 복구
+  // (SEO용 layout.tsx의 title은 건드리지 않음, 브라우저 탭에만 순간적으로 반영됨)
+  // beforeprint/afterprint 이벤트 사용 → 버튼 클릭은 물론 Ctrl+P 단축키 인쇄도 함께 커버
+  useEffect(() => { propertyRef.current = property; });
+
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      originalTitleRef.current = document.title;
+      document.title = buildPrintFilename(propertyRef.current);
+    };
+    const handleAfterPrint = () => {
+      if (originalTitleRef.current !== null) {
+        document.title = originalTitleRef.current;
+        originalTitleRef.current = null;
+      }
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
   }, []);
 
   // 관리자 전용: 임대인/임차인 연락처·내부메모·landlord_id는 로그인 확인 후에만 별도 조회 (손님에게 노출 방지)
