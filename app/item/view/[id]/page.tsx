@@ -215,7 +215,7 @@ export default function PropertyDetailPage() {
 
   const [property, setProperty] = useState<Property | null>(null);
   const [linkedLandlord, setLinkedLandlord] = useState<{ id: string; name: string; phone: string | null } | null>(null);
-  const [agent, setAgent] = useState<{ name: string; title?: string; license?: string; phone: string; kakao_url?: string } | null>(null);
+  const [agent, setAgent] = useState<{ name: string; title?: string; license?: string; phone: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [similarProperties, setSimilarProperties] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -434,11 +434,11 @@ export default function PropertyDetailPage() {
       // 임대인 연결 정보는 관리자 전용 민감정보 조회 useEffect에서 landlord_id 확보 후 처리
 
       // 담당자 조회 (agent_id 있으면 agents 테이블, 없으면 대표 폴백)
-      const DEFAULT_AGENT = { name: '황정아', title: '대표', license: '공인중개사', phone: '010-8680-8151', kakao_url: 'https://open.kakao.com/o/s3lwiwsh' };
+      const DEFAULT_AGENT = { name: '황정아', title: '대표', license: '공인중개사', phone: '010-8680-8151' };
       if ((data as any)?.agent_id) {
         const { data: agentData } = await supabase
           .from('agents')
-          .select('name, title, license, phone, kakao_url')
+          .select('name, title, license, phone')
           .eq('id', (data as any).agent_id)
           .single();
         setAgent(agentData ?? DEFAULT_AGENT);
