@@ -172,7 +172,7 @@ export default function AboutPage() {
         {/* ════════════ 섹션 5: 외부 링크 ════════════ */}
         <section className="about-section" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '32px', marginBottom: '20px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1a1a1a', marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e2a06e' }}>🔗 바로가기</h2>
-          <div className="about-link-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+          <div className="about-link-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
             <a
               href="https://blog.naver.com/hermann2025"
               target="_blank"
@@ -192,17 +192,6 @@ export default function AboutPage() {
               onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#03C75A'; }}
             >
               <span style={{ fontSize: '16px', fontWeight: 900 }}>N</span> 플레이스
-            </a>
-            <a
-              href="https://open.kakao.com/o/s3lwiwsh"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: '#FEE500', color: '#3C1E1E', borderRadius: '8px', fontSize: '15px', fontWeight: 700, textDecoration: 'none', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.48 3 2 6.58 2 10.94c0 2.8 1.86 5.27 4.68 6.67-.15.56-.97 3.6-.99 3.83 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.28-2.83.55.08 1.11.12 1.7.12 5.52 0 10-3.58 10-7.94S17.52 3 12 3z"/></svg>
-              카카오톡 문의
             </a>
           </div>
         </section>

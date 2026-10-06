@@ -2286,16 +2286,6 @@ export default function PropertyDetailPage() {
               >
                 💬 문자 문의하기
               </a>
-              {(agent?.kakao_url) && (
-                <a
-                  href={agent.kakao_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '14px', background: '#FEE500', color: '#3C1E1E', fontSize: '16px', fontWeight: 700, borderRadius: '10px', textDecoration: 'none' }}
-                >
-                  💛 카카오톡 문의
-                </a>
-              )}
             </div>
           </div>
         </div>
