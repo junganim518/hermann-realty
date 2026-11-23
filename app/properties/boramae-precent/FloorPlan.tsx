@@ -576,6 +576,34 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
       : (i + 1) % activePhotos.length);
   };
 
+  // 확대 화면(라이트박스)은 끝에서 안 돌고 멈춰야 함(요청사항) — 메인 캐러셀의 순환(wrap)과 다름
+  const goToLightboxPhoto = (delta: 1 | -1) => {
+    setCarouselIndex(i => Math.max(0, Math.min(activePhotos.length - 1, i + delta)));
+  };
+
+  const handleLightboxTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? null;
+  };
+  const handleLightboxTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (Math.abs(dx) < 40 || activePhotos.length < 2) return;
+    goToLightboxPhoto(dx > 0 ? -1 : 1);
+  };
+
+  // 라이트박스에서 Esc(닫기) / 좌우 방향키(이전·다음 사진) 지원
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      else if (e.key === 'ArrowLeft') goToLightboxPhoto(-1);
+      else if (e.key === 'ArrowRight') goToLightboxPhoto(1);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [lightboxOpen, activePhotos.length]);
+
   const VACANT_COLOR = '#2563eb';
   const LEASED_COLOR = '#9ca3af';
 
@@ -730,7 +758,12 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
         .pu-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); }
         .pu-dot-active { background: #fff; }
         .pu-lightbox { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; }
-        .pu-lightbox-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 18px; cursor: pointer; }
+        .pu-lightbox-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pu-lightbox-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pu-lightbox-arrow:disabled { opacity: 0.3; cursor: default; }
+        .pu-lightbox-arrow-left { left: 12px; }
+        .pu-lightbox-arrow-right { right: 12px; }
+        .pu-lightbox-counter { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; }
         @media (min-width: 768px) {
           .pu-modal-overlay { align-items: center; padding: 20px; }
           .pu-modal-panel { max-width: 900px; max-height: 80vh; border-radius: 16px; flex-direction: row; }
@@ -775,7 +808,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
               </div>
             )}
 
-            <div className="pu-modal-info">
+            <div className="pu-modal-info" style={lightboxOpen ? { overflowY: 'hidden' } : undefined}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <span style={{ fontWeight: 800, fontSize: '20px', color: '#1a1a1a' }}>{activeUnitNo}호</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -838,14 +871,36 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           </div>
 
           {lightboxOpen && activePhotos[carouselIndex] && (
-            <div className="pu-lightbox" onClick={() => setLightboxOpen(false)}>
+            <div
+              className="pu-lightbox"
+              onClick={() => setLightboxOpen(false)}
+              onTouchStart={handleLightboxTouchStart}
+              onTouchEnd={handleLightboxTouchEnd}
+            >
               <img
                 src={activePhotos[carouselIndex].url}
-                alt=""
+                alt={`${activeUnitNo}호 사진 ${carouselIndex + 1}`}
                 style={{ maxWidth: '94vw', maxHeight: '94vh', objectFit: 'contain' }}
                 onClick={e => e.stopPropagation()}
               />
               <button className="pu-lightbox-close" aria-label="닫기" onClick={() => setLightboxOpen(false)}>✕</button>
+              {activePhotos.length > 1 && (
+                <>
+                  <button
+                    className="pu-lightbox-arrow pu-lightbox-arrow-left"
+                    aria-label="이전 사진"
+                    disabled={carouselIndex === 0}
+                    onClick={e => { e.stopPropagation(); goToLightboxPhoto(-1); }}
+                  >‹</button>
+                  <button
+                    className="pu-lightbox-arrow pu-lightbox-arrow-right"
+                    aria-label="다음 사진"
+                    disabled={carouselIndex === activePhotos.length - 1}
+                    onClick={e => { e.stopPropagation(); goToLightboxPhoto(1); }}
+                  >›</button>
+                  <div className="pu-lightbox-counter">{carouselIndex + 1} / {activePhotos.length}</div>
+                </>
+              )}
             </div>
           )}
         </div>
