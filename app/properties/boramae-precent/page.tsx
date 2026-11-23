@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Phone, MapPin, Building2, Users, Car, TrendingUp } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import FloorPlan, { type PublicUnit } from './FloorPlan';
 import Gallery, { type GalleryItem } from './Gallery';
@@ -143,16 +144,14 @@ const PAGE_CSS = `
 `;
 
 export default async function BoramaePresentPage() {
-  // service role로 조회 — 가격 필드 제외
-  let units: PublicUnit[] = [];
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const { data } = await supabaseAdmin
-      .from('precent_units')
-      .select('unit_no, floor, zone, exclusive_area_py, contract_area_py, status, memo')
-      .order('floor')
-      .order('unit_no');
-    units = (data ?? []) as PublicUnit[];
-  }
+  // 공개 뷰(precent_units_public)로 조회 — 가격 컬럼(deposit_krw, monthly_rent_krw) 자체가
+  // 뷰에 없어서 DB 레벨에서 노출이 차단됨. anon 키로 조회 (서비스롤 불필요).
+  const { data } = await supabase
+    .from('precent_units_public')
+    .select('unit_no, floor, zone, exclusive_area_py, contract_area_py, status, memo')
+    .order('floor')
+    .order('unit_no');
+  const units = (data ?? []) as PublicUnit[];
 
   // 갤러리 이미지
   let galleryItems: GalleryItem[] = [];
