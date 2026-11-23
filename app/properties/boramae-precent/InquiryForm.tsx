@@ -3,16 +3,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
-const ZONE_OPTIONS = [
-  { value: '', label: '-- 관심 존 선택 --' },
-  { value: 'street-fb', label: '1F F&B 스트리트 (식음료·카페)' },
-  { value: 'clinic-academy', label: '2~3F 클리닉·학원존 (병의원·교육)' },
-  { value: 'mid-office', label: '2~3F 중형 오피스 (10~20평대)' },
-  { value: 'section-office', label: '2~3F 소형 섹션오피스 (5평대)' },
-  { value: 'large', label: 'B1 대형 상가 (30~45평)' },
-  { value: 'small', label: 'B1 소형 창고 (5~7평)' },
-];
-
 const inSt: React.CSSProperties = {
   width: '100%', height: '44px', border: '1px solid #ddd', borderRadius: '6px',
   padding: '0 14px', fontSize: '15px', outline: 'none', background: '#fff',
@@ -21,7 +11,7 @@ const inSt: React.CSSProperties = {
 const labelSt: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#444', marginBottom: '6px' };
 
 export default function InquiryForm() {
-  const [zone, setZone] = useState('');
+  const [businessType, setBusinessType] = useState('');
   const [area, setArea] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -36,10 +26,9 @@ export default function InquiryForm() {
     if (!name.trim() || !phone.trim()) { alert('이름과 연락처는 필수입니다.'); return; }
 
     setSubmitting(true);
-    const zoneLabel = ZONE_OPTIONS.find(o => o.value === zone)?.label ?? zone;
     const message = [
       '[보라매역 프리센트 임대 문의]',
-      zone ? `관심 존: ${zoneLabel}` : '',
+      businessType.trim() ? `희망 업종: ${businessType.trim()}` : '',
       area ? `희망 면적: ${area}평` : '',
       memo ? `추가 문의: ${memo}` : '',
     ].filter(Boolean).join('\n');
@@ -71,10 +60,8 @@ export default function InquiryForm() {
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <label style={labelSt}>관심 존</label>
-        <select value={zone} onChange={e => setZone(e.target.value)} style={{ ...inSt }}>
-          {ZONE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <label style={labelSt}>희망 업종</label>
+        <input type="text" value={businessType} onChange={e => setBusinessType(e.target.value)} placeholder="예: 카페, 학원, 병원" style={inSt} />
       </div>
       <div>
         <label style={labelSt}>희망 면적 (평)</label>
