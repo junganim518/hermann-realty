@@ -338,7 +338,7 @@ lib/
 - **텍스트 PNG**: `assets/watermark.png` — `scripts/make-watermark-png.js`로 로컬에서 1회 생성해 커밋해둔 투명 PNG (서버 sharp는 한글 글꼴이 없어 SVG 텍스트를 직접 그리면 한글이 깨지므로, 텍스트는 미리 이미지로 만들어 합성만 함)
   - 생성에 쓰는 글꼴(OFL, `assets/fonts/`에 커밋): 영문 `PlayfairDisplay-Regular.ttf`, 한글 `Pretendard-Medium.otf` — 둘 다 생성 스크립트 전용, 런타임에는 불필요
   - PNG 재생성 시: `npm install --save-dev @napi-rs/canvas` 필요(글꼴 파일을 직접 읽어 렌더링 — OS에 폰트 설치 여부와 무관), `node scripts/make-watermark-png.js`
-- **합성 로직**: `lib/watermark.js` (CommonJS, `/api/upload`와 `scripts/watermark-existing-photos.js`가 공용) — `assets/watermark.png`을 사진 가로폭의 48%로 리사이즈 후 불투명도 55%로 가운데 합성(화면 오버레이와 동일 수준 — 처음엔 25%로 했다가 밝은 사진에서 거의 안 보여 올림). 비율/불투명도는 파일 상단 `WATERMARK_WIDTH_RATIO`/`WATERMARK_OPACITY` 상수. 결과는 WebP
+- **합성 로직**: `lib/watermark.js` (CommonJS, `/api/upload`와 `scripts/watermark-existing-photos.js`가 공용) — `assets/watermark.png`을 사진 가로폭의 60%로 리사이즈 후 불투명도 55%로 가운데 합성(화면 오버레이와 동일 수준 — 처음엔 25%로 했다가 밝은 사진에서 거의 안 보여 올림. 폭도 처음 48%에서 60%로 확대). 비율/불투명도는 파일 상단 `WATERMARK_WIDTH_RATIO`/`WATERMARK_OPACITY` 상수. 워터마크 PNG가 가로로 긴 배너형이라 60%로 키워도 세로 사진에서 넘치지 않음. 결과는 WebP
   - `assets/watermark.png` 자체에도 밝은/흰 벽 사진 대비용 약한 그림자 포함 — 글자 알파로 만든 검은 실루엣을 25% 불투명도로 깐 뒤 blur(sigma 2.5)만 준 것(방향성 없는 halo). `scripts/make-watermark-png.js`의 `SHADOW_BLUR_SIGMA`/`SHADOW_OPACITY` 상수로 조정
   - Vercel 배포 시 `assets/watermark.png`이 `/api/upload` 서버리스 번들에 포함되도록 `next.config.js`의 `experimental.outputFileTracingIncludes`에 명시 (빌드 후 `.next/server/app/api/upload/route.js.nft.json`에 포함 여부로 확인됨)
 - **기존 사진 일괄 적용**: `scripts/watermark-existing-photos.js` (`--dry-run`, `--limit N`, `--only 테이블명`)
