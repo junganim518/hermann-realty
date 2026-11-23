@@ -35,6 +35,7 @@ const STATUS_COLOR: Record<string, string> = { vacant: '#166534', inquiry: '#924
 const STATUS_BG: Record<string, string> = { vacant: '#dcfce7', inquiry: '#fef9c3', leased: '#f3f4f6' };
 
 const FLOOR_ORDER = ['B1', '1F', '2F', '3F'];
+const PY_TO_M2 = 3.3058;
 
 // 원 단위 → "O억 O천만원" 표시 (기존 관리자 금액 표시 방식과 통일)
 function formatKRW(won: number | null) {
@@ -44,6 +45,18 @@ function formatKRW(won: number | null) {
   const rest = man % 10000;
   if (uk > 0) return rest > 0 ? `${uk}억 ${rest.toLocaleString()}만원` : `${uk}억`;
   return `${man.toLocaleString()}만원`;
+}
+
+// 선택 요약 막대의 금액 표시 — 합계가 0이어도(선택된 호실 전부 가격 미입력 등) "-" 대신 "0원"
+function formatKRWSum(won: number) {
+  const label = formatKRW(won);
+  return label === '-' ? '0원' : label;
+}
+
+// 선택 요약 막대의 면적 표시 — 평 합계를 먼저 구하고, 그 합계 값 하나만 반올림(평 1자리)해서
+// ㎡도 그 합계에서 바로 환산한다 (호실별로 미리 반올림한 값을 더하지 않음).
+function formatPyAndM2(pySum: number) {
+  return `${pySum.toFixed(1)}평 (${(pySum * PY_TO_M2).toFixed(1)}㎡)`;
 }
 
 export default function PrecentUnitsPage() {
@@ -60,6 +73,7 @@ export default function PrecentUnitsPage() {
   const [editPrice, setEditPrice] = useState<Record<string, { deposit: string; monthly: string }>>({});
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [photoModalUnit, setPhotoModalUnit] = useState<Unit | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -182,6 +196,24 @@ export default function PrecentUnitsPage() {
     triggerPrecentRevalidate();
   };
 
+  // ── 다중 선택(합계용) — DB에 저장하지 않는 화면 전용 상태 ──
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleFloorSelect = (floorUnits: Unit[]) => {
+    const allSelected = floorUnits.length > 0 && floorUnits.every(u => selectedIds.has(u.id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      floorUnits.forEach(u => allSelected ? next.delete(u.id) : next.add(u.id));
+      return next;
+    });
+  };
+
   if (!authChecked) return null;
 
   const filtered = units.filter(u =>
@@ -192,10 +224,25 @@ export default function PrecentUnitsPage() {
 
   const vacantCount = filtered.filter(u => u.status === 'vacant').length;
 
+  // 필터와 무관하게 선택된 호실 전체 기준으로 합계를 낸다 (필터를 바꿔도 선택 자체는 유지됨)
+  const selectedUnits = units.filter(u => selectedIds.has(u.id));
+  const sumField = (field: 'exclusive_area_py' | 'contract_area_py' | 'deposit_krw' | 'monthly_rent_krw') =>
+    selectedUnits.reduce((sum, u) => (u[field] != null ? sum + (u[field] as number) : sum), 0);
+  const missingAreaCount = selectedUnits.filter(u => u.exclusive_area_py == null || u.contract_area_py == null).length;
+  const missingPriceCount = selectedUnits.filter(u => u.deposit_krw == null || u.monthly_rent_krw == null).length;
+  const exclusivePySum = sumField('exclusive_area_py');
+  const contractPySum = sumField('contract_area_py');
+  const depositSum = sumField('deposit_krw');
+  const monthlySum = sumField('monthly_rent_krw');
+  const selectedUnitNos = selectedUnits.map(u => u.unit_no);
+  const unitNoDisplay = selectedUnitNos.length <= 5
+    ? selectedUnitNos.join(', ')
+    : `${selectedUnitNos.slice(0, 5).join(', ')} 외 ${selectedUnitNos.length - 5}개`;
+
   const selSt: React.CSSProperties = { height: '34px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 10px', fontSize: '13px', outline: 'none', background: '#fff', color: '#333' };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f4f4', padding: '24px 20px' }}>
+    <div style={{ minHeight: '100vh', background: '#f4f4f4', padding: '24px 20px', paddingBottom: selectedUnits.length > 0 ? '150px' : '24px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* 헤더 */}
@@ -239,6 +286,7 @@ export default function PrecentUnitsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #e0e0e0' }}>
+                  <th style={{ padding: '10px', width: '42px' }}></th>
                   {['호실', '층', '업종(상호)', '전용(평)', '계약(평)', '보증금', '월세', '상태', '메모(비공개)', '사진'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#555', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
@@ -250,11 +298,31 @@ export default function PrecentUnitsPage() {
                   let lastFloor: string | null = null;
                   let rowIndex = 0;
 
+                  // 층별 "전체 선택" 체크칸이 참조할, 화면에 보이는(필터 적용된) 호실 목록
+                  const floorGroups = new Map<string, Unit[]>();
+                  filtered.forEach(u => {
+                    if (!floorGroups.has(u.floor)) floorGroups.set(u.floor, []);
+                    floorGroups.get(u.floor)!.push(u);
+                  });
+
                   filtered.forEach(u => {
                     if (u.floor !== lastFloor) {
                       lastFloor = u.floor;
+                      const floorUnits = floorGroups.get(u.floor) ?? [];
+                      const floorAllSelected = floorUnits.length > 0 && floorUnits.every(fu => selectedIds.has(fu.id));
+                      const floorSomeSelected = !floorAllSelected && floorUnits.some(fu => selectedIds.has(fu.id));
                       rows.push(
                         <tr key={`floor-${u.floor}`}>
+                          <td style={{ padding: '10px', background: '#eef1f5', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0', textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={floorAllSelected}
+                              ref={el => { if (el) el.indeterminate = floorSomeSelected; }}
+                              onChange={() => toggleFloorSelect(floorUnits)}
+                              title={`${u.floor} 전체 선택/해제`}
+                              style={{ width: '22px', height: '22px', cursor: 'pointer' }}
+                            />
+                          </td>
                           <td colSpan={10} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
                             {u.floor}
                           </td>
@@ -266,9 +334,18 @@ export default function PrecentUnitsPage() {
                     const adminMemoEditing = u.id in editAdminMemo;
                     const priceEditing = u.id in editPrice;
                     const i = rowIndex++;
+                    const isSelected = selectedIds.has(u.id);
 
                     rows.push(
-                      <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: isSelected ? '#fff7ec' : i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(u.id)}
+                            style={{ width: '22px', height: '22px', cursor: 'pointer' }}
+                          />
+                        </td>
                         <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap' }}>{u.unit_no}</td>
                         <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{u.floor}</td>
                         <td style={{ padding: '10px 12px', minWidth: '140px' }}>
@@ -395,6 +472,35 @@ export default function PrecentUnitsPage() {
           onClose={() => setPhotoModalUnit(null)}
           onCountChange={(unitId, count) => setPhotoCounts(prev => ({ ...prev, [unitId]: count }))}
         />
+      )}
+
+      {/* 선택 요약 막대 — 관리자 화면 전용, 선택 상태는 DB에 저장하지 않음 */}
+      {selectedUnits.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 400,
+          background: '#1a1a1a', color: '#fff', padding: '12px 20px',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.25)',
+          display: 'flex', flexWrap: 'wrap', gap: '8px 24px', alignItems: 'center',
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'baseline', flex: '1 1 240px', minWidth: '240px' }}>
+            <span style={{ fontWeight: 800, fontSize: '14px', color: '#e2a06e', whiteSpace: 'nowrap' }}>{selectedUnits.length}개 선택</span>
+            <span style={{ fontSize: '12px', color: '#ccc', wordBreak: 'break-all' }}>{unitNoDisplay}</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px', fontSize: '12px', color: '#eee' }}>
+            <span>전용 {formatPyAndM2(exclusivePySum)}</span>
+            <span>계약 {formatPyAndM2(contractPySum)}</span>
+            <span>보증금 {formatKRWSum(depositSum)}</span>
+            <span>월세 {formatKRWSum(monthlySum)}</span>
+            {missingAreaCount > 0 && <span style={{ color: '#fbbf24' }}>면적 미입력 {missingAreaCount}개 제외</span>}
+            {missingPriceCount > 0 && <span style={{ color: '#fbbf24' }}>가격 미입력 {missingPriceCount}개 제외</span>}
+          </div>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            style={{ height: '32px', padding: '0 14px', fontSize: '12px', fontWeight: 700, background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            선택 해제
+          </button>
+        </div>
       )}
     </div>
   );
