@@ -192,10 +192,15 @@ async function main() {
     return;
   }
 
+  const totalTargets = targets.reduce((sum, t) => sum + rowsByTable[t.table].length, 0);
+  const totalToProcess = Math.min(opts.limit, totalTargets);
+  console.log(`전체 대상 ${totalTargets}건 중 이번 실행에서 ${totalToProcess}건 처리 예정\n`);
+
   let remaining = opts.limit;
+  let attempted = 0;
   const summary = {};
   for (const t of targets) {
-    summary[t.table] = { done: 0, skipped: 0, failed: 0 };
+    summary[t.table] = { target: rowsByTable[t.table].length, done: 0, skipped: 0, failed: 0 };
   }
 
   for (const t of targets) {
@@ -203,18 +208,19 @@ async function main() {
     const rows = rowsByTable[t.table];
     for (const row of rows) {
       if (remaining <= 0) break;
+      attempted++;
       const id = row[t.pk];
       const oldUrl = row[t.col];
       const key = deriveR2Key(oldUrl);
+      const progress = `[${attempted}/${totalToProcess}]`;
 
       if (!key) {
-        console.warn(`[건너뜀] ${t.table}#${id}: R2_PUBLIC_URL과 다른 도메인이라 키를 알 수 없음 (${oldUrl})`);
+        console.warn(`${progress} 건너뜀 — ${t.table}#${id}: R2_PUBLIC_URL과 다른 도메인이라 키를 알 수 없음 (${oldUrl})`);
         summary[t.table].skipped++;
         continue;
       }
 
       try {
-        console.log(`[처리중] ${t.table}#${id} ← ${oldUrl}`);
         const original = await fetchOriginal(oldUrl);
         const watermarked = await applyWatermark(original);
         const newKey = buildWatermarkedKey(key);
@@ -226,11 +232,11 @@ async function main() {
         appendLogRow(t.table, id, oldUrl, newUrl);
         appendRollbackSql(t.table, t.col, t.pk, id, oldUrl);
 
-        console.log(`  → 완료: ${newUrl}`);
+        console.log(`${progress} 완료 — ${t.table}#${id} → ${newUrl}`);
         summary[t.table].done++;
         remaining--;
       } catch (err) {
-        console.error(`  → 실패: ${err.message || err}`);
+        console.error(`${progress} 실패 — ${t.table}#${id}: ${err.message || err}`);
         summary[t.table].failed++;
       }
     }
@@ -238,9 +244,15 @@ async function main() {
 
   console.log('\n처리 결과:');
   console.log('------------------------------------------');
+  let grandTarget = 0, grandDone = 0, grandSkipped = 0, grandFailed = 0;
   for (const t of targets) {
     const s = summary[t.table];
-    console.log(`${t.table.padEnd(22)} 완료 ${s.done} / 건너뜀 ${s.skipped} / 실패 ${s.failed}`);
+    console.log(`${t.table.padEnd(22)} 대상 ${s.target} / 완료 ${s.done} / 건너뜀 ${s.skipped} / 실패 ${s.failed}`);
+    grandTarget += s.target; grandDone += s.done; grandSkipped += s.skipped; grandFailed += s.failed;
+  }
+  if (targets.length > 1) {
+    console.log('------------------------------------------');
+    console.log(`합계`.padEnd(22) + ` 대상 ${grandTarget} / 완료 ${grandDone} / 건너뜀 ${grandSkipped} / 실패 ${grandFailed}`);
   }
 }
 

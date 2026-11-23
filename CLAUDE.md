@@ -345,7 +345,8 @@ lib/
   - 대상: `property_images.image_url`, `precent_gallery.url`, `precent_unit_photos.url`
   - 원본 R2 키에 `-wm.webp`를 붙인 새 키로 "추가" 업로드 후 DB의 url만 교체 — 원본 파일은 삭제/덮어쓰기하지 않음
   - 이미 `-wm.`이 붙은 주소는 재실행해도 건너뜀 (중복 적용 방지)
-  - 실행 기록: `scripts/watermark-log.csv` (옛 주소→새 주소 누적) / 되돌리기용 SQL: `scripts/watermark-rollback.sql` (실행할수록 append됨)
+  - 실행 기록: `scripts/watermark-log.csv` (옛 주소→새 주소 누적) / 되돌리기용 SQL: `scripts/watermark-rollback.sql` (실행할수록 append됨) — 둘 다 로컬 전용, `.gitignore`에 등록되어 있어 git에는 올라가지 않음
+  - 진행 상황은 `[n/전체]` 카운터로, 끝나면 테이블별 `대상/완료/건너뜀/실패` 요약 출력. 중단 후 같은 명령 재실행 시 이미 `-wm`인 주소는 자동으로 건너뛰고 이어서 처리됨(동시성 없이 한 장씩 순차 처리)
   - 샘플 미리보기(R2/DB 미반영, 파일만): `scripts/watermark-samples/`
 
 ## 비밀번호 관련
