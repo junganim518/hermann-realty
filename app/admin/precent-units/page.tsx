@@ -33,9 +33,14 @@ const STATUS_BG: Record<string, string> = { vacant: '#dcfce7', inquiry: '#fef9c3
 
 const FLOOR_ORDER = ['B1', '1F', '2F', '3F'];
 
-function fmt(n: number | null) {
-  if (!n) return '-';
-  return (n / 10000).toLocaleString() + '만';
+// 원 단위 → "O억 O천만원" 표시 (기존 관리자 금액 표시 방식과 통일)
+function formatKRW(won: number | null) {
+  if (!won) return '-';
+  const man = Math.round(won / 10000);
+  const uk = Math.floor(man / 10000);
+  const rest = man % 10000;
+  if (uk > 0) return rest > 0 ? `${uk}억 ${rest.toLocaleString()}만원` : `${uk}억`;
+  return `${man.toLocaleString()}만원`;
 }
 
 export default function PrecentUnitsPage() {
@@ -48,6 +53,7 @@ export default function PrecentUnitsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editMemo, setEditMemo] = useState<Record<string, string>>({});
+  const [editPrice, setEditPrice] = useState<Record<string, { deposit: string; monthly: string }>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -83,6 +89,46 @@ export default function PrecentUnitsPage() {
     setUnits(prev => prev.map(u => u.id === id ? { ...u, memo: memo || null } : u));
     setEditMemo(prev => { const n = { ...prev }; delete n[id]; return n; });
     setSavingId(null);
+  };
+
+  // ── 가격 수정 (보증금/월세, 만원 단위 입력 → 원 단위 저장) ──
+  const startEditPrice = (u: Unit) => {
+    setEditPrice(prev => ({
+      ...prev,
+      [u.id]: {
+        deposit: u.deposit_krw ? String(Math.round(u.deposit_krw / 10000)) : '',
+        monthly: u.monthly_rent_krw ? String(Math.round(u.monthly_rent_krw / 10000)) : '',
+      },
+    }));
+  };
+
+  const cancelEditPrice = (id: string) => {
+    setEditPrice(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  const savePrice = async (id: string) => {
+    const edit = editPrice[id];
+    if (!edit) return;
+
+    const depositMan = edit.deposit.trim();
+    const monthlyMan = edit.monthly.trim();
+    if ((depositMan && isNaN(Number(depositMan))) || (monthlyMan && isNaN(Number(monthlyMan)))) {
+      alert('보증금/월세는 숫자(만원 단위)만 입력해주세요.');
+      return;
+    }
+
+    const deposit_krw = depositMan ? Math.round(Number(depositMan) * 10000) : null;
+    const monthly_rent_krw = monthlyMan ? Math.round(Number(monthlyMan) * 10000) : null;
+
+    setSavingId(id);
+    const { error } = await supabase.from('precent_units').update({ deposit_krw, monthly_rent_krw }).eq('id', id);
+    setSavingId(null);
+    if (error) {
+      alert(`가격 저장 실패: ${error.message}`);
+      return;
+    }
+    setUnits(prev => prev.map(u => u.id === id ? { ...u, deposit_krw, monthly_rent_krw } : u));
+    cancelEditPrice(id);
   };
 
   if (!authChecked) return null;
@@ -148,61 +194,118 @@ export default function PrecentUnitsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((u, i) => {
-                  const memoEditing = u.id in editMemo;
-                  return (
-                    <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap' }}>{u.unit_no}</td>
-                      <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{u.floor}</td>
-                      <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#f3f4f6', color: '#374151', fontWeight: 600 }}>
-                          {ZONE_LABEL[u.zone] ?? u.zone}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{u.exclusive_area_py.toFixed(1)}</td>
-                      <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{u.contract_area_py.toFixed(1)}</td>
-                      <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{fmt(u.deposit_krw)}</td>
-                      <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{fmt(u.monthly_rent_krw)}</td>
-                      <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                        <select
-                          value={u.status}
-                          onChange={e => updateStatus(u.id, e.target.value)}
-                          disabled={savingId === u.id}
-                          style={{
-                            height: '28px', border: '1px solid #ddd', borderRadius: '5px', padding: '0 6px',
-                            fontSize: '12px', fontWeight: 600, cursor: 'pointer', outline: 'none',
-                            background: STATUS_BG[u.status] ?? '#f3f4f6',
-                            color: STATUS_COLOR[u.status] ?? '#374151',
-                          }}
-                        >
-                          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                        </select>
-                      </td>
-                      <td style={{ padding: '10px 12px', minWidth: '160px' }}>
-                        {memoEditing ? (
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <input
-                              value={editMemo[u.id]}
-                              onChange={e => setEditMemo(prev => ({ ...prev, [u.id]: e.target.value }))}
-                              onKeyDown={e => { if (e.key === 'Enter') saveMemo(u.id); if (e.key === 'Escape') setEditMemo(prev => { const n = { ...prev }; delete n[u.id]; return n; }); }}
-                              autoFocus
-                              style={{ flex: 1, height: '26px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
-                            />
-                            <button onClick={() => saveMemo(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
-                          </div>
-                        ) : (
-                          <span
-                            onClick={() => setEditMemo(prev => ({ ...prev, [u.id]: u.memo ?? '' }))}
-                            style={{ fontSize: '12px', color: u.memo ? '#333' : '#bbb', cursor: 'pointer' }}
-                            title="클릭해서 편집"
-                          >
-                            {u.memo || '메모 없음'}
+                {(() => {
+                  const rows: React.ReactNode[] = [];
+                  let lastFloor: string | null = null;
+                  let rowIndex = 0;
+
+                  filtered.forEach(u => {
+                    if (u.floor !== lastFloor) {
+                      lastFloor = u.floor;
+                      rows.push(
+                        <tr key={`floor-${u.floor}`}>
+                          <td colSpan={9} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
+                            {u.floor}
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    const memoEditing = u.id in editMemo;
+                    const priceEditing = u.id in editPrice;
+                    const i = rowIndex++;
+
+                    rows.push(
+                      <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap' }}>{u.unit_no}</td>
+                        <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{u.floor}</td>
+                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#f3f4f6', color: '#374151', fontWeight: 600 }}>
+                            {ZONE_LABEL[u.zone] ?? u.zone}
                           </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{u.exclusive_area_py.toFixed(1)}</td>
+                        <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{u.contract_area_py.toFixed(1)}</td>
+                        <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>
+                          {priceEditing ? (
+                            <input
+                              type="number"
+                              value={editPrice[u.id].deposit}
+                              onChange={e => setEditPrice(prev => ({ ...prev, [u.id]: { ...prev[u.id], deposit: e.target.value } }))}
+                              onKeyDown={e => { if (e.key === 'Enter') savePrice(u.id); if (e.key === 'Escape') cancelEditPrice(u.id); }}
+                              placeholder="만원"
+                              autoFocus
+                              style={{ width: '80px', height: '26px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
+                            />
+                          ) : (
+                            <span onClick={() => startEditPrice(u)} style={{ cursor: 'pointer' }} title="클릭해서 수정">
+                              {formatKRW(u.deposit_krw)}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>
+                          {priceEditing ? (
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                              <input
+                                type="number"
+                                value={editPrice[u.id].monthly}
+                                onChange={e => setEditPrice(prev => ({ ...prev, [u.id]: { ...prev[u.id], monthly: e.target.value } }))}
+                                onKeyDown={e => { if (e.key === 'Enter') savePrice(u.id); if (e.key === 'Escape') cancelEditPrice(u.id); }}
+                                placeholder="만원"
+                                style={{ width: '80px', height: '26px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
+                              />
+                              <button onClick={() => savePrice(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', height: '26px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
+                              <button onClick={() => cancelEditPrice(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', height: '26px', background: '#f3f4f6', color: '#555', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>취소</button>
+                            </div>
+                          ) : (
+                            <span onClick={() => startEditPrice(u)} style={{ cursor: 'pointer' }} title="클릭해서 수정">
+                              {formatKRW(u.monthly_rent_krw)}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                          <select
+                            value={u.status}
+                            onChange={e => updateStatus(u.id, e.target.value)}
+                            disabled={savingId === u.id}
+                            style={{
+                              height: '28px', border: '1px solid #ddd', borderRadius: '5px', padding: '0 6px',
+                              fontSize: '12px', fontWeight: 600, cursor: 'pointer', outline: 'none',
+                              background: STATUS_BG[u.status] ?? '#f3f4f6',
+                              color: STATUS_COLOR[u.status] ?? '#374151',
+                            }}
+                          >
+                            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                          </select>
+                        </td>
+                        <td style={{ padding: '10px 12px', minWidth: '160px' }}>
+                          {memoEditing ? (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                value={editMemo[u.id]}
+                                onChange={e => setEditMemo(prev => ({ ...prev, [u.id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') saveMemo(u.id); if (e.key === 'Escape') setEditMemo(prev => { const n = { ...prev }; delete n[u.id]; return n; }); }}
+                                autoFocus
+                                style={{ flex: 1, height: '26px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
+                              />
+                              <button onClick={() => saveMemo(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
+                            </div>
+                          ) : (
+                            <span
+                              onClick={() => setEditMemo(prev => ({ ...prev, [u.id]: u.memo ?? '' }))}
+                              style={{ fontSize: '12px', color: u.memo ? '#333' : '#bbb', cursor: 'pointer' }}
+                              title="클릭해서 편집"
+                            >
+                              {u.memo || '메모 없음'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  });
+
+                  return rows;
+                })()}
               </tbody>
             </table>
           )}
