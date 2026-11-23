@@ -333,13 +333,19 @@ lib/
 - **적용 대상**: `/api/upload`의 `folder` 값이 `properties`(매물 사진) 또는 `precent/units/`로 시작(프리센트 호실 사진)할 때만 자동 적용
   - 담당자 프로필/배너/로고/뉴스 등 다른 용도는 미적용 (`app/api/upload/route.ts`의 `WATERMARK_FOLDER_PREFIXES`)
   - 프리센트 건물 갤러리(`precent_gallery`)는 현재 `/api/upload`를 거치는 업로드 UI가 없음 (최초 등록은 `scripts/upload-precent-gallery.mjs`로 일회성 처리됨)
-- **로고 소스**: `public/logo.png` (Header.tsx가 쓰는 원형 아이콘, 161×161 PNG)
-- **합성 로직**: `lib/watermark.ts` — 로고를 흰색 실루엣으로 변환 + 약한 그림자(blur) 합성 후, 사진 가로폭의 40%·불투명도 22%로 가운데에 합성. sharp로 서버에서 처리, 결과는 WebP
+- **모양**: 금색(`#e2a06e`) "HERMANN REALTY"(세리프, 넓은 자간) + 아래 "헤르만부동산" 두 줄. 화면에 떠 있는 기존 사진 오버레이(매물 상세 `app/item/view/[id]/page.tsx`의 `.detail-watermark`/`.lightbox-watermark`, `PropertyCard.tsx` 썸네일)와 같은 디자인 언어 — 단, 서버에 영구 합성하는 버전은 더 연하게(불투명도 25%) 적용
+  - 화면 오버레이 참고값(가장 큰 원본 스타일 기준): 영문 `font-size 40px / font-weight 300 / letter-spacing 8px / Georgia,"Times New Roman",serif`, 한글 `font-size 20px / font-weight 400 / letter-spacing 4px`, 줄간격 `margin-top 8px`, 컨테이너 `opacity 0.55`, 가운데 정렬. 썸네일류는 같은 비율을 `clamp()`로 축소(opacity 0.45~0.7)
+- **텍스트 PNG**: `assets/watermark.png` — `scripts/make-watermark-png.js`로 로컬에서 1회 생성해 커밋해둔 투명 PNG (서버 sharp는 한글 글꼴이 없어 SVG 텍스트를 직접 그리면 한글이 깨지므로, 텍스트는 미리 이미지로 만들어 합성만 함)
+  - 생성에 쓰는 글꼴(OFL, `assets/fonts/`에 커밋): 영문 `PlayfairDisplay-Regular.ttf`, 한글 `Pretendard-Medium.otf` — 둘 다 생성 스크립트 전용, 런타임에는 불필요
+  - PNG 재생성 시: `npm install --save-dev @napi-rs/canvas` 필요(글꼴 파일을 직접 읽어 렌더링 — OS에 폰트 설치 여부와 무관), `node scripts/make-watermark-png.js`
+- **합성 로직**: `lib/watermark.js` (CommonJS, `/api/upload`와 `scripts/watermark-existing-photos.js`가 공용) — `assets/watermark.png`을 사진 가로폭의 48%로 리사이즈 후 불투명도 25%로 가운데 합성. 비율/불투명도는 파일 상단 `WATERMARK_WIDTH_RATIO`/`WATERMARK_OPACITY` 상수. 결과는 WebP
+  - Vercel 배포 시 `assets/watermark.png`이 `/api/upload` 서버리스 번들에 포함되도록 `next.config.js`의 `experimental.outputFileTracingIncludes`에 명시 (빌드 후 `.next/server/app/api/upload/route.js.nft.json`에 포함 여부로 확인됨)
 - **기존 사진 일괄 적용**: `scripts/watermark-existing-photos.js` (`--dry-run`, `--limit N`, `--only 테이블명`)
   - 대상: `property_images.image_url`, `precent_gallery.url`, `precent_unit_photos.url`
   - 원본 R2 키에 `-wm.webp`를 붙인 새 키로 "추가" 업로드 후 DB의 url만 교체 — 원본 파일은 삭제/덮어쓰기하지 않음
   - 이미 `-wm.`이 붙은 주소는 재실행해도 건너뜀 (중복 적용 방지)
   - 실행 기록: `scripts/watermark-log.csv` (옛 주소→새 주소 누적) / 되돌리기용 SQL: `scripts/watermark-rollback.sql` (실행할수록 append됨)
+  - 샘플 미리보기(R2/DB 미반영, 파일만): `scripts/watermark-samples/`
 
 ## 비밀번호 관련
 

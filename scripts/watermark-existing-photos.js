@@ -7,7 +7,7 @@
  *   - precent_unit_photos (url)     — 프리센트 호실 사진
  *
  * 동작:
- *   1) 원본 사진을 R2에서 내려받아 워터마크(lib/watermark.ts와 동일한 로직)를 합성
+ *   1) 원본 사진을 R2에서 내려받아 워터마크(lib/watermark.js, /api/upload와 공용) 합성
  *   2) 원본 키에 "-wm.webp"를 붙인 새 키로 R2에 "추가" 업로드 (원본은 절대 삭제/덮어쓰기 안 함)
  *   3) DB의 url 컬럼을 새 주소로 UPDATE
  *   4) scripts/watermark-log.csv에 "옛 주소 → 새 주소" 기록
@@ -28,9 +28,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { createClient } = require('@supabase/supabase-js');
+const { applyWatermark } = require('../lib/watermark');
 
 // .env.local 로드 (dotenv 의존성 없이 직접 파싱 — 기존 scripts/upload-floor-plans.js와 동일 방식)
 (function loadEnv() {
@@ -87,72 +87,6 @@ const TARGETS = [
 ];
 
 const ALREADY_WATERMARKED_RE = /-wm\.\w+(\?.*)?$/i;
-
-// ---- lib/watermark.ts와 동일한 로직 (스크립트는 독립 실행이라 중복 구현 — 기존 scripts 관례와 동일) ----
-const LOGO_PATH = path.join(__dirname, '..', 'public', 'logo.png');
-const WATERMARK_WIDTH_RATIO = 0.4;
-const WATERMARK_OPACITY = 0.22;
-const SHADOW_BLUR = 6;
-const SHADOW_OFFSET = 3;
-
-async function buildLogoLayer(targetWidth) {
-  const resizedBuf = await sharp(LOGO_PATH)
-    .resize(targetWidth, targetWidth, { fit: 'inside' })
-    .ensureAlpha()
-    .png()
-    .toBuffer();
-  const meta = await sharp(resizedBuf).metadata();
-  const w = meta.width, h = meta.height;
-  const alphaRaw = await sharp(resizedBuf).extractChannel('alpha').raw().toBuffer();
-
-  const white = await sharp({ create: { width: w, height: h, channels: 3, background: { r: 255, g: 255, b: 255 } } })
-    .joinChannel(alphaRaw, { raw: { width: w, height: h, channels: 1 } })
-    .png()
-    .toBuffer();
-  const black = await sharp({ create: { width: w, height: h, channels: 3, background: { r: 0, g: 0, b: 0 } } })
-    .joinChannel(alphaRaw, { raw: { width: w, height: h, channels: 1 } })
-    .png()
-    .toBuffer();
-  const blurredShadow = await sharp(black).blur(SHADOW_BLUR).toBuffer();
-
-  const pad = SHADOW_BLUR * 2 + SHADOW_OFFSET;
-  const canvasW = w + pad * 2;
-  const canvasH = h + pad * 2;
-
-  const layer = await sharp({
-    create: { width: canvasW, height: canvasH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  })
-    .composite([
-      { input: blurredShadow, top: pad + SHADOW_OFFSET, left: pad + SHADOW_OFFSET },
-      { input: white, top: pad, left: pad },
-    ])
-    .png()
-    .toBuffer();
-
-  return { buffer: layer, width: canvasW, height: canvasH };
-}
-
-async function applyLayerOpacity(buffer, opacity) {
-  const { data, info } = await sharp(buffer).raw().ensureAlpha().toBuffer({ resolveWithObject: true });
-  for (let i = 3; i < data.length; i += 4) data[i] = Math.round(data[i] * opacity);
-  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
-}
-
-async function applyWatermark(input) {
-  const base = sharp(input).rotate();
-  const meta = await base.metadata();
-  const width = meta.width, height = meta.height;
-
-  const wmTargetWidth = Math.round(width * WATERMARK_WIDTH_RATIO);
-  const { buffer: rawLayer, width: lw, height: lh } = await buildLogoLayer(wmTargetWidth);
-  const finalLayer = await applyLayerOpacity(rawLayer, WATERMARK_OPACITY);
-
-  const left = Math.max(0, Math.min(Math.round((width - lw) / 2), Math.max(0, width - lw)));
-  const top = Math.max(0, Math.min(Math.round((height - lh) / 2), Math.max(0, height - lh)));
-
-  return sharp(input).rotate().composite([{ input: finalLayer, left, top }]).webp({ quality: 85 }).toBuffer();
-}
-// ---- 워터마크 로직 끝 ----
 
 function parseArgs(argv) {
   const opts = { dryRun: false, limit: Infinity, only: null };
