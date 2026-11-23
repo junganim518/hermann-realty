@@ -7,7 +7,7 @@ type Photo = { id: string; url: string; sort_order: number };
 
 // 호실 사진 업로드 전 브라우저에서 WebP로 변환 (가로 1600px, 품질 82 — 건물 갤러리와 동일 기준)
 const compressToWebP = (file: File, maxWidth = 1600, quality = 0.82): Promise<File> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
@@ -21,12 +21,12 @@ const compressToWebP = (file: File, maxWidth = 1600, quality = 0.82): Promise<Fi
       }
       canvas.width = width;
       canvas.height = height;
-      if (!ctx) { URL.revokeObjectURL(url); resolve(file); return; }
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('캔버스를 생성할 수 없습니다.')); return; }
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
         (blob) => {
           URL.revokeObjectURL(url);
-          if (!blob) { resolve(file); return; }
+          if (!blob) { reject(new Error('이미지를 WebP로 변환하지 못했습니다.')); return; }
           const baseName = file.name.replace(/\.[^.]+$/, '');
           resolve(new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: Date.now() }));
         },
@@ -34,7 +34,7 @@ const compressToWebP = (file: File, maxWidth = 1600, quality = 0.82): Promise<Fi
         quality
       );
     };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 파일을 읽을 수 없습니다.')); };
     img.src = url;
   });
 };
@@ -58,6 +58,8 @@ export default function PhotoManagerModal({
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -74,15 +76,32 @@ export default function PhotoManagerModal({
 
   useEffect(() => { load(); }, [unitId]);
 
-  const handleUpload = async (fileList: FileList | null) => {
-    if (!fileList || fileList.length === 0) return;
+  // files는 호출 시점에 이미 일반 배열로 스냅샷된 상태여야 함 (input의 FileList를 그대로
+  // 비동기 함수에 넘기면, 아래 getSession() await 도중 onChange 핸들러가 입력값을 리셋해버려서
+  // 그 사이에 FileList가 비어버리는 문제가 있었음)
+  const handleUpload = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploadError(null);
     setUploading(true);
+    setUploadProgress({ current: 0, total: files.length });
+
     const { data: { session } } = await supabase.auth.getSession();
     let nextOrder = photos.length > 0 ? Math.max(...photos.map(p => p.sort_order)) + 1 : 0;
 
-    for (const file of Array.from(fileList)) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setUploadProgress({ current: i + 1, total: files.length });
+
+      let compressed: File;
       try {
-        const compressed = await compressToWebP(file);
+        compressed = await compressToWebP(file);
+      } catch (err: any) {
+        setUploadError(`업로드 실패: 이미지 변환 중 오류가 발생했습니다 (${file.name}) — ${err?.message ?? err}`);
+        continue;
+      }
+
+      let uploadedUrl: string;
+      try {
         const formData = new FormData();
         formData.append('file', compressed);
         formData.append('folder', `precent/units/${unitNo}`);
@@ -93,17 +112,26 @@ export default function PhotoManagerModal({
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
+        uploadedUrl = data.url;
+      } catch (err: any) {
+        setUploadError(`업로드 실패: 사진을 서버로 올리는 중 오류가 발생했습니다 (${file.name}) — ${err?.message ?? err}`);
+        continue;
+      }
 
+      try {
         const { error: insertError } = await supabase
           .from('precent_unit_photos')
-          .insert({ unit_id: unitId, url: data.url, sort_order: nextOrder });
+          .insert({ unit_id: unitId, url: uploadedUrl, sort_order: nextOrder });
         if (insertError) throw insertError;
         nextOrder++;
       } catch (err: any) {
-        alert(`사진 업로드 실패: ${err?.message ?? err}`);
+        setUploadError(`업로드 실패: 사진 정보 저장 중 오류가 발생했습니다 (${file.name}) — ${err?.message ?? err}`);
+        continue;
       }
     }
+
     setUploading(false);
+    setUploadProgress(null);
     await load();
   };
 
@@ -156,19 +184,33 @@ export default function PhotoManagerModal({
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
         </div>
 
-        <label style={{ display: 'block', marginBottom: '14px' }}>
+        <label style={{ display: 'block', marginBottom: uploadError ? '8px' : '14px' }}>
           <div style={{ border: '2px dashed #ddd', borderRadius: '8px', padding: '20px', textAlign: 'center', cursor: uploading ? 'not-allowed' : 'pointer', color: '#888', fontSize: '13px' }}>
-            {uploading ? '업로드 중...' : '+ 사진 올리기 (여러 장 선택 가능)'}
+            {uploading && uploadProgress
+              ? `업로드 중... (${uploadProgress.current}/${uploadProgress.total})`
+              : '+ 사진 올리기 (여러 장 선택 가능)'}
           </div>
           <input
             type="file"
             accept="image/*"
             multiple
             disabled={uploading}
-            onChange={e => { handleUpload(e.target.files); e.target.value = ''; }}
+            onChange={e => {
+              // e.target.files(FileList)를 여기서 바로 일반 배열로 스냅샷해둬야 함 —
+              // 비동기 업로드 함수 안에서 나중에 읽으면 바로 아래 value 리셋 때문에 비어있을 수 있음
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = '';
+              handleUpload(files);
+            }}
             style={{ display: 'none' }}
           />
         </label>
+
+        {uploadError && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12px', borderRadius: '6px', padding: '8px 10px', marginBottom: '14px', lineHeight: 1.5 }}>
+            {uploadError}
+          </div>
+        )}
 
         {loading ? (
           <p style={{ textAlign: 'center', color: '#aaa', padding: '20px' }}>불러오는 중...</p>
