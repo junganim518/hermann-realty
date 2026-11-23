@@ -34,6 +34,11 @@ const LINE_GAP = Math.round(MAIN_FONT_SIZE * 0.2);
 const PADDING_X = 100;
 const PADDING_Y = 80;
 
+// 밝은/흰 벽 사진에서도 글자가 읽히도록 글자 뒤에 아주 약하게 넣는 그림자(윤곽 블러).
+// 방향성 있는 그림자가 아니라 글자 모양 그대로 블러만 준 halo라 티 나지 않고 은은하게만 보임.
+const SHADOW_BLUR_SIGMA = 2.5;
+const SHADOW_OPACITY = 0.25;
+
 function registerFonts() {
   const playfair = GlobalFonts.registerFromPath(path.join(FONTS_DIR, 'PlayfairDisplay-Regular.ttf'), 'Playfair Display');
   const pretendard = GlobalFonts.registerFromPath(path.join(FONTS_DIR, 'Pretendard-Medium.otf'), 'Pretendard Medium');
@@ -80,8 +85,36 @@ async function main() {
 
   const rawPng = canvas.toBuffer('image/png');
 
+  // 글자 알파 채널 그대로 검은색 실루엣을 만들고, 불투명도를 낮춘 뒤 블러 → 글자 뒤에 깐다.
+  const alphaRaw = await sharp(rawPng).extractChannel('alpha').raw().toBuffer();
+  const blackSilhouette = await sharp({
+    create: { width: CANVAS_W, height: CANVAS_H, channels: 3, background: { r: 0, g: 0, b: 0 } },
+  })
+    .joinChannel(alphaRaw, { raw: { width: CANVAS_W, height: CANVAS_H, channels: 1 } })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const shadowData = Buffer.from(blackSilhouette.data);
+  for (let i = 3; i < shadowData.length; i += 4) {
+    shadowData[i] = Math.round(shadowData[i] * SHADOW_OPACITY);
+  }
+  const blurredShadow = await sharp(shadowData, { raw: { width: CANVAS_W, height: CANVAS_H, channels: 4 } })
+    .blur(SHADOW_BLUR_SIGMA)
+    .png()
+    .toBuffer();
+
+  const withShadow = await sharp({
+    create: { width: CANVAS_W, height: CANVAS_H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([
+      { input: blurredShadow, left: 0, top: 0 },
+      { input: rawPng, left: 0, top: 0 },
+    ])
+    .png()
+    .toBuffer();
+
   // 텍스트 주변 투명 여백을 잘라내 실제 비율(폭 기준 스케일)이 정확하게 나오도록 함
-  const trimmed = await sharp(rawPng).trim({ threshold: 10 }).extend({
+  const trimmed = await sharp(withShadow).trim({ threshold: 10 }).extend({
     top: 50, bottom: 50, left: 50, right: 50,
     background: { r: 0, g: 0, b: 0, alpha: 0 },
   }).png().toBuffer();
