@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { triggerPrecentRevalidate } from '@/lib/triggerPrecentRevalidate';
 import PhotoManagerModal from './PhotoManagerModal';
 
 type Unit = {
@@ -91,6 +92,7 @@ export default function PrecentUnitsPage() {
     await supabase.from('precent_units').update({ status }).eq('id', id);
     setUnits(prev => prev.map(u => u.id === id ? { ...u, status } : u));
     setSavingId(null);
+    triggerPrecentRevalidate();
   };
 
   // ── 업종(상호) 수정 — DB 컬럼명은 memo 그대로 (방문자 화면 노출용) ──
@@ -113,6 +115,7 @@ export default function PrecentUnitsPage() {
     }
     setUnits(prev => prev.map(u => u.id === id ? { ...u, memo: value || null } : u));
     cancelEditBusiness(id);
+    triggerPrecentRevalidate();
   };
 
   // ── 메모(비공개) 수정 — admin_memo, 방문자에게 절대 노출되지 않음 ──
@@ -135,6 +138,7 @@ export default function PrecentUnitsPage() {
     }
     setUnits(prev => prev.map(u => u.id === id ? { ...u, admin_memo: value || null } : u));
     cancelEditAdminMemo(id);
+    triggerPrecentRevalidate();
   };
 
   // ── 가격 수정 (보증금/월세, 만원 단위 입력 → 원 단위 저장) ──
@@ -175,6 +179,7 @@ export default function PrecentUnitsPage() {
     }
     setUnits(prev => prev.map(u => u.id === id ? { ...u, deposit_krw, monthly_rent_krw } : u));
     cancelEditPrice(id);
+    triggerPrecentRevalidate();
   };
 
   if (!authChecked) return null;

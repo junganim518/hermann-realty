@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { triggerPrecentRevalidate } from '@/lib/triggerPrecentRevalidate';
 
 type Photo = { id: string; url: string; sort_order: number };
 
@@ -133,6 +134,7 @@ export default function PhotoManagerModal({
     setUploading(false);
     setUploadProgress(null);
     await load();
+    triggerPrecentRevalidate();
   };
 
   const handleDelete = async (photo: Photo) => {
@@ -154,6 +156,7 @@ export default function PhotoManagerModal({
     const { error } = await supabase.from('precent_unit_photos').delete().eq('id', photo.id);
     if (error) { alert(`삭제 실패: ${error.message}`); return; }
     await load();
+    triggerPrecentRevalidate();
   };
 
   const move = async (index: number, dir: -1 | 1) => {
@@ -168,6 +171,7 @@ export default function PhotoManagerModal({
     const failed = results.find(r => r.error);
     if (failed?.error) { alert(`순서 변경 실패: ${failed.error.message}`); }
     await load();
+    triggerPrecentRevalidate();
   };
 
   return (
