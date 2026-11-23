@@ -1006,8 +1006,6 @@ export default function PropertyDetailPage() {
           .detail-main { order: 2; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .detail-aside { width: 100% !important; position: fixed !important; bottom: 60px !important; left: 0 !important; right: 0 !important; top: auto !important; max-height: none !important; overflow-y: visible !important; z-index: 200 !important; order: unset !important; align-self: auto !important; border-top: 2px solid #e2a06e !important; background: #fff !important; }
           .detail-carousel-img { height: 240px !important; }
-          .lightbox-watermark-main { font-size: 20px !important; letter-spacing: 4px !important; }
-          .lightbox-watermark-sub { font-size: 11px !important; letter-spacing: 2px !important; margin-top: 4px !important; }
           .detail-info-table { border-collapse: separate !important; border-spacing: 0 !important; }
           .detail-info-table tbody { display: flex !important; flex-direction: column !important; }
           .detail-info-table tr { display: flex !important; flex-direction: row !important; border-bottom: 1px solid #f0f0f0 !important; }
@@ -1018,8 +1016,6 @@ export default function PropertyDetailPage() {
           .detail-map-container { height: 250px !important; }
           .detail-subway-item { font-size: 13px !important; }
           .detail-subway-item span { font-size: 11px !important; }
-          .detail-watermark span:first-child { font-size: 18px !important; letter-spacing: 4px !important; }
-          .detail-watermark span:last-child { font-size: 10px !important; }
           .detail-pnum { font-size: 12px !important; padding: 2px 6px !important; }
           .detail-sold-overlay span { font-size: 32px !important; padding: 8px 20px !important; }
           .detail-mobile-fab { display: flex !important; }
@@ -1460,11 +1456,6 @@ export default function PropertyDetailPage() {
                       <button onClick={nextImage} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', border: 'none', color: '#fff', borderRadius: '50%', width: '44px', height: '44px', fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
                     </>
                   )}
-                  {/* 중앙 워터마크 */}
-                  <div className="detail-watermark" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.55, pointerEvents: 'none' }}>
-                    <span style={{ color: '#e2a06e', fontSize: '40px', fontWeight: 300, letterSpacing: '8px', fontFamily: 'Georgia, "Times New Roman", serif' }}>HERMANN REALTY</span>
-                    <span style={{ color: '#e2a06e', fontSize: '20px', fontWeight: 400, letterSpacing: '4px', marginTop: '8px' }}>헤르만부동산</span>
-                  </div>
                   {/* 우측 하단: 페이지 카운터 */}
                   <div style={{ position: 'absolute', right: '16px', bottom: '16px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '13px', padding: '4px 10px', borderRadius: '20px' }}>
                     {currentImage + 1}/{images.length}
@@ -1837,13 +1828,7 @@ export default function PropertyDetailPage() {
                           {p.property_number}
                         </div>
                         {p.image ? (
-                          <>
-                            <img src={p.image} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
-                              <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                              <span style={{ color: '#e2a06e', fontSize: 'clamp(8px, 1.2vw, 10px)', letterSpacing: 'clamp(1px, 0.3vw, 3px)', marginTop: '4px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
-                            </div>
-                          </>
+                          <img src={p.image} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
                             <span style={{ color: '#e2a06e', fontSize: 'clamp(10px, 2vw, 18px)', fontWeight: 300, letterSpacing: 'clamp(2px, 0.5vw, 6px)', fontFamily: 'Georgia, "Times New Roman", serif', opacity: 0.7, whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
@@ -2318,10 +2303,6 @@ export default function PropertyDetailPage() {
               alt={`매물 이미지 ${currentImage + 1}`}
               style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain', userSelect: 'none', cursor: 'default' }}
             />
-            <div className="lightbox-watermark" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.55, pointerEvents: 'none' }}>
-              <span className="lightbox-watermark-main" style={{ color: '#e2a06e', fontSize: '40px', fontWeight: 300, letterSpacing: '8px', fontFamily: 'Georgia, "Times New Roman", serif' }}>HERMANN REALTY</span>
-              <span className="lightbox-watermark-sub" style={{ color: '#e2a06e', fontSize: '20px', fontWeight: 400, letterSpacing: '4px', marginTop: '8px' }}>헤르만부동산</span>
-            </div>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); setShowLightbox(false); }}

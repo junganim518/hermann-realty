@@ -948,13 +948,7 @@ function MapPageInner() {
                       {/* 썸네일 */}
                       <div style={{ width: '100px', height: '100px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
                         {thumb ? (
-                          <>
-                            <img src={thumb} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
-                              <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                              <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
-                            </div>
-                          </>
+                          <img src={thumb} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
                             <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap', opacity: 0.7 }}>HERMANN REALTY</span>
@@ -1116,13 +1110,7 @@ function MapPageInner() {
                   >
                     <div style={{ width: '80px', height: '80px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: '#f0f0f0', position: 'relative' }}>
                       {thumb ? (
-                        <>
-                          <img src={thumb} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', opacity: 0.45, overflow: 'hidden' }}>
-                            <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap' }}>HERMANN REALTY</span>
-                            <span style={{ color: '#e2a06e', fontSize: '5px', letterSpacing: '0.3px', marginTop: '1px', whiteSpace: 'nowrap' }}>헤르만부동산</span>
-                          </div>
-                        </>
+                        <img src={thumb} alt="매물 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
                           <span style={{ color: '#e2a06e', fontSize: '6px', fontWeight: 300, letterSpacing: '0.5px', fontFamily: 'Georgia, "Times New Roman", serif', whiteSpace: 'nowrap', opacity: 0.7 }}>HERMANN REALTY</span>
