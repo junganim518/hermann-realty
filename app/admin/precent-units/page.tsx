@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import PhotoManagerModal from './PhotoManagerModal';
 
 type Unit = {
   id: string;
@@ -54,6 +55,8 @@ export default function PrecentUnitsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editMemo, setEditMemo] = useState<Record<string, string>>({});
   const [editPrice, setEditPrice] = useState<Record<string, { deposit: string; monthly: string }>>({});
+  const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
+  const [photoModalUnit, setPhotoModalUnit] = useState<Unit | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,6 +76,12 @@ export default function PrecentUnitsPage() {
         setUnits((data ?? []) as Unit[]);
         setLoading(false);
       });
+
+    supabase.from('precent_unit_photos').select('unit_id').then(({ data }) => {
+      const counts: Record<string, number> = {};
+      (data ?? []).forEach((row: any) => { counts[row.unit_id] = (counts[row.unit_id] ?? 0) + 1; });
+      setPhotoCounts(counts);
+    });
   }, [authChecked]);
 
   const updateStatus = async (id: string, status: string) => {
@@ -188,7 +197,7 @@ export default function PrecentUnitsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #e0e0e0' }}>
-                  {['호실', '층', '존', '전용(평)', '계약(평)', '보증금', '월세', '상태', '메모'].map(h => (
+                  {['호실', '층', '존', '전용(평)', '계약(평)', '보증금', '월세', '상태', '메모', '사진'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#555', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -204,7 +213,7 @@ export default function PrecentUnitsPage() {
                       lastFloor = u.floor;
                       rows.push(
                         <tr key={`floor-${u.floor}`}>
-                          <td colSpan={9} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
+                          <td colSpan={10} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
                             {u.floor}
                           </td>
                         </tr>
@@ -300,6 +309,14 @@ export default function PrecentUnitsPage() {
                             </span>
                           )}
                         </td>
+                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                          <button
+                            onClick={() => setPhotoModalUnit(u)}
+                            style={{ height: '26px', padding: '0 10px', fontSize: '12px', fontWeight: 600, border: '1px solid #ddd', borderRadius: '5px', background: '#fff', color: '#555', cursor: 'pointer' }}
+                          >
+                            사진 {photoCounts[u.id] ?? 0}장
+                          </button>
+                        </td>
                       </tr>
                     );
                   });
@@ -311,6 +328,15 @@ export default function PrecentUnitsPage() {
           )}
         </div>
       </div>
+
+      {photoModalUnit && (
+        <PhotoManagerModal
+          unitId={photoModalUnit.id}
+          unitNo={photoModalUnit.unit_no}
+          onClose={() => setPhotoModalUnit(null)}
+          onCountChange={(unitId, count) => setPhotoCounts(prev => ({ ...prev, [unitId]: count }))}
+        />
+      )}
     </div>
   );
 }

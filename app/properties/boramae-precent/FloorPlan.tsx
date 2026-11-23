@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type PublicUnit = {
   unit_no: string;
@@ -480,22 +481,46 @@ function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 }
 
 
-type Popover = {
-  unitNo: string;
-  zone: string;
-  exclusivePy: number;
-  contractPy: number;
-  status: string;
-  svgX: number;
-  svgY: number;
-};
+type Photo = { id: string; unit_no: string; url: string; sort_order: number };
 
 export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   const [activeFloor, setActiveFloor] = useState('B1');
-  const [popover, setPopover] = useState<Popover | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const [activeUnitNo, setActiveUnitNo] = useState<string | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [photosByUnit, setPhotosByUnit] = useState<Record<string, Photo[]>>({});
+  const touchStartXRef = useRef<number | null>(null);
 
-  useEffect(() => { setPopover(null); }, [activeFloor]);
+  useEffect(() => { setActiveUnitNo(null); }, [activeFloor]);
+  useEffect(() => { setCarouselIndex(0); setLightboxOpen(false); }, [activeUnitNo]);
+
+  // 방문자 공개 뷰로 호실 사진 로드 — 가격 컬럼 없음, status='vacant' 호실만 내려옴.
+  // 조회 실패/결과 없음 모두 "사진 없음"으로 자연스럽게 처리됨(아래 UI가 photos.length로 분기).
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('precent_unit_photos_public')
+      .select('id, unit_no, url, sort_order')
+      .order('sort_order')
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) { console.warn('[프리센트 사진] 조회 실패:', error.message); return; }
+        const grouped: Record<string, Photo[]> = {};
+        (data ?? []).forEach((p: any) => {
+          (grouped[p.unit_no] = grouped[p.unit_no] ?? []).push(p);
+        });
+        setPhotosByUnit(grouped);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // 모바일에서 모달 열려있는 동안 배경 스크롤 막기
+  useEffect(() => {
+    if (!activeUnitNo) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [activeUnitNo]);
 
   const b1 = computeB1Layout(units);
   const f1 = computeF1Layout(units);
@@ -511,25 +536,44 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   const unitMap = new Map(units.map(u => [u.unit_no, u]));
   const floor = FLOOR_CONFIG.find(f => f.key === activeFloor)!;
 
-  const handleClick = (rect: Rect, e: React.MouseEvent<SVGRectElement>) => {
+  // 같은 층에서 클릭 가능한(= 임대완료·확정입점 제외) 호실 순서 — "이전/다음 호실" 탐색용
+  const navigableUnitNos = floor.rects
+    .filter(r => {
+      if (r.confirmedBrand) return false;
+      const u = unitMap.get(r.id);
+      return !!u && u.status !== 'leased';
+    })
+    .map(r => r.id);
+
+  const handleClick = (rect: Rect) => {
     if (rect.confirmedBrand) return;
     const u = unitMap.get(rect.id);
     if (!u) return;
-    const svgEl = svgRef.current;
-    if (!svgEl) return;
-    const svgRect = svgEl.getBoundingClientRect();
-    const vb = floor.viewBox.split(' ').map(Number);
-    const scaleX = svgRect.width / vb[2];
-    const scaleY = svgRect.height / vb[3];
-    setPopover({
-      unitNo: rect.id,
-      zone: u.zone,
-      exclusivePy: u.exclusive_area_py,
-      contractPy: u.contract_area_py,
-      status: u.status,
-      svgX: (rect.x + rect.w / 2) * scaleX,
-      svgY: rect.y * scaleY,
-    });
+    setActiveUnitNo(rect.id);
+  };
+
+  const goToUnit = (delta: 1 | -1) => {
+    if (!activeUnitNo || navigableUnitNos.length === 0) return;
+    const idx = navigableUnitNos.indexOf(activeUnitNo);
+    if (idx === -1) return;
+    const next = (idx + delta + navigableUnitNos.length) % navigableUnitNos.length;
+    setActiveUnitNo(navigableUnitNos[next]);
+  };
+
+  const activeUnit = activeUnitNo ? unitMap.get(activeUnitNo) ?? null : null;
+  const activePhotos = activeUnitNo ? (photosByUnit[activeUnitNo] ?? []) : [];
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? null;
+  };
+  const handleCarouselTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (Math.abs(dx) < 40 || activePhotos.length < 2) return;
+    setCarouselIndex(i => dx > 0
+      ? (i - 1 + activePhotos.length) % activePhotos.length
+      : (i + 1) % activePhotos.length);
   };
 
   const VACANT_COLOR = '#2563eb';
@@ -578,10 +622,8 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
       {/* SVG 평면도 */}
       <div
         style={{ position: 'relative', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden', background: '#f8f9fa', cursor: 'default', maxWidth: '828px', margin: '0 auto' }}
-        onClick={() => setPopover(null)}
       >
         <svg
-          ref={svgRef}
           viewBox={floor.viewBox}
           style={{ width: '100%', height: 'auto', display: 'block' }}
         >
@@ -639,7 +681,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
                   strokeWidth={1.5}
                   rx={3}
                   style={{ cursor: unavailable ? 'default' : 'pointer' }}
-                  onClick={unavailable ? undefined : (e) => { e.stopPropagation(); handleClick(rect, e); }}
+                  onClick={unavailable ? undefined : () => handleClick(rect)}
                 />
                 {/* 호실 번호 */}
                 <text
@@ -668,71 +710,146 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
           })}
         </svg>
 
-        {/* 팝오버 */}
-        {popover && (
-          <div
-            style={{
-              position: 'absolute',
-              left: Math.max(8, Math.min(popover.svgX - 100, (svgRef.current?.clientWidth ?? 400) - 210)),
-              top: Math.max(popover.svgY - 160, 8),
-              width: '200px',
-              background: '#fff',
-              border: '1px solid #e0e0e0',
-              borderRadius: '8px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-              padding: '14px',
-              zIndex: 10,
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ fontWeight: 800, fontSize: '15px', color: '#1a1a1a' }}>{popover.unitNo}호</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
-                  background: popover.status === 'vacant' ? '#dcfce7' : '#fef9c3',
-                  color: popover.status === 'vacant' ? '#166534' : '#92400e',
-                }}>
-                  {STATUS_LABEL[popover.status] ?? popover.status}
-                </span>
-                <button
-                  onClick={() => setPopover(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: '16px', lineHeight: 1, padding: '2px 4px' }}
-                  aria-label="닫기"
-                >✕</button>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
-              <div>
-                <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>전용면적</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1a1a' }}>{popover.exclusivePy.toFixed(1)}평</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>계약면적</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1a1a' }}>{popover.contractPy.toFixed(1)}평</div>
-              </div>
-            </div>
-            {ZONE_RECOMMEND[popover.zone] && (
-              <div style={{ background: '#f0f9ff', borderRadius: '6px', padding: '7px 10px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '10px', color: '#0369a1', fontWeight: 700, marginBottom: '2px' }}>추천 업종</div>
-                <div style={{ fontSize: '11px', color: '#0c4a6e' }}>{ZONE_RECOMMEND[popover.zone]}</div>
-              </div>
-            )}
-            <div style={{ fontSize: '11px', color: '#aaa', marginBottom: '10px', textAlign: 'center' }}>임대조건 문의 시 안내</div>
-            <a
-              href="#precent-inquiry"
-              style={{ display: 'block', textAlign: 'center', background: '#c47c30', color: '#fff', fontWeight: 700, fontSize: '13px', padding: '9px', borderRadius: '5px', textDecoration: 'none' }}
-              onClick={() => setPopover(null)}
-            >
-              임대 문의하기
-            </a>
-          </div>
-        )}
       </div>
 
       <p style={{ fontSize: '11px', color: '#aaa', marginTop: '8px', textAlign: 'center' }}>
         * 평면도는 실제 도면과 상이할 수 있는 개략도입니다. 호실 클릭 시 상세 정보를 확인하세요.
       </p>
+
+      {/* ── 호실 상세 모달 (PC: 가운데 큰 창 / 모바일: 하단에서 올라오는 창) ── */}
+      <style>{`
+        .pu-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+        .pu-modal-panel { background: #fff; width: 100%; max-height: 92vh; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; overflow: hidden; }
+        .pu-modal-photo { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #111; flex-shrink: 0; }
+        .pu-modal-photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+        .pu-modal-info { flex: 1; min-width: 0; overflow-y: auto; padding: 20px; }
+        .pu-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,0.4); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pu-arrow-left { left: 10px; }
+        .pu-arrow-right { right: 10px; }
+        .pu-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 5px; }
+        .pu-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+        .pu-dot-active { background: #fff; }
+        .pu-lightbox { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; }
+        .pu-lightbox-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 18px; cursor: pointer; }
+        @media (min-width: 768px) {
+          .pu-modal-overlay { align-items: center; padding: 20px; }
+          .pu-modal-panel { max-width: 900px; max-height: 80vh; border-radius: 16px; flex-direction: row; }
+          .pu-modal-panel.pu-compact { max-width: 440px; }
+          .pu-modal-photo { width: 50%; height: auto; aspect-ratio: auto; }
+        }
+      `}</style>
+
+      {activeUnit && activeUnitNo && (
+        <div className="pu-modal-overlay" onClick={() => setActiveUnitNo(null)}>
+          <div className={`pu-modal-panel${activePhotos.length === 0 ? ' pu-compact' : ''}`} onClick={e => e.stopPropagation()}>
+            {activePhotos.length > 0 && (
+              <div
+                className="pu-modal-photo"
+                onTouchStart={handleCarouselTouchStart}
+                onTouchEnd={handleCarouselTouchEnd}
+              >
+                <img
+                  src={activePhotos[carouselIndex]?.url}
+                  alt={`${activeUnitNo}호 사진 ${carouselIndex + 1}`}
+                  onClick={() => setLightboxOpen(true)}
+                />
+                {activePhotos.length > 1 && (
+                  <>
+                    <button
+                      className="pu-arrow pu-arrow-left"
+                      aria-label="이전 사진"
+                      onClick={() => setCarouselIndex(i => (i - 1 + activePhotos.length) % activePhotos.length)}
+                    >‹</button>
+                    <button
+                      className="pu-arrow pu-arrow-right"
+                      aria-label="다음 사진"
+                      onClick={() => setCarouselIndex(i => (i + 1) % activePhotos.length)}
+                    >›</button>
+                    <div className="pu-dots">
+                      {activePhotos.map((_, i) => (
+                        <span key={i} className={i === carouselIndex ? 'pu-dot pu-dot-active' : 'pu-dot'} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="pu-modal-info">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <span style={{ fontWeight: 800, fontSize: '20px', color: '#1a1a1a' }}>{activeUnitNo}호</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '10px',
+                    background: activeUnit.status === 'vacant' ? '#dcfce7' : '#fef9c3',
+                    color: activeUnit.status === 'vacant' ? '#166534' : '#92400e',
+                  }}>
+                    {STATUS_LABEL[activeUnit.status] ?? activeUnit.status}
+                  </span>
+                  <button
+                    onClick={() => setActiveUnitNo(null)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: '20px', lineHeight: 1, padding: '2px 4px' }}
+                    aria-label="닫기"
+                  >✕</button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>전용면적</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{activeUnit.exclusive_area_py.toFixed(1)}평</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>계약면적</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#1a1a1a' }}>{activeUnit.contract_area_py.toFixed(1)}평</div>
+                </div>
+              </div>
+
+              {ZONE_RECOMMEND[activeUnit.zone] && (
+                <div style={{ background: '#f0f9ff', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 700, marginBottom: '3px' }}>추천 업종</div>
+                  <div style={{ fontSize: '13px', color: '#0c4a6e' }}>{ZONE_RECOMMEND[activeUnit.zone]}</div>
+                </div>
+              )}
+
+              <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '14px', textAlign: 'center' }}>임대조건 문의 시 안내</div>
+
+              <a
+                href="#precent-inquiry"
+                style={{ display: 'block', textAlign: 'center', background: '#c47c30', color: '#fff', fontWeight: 700, fontSize: '14px', padding: '12px', borderRadius: '6px', textDecoration: 'none' }}
+                onClick={() => setActiveUnitNo(null)}
+              >
+                임대 문의하기
+              </a>
+
+              {navigableUnitNos.length > 1 && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                  <button
+                    onClick={() => goToUnit(-1)}
+                    style={{ flex: 1, height: '38px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', color: '#555', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                  >‹ 이전 호실</button>
+                  <button
+                    onClick={() => goToUnit(1)}
+                    style={{ flex: 1, height: '38px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', color: '#555', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                  >다음 호실 ›</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {lightboxOpen && activePhotos[carouselIndex] && (
+            <div className="pu-lightbox" onClick={() => setLightboxOpen(false)}>
+              <img
+                src={activePhotos[carouselIndex].url}
+                alt=""
+                style={{ maxWidth: '94vw', maxHeight: '94vh', objectFit: 'contain' }}
+                onClick={e => e.stopPropagation()}
+              />
+              <button className="pu-lightbox-close" aria-label="닫기" onClick={() => setLightboxOpen(false)}>✕</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
