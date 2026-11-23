@@ -143,10 +143,10 @@ function computeF1Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
   const leftSlots: { id: string; area: number; confirmedBrand?: string; idLabel?: string }[] = [
     { id: '101',     area: getArea('101', 10.68) },
     { id: '102',     area: getArea('102', 10.0) },
-    { id: '103-104', area: 20.0,  confirmedBrand: '파리바게뜨', idLabel: '103-104' },
+    { id: '103-104', area: 20.0,  idLabel: '103-104' },
     { id: '105',     area: getArea('105', 10.08) },
-    { id: '106',     area: 10.0,  confirmedBrand: '분식' },
-    { id: '107',     area: 10.0,  confirmedBrand: '메머드커피' },
+    { id: '106',     area: 10.0 },
+    { id: '107',     area: 10.0 },
     { id: '108',     area: getArea('108', 6.01) },
   ];
 
@@ -252,7 +252,7 @@ function computeF2Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
     { id: '203', area: getArea('203', 49) },
     { id: '204', area: getArea('204', 49) },
     { id: '205', area: getArea('205', 49) },
-    { id: '206', area: getArea('206', 49), confirmedBrand: '부동산' },
+    { id: '206', area: getArea('206', 49) },
     { id: '207', area: getArea('207', 49) },
     { id: '208', area: getArea('208', 49) },
     { id: '209', area: getArea('209', 49) },
