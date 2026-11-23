@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 
 export type PublicUnit = {
@@ -757,18 +758,34 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
         .pu-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 5px; }
         .pu-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); }
         .pu-dot-active { background: #fff; }
-        .pu-lightbox { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; }
-        .pu-lightbox-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .pu-lightbox-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .pu-lightbox-arrow:disabled { opacity: 0.3; cursor: default; }
-        .pu-lightbox-arrow-left { left: 12px; }
-        .pu-lightbox-arrow-right { right: 12px; }
-        .pu-lightbox-counter { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; }
         @media (min-width: 768px) {
           .pu-modal-overlay { align-items: center; padding: 20px; }
           .pu-modal-panel { max-width: 900px; max-height: 80vh; border-radius: 16px; flex-direction: row; }
           .pu-modal-panel.pu-compact { max-width: 440px; }
           .pu-modal-photo { width: 50%; height: auto; aspect-ratio: auto; }
+        }
+      `}</style>
+
+      {/* 호실 사진 확대 창 — document.body에 포탈로 렌더링 (헤더/큰 창보다 항상 위) */}
+      <style>{`
+        .pu-lb2-overlay {
+          position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.6);
+          display: flex; align-items: center; justify-content: center;
+          padding: 8px; padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        .pu-lb2-panel { background: #fff; border-radius: 12px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
+        .pu-lb2-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 16px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .pu-lb2-title { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+        .pu-lb2-close { width: 44px; height: 44px; min-width: 44px; border-radius: 50%; border: none; background: #f3f4f6; color: #333; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pu-lb2-photo-area { position: relative; flex: 1; min-height: 0; background: #1a1a1a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .pu-lb2-photo-area img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        .pu-lb2-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pu-lb2-arrow:disabled { opacity: 0.3; cursor: default; }
+        .pu-lb2-arrow-left { left: 10px; }
+        .pu-lb2-arrow-right { right: 10px; }
+        @media (min-width: 768px) {
+          .pu-lb2-overlay { padding: 20px; }
+          .pu-lb2-panel { width: min(92vw, 1000px); max-height: 88vh; border-radius: 16px; }
         }
       `}</style>
 
@@ -870,38 +887,44 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
             </div>
           </div>
 
-          {lightboxOpen && activePhotos[carouselIndex] && (
-            <div
-              className="pu-lightbox"
-              onClick={() => setLightboxOpen(false)}
-              onTouchStart={handleLightboxTouchStart}
-              onTouchEnd={handleLightboxTouchEnd}
-            >
-              <img
-                src={activePhotos[carouselIndex].url}
-                alt={`${activeUnitNo}호 사진 ${carouselIndex + 1}`}
-                style={{ maxWidth: '94vw', maxHeight: '94vh', objectFit: 'contain' }}
-                onClick={e => e.stopPropagation()}
-              />
-              <button className="pu-lightbox-close" aria-label="닫기" onClick={() => setLightboxOpen(false)}>✕</button>
-              {activePhotos.length > 1 && (
-                <>
-                  <button
-                    className="pu-lightbox-arrow pu-lightbox-arrow-left"
-                    aria-label="이전 사진"
-                    disabled={carouselIndex === 0}
-                    onClick={e => { e.stopPropagation(); goToLightboxPhoto(-1); }}
-                  >‹</button>
-                  <button
-                    className="pu-lightbox-arrow pu-lightbox-arrow-right"
-                    aria-label="다음 사진"
-                    disabled={carouselIndex === activePhotos.length - 1}
-                    onClick={e => { e.stopPropagation(); goToLightboxPhoto(1); }}
-                  >›</button>
-                  <div className="pu-lightbox-counter">{carouselIndex + 1} / {activePhotos.length}</div>
-                </>
-              )}
-            </div>
+          {lightboxOpen && activePhotos[carouselIndex] && typeof document !== 'undefined' && createPortal(
+            <div className="pu-lb2-overlay" onClick={() => setLightboxOpen(false)}>
+              <div className="pu-lb2-panel" onClick={e => e.stopPropagation()}>
+                <div className="pu-lb2-titlebar">
+                  <span className="pu-lb2-title">
+                    {activeUnitNo}호{activePhotos.length > 1 ? ` · ${carouselIndex + 1} / ${activePhotos.length}` : ''}
+                  </span>
+                  <button className="pu-lb2-close" aria-label="닫기" onClick={() => setLightboxOpen(false)}>✕</button>
+                </div>
+                <div
+                  className="pu-lb2-photo-area"
+                  onTouchStart={handleLightboxTouchStart}
+                  onTouchEnd={handleLightboxTouchEnd}
+                >
+                  <img
+                    src={activePhotos[carouselIndex].url}
+                    alt={`${activeUnitNo}호 사진 ${carouselIndex + 1}`}
+                  />
+                  {activePhotos.length > 1 && (
+                    <>
+                      <button
+                        className="pu-lb2-arrow pu-lb2-arrow-left"
+                        aria-label="이전 사진"
+                        disabled={carouselIndex === 0}
+                        onClick={() => goToLightboxPhoto(-1)}
+                      >‹</button>
+                      <button
+                        className="pu-lb2-arrow pu-lb2-arrow-right"
+                        aria-label="다음 사진"
+                        disabled={carouselIndex === activePhotos.length - 1}
+                        onClick={() => goToLightboxPhoto(1)}
+                      >›</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>,
+            document.body
           )}
         </div>
       )}
