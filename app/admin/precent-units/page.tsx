@@ -16,6 +16,7 @@ type Unit = {
   monthly_rent_krw: number | null;
   status: string;
   memo: string | null;
+  admin_memo: string | null;
 };
 
 const ZONE_LABEL: Record<string, string> = {
@@ -53,7 +54,8 @@ export default function PrecentUnitsPage() {
   const [filterZone, setFilterZone] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [editMemo, setEditMemo] = useState<Record<string, string>>({});
+  const [editBusiness, setEditBusiness] = useState<Record<string, string>>({});
+  const [editAdminMemo, setEditAdminMemo] = useState<Record<string, string>>({});
   const [editPrice, setEditPrice] = useState<Record<string, { deposit: string; monthly: string }>>({});
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [photoModalUnit, setPhotoModalUnit] = useState<Unit | null>(null);
@@ -91,13 +93,48 @@ export default function PrecentUnitsPage() {
     setSavingId(null);
   };
 
-  const saveMemo = async (id: string) => {
+  // ── 업종(상호) 수정 — DB 컬럼명은 memo 그대로 (방문자 화면 노출용) ──
+  const startEditBusiness = (u: Unit) => {
+    setEditBusiness(prev => ({ ...prev, [u.id]: u.memo ?? '' }));
+  };
+
+  const cancelEditBusiness = (id: string) => {
+    setEditBusiness(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  const saveBusiness = async (id: string) => {
+    const value = (editBusiness[id] ?? '').trim();
     setSavingId(id);
-    const memo = editMemo[id] ?? '';
-    await supabase.from('precent_units').update({ memo: memo || null }).eq('id', id);
-    setUnits(prev => prev.map(u => u.id === id ? { ...u, memo: memo || null } : u));
-    setEditMemo(prev => { const n = { ...prev }; delete n[id]; return n; });
+    const { error } = await supabase.from('precent_units').update({ memo: value || null }).eq('id', id);
     setSavingId(null);
+    if (error) {
+      alert(`업종(상호) 저장 실패: ${error.message}`);
+      return;
+    }
+    setUnits(prev => prev.map(u => u.id === id ? { ...u, memo: value || null } : u));
+    cancelEditBusiness(id);
+  };
+
+  // ── 메모(비공개) 수정 — admin_memo, 방문자에게 절대 노출되지 않음 ──
+  const startEditAdminMemo = (u: Unit) => {
+    setEditAdminMemo(prev => ({ ...prev, [u.id]: u.admin_memo ?? '' }));
+  };
+
+  const cancelEditAdminMemo = (id: string) => {
+    setEditAdminMemo(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  const saveAdminMemo = async (id: string) => {
+    const value = (editAdminMemo[id] ?? '').trim();
+    setSavingId(id);
+    const { error } = await supabase.from('precent_units').update({ admin_memo: value || null }).eq('id', id);
+    setSavingId(null);
+    if (error) {
+      alert(`메모 저장 실패: ${error.message}`);
+      return;
+    }
+    setUnits(prev => prev.map(u => u.id === id ? { ...u, admin_memo: value || null } : u));
+    cancelEditAdminMemo(id);
   };
 
   // ── 가격 수정 (보증금/월세, 만원 단위 입력 → 원 단위 저장) ──
@@ -197,7 +234,7 @@ export default function PrecentUnitsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8f8f8', borderBottom: '2px solid #e0e0e0' }}>
-                  {['호실', '층', '존', '전용(평)', '계약(평)', '보증금', '월세', '상태', '메모', '사진'].map(h => (
+                  {['호실', '층', '업종(상호)', '전용(평)', '계약(평)', '보증금', '월세', '상태', '메모(비공개)', '사진'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#555', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -220,7 +257,8 @@ export default function PrecentUnitsPage() {
                       );
                     }
 
-                    const memoEditing = u.id in editMemo;
+                    const businessEditing = u.id in editBusiness;
+                    const adminMemoEditing = u.id in editAdminMemo;
                     const priceEditing = u.id in editPrice;
                     const i = rowIndex++;
 
@@ -228,10 +266,25 @@ export default function PrecentUnitsPage() {
                       <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap' }}>{u.unit_no}</td>
                         <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{u.floor}</td>
-                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#f3f4f6', color: '#374151', fontWeight: 600 }}>
-                            {ZONE_LABEL[u.zone] ?? u.zone}
-                          </span>
+                        <td style={{ padding: '10px 12px', minWidth: '140px' }}>
+                          {businessEditing ? (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                value={editBusiness[u.id]}
+                                onChange={e => setEditBusiness(prev => ({ ...prev, [u.id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') saveBusiness(u.id); if (e.key === 'Escape') cancelEditBusiness(u.id); }}
+                                placeholder="예: 스타벅스"
+                                autoFocus
+                                style={{ flex: 1, height: '26px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
+                              />
+                              <button onClick={() => saveBusiness(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', height: '26px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
+                              <button onClick={() => cancelEditBusiness(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', height: '26px', background: '#f3f4f6', color: '#555', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>취소</button>
+                            </div>
+                          ) : (
+                            <span onClick={() => startEditBusiness(u)} style={{ fontSize: '12px', color: u.memo ? '#333' : '#bbb', cursor: 'pointer' }} title="클릭해서 수정">
+                              {u.memo || '미입력'}
+                            </span>
+                          )}
                         </td>
                         <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{u.exclusive_area_py.toFixed(1)}</td>
                         <td style={{ padding: '10px 12px', color: '#333', whiteSpace: 'nowrap' }}>{u.contract_area_py.toFixed(1)}</td>
@@ -288,24 +341,25 @@ export default function PrecentUnitsPage() {
                           </select>
                         </td>
                         <td style={{ padding: '10px 12px', minWidth: '160px' }}>
-                          {memoEditing ? (
+                          {adminMemoEditing ? (
                             <div style={{ display: 'flex', gap: '4px' }}>
                               <input
-                                value={editMemo[u.id]}
-                                onChange={e => setEditMemo(prev => ({ ...prev, [u.id]: e.target.value }))}
-                                onKeyDown={e => { if (e.key === 'Enter') saveMemo(u.id); if (e.key === 'Escape') setEditMemo(prev => { const n = { ...prev }; delete n[u.id]; return n; }); }}
+                                value={editAdminMemo[u.id]}
+                                onChange={e => setEditAdminMemo(prev => ({ ...prev, [u.id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') saveAdminMemo(u.id); if (e.key === 'Escape') cancelEditAdminMemo(u.id); }}
                                 autoFocus
                                 style={{ flex: 1, height: '26px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', padding: '0 6px', outline: 'none' }}
                               />
-                              <button onClick={() => saveMemo(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
+                              <button onClick={() => saveAdminMemo(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', height: '26px', background: '#1a1a1a', color: '#e2a06e', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
+                              <button onClick={() => cancelEditAdminMemo(u.id)} disabled={savingId === u.id} style={{ fontSize: '11px', padding: '0 8px', height: '26px', background: '#f3f4f6', color: '#555', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>취소</button>
                             </div>
                           ) : (
                             <span
-                              onClick={() => setEditMemo(prev => ({ ...prev, [u.id]: u.memo ?? '' }))}
-                              style={{ fontSize: '12px', color: u.memo ? '#333' : '#bbb', cursor: 'pointer' }}
+                              onClick={() => startEditAdminMemo(u)}
+                              style={{ fontSize: '12px', color: u.admin_memo ? '#333' : '#bbb', cursor: 'pointer' }}
                               title="클릭해서 편집"
                             >
-                              {u.memo || '메모 없음'}
+                              {u.admin_memo || '메모 없음'}
                             </span>
                           )}
                         </td>
