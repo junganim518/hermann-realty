@@ -228,7 +228,7 @@ export default function NewPropertyPage() {
     if (!document.getElementById('daum-postcode-script')) {
       const s1 = document.createElement('script');
       s1.id = 'daum-postcode-script';
-      s1.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+      s1.src = '//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
       s1.async = true;
       document.head.appendChild(s1);
     }
