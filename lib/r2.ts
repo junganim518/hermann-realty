@@ -12,15 +12,14 @@ export const r2Client = new S3Client({
 export const R2_BUCKET = process.env.CLOUDFLARE_R2_BUCKET_NAME!;
 export const R2_PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL!;
 
-export const uploadToR2 = async (file: File, path: string): Promise<string> => {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+export const uploadToR2 = async (file: File | Buffer, path: string, contentType?: string): Promise<string> => {
+  const buffer = Buffer.isBuffer(file) ? file : Buffer.from(await file.arrayBuffer());
 
   await r2Client.send(new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: path,
     Body: buffer,
-    ContentType: file.type,
+    ContentType: contentType ?? (file as File).type,
   }));
 
   return `${R2_PUBLIC_URL}/${path}`;

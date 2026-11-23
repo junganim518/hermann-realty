@@ -328,6 +328,19 @@ lib/
 - **드롭다운 표시**: `is_active = true`인 담당자만 노출 (`eq('is_active', true)`)
 - **문의 연결**: 매물 상세 페이지에서 담당자 카카오톡(`kakao_url`) 연결
 
+## 사진 워터마크
+
+- **적용 대상**: `/api/upload`의 `folder` 값이 `properties`(매물 사진) 또는 `precent/units/`로 시작(프리센트 호실 사진)할 때만 자동 적용
+  - 담당자 프로필/배너/로고/뉴스 등 다른 용도는 미적용 (`app/api/upload/route.ts`의 `WATERMARK_FOLDER_PREFIXES`)
+  - 프리센트 건물 갤러리(`precent_gallery`)는 현재 `/api/upload`를 거치는 업로드 UI가 없음 (최초 등록은 `scripts/upload-precent-gallery.mjs`로 일회성 처리됨)
+- **로고 소스**: `public/logo.png` (Header.tsx가 쓰는 원형 아이콘, 161×161 PNG)
+- **합성 로직**: `lib/watermark.ts` — 로고를 흰색 실루엣으로 변환 + 약한 그림자(blur) 합성 후, 사진 가로폭의 40%·불투명도 22%로 가운데에 합성. sharp로 서버에서 처리, 결과는 WebP
+- **기존 사진 일괄 적용**: `scripts/watermark-existing-photos.js` (`--dry-run`, `--limit N`, `--only 테이블명`)
+  - 대상: `property_images.image_url`, `precent_gallery.url`, `precent_unit_photos.url`
+  - 원본 R2 키에 `-wm.webp`를 붙인 새 키로 "추가" 업로드 후 DB의 url만 교체 — 원본 파일은 삭제/덮어쓰기하지 않음
+  - 이미 `-wm.`이 붙은 주소는 재실행해도 건너뜀 (중복 적용 방지)
+  - 실행 기록: `scripts/watermark-log.csv` (옛 주소→새 주소 누적) / 되돌리기용 SQL: `scripts/watermark-rollback.sql` (실행할수록 append됨)
+
 ## 비밀번호 관련
 
 - **비밀번호 변경**: `/admin/account` (로그인 필요, 현재 비밀번호 재인증 후 변경)
