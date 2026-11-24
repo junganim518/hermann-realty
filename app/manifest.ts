@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: '헤르만부동산',
     short_name: '헤르만',
-    description: '부천 상가, 사무실 전문 부동산',
+    description: '상가, 사무실 전문 부동산',
     start_url: '/',
     scope: '/',
     display: 'standalone',
