@@ -490,10 +490,21 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [photosByUnit, setPhotosByUnit] = useState<Record<string, Photo[]>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => { setActiveUnitNo(null); }, [activeFloor]);
   useEffect(() => { setCarouselIndex(0); setLightboxOpen(false); }, [activeUnitNo]);
+
+  // 관리자 전용 "호실 관리" 바로가기 노출 여부 — Header.tsx의 "관리자 페이지" 버튼과 동일하게
+  // 로그인 여부만으로 판단한다(이 사이트는 로그인 = 관리자뿐, 별도 회원 등급 없음).
+  // 이 페이지는 revalidate=1800으로 미리 렌더링되므로, 서버 렌더 시점엔 isAdmin이 항상 false라
+  // 초기 HTML(소스 보기)에는 버튼이 없고, 브라우저에서 로그인 확인 후에만 나타난다.
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAdmin(!!data.user);
+    });
+  }, []);
 
   // 방문자 공개 뷰로 호실 사진 로드 — 가격 컬럼 없음, status='vacant' 호실만 내려옴.
   // 조회 실패/결과 없음 모두 "사진 없음"으로 자연스럽게 처리됨(아래 UI가 photos.length로 분기).
@@ -619,21 +630,31 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   return (
     <div style={{ position: 'relative' }}>
       {/* 탭 */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {FLOOR_CONFIG.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setActiveFloor(f.key)}
-            style={{
-              padding: '8px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-              fontWeight: 700, fontSize: '14px', transition: 'all 0.15s',
-              background: activeFloor === f.key ? '#1a1a1a' : '#f0f0f0',
-              color: activeFloor === f.key ? '#e2a06e' : '#555',
-            }}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {FLOOR_CONFIG.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setActiveFloor(f.key)}
+              style={{
+                padding: '8px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                fontWeight: 700, fontSize: '14px', transition: 'all 0.15s',
+                background: activeFloor === f.key ? '#1a1a1a' : '#f0f0f0',
+                color: activeFloor === f.key ? '#e2a06e' : '#555',
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {isAdmin && (
+          <a
+            href="/admin/precent-units"
+            style={{ background: '#e2a06e', color: '#fff', fontSize: '12px', fontWeight: 600, padding: '6px 12px', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}
           >
-            {f.label}
-          </button>
-        ))}
+            호실 관리
+          </a>
+        )}
       </div>
 
       {/* 범례 */}
