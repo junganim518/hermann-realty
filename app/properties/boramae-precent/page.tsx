@@ -213,7 +213,7 @@ export default async function BoramaePresentPage() {
             <div className="pc-badge">BORAMAE · PRECENT · 2025 OPEN</div>
             <h1 style={{ fontSize: 'clamp(26px, 4vw, 46px)', fontWeight: 900, lineHeight: 1.18, margin: '0 0 14px', letterSpacing: '-0.5px' }}>
               동작 보라매역<br />
-              <span style={{ color: '#c47c30' }}>프리센트</span> 상업시설 임대
+              <span style={{ color: '#c47c30' }}>프리센트</span> 상가임대
             </h1>
             <p style={{ fontSize: 'clamp(13px, 1.6vw, 16px)', color: '#aaa', lineHeight: 1.8, margin: 0 }}>
               7호선·신림선 더블역세권, 근린상업지역<br />
