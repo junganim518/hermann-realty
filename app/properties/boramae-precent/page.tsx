@@ -384,7 +384,7 @@ export default async function BoramaePresentPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>중개사무소</div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#444' }}>헤르만공인중개사사무소 · 부천 원미구</div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#444' }}>헤르만공인중개사사무소</div>
                   </div>
                 </div>
               </div>
