@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
+import { extractCityRegion } from '@/lib/addressRegion';
 
 const PROPERTY_SELECT =
   'id, property_number, title, address, building_name, unit_number, transaction_type, ' +
@@ -74,7 +75,7 @@ export async function generateMetadata(
     ? `전용 ${descAreaM2}㎡(${(descAreaM2 / 3.3058).toFixed(1)}평)`
     : '';
   const description = [
-    (property.address ? (property.address.match(/(.+동)/)?.[1] ?? property.address) : '부천시'),
+    (property.address ? (property.address.match(/(.+동)/)?.[1] ?? property.address) : ''),
     propertyType,
     transactionType,
     ...descPriceParts,
@@ -111,7 +112,8 @@ export default async function ItemViewLayout({
     const customTitle = (property.title || '').trim();
     const headline = customTitle || [property.property_type, property.transaction_type].filter(Boolean).join(' ');
     const name = [property.property_number, headline].filter(Boolean).join(' ');
-    const autoDesc = ['부천시', property.property_type, property.transaction_type,
+    const cityRegion = extractCityRegion(property.address);
+    const autoDesc = [cityRegion?.locality, property.property_type, property.transaction_type,
       property.exclusive_area ? `${property.exclusive_area}㎡` : ''].filter(Boolean).join(' ');
     const description = (property.description || '').trim() || autoDesc;
     const images = imgs.map(i => i.image_url).filter(Boolean);
@@ -132,8 +134,7 @@ export default async function ItemViewLayout({
       ld.address = {
         '@type': 'PostalAddress',
         streetAddress: streetParts.join(' '),
-        addressLocality: '부천시',
-        addressRegion: '경기도',
+        ...(cityRegion ? { addressLocality: cityRegion.locality, addressRegion: cityRegion.region } : {}),
         addressCountry: 'KR',
       };
     }

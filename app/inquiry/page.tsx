@@ -164,7 +164,7 @@ export default function InquiryPage() {
           <div className="inq-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
             <div>
               <label style={labelSt}>매물 위치</label>
-              <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="예) 부천시 중동, 신중동역 근처 등" style={inputSt} />
+              <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="예) ○○구 ○○동, ○○역 근처 등" style={inputSt} />
             </div>
             <div>
               <label style={labelSt}>거래유형</label>
