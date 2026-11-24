@@ -7,22 +7,28 @@ import FloorPlan, { type PublicUnit } from './FloorPlan';
 import Gallery, { type GalleryItem } from './Gallery';
 import InquiryForm from './InquiryForm';
 
+const PAGE_TITLE = '동작 보라매역 상가임대 | 프리센트 병원·학원·F&B·오피스 공실';
+const PAGE_DESCRIPTION =
+  '상가·사무실 임대 전문 헤르만부동산. 동작구 보라매역 7호선·신림선 더블역세권 신축 프리센트 B1~3F 병원·클리닉·학원·F&B·오피스 공실, 층별 도면과 건물 내부 사진 확인 후 문의하세요.';
+
 export const metadata: Metadata = {
-  title: '보라매역 상가임대 | 동작 보라매역 프리센트 병원·클리닉·학원·F&B·오피스 | 헤르만부동산',
-  description:
-    '동작구 보라매역 7호선·신림선 더블역세권 신축 상가임대. 프리센트 B1~3F 병원·클리닉·학원·F&B·오피스 공실 다수, 실시간 임대 문의. 헤르만부동산.',
+  // absolute로 지정 — app/layout.tsx의 title.template('%s | 헤르만부동산')이 혹시 덧붙지 않도록
+  // 명시적으로 고정 (현재는 중간의 app/properties/layout.tsx가 자체 title을 가져서 템플릿이
+  // 여기까지 내려오지 않지만, 앞으로도 안전하게 이 제목 그대로만 보이도록 absolute 사용).
+  title: { absolute: PAGE_TITLE },
+  description: PAGE_DESCRIPTION,
   alternates: { canonical: 'https://hermann-realty.com/properties/boramae-precent' },
   openGraph: {
     siteName: '헤르만부동산',
-    title: '보라매역 상가임대 | 동작 보라매역 프리센트 | 헤르만부동산',
-    description: '동작구 보라매역 더블역세권 신축 상가임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     url: 'https://hermann-realty.com/properties/boramae-precent',
     images: [{ url: 'https://hermann-realty.com/hero-building-cg.png' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '보라매역 상가임대 | 동작 보라매역 프리센트 | 헤르만부동산',
-    description: '동작구 보라매역 더블역세권 신축 상가임대. 병원·클리닉·학원·F&B·오피스. 헤르만부동산.',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     images: ['https://hermann-realty.com/hero-building-cg.png'],
   },
 };
@@ -181,9 +187,8 @@ export default async function BoramaePresentPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: '동작 보라매역 프리센트 상업시설 임대',
-    description:
-      '동작구 보라매역 7호선·신림선 더블역세권 신축 상가임대. 프리센트 B1~3F 병원·클리닉·학원·F&B·오피스 공실 다수, 실시간 임대 문의. 헤르만부동산.',
+    name: '동작 보라매역 프리센트 상가임대',
+    description: PAGE_DESCRIPTION,
     telephone: '010-8680-8151',
     url: 'https://hermann-realty.com/properties/boramae-precent',
     image: 'https://hermann-realty.com/hero-building-cg.png',
