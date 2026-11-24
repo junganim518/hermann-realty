@@ -403,7 +403,7 @@ export default async function BoramaePresentPage() {
         <div style={{ maxWidth: '540px', margin: '0 auto' }}>
           <p style={{ fontSize: '12px', color: '#555', margin: '0 0 10px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>보라매역 더블역세권</p>
           <p style={{ fontSize: 'clamp(20px, 3.5vw, 28px)', fontWeight: 800, margin: '0 0 8px', color: '#fff' }}>
-            프리센트 상업시설 임대,
+            프리센트 상가임대,
           </p>
           <p style={{ fontSize: 'clamp(20px, 3.5vw, 28px)', fontWeight: 800, margin: '0 0 32px', color: '#c47c30' }}>
             헤르만부동산에 문의하세요
