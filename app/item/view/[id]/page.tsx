@@ -194,6 +194,7 @@ interface Property {
   extra_contacts?: { name: string; phone: string; role: string }[];
   sale_price?: number;
   is_sold?: boolean;
+  status?: string;
   agent_id?: string;
   land_area?: string;
   total_floor_area?: string;
@@ -409,7 +410,38 @@ export default function PropertyDetailPage() {
     async function fetchProperty() {
       setLoading(true);
 
-      // 1) 매물 조회 (임대인/임차인 연락처·내부메모는 제외 — 관리자 로그인 확인 후 별도 조회)
+      // 0) 최소 컬럼(상태만)으로 먼저 확인 — 가격/주소/설명 등 민감 정보 없음.
+      //    보류·공동중개매물은 관리자가 아니면 아래에서 전체 컬럼 조회 자체를 하지 않아
+      //    해당 정보가 비관리자 네트워크 응답에 전혀 포함되지 않는다.
+      const { data: statusRow } = (await supabase
+        .from('public_properties')
+        .select('id, property_number, status, is_sold')
+        .eq('property_number', id)
+        .single()) as { data: any };
+
+      if (!statusRow) {
+        setProperty(null);
+        setLoading(false);
+        return;
+      }
+
+      const pendingStatus = statusRow.status === '보류' || statusRow.status === '공동중개매물';
+
+      if (pendingStatus) {
+        // 전체 컬럼 조회 전에 관리자 여부를 직접 확인 (화면 전체의 isAdmin 상태도 함께 갱신)
+        const { data: userData } = await supabase.auth.getUser();
+        const isAdminNow = !!userData.user;
+        setIsAdmin(isAdminNow);
+
+        if (!isAdminNow) {
+          setProperty(statusRow); // status/is_sold만 있는 최소 데이터 — 안내 화면 전용
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 1) 매물 전체 조회 (거래중·거래완료, 또는 관리자로 확인된 보류·공동중개매물) —
+      //    임대인/임차인 연락처·내부메모는 제외 (관리자 로그인 확인 후 별도 조회).
       //    public_properties 뷰 자체가 deleted_at IS NULL만 노출하므로 별도 필터 불필요
       const { data } = (await supabase
         .from('public_properties')
@@ -693,6 +725,32 @@ export default function PropertyDetailPage() {
     );
   }
 
+  const isSoldStatus = property.status === '거래완료' || !!property.is_sold;
+  const isPendingStatus = property.status === '보류' || property.status === '공동중개매물';
+
+  // 보류·공동중개매물은 비관리자에게 안내 화면만 보여주고 매물 정보는 렌더링하지 않음
+  // (fetchProperty에서 이미 비관리자라고 확인된 경우 property에는 최소 데이터만 들어있음)
+  if (isPendingStatus && !isAdmin) {
+    const contactPhone = '010-8680-8151';
+    return (
+      <main style={{ background: '#f5f5f5', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '420px', width: '100%', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '48px 32px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+          <p style={{ fontSize: '18px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>현재 소개하지 않는 매물입니다.</p>
+          <p style={{ fontSize: '14px', color: '#888', marginBottom: '28px', lineHeight: 1.6 }}>문의 주시면 안내드립니다.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <a href={`tel:${contactPhone}`} style={{ display: 'block', padding: '14px', background: '#e2a06e', color: '#fff', fontWeight: 700, borderRadius: '8px', textDecoration: 'none', fontSize: '15px' }}>
+              📞 전화 문의 {contactPhone}
+            </a>
+            <Link href="/properties" style={{ display: 'block', padding: '14px', background: '#1a1a1a', color: '#fff', fontWeight: 700, borderRadius: '8px', textDecoration: 'none', fontSize: '15px' }}>
+              전체 매물 보기
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const handleDeleteProperty = async () => {
     if (!confirm(`매물 ${property.property_number}을 휴지통으로 이동하시겠습니까?`)) return;
     const { error } = await supabase.from('properties').update({ deleted_at: new Date().toISOString() }).eq('id', property.id);
@@ -766,6 +824,12 @@ export default function PropertyDetailPage() {
 
   return (
     <main style={{ background: '#f5f5f5', minHeight: '100vh' }}>
+      {/* 관리자 전용 — 보류·공동중개매물은 비관리자에겐 안내 화면만 보이므로, 관리자가 볼 때만 상태 안내 */}
+      {isAdmin && isPendingStatus && (
+        <div className="print-hide" style={{ background: '#fef3c7', color: '#92400e', textAlign: 'center', padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>
+          ⚠️ 관리자만 볼 수 있는 상태: {property.status}
+        </div>
+      )}
       {/* ── 인쇄/저장 공용 출력 영역 ── */}
       <div ref={printAreaRef} id="print-area">
 
@@ -1420,6 +1484,29 @@ export default function PropertyDetailPage() {
 
         {/* ── 좌측 본문 ── */}
         <div className="detail-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* 거래완료 안내 배너 — 사진 위, 비슷한 매물 섹션으로 스크롤 */}
+          {isSoldStatus && (
+            <div className="print-hide" style={{ background: '#fdf0f0', border: '1px solid #f3c7c7', borderRadius: '8px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <p style={{ margin: 0, fontSize: '14px', color: '#b23a3a', fontWeight: 600 }}>
+                이미 거래가 완료된 매물입니다. 비슷한 거래중 매물을 확인해 보세요.
+              </p>
+              <button
+                onClick={() => {
+                  setActiveTab('section-similar');
+                  const el = document.getElementById('section-similar');
+                  if (el) {
+                    const tabBarH = 50;
+                    const top = el.getBoundingClientRect().top + window.scrollY - headerHeight - tabBarH;
+                    window.scrollTo({ top, behavior: 'smooth' });
+                  }
+                }}
+                style={{ flexShrink: 0, padding: '10px 18px', background: '#e04a4a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                비슷한 매물 보기
+              </button>
+            </div>
+          )}
 
           {/* 이미지 캐러셀 */}
           <div className="detail-image-section" style={{ background: '#fff', overflow: 'hidden', border: '1px solid #e0e0e0', position: 'relative' }}>

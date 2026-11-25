@@ -49,6 +49,23 @@ export async function generateMetadata(
 
   const noIndex = !isIndexable(property);
 
+  // 보류·공동중개매물은 검색엔진/공유 미리보기에 실제 매물 정보(제목·가격·주소)가 노출되지
+  // 않도록 일반 문구로 대체 — noindex는 isIndexable에 의해 그대로 유지됨
+  const isPendingStatus = property.status === '보류' || property.status === '공동중개매물';
+  if (isPendingStatus) {
+    const genericTitle = '헤르만부동산 상가·사무실 매물';
+    const genericDesc = '헤르만공인중개사사무소의 상가·사무실 매물 정보입니다.';
+    const genericImage = 'https://hermann-realty.com/og-image.png';
+    return {
+      title: { absolute: genericTitle },
+      description: genericDesc,
+      alternates: { canonical: `https://hermann-realty.com/item/view/${property.property_number}` },
+      robots: { index: false, follow: false },
+      openGraph: { siteName: '헤르만부동산', title: genericTitle, description: genericDesc, images: [{ url: genericImage }] },
+      twitter: { card: 'summary_large_image', title: genericTitle, description: genericDesc, images: [genericImage] },
+    };
+  }
+
   const imgs = await fetchImages(property.id, 1);
 
   const propertyNumber = property.property_number || '';
