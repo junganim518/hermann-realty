@@ -8,6 +8,7 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatMaintenance } from '@/lib/formatProperty';
 import { categorizeReferrer, getReferrerDetail } from '@/lib/analyticsUtils';
+import { fetchAllPageViews } from '@/lib/fetchAllPageViews';
 import { ALL_THEMES } from '@/lib/themeUtils';
 import { matchRange, matchAreaRange, matchFloor } from '@/lib/propertyFilter';
 
@@ -371,15 +372,12 @@ function AdminDashboardInner() {
     // 유입 경로 원본 데이터 보관 (useMemo에서 날짜별 필터링)
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    const { data: views } = await supabase
-      .from('page_views')
-      .select('referrer, page, created_at')
-      .gte('created_at', ninetyDaysAgo.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(5000);
-    if (views) {
-      setRawViews(views as RawView[]);
-    }
+    const views = await fetchAllPageViews<RawView>(
+      supabase,
+      'referrer, page, created_at',
+      ninetyDaysAgo.toISOString(),
+    );
+    setRawViews(views);
 
     // 만기 임박 계약 (60일 이내, 임대 계약, 종료/재계약 제외)
     const sixtyDaysLater = new Date(); sixtyDaysLater.setDate(sixtyDaysLater.getDate() + 60); sixtyDaysLater.setHours(23, 59, 59, 999);

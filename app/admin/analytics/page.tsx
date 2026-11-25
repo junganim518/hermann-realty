@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Smartphone, Monitor } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPageViews } from '@/lib/fetchAllPageViews';
 import {
   type PageView,
   groupByDate,
@@ -67,13 +68,12 @@ export default function AnalyticsPage() {
 
       // 차트용 raw 데이터 — 최대 90일 fetch (히트맵/도넛/파이는 동일 기간 사용)
       const periodStart = new Date(); periodStart.setDate(periodStart.getDate() - 89); periodStart.setHours(0, 0, 0, 0);
-      const { data: views } = await supabase
-        .from('page_views')
-        .select('created_at, page, device, referrer')
-        .gte('created_at', periodStart.toISOString())
-        .order('created_at', { ascending: true })
-        .limit(5000);
-      setAllViews((views as PageView[]) ?? []);
+      const views = await fetchAllPageViews<PageView>(
+        supabase,
+        'created_at, page, device, referrer',
+        periodStart.toISOString(),
+      );
+      setAllViews(views);
 
       // /item/view/{pnum} 페이지를 매물 정보로 매핑하기 위한 fetch
       const pnumSet = new Set<string>();
