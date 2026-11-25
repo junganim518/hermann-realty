@@ -6,3 +6,6 @@ reference/
 # scripts/watermark-existing-photos.js 실행 기록 — 매번 늘어나는 실행 로그라 git에 올리지 않음
 scripts/watermark-log.csv
 scripts/watermark-rollback.sql
+
+# 프리센트 브로슈어 원본 — 용량 큰 PDF, git에 올리지 않음
+floor-plans/_source/
