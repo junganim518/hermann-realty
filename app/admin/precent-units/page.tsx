@@ -457,8 +457,8 @@ export default function PrecentUnitsPage() {
   // 표 자체의 가로 스크롤 여부는 이 %가 아니라 아래 .pu-table의 min-width(1000px/1100px 미만에서는
   // 900px)로 결정된다 — 컨테이너가 그보다 좁으면 표는 min-width로 고정되고 가로 스크롤이 생긴다.
   const COL_WIDTH: Record<string, string> = {
-    check: '3%', unit: '5%', business: '11%', area: '8%', deposit: '7%',
-    monthly: '6%', sale: '8%', yield: '6%', status: '8%', note: '9%', memo: '22%', photo: '7%',
+    check: '3%', unit: '5%', business: '11%', area: '8%', sale: '8%', deposit: '7%',
+    monthly: '6%', yield: '6%', status: '8%', note: '9%', memo: '22%', photo: '7%',
   };
 
   // 층별 "전체 선택" 체크칸이 참조할, 화면에 보이는(필터 적용된) 호실 목록 — 표/카드 공용
@@ -561,9 +561,9 @@ export default function PrecentUnitsPage() {
                   <th className="pu-sticky-unit" style={th(COL_WIDTH.unit)}>호실</th>
                   <th style={th(COL_WIDTH.business)}>업종(상호)</th>
                   <th style={th(COL_WIDTH.area)}>계약/전용(평)</th>
+                  <th style={{ ...th(COL_WIDTH.sale), textAlign: 'right' }}>분양가(만원)</th>
                   <th style={{ ...th(COL_WIDTH.deposit), textAlign: 'right' }}>보증금(만원)</th>
                   <th style={{ ...th(COL_WIDTH.monthly), textAlign: 'right' }}>월세(만원)</th>
-                  <th style={{ ...th(COL_WIDTH.sale), textAlign: 'right' }}>분양가(만원)</th>
                   <th style={{ ...th(COL_WIDTH.yield), textAlign: 'right' }}>수익률(%)</th>
                   <th style={th(COL_WIDTH.status)}>상태</th>
                   <th style={th(COL_WIDTH.note)}>비고</th>
@@ -633,13 +633,13 @@ export default function PrecentUnitsPage() {
                           {u.contract_area_py.toFixed(1)} / {u.exclusive_area_py.toFixed(1)}
                         </td>
                         <td className="pu-cell">
+                          <AutoField value={toManStr(u.sale_price)} commit={commitSalePrice(u)} numeric align="right" disabled={isSaving} />
+                        </td>
+                        <td className="pu-cell">
                           <AutoField value={toManStr(u.deposit_krw)} commit={commitDeposit(u)} numeric align="right" disabled={isSaving} />
                         </td>
                         <td className="pu-cell">
                           <AutoField value={toManStr(u.monthly_rent_krw)} commit={commitMonthly(u)} numeric align="right" disabled={isSaving} />
-                        </td>
-                        <td className="pu-cell">
-                          <AutoField value={toManStr(u.sale_price)} commit={commitSalePrice(u)} numeric align="right" disabled={isSaving} />
                         </td>
                         <td className="pu-cell">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
@@ -721,9 +721,9 @@ export default function PrecentUnitsPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px', fontSize: '12px', color: '#eee' }}>
             <span>계약 {formatPyAndM2(contractPySum)}</span>
             <span>전용 {formatPyAndM2(exclusivePySum)}</span>
+            <span>분양가 {formatKRWSum(salePriceSum)}</span>
             <span>보증금 {formatKRWSum(depositSum)}</span>
             <span>월세 {formatKRWSum(monthlySum)}</span>
-            <span>분양가 {formatKRWSum(salePriceSum)}</span>
             <span>평균 수익률 {avgYieldPct != null ? `${avgYieldPct.toFixed(1)}%` : '-'}</span>
             {missingAreaCount > 0 && <span style={{ color: '#fbbf24' }}>면적 미입력 {missingAreaCount}개 제외</span>}
             {missingPriceCount > 0 && <span style={{ color: '#fbbf24' }}>가격 미입력 {missingPriceCount}개 제외</span>}
