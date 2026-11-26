@@ -3,16 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
+import { type PublicUnit, MERGED_UNIT_PAIRS, buildDisplayUnits } from './mergedUnits';
 
-export type PublicUnit = {
-  unit_no: string;
-  floor: string;
-  zone: string;
-  exclusive_area_py: number;
-  contract_area_py: number;
-  status: string;
-  memo?: string | null;
-};
+export type { PublicUnit };
 
 const ZONE_RECOMMEND: Record<string, string> = {
   large: '피트니스·대형 학원·대형 F&B 등',
@@ -484,7 +477,18 @@ function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 
 type Photo = { id: string; unit_no: string; url: string; sort_order: number };
 
-export default function FloorPlan({ units }: { units: PublicUnit[] }) {
+// 합쳐진 도면 칸의 사진 조회 — DB가 합쳐진 상태면 그 unit_no로 바로 찾고,
+// 나뉜 상태면 두 호실(103+104, 301+302)의 사진을 순서대로(첫 번째 호실 먼저) 합친다.
+function getDisplayPhotos(photosByUnit: Record<string, Photo[]>, unitNo: string): Photo[] {
+  const pair = MERGED_UNIT_PAIRS[unitNo];
+  if (pair && !photosByUnit[unitNo]) {
+    return [...(photosByUnit[pair[0]] ?? []), ...(photosByUnit[pair[1]] ?? [])];
+  }
+  return photosByUnit[unitNo] ?? [];
+}
+
+export default function FloorPlan({ units: rawUnits }: { units: PublicUnit[] }) {
+  const units = buildDisplayUnits(rawUnits);
   const [activeFloor, setActiveFloor] = useState('B1');
   const [activeUnitNo, setActiveUnitNo] = useState<string | null>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -573,7 +577,7 @@ export default function FloorPlan({ units }: { units: PublicUnit[] }) {
   };
 
   const activeUnit = activeUnitNo ? unitMap.get(activeUnitNo) ?? null : null;
-  const activePhotos = activeUnitNo ? (photosByUnit[activeUnitNo] ?? []) : [];
+  const activePhotos = activeUnitNo ? getDisplayPhotos(photosByUnit, activeUnitNo) : [];
 
   const handleCarouselTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0]?.clientX ?? null;

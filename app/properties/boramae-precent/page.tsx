@@ -3,7 +3,8 @@ import Image from 'next/image';
 import { Phone, MapPin, Building2, Users, Car, TrendingUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import FloorPlan, { type PublicUnit } from './FloorPlan';
+import FloorPlan from './FloorPlan';
+import { type PublicUnit, buildDisplayUnits } from './mergedUnits';
 import Gallery, { type GalleryItem } from './Gallery';
 import InquiryForm from './InquiryForm';
 
@@ -172,9 +173,11 @@ export default async function BoramaePresentPage() {
     galleryItems = (galleryData ?? []) as GalleryItem[];
   }
 
-  // 존별 집계 (전체 호실 수 + 공실 수)
+  // 존별 집계 (전체 호실 수 + 공실 수) — 103-104/301-302가 DB에서 103+104, 301+302로
+  // 나뉘어도 합쳐진 상태와 똑같이 1개 호실로 집계되도록 displayUnits 기준으로 계산
+  const displayUnits = buildDisplayUnits(units);
   const zoneStats: Record<string, { total: number; vacant: number; minPy: number; maxPy: number }> = {};
-  for (const u of units) {
+  for (const u of displayUnits) {
     if (!zoneStats[u.zone]) zoneStats[u.zone] = { total: 0, vacant: 0, minPy: Infinity, maxPy: -Infinity };
     zoneStats[u.zone].total++;
     if (u.status === 'vacant') {
