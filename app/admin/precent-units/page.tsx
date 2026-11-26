@@ -101,8 +101,10 @@ function formatThousands(raw: string): string {
 // ── 입력칸 공용 컴포넌트 ──
 // 포커스 시점 값(baseline)과 다를 때만 blur/Enter에서 commit 호출, Esc는 원래 값으로 되돌리고 커밋 안 함.
 // commit이 true를 반환하면 1.5초간 ✓ 표시.
+// autoGrow=true(업종/비고/메모): 줄바꿈되는 자동 높이 textarea. Enter=저장, Shift+Enter=줄바꿈.
+//   말줄임/title 툴팁은 쓰지 않는다(긴 글은 줄바꿈으로 전체가 보이게 하는 쪽이라 필요 없음).
 function AutoField({
-  value, commit, placeholder, list, numeric, align, as = 'input', rows, disabled, bold,
+  value, commit, placeholder, list, numeric, align, autoGrow, disabled, bold,
 }: {
   value: string;
   commit: (v: string) => Promise<boolean>;
@@ -110,20 +112,26 @@ function AutoField({
   list?: string;
   numeric?: boolean;
   align?: 'left' | 'right';
-  as?: 'input' | 'textarea';
-  rows?: number;
+  autoGrow?: boolean;
   disabled?: boolean;
   bold?: boolean;
 }) {
-  // 한 줄 입력(input)일 때는 길어도 칸 안에서 말줄임(...) 처리하고, title로 전체 내용을 보여준다
-  const titleAttr = as !== 'textarea' && value ? value : undefined;
   const [draft, setDraft] = useState<string | null>(null);
   const [baseline, setBaseline] = useState('');
   const [flash, setFlash] = useState(false);
   const cancellingRef = useRef(false);
+  const elRef = useRef<HTMLTextAreaElement | null>(null);
 
   const rawShown = draft ?? value;
   const shown = numeric ? formatThousands(rawShown) : rawShown;
+
+  // 긴 글(업종/비고/메모) — 입력칸 높이를 내용(scrollHeight)에 맞춰 자동으로 늘린다
+  useEffect(() => {
+    if (!autoGrow || !elRef.current) return;
+    const el = elRef.current;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [autoGrow, shown]);
 
   const handleFocus = () => {
     if (draft !== null) return;
@@ -149,21 +157,25 @@ function AutoField({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && as !== 'textarea') {
-      (e.target as HTMLElement).blur();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
       cancellingRef.current = true;
       setDraft(null);
       (e.target as HTMLElement).blur();
+      return;
     }
+    if (e.key !== 'Enter') return;
+    if (autoGrow && e.shiftKey) return; // Shift+Enter = 줄바꿈(기본 동작 허용)
+    e.preventDefault();
+    (e.target as HTMLElement).blur(); // Enter = 저장
   };
 
-  const Tag: any = as === 'textarea' ? 'textarea' : 'input';
+  const Tag: any = autoGrow ? 'textarea' : 'input';
 
   return (
     <span style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
       <Tag
-        className="pu-field"
+        ref={elRef}
+        className={`pu-field${autoGrow ? ' pu-area' : ''}`}
         value={shown}
         onChange={handleChange}
         onFocus={handleFocus}
@@ -171,29 +183,30 @@ function AutoField({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         list={list}
-        title={titleAttr}
-        rows={as === 'textarea' ? (rows ?? 2) : undefined}
+        rows={autoGrow ? 1 : undefined}
         disabled={disabled}
         style={{
           width: '100%',
-          height: as === 'textarea' ? 'auto' : '30px',
-          fontSize: '13px',
           fontWeight: bold ? 700 : 400,
           borderRadius: '5px',
-          padding: as === 'textarea' ? '6px 8px' : '0 8px',
+          padding: autoGrow ? '5px 8px' : '0 8px',
           outline: 'none',
           background: '#fff',
           color: '#1a1a1a',
           textAlign: align ?? 'left',
           fontVariantNumeric: numeric ? 'tabular-nums' : undefined,
           boxSizing: 'border-box',
-          overflow: as === 'textarea' ? undefined : 'hidden',
-          textOverflow: as === 'textarea' ? undefined : 'ellipsis',
-          whiteSpace: as === 'textarea' ? undefined : 'nowrap',
+          display: autoGrow ? 'block' : undefined,
+          lineHeight: autoGrow ? 1.4 : undefined,
+          resize: autoGrow ? 'none' : undefined,
+          overflow: 'hidden',
+          whiteSpace: autoGrow ? 'pre-wrap' : 'nowrap',
+          wordBreak: autoGrow ? 'break-all' : undefined,
+          textOverflow: autoGrow ? undefined : 'ellipsis',
         } as React.CSSProperties}
       />
       {flash && (
-        <span style={{ position: 'absolute', right: '-15px', top: '50%', transform: 'translateY(-50%)', color: '#16a34a', fontSize: '13px', fontWeight: 700, pointerEvents: 'none' }}>✓</span>
+        <span style={{ position: 'absolute', right: '-15px', top: autoGrow ? '5px' : '50%', transform: autoGrow ? undefined : 'translateY(-50%)', color: '#16a34a', fontSize: '13px', fontWeight: 700, pointerEvents: 'none' }}>✓</span>
       )}
     </span>
   );
@@ -437,12 +450,12 @@ export default function PrecentUnitsPage() {
 
   const selSt: React.CSSProperties = { height: '34px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 10px', fontSize: '13px', outline: 'none', background: '#fff', color: '#333' };
 
-  // PC 표의 열 폭 — %의 합이 항상 100이므로 table-layout:fixed에서 표 폭이 컨테이너를 절대 넘지 않는다
-  // (가로 스크롤 없음). 비공개 메모·사진 칸이 추가되면서 늘어난 공간은 그 두 칸에 배분했고,
-  // 나머지 칸의 실제 픽셀 폭은 이전(표 폭 70%) 때와 비슷하게 유지되도록 비율을 다시 잡았다.
+  // PC 표의 열 폭 — %의 합이 항상 100. 사진 버튼을 작게 줄이면서 생긴 여유 공간은 메모 칸에 배분했다.
+  // 표 자체의 가로 스크롤 여부는 이 %가 아니라 아래 .pu-table의 min-width(1000px/1100px 미만에서는
+  // 900px)로 결정된다 — 컨테이너가 그보다 좁으면 표는 min-width로 고정되고 가로 스크롤이 생긴다.
   const COL_WIDTH: Record<string, string> = {
     check: '3%', unit: '5%', business: '11%', area: '8%', deposit: '7%',
-    monthly: '6%', sale: '8%', yield: '6%', status: '8%', note: '9%', memo: '19%', photo: '10%',
+    monthly: '6%', sale: '8%', yield: '6%', status: '8%', note: '9%', memo: '22%', photo: '7%',
   };
 
   // 층별 "전체 선택" 체크칸이 참조할, 화면에 보이는(필터 적용된) 호실 목록 — 표/카드 공용
@@ -468,16 +481,31 @@ export default function PrecentUnitsPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f4f4f4', padding: '24px 20px', paddingBottom: selectedUnits.length > 0 ? '150px' : '24px' }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        .pu-field { border: 1px solid #e3e3e3; transition: border-color 0.15s, background 0.15s; }
+        .pu-field { border: 1px solid #e3e3e3; transition: border-color 0.15s, background 0.15s; height: 30px; font-size: 13px; }
+        .pu-field.pu-area { height: auto; }
+        .pu-field.pu-select { font-size: 12px; }
         .pu-field:hover { border-color: #bbb; }
         .pu-field:focus { border-color: #c47c30; background: #fffdf8; }
         .pu-field:disabled { opacity: 0.55; cursor: not-allowed; }
         .pu-field::placeholder { color: #bbb; }
-        .pu-table-wrap { display: block; }
-        .pu-cards { display: none; }
+        .pu-checkbox { width: 20px; height: 20px; cursor: pointer; }
+        .pu-cell { padding: 8px 6px; }
+        .pu-table { min-width: 1000px; }
+        /* 1100px 미만: 입력칸/체크박스/셀 패딩을 줄이고, 표는 900px 아래로는 안 줄어들게 해서
+           그보다 좁은 화면에서는 .pu-table-wrap의 overflow-x: auto로 가로 스크롤이 생기게 한다. */
         @media (max-width: 1099px) {
-          .pu-table-wrap { display: none; }
-          .pu-cards { display: block; }
+          .pu-field { height: 26px; font-size: 12px; }
+          .pu-field.pu-area { height: auto; }
+          .pu-checkbox { width: 18px; height: 18px; }
+          .pu-cell { padding: 4px 3px; }
+          .pu-table { min-width: 900px; }
+          /* 가로 스크롤 중에도 호실/체크박스 열이 항상 보이게 왼쪽에 고정.
+             left 값은 compact 모드 min-width(900px) 기준 체크(3%=27px) 열 폭에 맞춘 것 — 이 모드에서만
+             실제로 스크롤이 발생하므로(1100px 이상에서는 표가 컨테이너에 맞춰져 스크롤이 생기지 않음)
+             이 고정폭 가정이 항상 유효하다. */
+          .pu-sticky-check, .pu-sticky-unit { position: sticky; z-index: 5; }
+          .pu-sticky-check { left: 0; }
+          .pu-sticky-unit { left: 27px; }
         }
       ` }} />
       <datalist id="sale-note-suggestions">
@@ -518,16 +546,16 @@ export default function PrecentUnitsPage() {
           </div>
         </div>
 
-        {/* ══════════ PC: 표 (1100px 이상) ══════════ */}
-        <div className="pu-table-wrap" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden' }}>
+        {/* 모든 화면 폭에서 같은 표 — 좁은 화면에서는 아래 overflow-x: auto로 가로 스크롤 */}
+        <div className="pu-table-wrap" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
           {loading ? (
             <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
           ) : (
-            <table style={{ width: `${TABLE_WIDTH_PCT}%`, minWidth: '1000px', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
+            <table className="pu-table" style={{ width: `${TABLE_WIDTH_PCT}%`, borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
-                  <th style={th(COL_WIDTH.check)}></th>
-                  <th style={th(COL_WIDTH.unit)}>호실</th>
+                  <th className="pu-sticky-check" style={th(COL_WIDTH.check)}></th>
+                  <th className="pu-sticky-unit" style={th(COL_WIDTH.unit)}>호실</th>
                   <th style={th(COL_WIDTH.business)}>업종(상호)</th>
                   <th style={th(COL_WIDTH.area)}>계약/전용(평)</th>
                   <th style={{ ...th(COL_WIDTH.deposit), textAlign: 'right' }}>보증금(만원)</th>
@@ -552,14 +580,14 @@ export default function PrecentUnitsPage() {
                       const { floorUnits, floorVacant, floorAllSelected, floorSomeSelected } = renderFloorInfo(u.floor);
                       rows.push(
                         <tr key={`floor-${u.floor}`}>
-                          <td style={{ padding: '10px', background: '#eef1f5', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0', textAlign: 'center' }}>
+                          <td className="pu-sticky-check pu-cell" style={{ background: '#eef1f5', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0', textAlign: 'center' }}>
                             <input
                               type="checkbox"
+                              className="pu-checkbox"
                               checked={floorAllSelected}
                               ref={el => { if (el) el.indeterminate = floorSomeSelected; }}
                               onChange={() => toggleFloorSelect(floorUnits)}
                               title={`${u.floor} 전체 선택/해제`}
-                              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                             />
                           </td>
                           <td colSpan={11} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
@@ -581,51 +609,52 @@ export default function PrecentUnitsPage() {
 
                     rows.push(
                       <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: rowBg }}>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <td className="pu-sticky-check pu-cell" style={{ textAlign: 'center', background: rowBg }}>
                           <input
                             type="checkbox"
+                            className="pu-checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelect(u.id)}
-                            style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                           />
                         </td>
-                        <td style={{ padding: '8px', fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.unit_no}</td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-sticky-unit pu-cell" style={{ fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: rowBg }}>{u.unit_no}</td>
+                        <td className="pu-cell">
                           <AutoField
                             value={u.memo ?? ''}
                             commit={commitBusiness(u)}
                             placeholder="미입력"
                             disabled={isSaving}
                             bold={isLeased}
+                            autoGrow
                           />
                         </td>
-                        <td style={{ padding: '8px 6px', color: '#333', whiteSpace: 'nowrap', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <td className="pu-cell" style={{ color: '#333', whiteSpace: 'nowrap', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {u.contract_area_py.toFixed(1)} / {u.exclusive_area_py.toFixed(1)}
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <AutoField value={toManStr(u.deposit_krw)} commit={commitDeposit(u)} numeric align="right" disabled={isSaving} />
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <AutoField value={toManStr(u.monthly_rent_krw)} commit={commitMonthly(u)} numeric align="right" disabled={isSaving} />
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <AutoField value={toManStr(u.sale_price)} commit={commitSalePrice(u)} numeric align="right" disabled={isSaving} />
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                             <AutoField value={yieldStr} commit={commitYield(u)} align="right" disabled={isSaving} placeholder="-" />
                             {isYieldLocked && <span title="수익률 기준으로 월세가 자동 계산되는 호실입니다" style={{ flexShrink: 0 }}>🔒</span>}
                           </div>
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <select
                             value={u.status}
                             onChange={e => updateStatus(u.id, e.target.value)}
                             disabled={isSaving}
-                            className="pu-field"
+                            className="pu-field pu-select"
                             style={{
-                              width: '100%', height: '30px', borderRadius: '5px', padding: '0 2px',
-                              fontSize: '12px', fontWeight: 600, cursor: 'pointer', outline: 'none',
+                              width: '100%', borderRadius: '5px', padding: '0 2px',
+                              fontWeight: 600, cursor: 'pointer', outline: 'none',
                               background: STATUS_BG[u.status] ?? '#f3f4f6',
                               color: STATUS_COLOR[u.status] ?? '#374151',
                             }}
@@ -633,24 +662,25 @@ export default function PrecentUnitsPage() {
                             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
-                          <AutoField value={u.sale_note ?? ''} commit={commitSaleNote(u)} placeholder="-" list="sale-note-suggestions" disabled={isSaving} />
+                        <td className="pu-cell">
+                          <AutoField value={u.sale_note ?? ''} commit={commitSaleNote(u)} placeholder="-" list="sale-note-suggestions" disabled={isSaving} autoGrow />
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <AutoField
                             value={u.admin_memo ?? ''}
                             commit={commitAdminMemo(u)}
                             placeholder="-"
                             disabled={isSaving}
+                            autoGrow
                           />
                         </td>
-                        <td style={{ padding: '6px 4px' }}>
+                        <td className="pu-cell">
                           <button
                             onClick={() => setPhotoModalUnit(u)}
                             className="pu-field"
-                            style={{ width: '100%', height: '30px', fontSize: '12px', fontWeight: 600, background: '#fff', color: '#555', cursor: 'pointer', borderRadius: '5px' }}
+                            style={{ width: 'auto', height: '24px', padding: '0 6px', fontSize: '11px', fontWeight: 600, background: '#fff', color: '#555', cursor: 'pointer', borderRadius: '5px', whiteSpace: 'nowrap' }}
                           >
-                            {photoCount > 0 ? `사진 ${photoCount}장` : '사진 추가'}
+                            {photoCount > 0 ? `사진 ${photoCount}` : '사진 추가'}
                           </button>
                         </td>
                       </tr>
@@ -664,121 +694,6 @@ export default function PrecentUnitsPage() {
           )}
         </div>
 
-        {/* ══════════ 모바일: 카드형 (1100px 미만) ══════════ */}
-        <div className="pu-cards">
-          {loading ? (
-            <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
-          ) : (() => {
-            const cards: React.ReactNode[] = [];
-            let lastFloor: string | null = null;
-
-            filtered.forEach(u => {
-              if (u.floor !== lastFloor) {
-                lastFloor = u.floor;
-                const { floorUnits, floorVacant, floorAllSelected, floorSomeSelected } = renderFloorInfo(u.floor);
-                cards.push(
-                  <div key={`floor-${u.floor}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#eef1f5', borderRadius: '8px', padding: '10px 12px', margin: '14px 0 8px' }}>
-                    <input
-                      type="checkbox"
-                      checked={floorAllSelected}
-                      ref={el => { if (el) el.indeterminate = floorSomeSelected; }}
-                      onChange={() => toggleFloorSelect(floorUnits)}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer', flexShrink: 0 }}
-                    />
-                    <span style={{ fontWeight: 800, fontSize: '14px', color: '#1a1a1a' }}>{u.floor}</span>
-                    <span style={{ fontSize: '12px', color: '#777' }}>· {floorUnits.length}개 · 공실 {floorVacant}개</span>
-                  </div>
-                );
-              }
-
-              const isSelected = selectedIds.has(u.id);
-              const isLeased = u.status === 'leased';
-              const isYieldLocked = yieldLocked.has(u.id);
-              const yieldDisplay = calcYieldPct(u.sale_price, u.deposit_krw, u.monthly_rent_krw);
-              const yieldStr = yieldDisplay != null ? yieldDisplay.toFixed(1) : '-';
-              const isSaving = savingIds.has(u.id);
-              const photoCount = photoCounts[u.id] ?? 0;
-
-              const fieldLabelSt: React.CSSProperties = { fontSize: '11px', color: '#888', marginBottom: '3px' };
-
-              cards.push(
-                <div key={u.id} style={{
-                  background: isSelected ? '#fff7ec' : isLeased ? '#f6f6f6' : '#fff',
-                  border: '1px solid #e8e8e8', borderRadius: '10px', padding: '14px', marginBottom: '10px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(u.id)}
-                      style={{ width: '22px', height: '22px', cursor: 'pointer', flexShrink: 0 }}
-                    />
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#1a1a1a' }}>{u.unit_no}</span>
-                    <span style={{ fontSize: '12px', color: '#999' }}>계약/전용 {u.contract_area_py.toFixed(1)} / {u.exclusive_area_py.toFixed(1)}평</span>
-                    <select
-                      value={u.status}
-                      onChange={e => updateStatus(u.id, e.target.value)}
-                      disabled={isSaving}
-                      className="pu-field"
-                      style={{
-                        marginLeft: 'auto', height: '30px', borderRadius: '5px', padding: '0 6px',
-                        fontSize: '12px', fontWeight: 600, cursor: 'pointer', outline: 'none', flexShrink: 0,
-                        background: STATUS_BG[u.status] ?? '#f3f4f6',
-                        color: STATUS_COLOR[u.status] ?? '#374151',
-                      }}
-                    >
-                      {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                    </select>
-                  </div>
-
-                  <div style={{ marginBottom: '10px' }}>
-                    <div style={fieldLabelSt}>업종(상호)</div>
-                    <AutoField value={u.memo ?? ''} commit={commitBusiness(u)} placeholder="미입력" disabled={isSaving} bold={isLeased} />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                    <div>
-                      <div style={fieldLabelSt}>보증금(만원)</div>
-                      <AutoField value={toManStr(u.deposit_krw)} commit={commitDeposit(u)} numeric align="right" disabled={isSaving} />
-                    </div>
-                    <div>
-                      <div style={fieldLabelSt}>월세(만원)</div>
-                      <AutoField value={toManStr(u.monthly_rent_krw)} commit={commitMonthly(u)} numeric align="right" disabled={isSaving} />
-                    </div>
-                    <div>
-                      <div style={fieldLabelSt}>분양가(만원)</div>
-                      <AutoField value={toManStr(u.sale_price)} commit={commitSalePrice(u)} numeric align="right" disabled={isSaving} />
-                    </div>
-                    <div>
-                      <div style={fieldLabelSt}>수익률(%) {isYieldLocked && '🔒'}</div>
-                      <AutoField value={yieldStr} commit={commitYield(u)} align="right" disabled={isSaving} placeholder="-" />
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '10px' }}>
-                    <div style={fieldLabelSt}>비고</div>
-                    <AutoField value={u.sale_note ?? ''} commit={commitSaleNote(u)} placeholder="-" list="sale-note-suggestions" disabled={isSaving} />
-                  </div>
-
-                  <div style={{ marginBottom: '10px' }}>
-                    <div style={fieldLabelSt}>메모(비공개) — 방문자에게 노출되지 않음</div>
-                    <AutoField value={u.admin_memo ?? ''} commit={commitAdminMemo(u)} as="textarea" rows={2} placeholder="메모 없음" disabled={isSaving} />
-                  </div>
-
-                  <button
-                    onClick={() => setPhotoModalUnit(u)}
-                    className="pu-field"
-                    style={{ width: '100%', height: '32px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: '#fff', color: '#555', cursor: 'pointer' }}
-                  >
-                    {photoCount > 0 ? `사진 ${photoCount}장` : '사진 추가'}
-                  </button>
-                </div>
-              );
-            });
-
-            return cards;
-          })()}
-        </div>
       </div>
 
       {photoModalUnit && (
