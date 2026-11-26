@@ -23,7 +23,7 @@ type Unit = {
 };
 
 // PC 표 폭 비율(%), 100이면 전체 폭 — 나중에 쉽게 바꿀 수 있도록 상수로 둠
-const TABLE_WIDTH_PCT = 70;
+const TABLE_WIDTH_PCT = 100;
 
 // 자주 쓰는 비고 값 — datalist로 제안만 하고 자유 입력도 그대로 허용
 const SALE_NOTE_SUGGESTIONS = ['미분양', '수익보장', '분양주직영'];
@@ -115,6 +115,8 @@ function AutoField({
   disabled?: boolean;
   bold?: boolean;
 }) {
+  // 한 줄 입력(input)일 때는 길어도 칸 안에서 말줄임(...) 처리하고, title로 전체 내용을 보여준다
+  const titleAttr = as !== 'textarea' && value ? value : undefined;
   const [draft, setDraft] = useState<string | null>(null);
   const [baseline, setBaseline] = useState('');
   const [flash, setFlash] = useState(false);
@@ -169,6 +171,7 @@ function AutoField({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         list={list}
+        title={titleAttr}
         rows={as === 'textarea' ? (rows ?? 2) : undefined}
         disabled={disabled}
         style={{
@@ -184,6 +187,9 @@ function AutoField({
           textAlign: align ?? 'left',
           fontVariantNumeric: numeric ? 'tabular-nums' : undefined,
           boxSizing: 'border-box',
+          overflow: as === 'textarea' ? undefined : 'hidden',
+          textOverflow: as === 'textarea' ? undefined : 'ellipsis',
+          whiteSpace: as === 'textarea' ? undefined : 'nowrap',
         } as React.CSSProperties}
       />
       {flash && (
@@ -205,7 +211,6 @@ export default function PrecentUnitsPage() {
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [photoModalUnit, setPhotoModalUnit] = useState<Unit | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // "수익률 기준" 상태(화면 전용, DB 미저장 — 새로고침하면 해제): 잠긴 행 id와, 그때 입력한 목표 수익률(%)
   const [yieldLocked, setYieldLocked] = useState<Set<string>>(new Set());
@@ -398,14 +403,6 @@ export default function PrecentUnitsPage() {
     });
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
   if (!authChecked) return null;
 
   const filtered = units.filter(u =>
@@ -440,12 +437,12 @@ export default function PrecentUnitsPage() {
 
   const selSt: React.CSSProperties = { height: '34px', border: '1px solid #ddd', borderRadius: '6px', padding: '0 10px', fontSize: '13px', outline: 'none', background: '#fff', color: '#333' };
 
-  // PC 표의 열 폭 — px 합(체크 40+호실 70+업종 140+면적 100+보증금 90+월세 80+분양가 100+수익률 80+상태 90+비고 110+더보기 60=960) 대신
-  // 같은 비율을 %로 환산해 table-layout:fixed에 적용한다. %의 합은 항상 100이므로 컨테이너 폭이 몇이든
-  // (900px든 1440px든) 표 폭이 컨테이너를 절대 넘지 않아 가로 스크롤이 생기지 않는다.
+  // PC 표의 열 폭 — %의 합이 항상 100이므로 table-layout:fixed에서 표 폭이 컨테이너를 절대 넘지 않는다
+  // (가로 스크롤 없음). 비공개 메모·사진 칸이 추가되면서 늘어난 공간은 그 두 칸에 배분했고,
+  // 나머지 칸의 실제 픽셀 폭은 이전(표 폭 70%) 때와 비슷하게 유지되도록 비율을 다시 잡았다.
   const COL_WIDTH: Record<string, string> = {
-    check: '4%', unit: '7%', business: '15%', area: '10%', deposit: '9%',
-    monthly: '8%', sale: '10%', yield: '8%', status: '9%', note: '11%', more: '9%',
+    check: '3%', unit: '5%', business: '11%', area: '8%', deposit: '7%',
+    monthly: '6%', sale: '8%', yield: '6%', status: '8%', note: '9%', memo: '19%', photo: '10%',
   };
 
   // 층별 "전체 선택" 체크칸이 참조할, 화면에 보이는(필터 적용된) 호실 목록 — 표/카드 공용
@@ -478,7 +475,7 @@ export default function PrecentUnitsPage() {
         .pu-field::placeholder { color: #bbb; }
         .pu-table-wrap { display: block; }
         .pu-cards { display: none; }
-        @media (max-width: 899px) {
+        @media (max-width: 1099px) {
           .pu-table-wrap { display: none; }
           .pu-cards { display: block; }
         }
@@ -521,25 +518,26 @@ export default function PrecentUnitsPage() {
           </div>
         </div>
 
-        {/* ══════════ PC: 표 (900px 이상) ══════════ */}
+        {/* ══════════ PC: 표 (1100px 이상) ══════════ */}
         <div className="pu-table-wrap" style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden' }}>
           {loading ? (
             <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
           ) : (
-            <table style={{ width: `${TABLE_WIDTH_PCT}%`, minWidth: '760px', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
+            <table style={{ width: `${TABLE_WIDTH_PCT}%`, minWidth: '1000px', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
                   <th style={th(COL_WIDTH.check)}></th>
                   <th style={th(COL_WIDTH.unit)}>호실</th>
                   <th style={th(COL_WIDTH.business)}>업종(상호)</th>
-                  <th style={th(COL_WIDTH.area)}>전용/계약(평)</th>
+                  <th style={th(COL_WIDTH.area)}>계약/전용(평)</th>
                   <th style={{ ...th(COL_WIDTH.deposit), textAlign: 'right' }}>보증금(만원)</th>
                   <th style={{ ...th(COL_WIDTH.monthly), textAlign: 'right' }}>월세(만원)</th>
                   <th style={{ ...th(COL_WIDTH.sale), textAlign: 'right' }}>분양가(만원)</th>
                   <th style={{ ...th(COL_WIDTH.yield), textAlign: 'right' }}>수익률(%)</th>
                   <th style={th(COL_WIDTH.status)}>상태</th>
                   <th style={th(COL_WIDTH.note)}>비고</th>
-                  <th style={th(COL_WIDTH.more)}></th>
+                  <th style={th(COL_WIDTH.memo)}>메모(비공개)</th>
+                  <th style={th(COL_WIDTH.photo)}>사진</th>
                 </tr>
               </thead>
               <tbody>
@@ -564,7 +562,7 @@ export default function PrecentUnitsPage() {
                               style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                             />
                           </td>
-                          <td colSpan={10} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
+                          <td colSpan={11} style={{ padding: '8px 12px', background: '#eef1f5', fontWeight: 800, fontSize: '13px', color: '#1a1a1a', borderBottom: '1px solid #e0e0e0', borderTop: '2px solid #d7dbe0' }}>
                             {u.floor} <span style={{ fontWeight: 500, fontSize: '12px', color: '#777' }}>· {floorUnits.length}개 · 공실 {floorVacant}개</span>
                           </td>
                         </tr>
@@ -578,12 +576,11 @@ export default function PrecentUnitsPage() {
                     const yieldDisplay = calcYieldPct(u.sale_price, u.deposit_krw, u.monthly_rent_krw);
                     const yieldStr = yieldDisplay != null ? yieldDisplay.toFixed(1) : '-';
                     const isSaving = savingIds.has(u.id);
-                    const isExpanded = expandedIds.has(u.id);
-                    const hasExtra = !!u.admin_memo || (photoCounts[u.id] ?? 0) > 0;
+                    const photoCount = photoCounts[u.id] ?? 0;
                     const rowBg = isSelected ? '#fff7ec' : isLeased ? '#f6f6f6' : i % 2 === 0 ? '#fff' : '#fafafa';
 
                     rows.push(
-                      <tr key={u.id} style={{ borderBottom: isExpanded ? 'none' : '1px solid #f0f0f0', background: rowBg }}>
+                      <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: rowBg }}>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
                           <input
                             type="checkbox"
@@ -603,7 +600,7 @@ export default function PrecentUnitsPage() {
                           />
                         </td>
                         <td style={{ padding: '8px 6px', color: '#333', whiteSpace: 'nowrap', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                          {u.exclusive_area_py.toFixed(1)} / {u.contract_area_py.toFixed(1)}
+                          {u.contract_area_py.toFixed(1)} / {u.exclusive_area_py.toFixed(1)}
                         </td>
                         <td style={{ padding: '6px 4px' }}>
                           <AutoField value={toManStr(u.deposit_krw)} commit={commitDeposit(u)} numeric align="right" disabled={isSaving} />
@@ -627,7 +624,7 @@ export default function PrecentUnitsPage() {
                             disabled={isSaving}
                             className="pu-field"
                             style={{
-                              width: '100%', height: '30px', borderRadius: '5px', padding: '0 4px',
+                              width: '100%', height: '30px', borderRadius: '5px', padding: '0 2px',
                               fontSize: '12px', fontWeight: 600, cursor: 'pointer', outline: 'none',
                               background: STATUS_BG[u.status] ?? '#f3f4f6',
                               color: STATUS_COLOR[u.status] ?? '#374151',
@@ -639,52 +636,25 @@ export default function PrecentUnitsPage() {
                         <td style={{ padding: '6px 4px' }}>
                           <AutoField value={u.sale_note ?? ''} commit={commitSaleNote(u)} placeholder="-" list="sale-note-suggestions" disabled={isSaving} />
                         </td>
-                        <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                        <td style={{ padding: '6px 4px' }}>
+                          <AutoField
+                            value={u.admin_memo ?? ''}
+                            commit={commitAdminMemo(u)}
+                            placeholder="-"
+                            disabled={isSaving}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 4px' }}>
                           <button
-                            onClick={() => toggleExpand(u.id)}
-                            title="메모/사진 더보기"
-                            style={{
-                              position: 'relative', width: '30px', height: '30px', border: '1px solid #e3e3e3', borderRadius: '5px',
-                              background: isExpanded ? '#f3f4f6' : '#fff', color: '#555', cursor: 'pointer', fontSize: '14px',
-                            }}
+                            onClick={() => setPhotoModalUnit(u)}
+                            className="pu-field"
+                            style={{ width: '100%', height: '30px', fontSize: '12px', fontWeight: 600, background: '#fff', color: '#555', cursor: 'pointer', borderRadius: '5px' }}
                           >
-                            {isExpanded ? '▲' : '▾'}
-                            {hasExtra && !isExpanded && (
-                              <span style={{ position: 'absolute', top: '2px', right: '2px', width: '6px', height: '6px', borderRadius: '50%', background: '#e2a06e' }} />
-                            )}
+                            {photoCount > 0 ? `사진 ${photoCount}장` : '사진 추가'}
                           </button>
                         </td>
                       </tr>
                     );
-
-                    if (isExpanded) {
-                      rows.push(
-                        <tr key={`${u.id}-expand`} style={{ borderBottom: '1px solid #f0f0f0', background: rowBg }}>
-                          <td></td>
-                          <td colSpan={10} style={{ padding: '4px 10px 14px' }}>
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                              <div style={{ flex: '1 1 260px', minWidth: '220px' }}>
-                                <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>메모(비공개) — 방문자에게 노출되지 않음</div>
-                                <AutoField
-                                  value={u.admin_memo ?? ''}
-                                  commit={commitAdminMemo(u)}
-                                  as="textarea"
-                                  rows={2}
-                                  placeholder="메모 없음"
-                                  disabled={isSaving}
-                                />
-                              </div>
-                              <button
-                                onClick={() => setPhotoModalUnit(u)}
-                                style={{ flexShrink: 0, height: '30px', padding: '0 12px', fontSize: '12px', fontWeight: 600, border: '1px solid #ddd', borderRadius: '5px', background: '#fff', color: '#555', cursor: 'pointer', marginTop: '18px' }}
-                              >
-                                사진 {photoCounts[u.id] ?? 0}장
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    }
                   });
 
                   return rows;
@@ -694,7 +664,7 @@ export default function PrecentUnitsPage() {
           )}
         </div>
 
-        {/* ══════════ 모바일: 카드형 (900px 미만) ══════════ */}
+        {/* ══════════ 모바일: 카드형 (1100px 미만) ══════════ */}
         <div className="pu-cards">
           {loading ? (
             <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
@@ -727,8 +697,7 @@ export default function PrecentUnitsPage() {
               const yieldDisplay = calcYieldPct(u.sale_price, u.deposit_krw, u.monthly_rent_krw);
               const yieldStr = yieldDisplay != null ? yieldDisplay.toFixed(1) : '-';
               const isSaving = savingIds.has(u.id);
-              const isExpanded = expandedIds.has(u.id);
-              const hasExtra = !!u.admin_memo || (photoCounts[u.id] ?? 0) > 0;
+              const photoCount = photoCounts[u.id] ?? 0;
 
               const fieldLabelSt: React.CSSProperties = { fontSize: '11px', color: '#888', marginBottom: '3px' };
 
@@ -745,7 +714,7 @@ export default function PrecentUnitsPage() {
                       style={{ width: '22px', height: '22px', cursor: 'pointer', flexShrink: 0 }}
                     />
                     <span style={{ fontSize: '18px', fontWeight: 800, color: '#1a1a1a' }}>{u.unit_no}</span>
-                    <span style={{ fontSize: '12px', color: '#999' }}>전용/계약 {u.exclusive_area_py.toFixed(1)} / {u.contract_area_py.toFixed(1)}평</span>
+                    <span style={{ fontSize: '12px', color: '#999' }}>계약/전용 {u.contract_area_py.toFixed(1)} / {u.exclusive_area_py.toFixed(1)}평</span>
                     <select
                       value={u.status}
                       onChange={e => updateStatus(u.id, e.target.value)}
@@ -791,31 +760,18 @@ export default function PrecentUnitsPage() {
                     <AutoField value={u.sale_note ?? ''} commit={commitSaleNote(u)} placeholder="-" list="sale-note-suggestions" disabled={isSaving} />
                   </div>
 
-                  <button
-                    onClick={() => toggleExpand(u.id)}
-                    style={{
-                      position: 'relative', width: '100%', height: '32px', border: '1px solid #e3e3e3', borderRadius: '6px',
-                      background: isExpanded ? '#f3f4f6' : '#fff', color: '#555', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-                    }}
-                  >
-                    {isExpanded ? '▲ 접기' : '▾ 더보기 (메모·사진)'}
-                    {hasExtra && !isExpanded && (
-                      <span style={{ position: 'absolute', top: '4px', right: '10px', width: '6px', height: '6px', borderRadius: '50%', background: '#e2a06e' }} />
-                    )}
-                  </button>
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={fieldLabelSt}>메모(비공개) — 방문자에게 노출되지 않음</div>
+                    <AutoField value={u.admin_memo ?? ''} commit={commitAdminMemo(u)} as="textarea" rows={2} placeholder="메모 없음" disabled={isSaving} />
+                  </div>
 
-                  {isExpanded && (
-                    <div style={{ marginTop: '10px' }}>
-                      <div style={fieldLabelSt}>메모(비공개) — 방문자에게 노출되지 않음</div>
-                      <AutoField value={u.admin_memo ?? ''} commit={commitAdminMemo(u)} as="textarea" rows={2} placeholder="메모 없음" disabled={isSaving} />
-                      <button
-                        onClick={() => setPhotoModalUnit(u)}
-                        style={{ marginTop: '8px', width: '100%', height: '32px', fontSize: '12px', fontWeight: 600, border: '1px solid #ddd', borderRadius: '6px', background: '#fff', color: '#555', cursor: 'pointer' }}
-                      >
-                        사진 {photoCounts[u.id] ?? 0}장
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => setPhotoModalUnit(u)}
+                    className="pu-field"
+                    style={{ width: '100%', height: '32px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: '#fff', color: '#555', cursor: 'pointer' }}
+                  >
+                    {photoCount > 0 ? `사진 ${photoCount}장` : '사진 추가'}
+                  </button>
                 </div>
               );
             });
@@ -847,8 +803,8 @@ export default function PrecentUnitsPage() {
             <span style={{ fontSize: '12px', color: '#ccc', wordBreak: 'break-all' }}>{unitNoDisplay}</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px', fontSize: '12px', color: '#eee' }}>
-            <span>전용 {formatPyAndM2(exclusivePySum)}</span>
             <span>계약 {formatPyAndM2(contractPySum)}</span>
+            <span>전용 {formatPyAndM2(exclusivePySum)}</span>
             <span>보증금 {formatKRWSum(depositSum)}</span>
             <span>월세 {formatKRWSum(monthlySum)}</span>
             <span>분양가 {formatKRWSum(salePriceSum)}</span>
