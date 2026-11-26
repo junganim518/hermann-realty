@@ -203,22 +203,10 @@ export default function PrecentUnitsPage() {
   const [photoModalUnit, setPhotoModalUnit] = useState<Unit | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [headerHeight, setHeaderHeight] = useState(0);
 
   // "수익률 기준" 상태(화면 전용, DB 미저장 — 새로고침하면 해제): 잠긴 행 id와, 그때 입력한 목표 수익률(%)
   const [yieldLocked, setYieldLocked] = useState<Set<string>>(new Set());
   const [yieldTargets, setYieldTargets] = useState<Record<string, number>>({});
-
-  // 사이트 상단(sticky) 헤더 높이 측정 — 표 헤더를 그 아래에 고정할 때 기준값으로 사용
-  useEffect(() => {
-    const measure = () => {
-      const header = document.querySelector('header') as HTMLElement | null;
-      setHeaderHeight(header ? header.offsetHeight : 0);
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -472,10 +460,9 @@ export default function PrecentUnitsPage() {
     return { floorUnits, floorVacant, floorAllSelected, floorSomeSelected };
   };
 
-  const stickyTh = (width: string): React.CSSProperties => ({
+  const th = (width: string): React.CSSProperties => ({
     width, padding: '10px 8px', textAlign: 'left', fontWeight: 700, color: '#555',
-    whiteSpace: 'nowrap', position: 'sticky', top: headerHeight, zIndex: 50,
-    background: '#f8f8f8', borderBottom: '2px solid #e0e0e0',
+    whiteSpace: 'nowrap', background: '#f8f8f8', borderBottom: '2px solid #e0e0e0',
   });
 
   return (
@@ -539,17 +526,17 @@ export default function PrecentUnitsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
-                  <th style={stickyTh(COL_WIDTH.check)}></th>
-                  <th style={stickyTh(COL_WIDTH.unit)}>호실</th>
-                  <th style={stickyTh(COL_WIDTH.business)}>업종(상호)</th>
-                  <th style={stickyTh(COL_WIDTH.area)}>전용/계약(평)</th>
-                  <th style={{ ...stickyTh(COL_WIDTH.deposit), textAlign: 'right' }}>보증금(만원)</th>
-                  <th style={{ ...stickyTh(COL_WIDTH.monthly), textAlign: 'right' }}>월세(만원)</th>
-                  <th style={{ ...stickyTh(COL_WIDTH.sale), textAlign: 'right' }}>분양가(만원)</th>
-                  <th style={{ ...stickyTh(COL_WIDTH.yield), textAlign: 'right' }}>수익률(%)</th>
-                  <th style={stickyTh(COL_WIDTH.status)}>상태</th>
-                  <th style={stickyTh(COL_WIDTH.note)}>비고</th>
-                  <th style={stickyTh(COL_WIDTH.more)}></th>
+                  <th style={th(COL_WIDTH.check)}></th>
+                  <th style={th(COL_WIDTH.unit)}>호실</th>
+                  <th style={th(COL_WIDTH.business)}>업종(상호)</th>
+                  <th style={th(COL_WIDTH.area)}>전용/계약(평)</th>
+                  <th style={{ ...th(COL_WIDTH.deposit), textAlign: 'right' }}>보증금(만원)</th>
+                  <th style={{ ...th(COL_WIDTH.monthly), textAlign: 'right' }}>월세(만원)</th>
+                  <th style={{ ...th(COL_WIDTH.sale), textAlign: 'right' }}>분양가(만원)</th>
+                  <th style={{ ...th(COL_WIDTH.yield), textAlign: 'right' }}>수익률(%)</th>
+                  <th style={th(COL_WIDTH.status)}>상태</th>
+                  <th style={th(COL_WIDTH.note)}>비고</th>
+                  <th style={th(COL_WIDTH.more)}></th>
                 </tr>
               </thead>
               <tbody>
