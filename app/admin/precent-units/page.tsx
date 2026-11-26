@@ -22,6 +22,9 @@ type Unit = {
   sale_note: string | null;
 };
 
+// PC 표 폭 비율(%), 100이면 전체 폭 — 나중에 쉽게 바꿀 수 있도록 상수로 둠
+const TABLE_WIDTH_PCT = 70;
+
 // 자주 쓰는 비고 값 — datalist로 제안만 하고 자유 입력도 그대로 허용
 const SALE_NOTE_SUGGESTIONS = ['미분양', '수익보장', '분양주직영'];
 
@@ -523,7 +526,7 @@ export default function PrecentUnitsPage() {
           {loading ? (
             <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>불러오는 중...</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
+            <table style={{ width: `${TABLE_WIDTH_PCT}%`, minWidth: '760px', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
                   <th style={th(COL_WIDTH.check)}></th>
