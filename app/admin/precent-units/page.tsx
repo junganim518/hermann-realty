@@ -476,7 +476,7 @@ export default function PrecentUnitsPage() {
                     const isSelected = selectedIds.has(u.id);
                     const isYieldLocked = yieldLocked.has(u.id);
                     const yieldDisplay = calcYieldPct(u.sale_price, u.deposit_krw, u.monthly_rent_krw);
-                    const yieldValue = yieldInput[u.id] ?? (yieldDisplay != null ? yieldDisplay.toFixed(2) : '-');
+                    const yieldValue = yieldInput[u.id] ?? (yieldDisplay != null ? yieldDisplay.toFixed(1) : '-');
 
                     rows.push(
                       <tr key={u.id} style={{ borderBottom: '1px solid #f0f0f0', background: isSelected ? '#fff7ec' : i % 2 === 0 ? '#fff' : '#fafafa' }}>
@@ -574,7 +574,7 @@ export default function PrecentUnitsPage() {
                               onChange={e => setYieldInput(prev => ({ ...prev, [u.id]: e.target.value }))}
                               onFocus={() => {
                                 if (u.id in yieldInput) return;
-                                const baseline = yieldDisplay != null ? yieldDisplay.toFixed(2) : '';
+                                const baseline = yieldDisplay != null ? yieldDisplay.toFixed(1) : '';
                                 setYieldInput(prev => ({ ...prev, [u.id]: baseline }));
                                 setYieldEditBaseline(prev => ({ ...prev, [u.id]: baseline }));
                               }}
@@ -692,7 +692,7 @@ export default function PrecentUnitsPage() {
             <span>보증금 {formatKRWSum(depositSum)}</span>
             <span>월세 {formatKRWSum(monthlySum)}</span>
             <span>분양가 {formatKRWSum(salePriceSum)}</span>
-            <span>평균 수익률 {avgYieldPct != null ? `${avgYieldPct.toFixed(2)}%` : '-'}</span>
+            <span>평균 수익률 {avgYieldPct != null ? `${avgYieldPct.toFixed(1)}%` : '-'}</span>
             {missingAreaCount > 0 && <span style={{ color: '#fbbf24' }}>면적 미입력 {missingAreaCount}개 제외</span>}
             {missingPriceCount > 0 && <span style={{ color: '#fbbf24' }}>가격 미입력 {missingPriceCount}개 제외</span>}
             {missingSalePriceCount > 0 && <span style={{ color: '#fbbf24' }}>분양가 없는 {missingSalePriceCount}개 제외</span>}
