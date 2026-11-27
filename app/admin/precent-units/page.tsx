@@ -524,9 +524,14 @@ export default function PrecentUnitsPage() {
               보라매 프리센트 호실 관리
             </h1>
           </div>
-          <a href="/properties/boramae-precent" target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#c47c30', textDecoration: 'none', fontWeight: 600 }}>
-            임대 페이지 보기 →
-          </a>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+            <a href="/properties/boramae-precent" target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#c47c30', textDecoration: 'none', fontWeight: 600 }}>
+              임대 페이지 보기 →
+            </a>
+            <a href="/admin/precent-officetel" style={{ fontSize: '12px', color: '#888', textDecoration: 'none' }}>
+              오피스텔 특별분양 관리 →
+            </a>
+          </div>
         </div>
 
         {/* 필터 + 요약 */}

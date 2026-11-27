@@ -4,9 +4,9 @@ import { applyWatermark } from '@/lib/watermark';
 import { v4 as uuidv4 } from 'uuid';
 import { getAuthUser } from '@/lib/apiAuth';
 
-// 워터마크를 자동 적용할 용도(folder) 목록 — 매물 사진 / 프리센트 호실 사진.
+// 워터마크를 자동 적용할 용도(folder) 목록 — 매물 사진 / 프리센트 호실 사진 / 프리센트 오피스텔 소개 사진.
 // 담당자 프로필, 배너, 로고, 뉴스 등 다른 용도는 이 목록에 없으면 그대로 원본 업로드된다.
-const WATERMARK_FOLDER_PREFIXES = ['properties', 'precent/units/'];
+const WATERMARK_FOLDER_PREFIXES = ['properties', 'precent/units/', 'precent/officetel'];
 
 function shouldWatermark(folder: string): boolean {
   return WATERMARK_FOLDER_PREFIXES.some(prefix => folder === prefix || folder.startsWith(prefix));
