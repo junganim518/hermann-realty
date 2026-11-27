@@ -1,8 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { triggerPrecentRevalidate } from '@/lib/triggerPrecentRevalidate';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Photo = { id: string; url: string; sort_order: number };
 
@@ -45,6 +62,54 @@ const btnSt: React.CSSProperties = {
   border: '1px solid #ddd', borderRadius: '5px', background: '#fff', color: '#555', cursor: 'pointer',
 };
 
+function SortablePhotoRow({
+  photo,
+  index,
+  dragDisabled,
+  onDelete,
+}: {
+  photo: Photo;
+  index: number;
+  dragDisabled: boolean;
+  onDelete: (photo: Photo) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: photo.id,
+    disabled: dragDisabled,
+  });
+
+  const style: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '10px',
+    border: '1px solid #eee', borderRadius: '6px', padding: '8px',
+    background: '#fff',
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    boxShadow: isDragging ? '0 6px 16px rgba(0,0,0,0.18)' : undefined,
+    position: 'relative',
+    zIndex: isDragging ? 1 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <span
+        {...(dragDisabled ? {} : attributes)}
+        {...(dragDisabled ? {} : listeners)}
+        aria-label="순서 변경 손잡이"
+        style={{
+          fontSize: '18px', lineHeight: 1, flexShrink: 0, padding: '6px 2px',
+          color: dragDisabled ? '#ddd' : '#999',
+          cursor: dragDisabled ? 'default' : 'grab',
+          touchAction: 'none',
+        }}
+      >⠿</span>
+      <img src={photo.url} alt="" style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+      <div style={{ flex: 1, fontSize: '12px', color: '#999' }}>{index + 1}번째</div>
+      <button onClick={() => onDelete(photo)} style={{ ...btnSt, color: '#e05050', borderColor: '#f0c8c8' }}>삭제</button>
+    </div>
+  );
+}
+
 export default function PhotoManagerModal({
   unitId,
   unitNo,
@@ -61,6 +126,9 @@ export default function PhotoManagerModal({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const busyRef = useRef(false);
+  busyRef.current = uploading || savingOrder;
 
   const load = async () => {
     setLoading(true);
@@ -76,6 +144,33 @@ export default function PhotoManagerModal({
   };
 
   useEffect(() => { load(); }, [unitId]);
+
+  // 모달이 열려 있는 동안 뒷배경 스크롤 잠금 (스크롤바가 사라지며 생기는 가로 밀림은 padding-right로 보정)
+  useEffect(() => {
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+    };
+  }, []);
+
+  const attemptClose = () => {
+    if (busyRef.current) return; // 업로드/순서 저장 중에는 실수로 닫히지 않게
+    onClose();
+  };
+
+  // ESC로 닫기
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') attemptClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
 
   // files는 호출 시점에 이미 일반 배열로 스냅샷된 상태여야 함 (input의 FileList를 그대로
   // 비동기 함수에 넘기면, 아래 getSession() await 도중 onChange 핸들러가 입력값을 리셋해버려서
@@ -159,81 +254,123 @@ export default function PhotoManagerModal({
     triggerPrecentRevalidate();
   };
 
-  const move = async (index: number, dir: -1 | 1) => {
-    const target = index + dir;
-    if (target < 0 || target >= photos.length) return;
-    const reordered = [...photos];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 0, tolerance: 5 } })
+  );
 
-    const results = await Promise.all(
-      reordered.map((p, i) => supabase.from('precent_unit_photos').update({ sort_order: i }).eq('id', p.id))
-    );
-    const failed = results.find(r => r.error);
-    if (failed?.error) { alert(`순서 변경 실패: ${failed.error.message}`); }
-    await load();
-    triggerPrecentRevalidate();
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = photos.findIndex(p => p.id === active.id);
+    const newIndex = photos.findIndex(p => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const previous = photos;
+    const reordered = arrayMove(photos, oldIndex, newIndex);
+    setPhotos(reordered); // 낙관적 업데이트 — 화면에 즉시 반영
+    setUploadError(null);
+    setSavingOrder(true);
+
+    try {
+      const results = await Promise.all(
+        reordered.map((p, i) =>
+          p.sort_order === i
+            ? Promise.resolve({ error: null })
+            : supabase.from('precent_unit_photos').update({ sort_order: i }).eq('id', p.id)
+        )
+      );
+      const failed = results.find((r: any) => r.error);
+      if (failed?.error) throw failed.error;
+      setPhotos(reordered.map((p, i) => ({ ...p, sort_order: i })));
+      triggerPrecentRevalidate();
+    } catch (err: any) {
+      setPhotos(previous); // 실패 시 원래 순서로 되돌림
+      setUploadError(`순서 변경 저장 실패: ${err?.message ?? err}`);
+    } finally {
+      setSavingOrder(false);
+    }
   };
 
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
-      onClick={onClose}
-    >
-      <div
-        style={{ background: '#fff', borderRadius: '10px', padding: '20px', width: '100%', maxWidth: '560px', maxHeight: '80vh', overflowY: 'auto' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>{unitNo}호 사진 관리</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
-        </div>
+  if (typeof document === 'undefined') return null;
 
-        <label style={{ display: 'block', marginBottom: uploadError ? '8px' : '14px' }}>
-          <div style={{ border: '2px dashed #ddd', borderRadius: '8px', padding: '20px', textAlign: 'center', cursor: uploading ? 'not-allowed' : 'pointer', color: '#888', fontSize: '13px' }}>
-            {uploading && uploadProgress
-              ? `업로드 중... (${uploadProgress.current}/${uploadProgress.total})`
-              : '+ 사진 올리기 (여러 장 선택 가능)'}
+  return createPortal(
+    <>
+      <style>{`
+        .pm-overlay { position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .pm-panel { background: #fff; border-radius: 10px; width: 100%; max-width: 560px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; overflow: hidden; }
+        @supports (height: 100dvh) {
+          .pm-panel { max-height: calc(100dvh - 32px); }
+        }
+        .pm-titlebar { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 0 20px; flex-shrink: 0; }
+        .pm-scroll { overflow-y: auto; overscroll-behavior: contain; padding: 14px 20px 20px 20px; min-height: 0; flex: 1; }
+      `}</style>
+      <div className="pm-overlay" onClick={attemptClose}>
+        <div className="pm-panel" onClick={e => e.stopPropagation()}>
+          <div className="pm-titlebar">
+            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>{unitNo}호 사진 관리</h3>
+            <button onClick={attemptClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
           </div>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            disabled={uploading}
-            onChange={e => {
-              // e.target.files(FileList)를 여기서 바로 일반 배열로 스냅샷해둬야 함 —
-              // 비동기 업로드 함수 안에서 나중에 읽으면 바로 아래 value 리셋 때문에 비어있을 수 있음
-              const files = Array.from(e.target.files ?? []);
-              e.target.value = '';
-              handleUpload(files);
-            }}
-            style={{ display: 'none' }}
-          />
-        </label>
 
-        {uploadError && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12px', borderRadius: '6px', padding: '8px 10px', marginBottom: '14px', lineHeight: 1.5 }}>
-            {uploadError}
-          </div>
-        )}
-
-        {loading ? (
-          <p style={{ textAlign: 'center', color: '#aaa', padding: '20px' }}>불러오는 중...</p>
-        ) : photos.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#aaa', padding: '20px' }}>등록된 사진이 없습니다.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {photos.map((p, i) => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #eee', borderRadius: '6px', padding: '8px' }}>
-                <img src={p.url} alt="" style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
-                <div style={{ flex: 1, fontSize: '12px', color: '#999' }}>{i + 1}번째</div>
-                <button onClick={() => move(i, -1)} disabled={i === 0} style={btnSt}>↑</button>
-                <button onClick={() => move(i, 1)} disabled={i === photos.length - 1} style={btnSt}>↓</button>
-                <button onClick={() => handleDelete(p)} style={{ ...btnSt, color: '#e05050', borderColor: '#f0c8c8' }}>삭제</button>
+          <div className="pm-scroll">
+            <label style={{ display: 'block', marginBottom: uploadError ? '8px' : '14px' }}>
+              <div style={{ border: '2px dashed #ddd', borderRadius: '8px', padding: '20px', textAlign: 'center', cursor: uploading ? 'not-allowed' : 'pointer', color: '#888', fontSize: '13px' }}>
+                {uploading && uploadProgress
+                  ? `업로드 중... (${uploadProgress.current}/${uploadProgress.total})`
+                  : '+ 사진 올리기 (여러 장 선택 가능)'}
               </div>
-            ))}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploading}
+                onChange={e => {
+                  // e.target.files(FileList)를 여기서 바로 일반 배열로 스냅샷해둬야 함 —
+                  // 비동기 업로드 함수 안에서 나중에 읽으면 바로 아래 value 리셋 때문에 비어있을 수 있음
+                  const files = Array.from(e.target.files ?? []);
+                  e.target.value = '';
+                  handleUpload(files);
+                }}
+                style={{ display: 'none' }}
+              />
+            </label>
+
+            {uploadError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12px', borderRadius: '6px', padding: '8px 10px', marginBottom: '14px', lineHeight: 1.5 }}>
+                {uploadError}
+              </div>
+            )}
+
+            {loading ? (
+              <p style={{ textAlign: 'center', color: '#aaa', padding: '20px' }}>불러오는 중...</p>
+            ) : photos.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#aaa', padding: '20px' }}>등록된 사진이 없습니다.</p>
+            ) : (
+              <>
+                <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0' }}>
+                  ⠿ 손잡이를 잡고 끌어서 순서를 바꿉니다. 1번째 사진이 대표 사진입니다.
+                </p>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={photos.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {photos.map((p, i) => (
+                        <SortablePhotoRow
+                          key={p.id}
+                          photo={p}
+                          index={i}
+                          dragDisabled={photos.length <= 1}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 }
