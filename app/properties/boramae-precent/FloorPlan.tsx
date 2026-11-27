@@ -475,6 +475,28 @@ function computeF3Layout(units: PublicUnit[]): { rects: Rect[]; core: CoreBox } 
 }
 
 
+// 카메라 아이콘 (이모지 대신 사용하는 단순한 선 아이콘, lucide의 camera 글리프) — 24x24 좌표계
+function CameraGlyph({ stroke = '#fff', strokeWidth = 2.3 }: { stroke?: string; strokeWidth?: number }) {
+  return (
+    <>
+      <path
+        d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"
+        fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+      />
+      <circle cx={12} cy={13} r={3.2} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+    </>
+  );
+}
+
+// 칸 크기에 따라 카메라 아이콘 크기를 줄여 호실 번호 글자와 겹치지 않게 함
+function getPhotoIconSize(rect: Rect): number {
+  const minDim = Math.min(rect.w, rect.h);
+  if (minDim < 25) return 9;
+  if (minDim < 40) return 11;
+  if (minDim < 60) return 12;
+  return 14;
+}
+
 type Photo = { id: string; unit_no: string; url: string; sort_order: number };
 
 // 합쳐진 도면 칸의 사진 조회 — DB가 합쳐진 상태면 그 unit_no로 바로 찾고,
@@ -671,6 +693,13 @@ export default function FloorPlan({ units: rawUnits }: { units: PublicUnit[] }) 
           <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#9ca3af', flexShrink: 0, display: 'inline-block' }} />
           임대완료
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#555' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+            <rect x={0} y={0} width={24} height={24} rx={6} fill="#374151" />
+            <CameraGlyph stroke="#fff" strokeWidth={2.4} />
+          </svg>
+          사진 있음
+        </div>
       </div>
 
       {/* SVG 평면도 */}
@@ -725,6 +754,13 @@ export default function FloorPlan({ units: rawUnits }: { units: PublicUnit[] }) 
             // memo에서 브랜드명 추출: "치과(입점확정)" → "치과"
             const memoLabel = u?.memo ? u.memo.replace(/\s*\(.*?\)\s*$/, '').trim() : null;
             const secondLabel = confirmed ? rect.confirmedBrand! : isLeased ? (memoLabel ?? '임대완료') : null;
+            // 사진 유무 — 이미 불러온 photosByUnit을 그대로 사용 (추가 조회 없음), 합쳐진 칸은 getDisplayPhotos로 판단
+            const hasPhoto = !unavailable && getDisplayPhotos(photosByUnit, rect.id).length > 0;
+            const iconSize = getPhotoIconSize(rect);
+            const iconPad = iconSize <= 11 ? 2 : 3;
+            const iconBgR = iconSize / 2 + iconPad;
+            const iconCx = rect.x + rect.w - 3 - iconBgR;
+            const iconCy = rect.y + 3 + iconBgR;
             return (
               <g key={rect.id}>
                 <rect
@@ -758,6 +794,15 @@ export default function FloorPlan({ units: rawUnits }: { units: PublicUnit[] }) 
                   >
                     {secondLabel}
                   </text>
+                )}
+                {/* 사진 있는 호실 표시 — 클릭/터치는 그대로 칸으로 전달되어야 하므로 pointerEvents 없음 */}
+                {hasPhoto && (
+                  <g pointerEvents="none">
+                    <circle cx={iconCx} cy={iconCy} r={iconBgR} fill="rgba(0,0,0,0.3)" />
+                    <svg x={iconCx - iconSize / 2} y={iconCy - iconSize / 2} width={iconSize} height={iconSize} viewBox="0 0 24 24">
+                      <CameraGlyph />
+                    </svg>
+                  </g>
                 )}
               </g>
             );
