@@ -151,27 +151,42 @@ const PAGE_CSS = `
 `;
 
 export default async function BoramaePresentPage() {
-  // 공개 뷰(precent_units_public)로 조회 — 가격 컬럼(deposit_krw, monthly_rent_krw) 자체가
-  // 뷰에 없어서 DB 레벨에서 노출이 차단됨. anon 키로 조회 (서비스롤 불필요).
-  const { data } = await supabase
-    .from('precent_units_public')
-    .select('unit_no, floor, zone, exclusive_area_py, contract_area_py, status, memo')
-    .order('floor')
-    .order('unit_no');
-  const units = (data ?? []) as PublicUnit[];
-
-  // 갤러리 이미지
-  let galleryItems: GalleryItem[] = [];
-  {
-    const { data: galleryData, error: galleryError } = await supabaseAdmin
-      .from('precent_gallery')
-      .select('id, url, caption, category, sort_order')
-      .order('sort_order');
-    if (galleryError) {
-      console.error('[precent_gallery fetch error]', galleryError);
-    }
-    galleryItems = (galleryData ?? []) as GalleryItem[];
-  }
+  // 세 조회를 동시에 실행 — 오피스텔 게시 여부 체크를 추가해도 기존 두 조회보다 느려지지 않게 함.
+  const [unitsResult, galleryItems, officetelPublished] = await Promise.all([
+    // 공개 뷰(precent_units_public)로 조회 — 가격 컬럼(deposit_krw, monthly_rent_krw) 자체가
+    // 뷰에 없어서 DB 레벨에서 노출이 차단됨. anon 키로 조회 (서비스롤 불필요).
+    supabase
+      .from('precent_units_public')
+      .select('unit_no, floor, zone, exclusive_area_py, contract_area_py, status, memo')
+      .order('floor')
+      .order('unit_no'),
+    // 갤러리 이미지
+    (async () => {
+      const { data: galleryData, error: galleryError } = await supabaseAdmin
+        .from('precent_gallery')
+        .select('id, url, caption, category, sort_order')
+        .order('sort_order');
+      if (galleryError) {
+        console.error('[precent_gallery fetch error]', galleryError);
+      }
+      return (galleryData ?? []) as GalleryItem[];
+    })(),
+    // 오피스텔 특별분양 페이지 게시 여부 — 조회 실패해도 이 페이지는 영향 없이 링크만 숨김
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('precent_officetel_page_public')
+          .select('title')
+          .limit(1)
+          .maybeSingle();
+        return !error && !!data;
+      } catch (err) {
+        console.error('[precent_officetel_page_public fetch error]', err);
+        return false;
+      }
+    })(),
+  ]);
+  const units = (unitsResult.data ?? []) as PublicUnit[];
 
   // 존별 집계 (전체 호실 수 + 공실 수) — 103-104/301-302가 DB에서 103+104, 301+302로
   // 나뉘어도 합쳐진 상태와 똑같이 1개 호실로 집계되도록 displayUnits 기준으로 계산
@@ -250,6 +265,18 @@ export default async function BoramaePresentPage() {
           </div>
         </div>
       </section>
+
+      {/* ── 오피스텔 특별분양 연결 배너 (게시 상태일 때만) ── */}
+      {officetelPublished && (
+        <section style={{ padding: '18px 0', background: '#fff8f2', borderBottom: '1px solid #f0dcc8' }}>
+          <div className="pc-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', textAlign: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#555' }}>같은 건물에 오피스텔 특별분양도 진행 중입니다</span>
+            <a href="/properties/boramae-precent-officetel" style={{ fontSize: '14px', fontWeight: 700, color: '#c47c30', textDecoration: 'none' }}>
+              같은 건물 오피스텔 특별분양 보기 →
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* ── 입지 강점 ── */}
       <section style={{ padding: '72px 0 80px', background: '#f4f4f4' }}>

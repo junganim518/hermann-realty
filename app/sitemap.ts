@@ -16,6 +16,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/properties/boramae-precent`, lastModified: SITE_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
   ];
 
+  // 오피스텔 특별분양 페이지 — 게시 상태(precent_officetel_page_public에 행이 있을 때)일 때만 포함
+  try {
+    const { data: officetelRow } = await supabase
+      .from('precent_officetel_page_public')
+      .select('updated_at')
+      .limit(1)
+      .maybeSingle();
+    if (officetelRow) {
+      staticEntries.push({
+        url: `${BASE_URL}/properties/boramae-precent-officetel`,
+        lastModified: officetelRow.updated_at ? new Date(officetelRow.updated_at) : SITE_UPDATED,
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      });
+    }
+  } catch (err) {
+    console.error('[sitemap] precent_officetel_page_public fetch error', err);
+  }
+
   const { data: properties } = await supabase
     .from('public_properties')
     .select('property_number, updated_at')

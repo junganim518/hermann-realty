@@ -32,12 +32,13 @@ type PageRow = {
 
 const REQUIRED_CHECK_FIELDS: { key: keyof PageRow; label: string }[] = [
   { key: 'move_in_text', label: '입주 가능일' },
-  { key: 'floors_text', label: '해당 층' },
+  { key: 'parking_text', label: '주차' },
   { key: 'rooms_text', label: '방·욕실 수' },
   { key: 'maintenance_fee_text', label: '관리비' },
-  { key: 'parking_text', label: '주차' },
   { key: 'approval_date_text', label: '사용승인일' },
 ];
+
+const EXTRA_INFO_FIELDS: (keyof PageRow)[] = ['rooms_text', 'maintenance_fee_text', 'approval_date_text'];
 
 // ── 입력칸 공용 컴포넌트 — app/admin/precent-units/page.tsx의 AutoField와 같은 동작 ──
 // 포커스 시점 값(baseline)과 다를 때만 blur/Enter에서 commit 호출, Esc는 원래 값으로 되돌리고 커밋 안 함.
@@ -166,6 +167,8 @@ export default function PrecentOfficetelAdminPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [savingPublish, setSavingPublish] = useState(false);
+  const [extraOpen, setExtraOpen] = useState(false);
+  const extraInitRef = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -179,7 +182,12 @@ export default function PrecentOfficetelAdminPage() {
     supabase.from('precent_officetel_page').select('*').eq('id', 1).maybeSingle().then(({ data, error }) => {
       if (error) { setErrorMsg(`불러오기 실패: ${error.message}`); setLoading(false); return; }
       if (!data) { setRowMissing(true); setLoading(false); return; }
-      setPage(data as PageRow);
+      const row = data as PageRow;
+      setPage(row);
+      if (!extraInitRef.current) {
+        extraInitRef.current = true;
+        setExtraOpen(EXTRA_INFO_FIELDS.some(f => !!row[f]));
+      }
       setLoading(false);
     });
   }, [authChecked]);
@@ -219,7 +227,9 @@ export default function PrecentOfficetelAdminPage() {
     setSavingPublish(false);
     if (error) { setErrorMsg(`게시 상태 저장 실패: ${error.message}`); return; }
     setPage(prev => prev ? { ...prev, published: next } : prev);
+    // 상가 페이지의 "오피스텔 특별분양 보기" 링크 노출 여부도 게시 전환에 맞춰 즉시 갱신되어야 함
     triggerPrecentRevalidate('/properties/boramae-precent-officetel');
+    triggerPrecentRevalidate('/properties/boramae-precent');
   };
 
   if (!authChecked) return null;
@@ -245,9 +255,14 @@ export default function PrecentOfficetelAdminPage() {
               프리센트 오피스텔 특별분양 관리
             </h1>
           </div>
-          <a href="/properties/boramae-precent-officetel" target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#c47c30', textDecoration: 'none', fontWeight: 600 }}>
-            방문자 페이지 보기 →
-          </a>
+          <div style={{ display: 'flex', gap: '14px' }}>
+            <a href="/admin/precent-officetel/preview" target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600 }}>
+              미리보기 →
+            </a>
+            <a href="/properties/boramae-precent-officetel" target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#c47c30', textDecoration: 'none', fontWeight: 600 }}>
+              방문자 페이지 보기 →
+            </a>
+          </div>
         </div>
 
         {errorMsg && (
@@ -266,8 +281,8 @@ export default function PrecentOfficetelAdminPage() {
         ) : (
           <>
             {missingRequired.length > 0 && (
-              <div style={{ fontSize: '12px', color: '#92400e', background: '#fef9c3', border: '1px solid #fde68a', borderRadius: '6px', padding: '8px 12px', marginBottom: '14px' }}>
-                필수 표시 항목 점검 — 비어 있는 항목: {missingRequired.map(f => f.label).join(', ')}
+              <div style={{ fontSize: '12px', color: '#999', background: '#f8f8f8', border: '1px solid #eee', borderRadius: '6px', padding: '8px 12px', marginBottom: '14px' }}>
+                참고: 비어 있는 항목 — {missingRequired.map(f => f.label).join(', ')}
               </div>
             )}
 
@@ -312,12 +327,6 @@ export default function PrecentOfficetelAdminPage() {
               <FormRow label="전용면적">
                 <AutoField value={page.area_text ?? ''} commit={commitField('area_text')} placeholder="미입력" />
               </FormRow>
-              <FormRow label="해당 층 / 총 층수">
-                <AutoField value={page.floors_text ?? ''} commit={commitField('floors_text')} placeholder="미입력" />
-              </FormRow>
-              <FormRow label="방·욕실 수 / 구조">
-                <AutoField value={page.rooms_text ?? ''} commit={commitField('rooms_text')} placeholder="미입력" />
-              </FormRow>
               <FormRow label="입주 가능일">
                 <AutoField value={page.move_in_text ?? ''} commit={commitField('move_in_text')} placeholder="미입력" />
               </FormRow>
@@ -327,12 +336,27 @@ export default function PrecentOfficetelAdminPage() {
               <FormRow label="주차">
                 <AutoField value={page.parking_text ?? ''} commit={commitField('parking_text')} placeholder="미입력" />
               </FormRow>
-              <FormRow label="관리비">
-                <AutoField value={page.maintenance_fee_text ?? ''} commit={commitField('maintenance_fee_text')} placeholder="미입력" />
-              </FormRow>
-              <FormRow label="사용승인일">
-                <AutoField value={page.approval_date_text ?? ''} commit={commitField('approval_date_text')} placeholder="미입력" />
-              </FormRow>
+
+              <button
+                onClick={() => setExtraOpen(o => !o)}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#888', fontSize: '13px', fontWeight: 600, cursor: 'pointer', padding: '4px 0', marginTop: '4px' }}
+              >
+                <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: extraOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▸</span>
+                추가 정보 (선택 — 비어 있으면 페이지에 표시되지 않습니다)
+              </button>
+              {extraOpen && (
+                <div style={{ marginTop: '12px', paddingLeft: '14px', borderLeft: '2px solid #eee' }}>
+                  <FormRow label="방·욕실 수 / 구조">
+                    <AutoField value={page.rooms_text ?? ''} commit={commitField('rooms_text')} placeholder="미입력" />
+                  </FormRow>
+                  <FormRow label="관리비">
+                    <AutoField value={page.maintenance_fee_text ?? ''} commit={commitField('maintenance_fee_text')} placeholder="미입력" />
+                  </FormRow>
+                  <FormRow label="사용승인일">
+                    <AutoField value={page.approval_date_text ?? ''} commit={commitField('approval_date_text')} placeholder="미입력" />
+                  </FormRow>
+                </div>
+              )}
             </Section>
 
             <Section title="수익보장">
