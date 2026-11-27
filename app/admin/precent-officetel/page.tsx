@@ -27,6 +27,9 @@ type PageRow = {
   building_text: string | null;
   target_text: string | null;
   intro_text: string | null;
+  complex_text?: string | null;
+  items_text?: string | null;
+  faq_text?: string | null;
   updated_at: string;
 };
 
@@ -368,6 +371,14 @@ export default function PrecentOfficetelAdminPage() {
               </FormRow>
             </Section>
 
+            <Section title="단지 개요" help="한 줄에 하나씩 '항목: 내용' 형식으로 적으세요. 예) 규모: 지하 4층 ~ 지상 20층 — 비어 있으면 방문자 페이지에서 이 섹션이 숨겨집니다.">
+              <AutoField value={page.complex_text ?? ''} commit={commitField('complex_text')} placeholder="미입력" autoGrow />
+            </Section>
+
+            <Section title="기본 제공 품목" help="한 줄에 하나씩 적으세요 — 비어 있으면 방문자 페이지에서 이 섹션이 숨겨집니다.">
+              <AutoField value={page.items_text ?? ''} commit={commitField('items_text')} placeholder="미입력" autoGrow />
+            </Section>
+
             <Section title="입지·교통" help="한 줄에 항목 하나씩">
               <AutoField value={page.location_text ?? ''} commit={commitField('location_text')} placeholder="미입력" autoGrow />
             </Section>
@@ -378,6 +389,10 @@ export default function PrecentOfficetelAdminPage() {
 
             <Section title="이런 분께 추천">
               <AutoField value={page.target_text ?? ''} commit={commitField('target_text')} placeholder="미입력" autoGrow />
+            </Section>
+
+            <Section title="자주 묻는 질문" help="질문 한 줄, 답 한 줄 이상을 한 묶음으로 쓰고, 묶음 사이는 빈 줄로 구분하세요 — 비어 있으면 방문자 페이지에서 이 섹션이 숨겨집니다.">
+              <AutoField value={page.faq_text ?? ''} commit={commitField('faq_text')} placeholder="미입력" autoGrow />
             </Section>
 
             <Section title="추가 소개">

@@ -2,32 +2,70 @@ import { Phone, MapPin, Check } from 'lucide-react';
 import Gallery, { type GalleryItem } from '../boramae-precent/Gallery';
 import OfficetelInquiryForm from './OfficetelInquiryForm';
 
+// select('*')로 읽으므로(아래 "SQL 실행 전에도 정상 동작" 참고) 모든 필드를 optional로 둔다 —
+// DB에 아직 없는 컬럼(complex_text/items_text/faq_text)은 그냥 undefined로 들어오고, 그 경우
+// 해당 섹션만 조용히 숨겨진다(에러 없음).
 export type OfficetelPageData = {
-  title: string | null;
-  summary_text: string | null;
-  unit_type: string | null;
-  price_text: string | null;
-  area_text: string | null;
-  rooms_text: string | null;
-  move_in_text: string | null;
-  options_text: string | null;
-  parking_text: string | null;
-  maintenance_fee_text: string | null;
-  approval_date_text: string | null;
-  guarantee_title: string | null;
-  guarantee_detail: string | null;
-  location_text: string | null;
-  building_text: string | null;
-  target_text: string | null;
-  intro_text: string | null;
+  title?: string | null;
+  summary_text?: string | null;
+  unit_type?: string | null;
+  price_text?: string | null;
+  area_text?: string | null;
+  rooms_text?: string | null;
+  move_in_text?: string | null;
+  options_text?: string | null;
+  parking_text?: string | null;
+  maintenance_fee_text?: string | null;
+  approval_date_text?: string | null;
+  guarantee_title?: string | null;
+  guarantee_detail?: string | null;
+  location_text?: string | null;
+  building_text?: string | null;
+  target_text?: string | null;
+  intro_text?: string | null;
+  complex_text?: string | null;
+  items_text?: string | null;
+  faq_text?: string | null;
 };
 
 export type OfficetelPhoto = { id: string; url: string; sort_order: number };
 
-// 여러 줄 텍스트(한 줄에 항목 하나씩) → 체크 아이콘 목록용 배열
-function splitLines(text: string | null): string[] {
+// 여러 줄 텍스트(한 줄에 항목 하나씩) → 체크 아이콘 목록용 배열. 빈 줄/공백 줄은 제거.
+export function splitLines(text?: string | null): string[] {
   if (!text) return [];
   return text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+}
+
+export type OverviewRow = { label: string | null; value: string };
+
+// "항목: 내용" 한 줄씩 → {label, value} 배열. ':' 가 없거나 라벨/내용 중 하나가 비면
+// label을 null로 두어 한 줄 전체를 value로만 보여준다(안전한 예외 처리).
+export function parseOverviewRows(text?: string | null): OverviewRow[] {
+  return splitLines(text).map(line => {
+    const idx = line.indexOf(':');
+    if (idx === -1) return { label: null, value: line };
+    const label = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (!label || !value) return { label: null, value: line };
+    return { label, value };
+  });
+}
+
+export type FaqItem = { question: string; answer: string };
+
+// 빈 줄로 묶음을 나누고, 묶음의 첫 줄을 질문, 나머지 줄을 답으로 삼는다.
+// 질문만 있고 답이 없는(비정상) 묶음은 건너뛴다 — 화면/JSON-LD 모두 같은 함수를 써서 항상 일치시킴.
+export function parseFaq(text?: string | null): FaqItem[] {
+  if (!text) return [];
+  const blocks = text.split(/\r?\n[ \t]*\r?\n/);
+  const result: FaqItem[] = [];
+  for (const block of blocks) {
+    const lines = block.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) continue;
+    const [question, ...rest] = lines;
+    result.push({ question, answer: rest.join('\n') });
+  }
+  return result;
 }
 
 const PAGE_CSS = `
@@ -49,6 +87,21 @@ const PAGE_CSS = `
   .of-info-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 18px 20px; }
   .of-list { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .of-list-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #444; line-height: 1.6; }
+  .of-items-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+  .of-overview-table { display: flex; flex-direction: column; }
+  .of-overview-row { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; }
+  .of-overview-row.full { grid-template-columns: 1fr; }
+  .of-overview-row:last-child { border-bottom: none; }
+  .of-overview-label { font-size: 13px; font-weight: 700; color: #888; }
+  .of-overview-value { font-size: 14px; color: #333; line-height: 1.7; }
+  .of-faq-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; margin-bottom: 10px; }
+  .of-faq-q { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; font-size: 15px; font-weight: 700; color: #1a1a1a; list-style: none; }
+  .of-faq-q::-webkit-details-marker { display: none; }
+  .of-faq-q-badge { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: #c47c30; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .of-faq-q-text { flex: 1; }
+  .of-faq-q-toggle { flex-shrink: 0; font-size: 20px; font-weight: 300; color: #c47c30; transition: transform 0.15s; }
+  .of-faq-item[open] .of-faq-q-toggle { transform: rotate(45deg); }
+  .of-faq-a { padding: 0 18px 18px 54px; font-size: 14px; color: #555; line-height: 1.8; white-space: pre-line; }
   .of-inquiry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
   @media (max-width: 1023px) {
     .of-info-grid { grid-template-columns: repeat(2, 1fr); }
@@ -62,7 +115,12 @@ const PAGE_CSS = `
     .of-cta-group { flex-direction: column; }
     .of-cta-btn, .of-cta-outline { display: flex; justify-content: center; width: 100%; box-sizing: border-box; }
     .of-info-grid { grid-template-columns: 1fr; gap: 12px; }
+    .of-items-grid { grid-template-columns: 1fr; }
     .of-wrap { padding: 0 16px; }
+  }
+  @media (max-width: 480px) {
+    .of-overview-row:not(.full) { grid-template-columns: 1fr; gap: 3px; padding: 10px 0; }
+    .of-faq-a { padding-left: 18px; }
   }
 `;
 
@@ -79,6 +137,19 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     <h2 style={{ textAlign: 'center', fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 800, color: '#1a1a1a', margin: '0 0 10px' }}>
       {children}
     </h2>
+  );
+}
+
+function CheckList({ lines }: { lines: string[] }) {
+  return (
+    <ul className="of-list">
+      {lines.map((line, i) => (
+        <li key={i} className="of-list-item">
+          <Check size={18} color="#c47c30" strokeWidth={2.4} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <span>{line}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -100,9 +171,12 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
     data.approval_date_text && { label: '사용승인일', value: data.approval_date_text },
   ].filter(Boolean)) as { label: string; value: string }[];
 
+  const overviewRows = parseOverviewRows(data.complex_text);
+  const itemLines = splitLines(data.items_text);
   const locationLines = splitLines(data.location_text);
   const buildingLines = splitLines(data.building_text);
   const targetLines = splitLines(data.target_text);
+  const faqItems = parseFaq(data.faq_text);
 
   const title = data.title ?? '프리센트 오피스텔 특별분양';
 
@@ -182,20 +256,51 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         </section>
       )}
 
-      {/* ── 입지·교통 ── */}
-      {locationLines.length > 0 && (
+      {/* ── 단지 개요 ── */}
+      {overviewRows.length > 0 && (
         <section style={{ padding: '64px 0 72px', background: '#f8f8f8' }}>
           <div className="of-wrap" style={{ maxWidth: '760px' }}>
-            <SectionLabel>Location</SectionLabel>
-            <SectionTitle>입지·교통</SectionTitle>
-            <ul className="of-list" style={{ marginTop: '24px' }}>
-              {locationLines.map((line, i) => (
+            <SectionLabel>Complex</SectionLabel>
+            <SectionTitle>단지 개요</SectionTitle>
+            <div className="of-overview-table" style={{ marginTop: '24px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '12px', padding: '8px 24px' }}>
+              {overviewRows.map((row, i) => (
+                <div key={i} className={`of-overview-row${row.label ? '' : ' full'}`}>
+                  {row.label && <div className="of-overview-label">{row.label}</div>}
+                  <div className="of-overview-value">{row.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── 기본 제공 품목 ── */}
+      {itemLines.length > 0 && (
+        <section style={{ padding: '64px 0 72px', background: '#fff' }}>
+          <div className="of-wrap" style={{ maxWidth: '760px' }}>
+            <SectionLabel>Items</SectionLabel>
+            <SectionTitle>기본 제공 품목</SectionTitle>
+            <ul className="of-list of-items-grid" style={{ marginTop: '24px' }}>
+              {itemLines.map((line, i) => (
                 <li key={i} className="of-list-item">
                   <Check size={18} color="#c47c30" strokeWidth={2.4} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <span>{line}</span>
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+      )}
+
+      {/* ── 입지·교통 ── */}
+      {locationLines.length > 0 && (
+        <section style={{ padding: '64px 0 72px', background: '#f8f8f8' }}>
+          <div className="of-wrap" style={{ maxWidth: '760px' }}>
+            <SectionLabel>Location</SectionLabel>
+            <SectionTitle>입지·교통</SectionTitle>
+            <div style={{ marginTop: '24px' }}>
+              <CheckList lines={locationLines} />
+            </div>
           </div>
         </section>
       )}
@@ -206,14 +311,9 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
           <div className="of-wrap" style={{ maxWidth: '760px' }}>
             <SectionLabel>Building</SectionLabel>
             <SectionTitle>건물·주거 특징</SectionTitle>
-            <ul className="of-list" style={{ marginTop: '24px' }}>
-              {buildingLines.map((line, i) => (
-                <li key={i} className="of-list-item">
-                  <Check size={18} color="#c47c30" strokeWidth={2.4} style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
+            <div style={{ marginTop: '24px' }}>
+              <CheckList lines={buildingLines} />
+            </div>
           </div>
         </section>
       )}
@@ -224,14 +324,9 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
           <div className="of-wrap" style={{ maxWidth: '760px' }}>
             <SectionLabel>Who</SectionLabel>
             <SectionTitle>이런 분께 추천합니다</SectionTitle>
-            <ul className="of-list" style={{ marginTop: '24px' }}>
-              {targetLines.map((line, i) => (
-                <li key={i} className="of-list-item">
-                  <Check size={18} color="#c47c30" strokeWidth={2.4} style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
+            <div style={{ marginTop: '24px' }}>
+              <CheckList lines={targetLines} />
+            </div>
           </div>
         </section>
       )}
@@ -248,9 +343,33 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         </section>
       )}
 
+      {/* ── 자주 묻는 질문 ──
+          <details>/<summary> 네이티브 방식 사용 — 접힌 상태에서도 질문/답 전체가 서버 HTML에 포함됨
+          (클라이언트에서만 그리는 아코디언 아님). */}
+      {faqItems.length > 0 && (
+        <section style={{ padding: '64px 0 72px', background: '#f8f8f8' }}>
+          <div className="of-wrap" style={{ maxWidth: '760px' }}>
+            <SectionLabel>FAQ</SectionLabel>
+            <SectionTitle>자주 묻는 질문</SectionTitle>
+            <div style={{ marginTop: '24px' }}>
+              {faqItems.map((item, i) => (
+                <details key={i} className="of-faq-item">
+                  <summary className="of-faq-q">
+                    <span className="of-faq-q-badge">Q</span>
+                    <span className="of-faq-q-text">{item.question}</span>
+                    <span className="of-faq-q-toggle">+</span>
+                  </summary>
+                  <div className="of-faq-a">{item.answer}</div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── 추가 소개 ── */}
       {data.intro_text && (
-        <section style={{ padding: '64px 0 72px', background: '#f8f8f8' }}>
+        <section style={{ padding: '64px 0 72px', background: '#fff' }}>
           <div className="of-wrap" style={{ maxWidth: '760px' }}>
             <p style={{ fontSize: '15px', color: '#444', lineHeight: 1.9, margin: 0, whiteSpace: 'pre-line' }}>
               {data.intro_text}
@@ -260,7 +379,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
       )}
 
       {/* ── 문의 섹션 ── */}
-      <section id="officetel-inquiry" style={{ padding: '72px 0 88px', background: '#fff' }}>
+      <section id="officetel-inquiry" style={{ padding: '72px 0 88px', background: '#f8f8f8' }}>
         <div className="of-wrap">
           <div className="of-inquiry-grid">
             <div>
@@ -293,7 +412,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
                 </div>
               </div>
             </div>
-            <div style={{ background: '#f8f9fa', borderRadius: '12px', padding: '32px', border: '1px solid #e8e8e8' }}>
+            <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', border: '1px solid #e8e8e8' }}>
               <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1a1a1a', margin: '0 0 20px' }}>분양 문의 접수</h3>
               <OfficetelInquiryForm />
             </div>
