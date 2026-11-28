@@ -1,0 +1,244 @@
+/*
+  오피스텔 소개 페이지 전용 스타일 — CSS Module이라 클래스명이 빌드 시 해시되어
+  이 페이지(그리고 같은 OfficetelLanding을 쓰는 관리자 미리보기) 밖으로 새어나가지 않는다.
+  전역 CSS(app/globals.css)나 다른 페이지 스타일은 전혀 건드리지 않음.
+*/
+
+.root {
+  font-family: var(--of-font-sans), 'Pretendard', sans-serif;
+  background: #FBF7F0;
+  color: #3A2F26;
+  font-size: 17px;
+  line-height: 1.8;
+}
+@media (min-width: 768px) {
+  .root { font-size: 18px; }
+}
+
+.root h1,
+.root h2,
+.root h3 {
+  font-family: var(--of-font-serif), serif;
+}
+
+/* ── 레이아웃 ── */
+.wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; }
+.wrapNarrow { max-width: 820px; }
+
+.sectionLight { padding: 72px 0 80px; background: #FBF7F0; }
+.sectionAlt { padding: 72px 0 80px; background: #F3EADB; }
+@media (max-width: 767px) {
+  .sectionLight, .sectionAlt { padding: 52px 0 60px; }
+  .wrap { padding: 0 18px; }
+}
+
+/* ── 섹션 제목 ── */
+.sectionHead { text-align: center; margin-bottom: 36px; }
+.eyebrow {
+  display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 2.5px;
+  color: #B8873B; text-transform: uppercase; margin: 0 0 10px;
+}
+.sectionTitle {
+  font-size: 26px; font-weight: 700; color: #3A2F26; margin: 0; letter-spacing: -0.3px;
+}
+@media (min-width: 768px) {
+  .sectionTitle { font-size: 34px; }
+}
+.titleBar { display: block; width: 52px; height: 3px; background: #B8873B; border-radius: 2px; margin: 16px auto 0; }
+.sectionSub { font-size: 15px; color: #7A6B5B; text-align: center; margin: 14px 0 0; }
+
+/* ── 히어로 (레이아웃은 그대로, 색만 새 골드 톤으로 조화) ── */
+.heroSection { background: #0a0a1e; color: #fff; font-family: var(--of-font-sans), sans-serif; }
+.heroSplit { display: grid; grid-template-columns: 55fr 45fr; max-width: 1200px; margin: 0 auto; min-height: 380px; }
+.heroLeft { padding: 52px 52px 52px 24px; display: flex; flex-direction: column; justify-content: center; }
+.heroRight { position: relative; overflow: hidden; }
+.heroRight img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.heroOverlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(10,10,30,0.8) 0%, rgba(10,10,30,0.2) 60%, transparent 100%); pointer-events: none; }
+.heroBadge {
+  display: inline-block; background: rgba(184,135,59,0.2); border: 1px solid rgba(184,135,59,0.45);
+  color: #e6c284; font-size: 12px; font-weight: 700; letter-spacing: 2.5px; padding: 6px 16px;
+  border-radius: 20px; margin-bottom: 22px; width: fit-content;
+}
+.heroTitle { font-family: var(--of-font-serif), serif; font-size: 30px; font-weight: 700; line-height: 1.3; margin: 0 0 16px; letter-spacing: -0.3px; }
+@media (min-width: 768px) { .heroTitle { font-size: 44px; } }
+.heroSummary { font-size: 16px; color: #cfc7bb; line-height: 1.8; margin: 0; }
+@media (min-width: 768px) { .heroSummary { font-size: 18px; } }
+.heroSpecRow { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 30px; }
+.heroChip { background: rgba(184,135,59,0.14); border: 1px solid rgba(184,135,59,0.4); color: #e6c284; font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 20px; }
+.ctaGroup { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.ctaBtn {
+  display: inline-flex; align-items: center; gap: 8px; background: #c47c30; color: #fff;
+  font-size: 16px; font-weight: 700; padding: 15px 32px; min-height: 52px; border-radius: 10px;
+  text-decoration: none; transition: background 0.15s, transform 0.15s; white-space: nowrap; box-sizing: border-box;
+}
+.ctaOutline {
+  display: inline-flex; align-items: center; gap: 8px; background: transparent; color: rgba(255,255,255,0.9);
+  border: 1px solid rgba(230,194,132,0.45); font-size: 16px; font-weight: 600; padding: 15px 26px; min-height: 52px;
+  border-radius: 10px; text-decoration: none; transition: border-color 0.15s, color 0.15s, transform 0.15s;
+  white-space: nowrap; box-sizing: border-box;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ctaBtn:hover { background: #a8642a; transform: translateY(-2px); }
+  .ctaOutline:hover { border-color: #e6c284; color: #e6c284; transform: translateY(-2px); }
+}
+@media (max-width: 767px) {
+  .heroSplit { grid-template-columns: 1fr; min-height: auto; }
+  .heroRight { height: 220px; order: -1; }
+  .heroOverlay { background: rgba(0,0,0,0.25); }
+  .heroLeft { padding: 36px 20px 44px; }
+  .ctaGroup { flex-direction: column; }
+  .ctaBtn, .ctaOutline { display: flex; justify-content: center; width: 100%; }
+}
+
+/* ── 핵심 정보 카드 ── */
+.infoGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (min-width: 768px) { .infoGrid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+.infoCard {
+  background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 18px; padding: 24px 20px;
+  box-shadow: 0 6px 24px rgba(90,70,40,0.08); transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+@media (min-width: 768px) { .infoCard { padding: 32px 28px; } }
+.infoIconWrap {
+  width: 46px; height: 46px; border-radius: 50%; background: rgba(184,135,59,0.12);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+}
+.infoLabel { font-size: 15px; font-weight: 500; color: #7A6B5B; margin-bottom: 8px; }
+.infoValue { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 22px; color: #3A2F26; line-height: 1.35; }
+@media (min-width: 768px) { .infoValue { font-size: 26px; } }
+@media (hover: hover) and (pointer: fine) {
+  .infoCard:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(90,70,40,0.15); }
+}
+
+/* ── 특별 혜택 ── */
+.benefitCard {
+  position: relative; background: #FBF2E3; border: 1px solid #E3C691; border-radius: 20px;
+  padding: 28px 26px; margin-top: 8px; overflow: hidden;
+}
+@media (min-width: 768px) { .benefitCard { padding: 40px 44px; } }
+.benefitCard::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: #B8873B; }
+.benefitTitle { font-family: var(--of-font-serif), serif; font-size: 22px; font-weight: 700; color: #8a6425; margin: 0 0 14px; }
+@media (min-width: 768px) { .benefitTitle { font-size: 26px; } }
+.benefitBody { font-size: 17px; color: #4a3b2a; line-height: 1.85; margin: 0; white-space: pre-line; }
+@media (min-width: 768px) { .benefitBody { font-size: 18px; } }
+
+/* ── 단지 개요 표 ── */
+.overviewTable { border-radius: 18px; overflow: hidden; border: 1px solid #E7DAC4; box-shadow: 0 6px 24px rgba(90,70,40,0.06); }
+.overviewRow { display: grid; grid-template-columns: 150px 1fr; border-bottom: 1px solid #E7DAC4; }
+.overviewRow:last-child { border-bottom: none; }
+.overviewRow.full { grid-template-columns: 1fr; }
+.overviewLabel { background: #F3EADB; font-weight: 700; color: #3A2F26; padding: 16px 20px; font-size: 16px; display: flex; align-items: center; }
+.overviewValue { background: #FFFFFF; padding: 16px 20px; font-size: 16px; color: #3A2F26; line-height: 1.75; display: flex; align-items: center; }
+@media (min-width: 768px) {
+  .overviewLabel, .overviewValue { font-size: 17px; padding: 18px 24px; }
+}
+@media (max-width: 480px) {
+  .overviewRow:not(.full) { grid-template-columns: 1fr; }
+  .overviewLabel { padding-bottom: 4px; }
+}
+
+/* ── 기본 제공 품목 ── */
+.itemsGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 479px) { .itemsGrid { grid-template-columns: 1fr; } }
+.itemChip {
+  display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E7DAC4;
+  border-radius: 14px; padding: 16px 18px; font-size: 16px; color: #3A2F26;
+  box-shadow: 0 4px 16px rgba(90,70,40,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+@media (min-width: 768px) { .itemChip { font-size: 17px; } }
+@media (hover: hover) and (pointer: fine) {
+  .itemChip:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(90,70,40,0.12); }
+}
+.itemIcon { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: rgba(184,135,59,0.12); display: flex; align-items: center; justify-content: center; }
+
+/* ── 체크 목록 (입지/건물/추천) ── */
+.checkList { display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.checkItem { display: flex; align-items: flex-start; gap: 14px; font-size: 17px; color: #3A2F26; line-height: 1.8; }
+@media (min-width: 768px) { .checkItem { font-size: 18px; } }
+.checkItemStrong { font-weight: 700; }
+.checkIconWrap {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: rgba(184,135,59,0.14);
+  display: flex; align-items: center; justify-content: center; margin-top: 2px;
+}
+
+/* ── 갤러리 섹션 제목만 톤 맞춤 (Gallery.tsx 내부 동작/스타일은 그대로) ── */
+.galleryHint { text-align: center; font-size: 15px; color: #7A6B5B; margin: -16px 0 28px; }
+
+/* ── FAQ ── */
+.faqItem {
+  background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 16px; margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(90,70,40,0.05); overflow: hidden;
+}
+.faqQ {
+  display: flex; align-items: center; gap: 14px; padding: 18px 20px; cursor: pointer;
+  font-size: 16px; font-weight: 700; color: #3A2F26; list-style: none;
+}
+@media (min-width: 768px) { .faqQ { font-size: 17px; padding: 20px 24px; } }
+.faqQ::-webkit-details-marker { display: none; }
+.faqBadge {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: #B8873B; color: #fff;
+  font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-family: var(--of-font-serif), serif;
+}
+.faqQText { flex: 1; }
+.faqToggle { flex-shrink: 0; font-size: 22px; font-weight: 300; color: #B8873B; transition: transform 0.2s ease; }
+.faqItem[open] .faqToggle { transform: rotate(45deg); }
+.faqA { padding: 0 20px 20px 64px; font-size: 16px; color: #7A6B5B; line-height: 1.85; white-space: pre-line; }
+@media (min-width: 768px) { .faqA { font-size: 17px; padding: 0 24px 22px 68px; } }
+@media (max-width: 480px) { .faqA { padding-left: 20px; } }
+
+/* ── 추가 소개 ── */
+.introText { font-size: 17px; color: #3A2F26; line-height: 1.9; margin: 0; white-space: pre-line; }
+@media (min-width: 768px) { .introText { font-size: 18px; } }
+
+/* ── 문의 섹션 ── */
+.inquiryGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+@media (max-width: 1023px) { .inquiryGrid { grid-template-columns: 1fr; gap: 32px; } }
+.inquiryHeading { font-family: var(--of-font-serif), serif; font-size: 28px; font-weight: 700; color: #3A2F26; line-height: 1.35; margin: 0 0 20px; }
+@media (min-width: 768px) { .inquiryHeading { font-size: 34px; } }
+.inquiryGold { color: #B8873B; }
+.inquiryLead { font-size: 17px; color: #7A6B5B; line-height: 1.85; margin: 0 0 30px; }
+.contactRow { display: flex; align-items: center; gap: 14px; }
+.contactIconWrap { width: 48px; height: 48px; background: #c47c30; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contactIconWrapSoft { width: 48px; height: 48px; background: #F3EADB; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contactLabel { font-size: 13px; color: #7A6B5B; margin-bottom: 3px; }
+.contactValue { font-size: 19px; font-weight: 700; color: #3A2F26; }
+.contactValueSoft { font-size: 16px; font-weight: 600; color: #3A2F26; }
+.inquiryCard {
+  background: #FFFFFF; border-radius: 20px; padding: 28px 24px; border: 1px solid #E7DAC4;
+  box-shadow: 0 10px 32px rgba(90,70,40,0.08);
+}
+@media (min-width: 768px) { .inquiryCard { padding: 36px; } }
+.inquiryCardTitle { font-family: var(--of-font-serif), serif; font-size: 20px; font-weight: 700; color: #3A2F26; margin: 0 0 22px; }
+
+/* ── 모바일 하단 고정 문의 바 ── */
+.mobileBar {
+  display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(251,247,240,0.97); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-top: 1px solid #E7DAC4; transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.mobileBarBtn {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 52px;
+  background: #c47c30; color: #fff; font-size: 17px; font-weight: 700; border-radius: 12px;
+  text-decoration: none; font-family: var(--of-font-sans), sans-serif;
+}
+.mobileBarHidden { transform: translateY(130%); opacity: 0; pointer-events: none; }
+@media (max-width: 767px) {
+  .mobileBar { display: block; }
+  .root { padding-bottom: 86px; }
+}
+
+/* ── 스크롤 등장 애니메이션 (점진적 향상) ──
+   기본값은 항상 완전히 보이는 상태(opacity:1) — JS 없음/로딩 전에도 서버 HTML 그대로 노출됨.
+   RevealObserver가 마운트된 뒤에만 .jsReveal 클래스를 루트에 붙이고, 그 안에서만
+   [data-reveal] 요소가 시작 시 살짝 가려졌다가 화면에 들어오면 .revealed로 나타난다. */
+.root :global([data-reveal]) { opacity: 1; transform: none; }
+.jsReveal :global([data-reveal]) {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.jsReveal :global([data-reveal]).revealed { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jsReveal :global([data-reveal]) { opacity: 1 !important; transform: none !important; transition: none !important; }
+}

@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 const inSt: React.CSSProperties = {
-  width: '100%', height: '44px', border: '1px solid #ddd', borderRadius: '6px',
-  padding: '0 14px', fontSize: '15px', outline: 'none', background: '#fff',
-  color: '#333', boxSizing: 'border-box',
+  width: '100%', height: '52px', border: '1px solid #E7DAC4', borderRadius: '10px',
+  padding: '0 16px', fontSize: '16px', outline: 'none', background: '#fff',
+  color: '#3A2F26', boxSizing: 'border-box',
 };
-const labelSt: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#444', marginBottom: '6px' };
+const labelSt: React.CSSProperties = { display: 'block', fontSize: '15px', fontWeight: 600, color: '#3A2F26', marginBottom: '8px' };
 
 const INTEREST_OPTIONS = ['실거주', '투자', '기타'];
 
@@ -51,8 +51,8 @@ export default function OfficetelInquiryForm() {
     return (
       <div style={{ textAlign: 'center', padding: '48px 20px' }}>
         <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
-        <p style={{ fontSize: '20px', fontWeight: 800, color: '#1a1a1a', margin: '0 0 8px' }}>문의가 접수됐습니다</p>
-        <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>헤르만부동산에서 곧 연락드리겠습니다.</p>
+        <p style={{ fontSize: '20px', fontWeight: 800, color: '#3A2F26', margin: '0 0 8px' }}>문의가 접수됐습니다</p>
+        <p style={{ fontSize: '15px', color: '#7A6B5B', margin: 0 }}>헤르만부동산에서 곧 연락드리겠습니다.</p>
       </div>
     );
   }
@@ -68,10 +68,10 @@ export default function OfficetelInquiryForm() {
               type="button"
               onClick={() => setInterest(prev => prev === opt ? '' : opt)}
               style={{
-                flex: 1, height: '40px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-                border: interest === opt ? '1px solid #c47c30' : '1px solid #ddd',
-                background: interest === opt ? '#fff8f2' : '#fff',
-                color: interest === opt ? '#c47c30' : '#555',
+                flex: 1, height: '52px', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
+                border: interest === opt ? '1px solid #B8873B' : '1px solid #E7DAC4',
+                background: interest === opt ? '#FBF2E3' : '#fff',
+                color: interest === opt ? '#8a6425' : '#7A6B5B',
               }}
             >
               {opt}
@@ -95,17 +95,17 @@ export default function OfficetelInquiryForm() {
           value={memo} onChange={e => setMemo(e.target.value)}
           placeholder="궁금하신 점을 자유롭게 남겨주세요"
           rows={3}
-          style={{ ...inSt, height: 'auto', padding: '10px 14px', resize: 'vertical' }}
+          style={{ ...inSt, height: 'auto', padding: '14px 16px', resize: 'vertical' }}
         />
       </div>
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#555' }}>
-        <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: '2px', flexShrink: 0 }} />
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '15px', color: '#7A6B5B' }}>
+        <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: '3px', flexShrink: 0, width: '18px', height: '18px' }} />
         개인정보(이름·연락처)를 분양 상담 목적으로 수집·이용함에 동의합니다.
       </label>
       <button
         type="submit"
         disabled={submitting}
-        style={{ height: '52px', background: '#c47c30', color: '#fff', fontWeight: 800, fontSize: '16px', border: 'none', borderRadius: '6px', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+        style={{ height: '56px', background: '#c47c30', color: '#fff', fontWeight: 800, fontSize: '17px', border: 'none', borderRadius: '10px', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
       >
         {submitting ? '제출 중...' : '분양 문의 접수하기'}
       </button>
