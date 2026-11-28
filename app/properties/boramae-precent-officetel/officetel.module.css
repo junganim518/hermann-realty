@@ -146,19 +146,29 @@
 .benefitBody { font-size: 17px; color: var(--of-text); line-height: 1.85; margin: 0; white-space: pre-line; }
 @media (min-width: 768px) { .benefitBody { font-size: 18px; } }
 
-/* ── 단지 개요: 풀폭 배너 + 표 ── */
-.complexBannerWrap { position: relative; }
-.complexBanner { display: block; width: 100%; height: 460px; border: none; padding: 0; margin: 0; cursor: pointer; position: relative; border-radius: 20px; overflow: hidden; }
-.complexBannerImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* ── 단지 개요: 풀폭 배너 + 표 ──
+   표 카드를 사진 위에 absolute로 얹지 않는다 — 사진은 배경(position:absolute, 컨테이너 전체를 덮음),
+   표는 일반 흐름(complexBannerInner)에 둬서 컨테이너 높이가 표 높이에 맞춰 자동으로 늘어나고,
+   사진은 그 늘어난 높이에 맞춰 함께 늘어난다(min-height는 최소값일 뿐, 표가 넘치지 않음). */
+.complexBannerWrap { position: relative; border-radius: 20px; overflow: hidden; }
+.complexBannerPhotoWrap { position: absolute; inset: 0; z-index: 0; }
+.complexBannerBgImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.complexBannerClickArea { position: absolute; inset: 0; z-index: 1; background: transparent; border: none; padding: 0; margin: 0; cursor: pointer; }
+.complexBannerInner {
+  position: relative; z-index: 2; min-height: 460px; box-sizing: border-box;
+  display: flex; justify-content: flex-end; align-items: flex-start; padding: 40px;
+}
 .complexBannerTableWrap {
-  position: absolute; right: 32px; bottom: 32px; width: min(420px, 90%);
+  width: 100%; max-width: 520px; box-sizing: border-box;
   background: rgba(23,23,26,0.88); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  border-radius: 16px; padding: 4px; border: 1px solid var(--of-border); box-sizing: border-box;
+  border-radius: 16px; padding: 4px; border: 1px solid var(--of-border);
 }
 @media (max-width: 1023px) {
-  .complexBanner { height: 260px; border-radius: 16px 16px 0 0; }
+  .complexBannerWrap { border-radius: 16px; }
+  .complexBannerPhotoWrap { position: relative; height: 240px; }
+  .complexBannerInner { position: static; min-height: 0; display: block; padding: 0; }
   .complexBannerTableWrap {
-    position: static; width: 100%; background: var(--of-card-bg); backdrop-filter: none;
+    max-width: 100%; background: var(--of-card-bg); backdrop-filter: none;
     border-radius: 0 0 16px 16px; border-top: none;
   }
 }
@@ -247,13 +257,19 @@
 .floorplanNote { text-align: center; font-size: 14px; color: var(--of-text-soft); margin: 20px 0 0; }
 
 /* ── 사진이 카드 전체를 채우는 photo-card(입지·주거 환경 4개 카드) ──
-   데스크톱 2x2(auto-fit + 카드 폭 440~560px + justify-content:center로 1~4개 모두 자연스럽게),
-   모바일 1열. 카드 전체가 버튼(사진일 때)/div(일러스트일 때)이며 이미지/일러스트가 배경을 꽉 채우고
-   아래쪽으로 갈수록 진해지는 그라데이션 위에 글자가 올라간다. */
-.photoCardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 560px)); gap: 24px; justify-content: center; align-items: stretch; }
-@media (max-width: 767px) { .photoCardGrid { grid-template-columns: 1fr; gap: 20px; } }
+   데스크톱(≥900px) 2열 그리드로 명시 고정(auto-fit이 아님 — 카드 최대폭 제한 없음, 컨테이너 1120px
+   안에서 균등하게 넓어짐). data-count로 3개(마지막 카드가 2열 전체 차지)/1개(가운데, 좁게)를 보정.
+   카드 안 이미지/일러스트는 절대위치 배경이고, 글 영역(photoCardBody)은 flex로 "일반 흐름"에 있어
+   내용이 많아도 카드 높이가 늘어난다(overflow로 잘리지 않음) — min-height는 최소값일 뿐. */
+.photoCardGrid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: stretch; }
+@media (min-width: 900px) {
+  .photoCardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .photoCardGrid[data-count="3"] > :last-child { grid-column: span 2; }
+  .photoCardGrid[data-count="1"] { grid-template-columns: minmax(0, 640px); justify-content: center; }
+}
 .photoCard {
-  position: relative; display: block; width: 100%; min-height: 400px; border: 1px solid var(--of-border);
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+  width: 100%; min-height: 400px; border: 1px solid var(--of-border);
   border-radius: 20px; overflow: hidden; padding: 0; margin: 0; background: var(--of-card-bg); cursor: default;
   text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
@@ -270,9 +286,17 @@
 .photoCardIllu svg { width: 100%; height: 100%; display: block; }
 .photoCardOverlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.12) 72%, transparent 100%);
+  /* 글이 많아 카드가 세로로 길어질 때도 글자 영역 뒤가 항상 충분히 어둡도록 전환 구간을 넉넉히 잡음 */
+  background: linear-gradient(to top,
+    rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.8) 38%, rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.12) 68%, rgba(0,0,0,0.08) 100%);
 }
-.photoCardBody { position: absolute; left: 0; right: 0; bottom: 0; padding: 24px; }
+/* 카드 전체 그라데이션(photoCardOverlay)과 별개로, 글 블록 자체에도 위에서 아래로 짙어지는
+   어두운 배경을 둔다 — 글이 많아 카드가 세로로 길어질 때도(일러스트/사진은 카드 전체를 채우므로)
+   글자 뒤가 항상 충분히 어두워 겹쳐 보이지 않게 하는 이중 안전장치. */
+.photoCardBody {
+  position: relative; z-index: 2; padding: 24px 24px 22px;
+  background: rgba(0,0,0,0.75);
+}
 .photoCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 26px; color: #fff; margin: 0 0 12px; }
 @media (min-width: 768px) { .photoCardTitle { font-size: 30px; } }
 @media (max-width: 767px) { .photoCardTitle { font-size: 24px; } }
@@ -294,19 +318,24 @@
 }
 
 /* ── 이런 분께 추천합니다 — 큰 카드 그리드 ──
-   데스크톱 auto-fit(4개=4열, 3개=3열, 2개=2열 가운데), 태블릿 2열 고정, 모바일 1열 고정. */
-.targetGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 260px)); gap: 20px; justify-content: center; }
-@media (max-width: 1023px) and (min-width: 600px) { .targetGrid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 599px) { .targetGrid { grid-template-columns: 1fr; } }
+   데스크톱(≥1024px) 2×2(4개)로 넓게, 3개=3열, 2개=2열 가운데, 1개=가운데 단일. 태블릿 2열, 모바일 1열. */
+.targetGrid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 600px) and (max-width: 1023px) { .targetGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) {
+  .targetGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .targetGrid[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .targetGrid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 700px; margin: 0 auto; }
+  .targetGrid[data-count="1"] { grid-template-columns: minmax(0, 360px); justify-content: center; }
+}
 .targetCard {
-  min-height: 240px; background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 18px;
+  min-height: 260px; background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 18px;
   padding: 28px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
-.targetCardIcon { width: 64px; height: 64px; }
+.targetCardIcon { width: 72px; height: 72px; }
 .targetCardIcon svg { width: 100%; height: 100%; display: block; }
-.targetCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 22px; color: var(--of-text); margin: 0; }
-.targetCardDesc { font-size: 17px; color: var(--of-text-soft); line-height: 1.6; margin: 0; }
+.targetCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 24px; color: var(--of-text); margin: 0; }
+.targetCardDesc { font-size: 18px; color: var(--of-text-soft); line-height: 1.6; margin: 0; }
 
 .sectionNote { text-align: center; font-size: 14px; color: var(--of-text-soft); margin: 28px 0 0; }
 

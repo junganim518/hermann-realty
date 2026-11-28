@@ -11,12 +11,16 @@ const GOLD = '#C9A15B';    // 포인트 골드
 const CREAM = '#262A36';   // 주요 면(어두운 남색/회색)
 const PAPER = '#F2EEE6';   // 보조 하이라이트(밝은 베이지) — 불빛/창문 등
 const OUTLINE = '#3A3E4A'; // 실루엣/덩어리
+const LIGHT_GOLD = '#E8C27A'; // 장면 속 창문/간판 점등 전용 — 눈에 확실히 들어오는 밝은 골드
 
 function Base({ viewBox, children, slice }: { viewBox: string; children: ReactNode; slice?: boolean }) {
   return (
     <svg
       viewBox={viewBox}
-      preserveAspectRatio={slice ? 'xMidYMid slice' : undefined}
+      // xMidYMin: 카드가 글 길이에 따라 세로로 길어져도(slice로 꽉 채우면서) 항상 장면의 "위쪽"이
+      // 기준으로 보이게 한다 — xMidYMid(가운데 기준)였을 때 카드가 세로로 길어지면 장면 중간부가
+      // 과도하게 확대되어 보이면서 주요 사물이 글자 영역까지 내려와 겹치는 문제가 있었다.
+      preserveAspectRatio={slice ? 'xMidYMin slice' : undefined}
       aria-hidden="true"
       focusable="false"
       xmlns="http://www.w3.org/2000/svg"
@@ -71,125 +75,162 @@ export function FaqIllustration() {
    깊은 남색~차콜 그라데이션 하늘 + 골드 포인트 + 은은한 창문/간판 불빛. 실제 노선 표기·로고·실제 건물
    특징은 쓰지 않는다. 카드 쪽 그라데이션 오버레이(officetel.module.css)가 글자 대비를 보장한다. */
 
-// a) 교통 — 스카이라인 아래 고가 승강장과 전동차 실루엣, 버스, 가로등, 달
+// a) 교통 — 고가 승강장 위 전동차와 버스. 카드가 글 길이에 따라 세로로 길어질 때도(slice가 카드
+// 비율에 따라 위아래를 자르지 않고 좌우만 자르는 경우가 있어) 아래 글자 영역과 겹치지 않도록
+// 주요 사물을 전체 높이(800) 중 위쪽 절반(약 0~380)에만 모아 그린다.
 export function TransportScene() {
   return (
     <Base viewBox="0 0 1200 800" slice>
       <defs>
         <linearGradient id="scTransportSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1A1E30" />
-          <stop offset="1" stopColor="#0E0F17" />
+          <stop offset="0" stopColor="#1B2A4A" />
+          <stop offset="0.6" stopColor="#3B3A5A" />
+          <stop offset="1" stopColor="#C98B4A" />
         </linearGradient>
       </defs>
       <rect width="1200" height="800" fill="url(#scTransportSky)" />
-      <circle cx="1040" cy="150" r="46" fill={PAPER} opacity="0.85" />
-      <g opacity="0.5">
-        <rect x="60" y="360" width="90" height="300" fill={OUTLINE} />
-        <rect x="170" y="300" width="110" height="360" fill={OUTLINE} />
-        <rect x="300" y="400" width="80" height="260" fill={OUTLINE} />
-        <rect x="900" y="330" width="100" height="330" fill={OUTLINE} />
-        <rect x="1020" y="380" width="90" height="280" fill={OUTLINE} />
-      </g>
-      <rect x="0" y="620" width="1200" height="30" fill={CREAM} />
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-        <rect key={i} x={30 + i * 130} y="650" width="14" height="90" fill={CREAM} />
-      ))}
-      <rect x="150" y="540" width="640" height="80" rx="14" fill={OUTLINE} />
+      <circle cx="1040" cy="80" r="36" fill={PAPER} opacity="0.9" />
+      {/* 전동차 — 밝은 베이지 몸체, 창문은 확실히 점등 */}
+      <rect x="140" y="50" width="680" height="150" rx="16" fill={INK} />
+      <rect x="140" y="50" width="680" height="28" rx="16" fill={OUTLINE} />
       {[0, 1, 2, 3, 4, 5, 6].map(i => (
-        <rect key={i} x={180 + i * 86} y="562" width="46" height="34" rx="4" fill={GOLD} opacity="0.5" />
+        <rect key={i} x={172 + i * 94} y="90" width="58" height="42" rx="6" fill={LIGHT_GOLD} />
       ))}
-      <rect x="880" y="560" width="200" height="90" rx="12" fill={OUTLINE} />
-      <rect x="904" y="580" width="40" height="30" rx="3" fill={GOLD} opacity="0.45" />
-      <rect x="956" y="580" width="40" height="30" rx="3" fill={GOLD} opacity="0.45" />
-      <rect x="1008" y="580" width="40" height="30" rx="3" fill={GOLD} opacity="0.45" />
-      <circle cx="920" cy="656" r="16" fill={CREAM} />
-      <circle cx="1040" cy="656" r="16" fill={CREAM} />
-      <rect x="60" y="500" width="6" height="150" fill={INK} opacity="0.6" />
-      <circle cx="63" cy="494" r="10" fill={GOLD} />
+      <rect x="140" y="200" width="680" height="16" fill={OUTLINE} />
+      {/* 승강장 지붕/기둥 */}
+      <rect x="40" y="226" width="840" height="18" fill={CREAM} />
+      {[0, 1, 2, 3, 4, 5].map(i => (
+        <rect key={i} x={70 + i * 150} y="244" width="16" height="80" fill={CREAM} />
+      ))}
+      {/* 버스 */}
+      <rect x="900" y="80" width="250" height="130" rx="16" fill={INK} />
+      <rect x="928" y="112" width="54" height="40" rx="5" fill={LIGHT_GOLD} />
+      <rect x="996" y="112" width="54" height="40" rx="5" fill={LIGHT_GOLD} />
+      <rect x="1064" y="112" width="54" height="40" rx="5" fill={LIGHT_GOLD} />
+      <circle cx="944" cy="222" r="20" fill={OUTLINE} />
+      <circle cx="1106" cy="222" r="20" fill={OUTLINE} />
+      {/* 가로등 */}
+      <rect x="50" y="110" width="8" height="150" fill={OUTLINE} />
+      <circle cx="54" cy="102" r="12" fill={LIGHT_GOLD} />
     </Base>
   );
 }
 
-// b) 생활 인프라 — 상업 건물과 상점 간판 실루엣(글자 없음), 공원 산책로, 가로수와 벤치, 쇼핑백
+// b) 생활 인프라 — 상업 건물과 점등된 상점창(글자 없음), 공원 산책로·나무·벤치, 쇼핑백.
+// 주요 사물을 위쪽 약 0~380 영역에 모아 카드가 세로로 길어져도 아래 글자와 겹치지 않게 한다.
 export function InfraScene() {
   return (
     <Base viewBox="0 0 1200 800" slice>
       <defs>
         <linearGradient id="scInfraSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1C2230" />
-          <stop offset="1" stopColor="#10121A" />
+          <stop offset="0" stopColor="#1B2A4A" />
+          <stop offset="0.6" stopColor="#3B3A5A" />
+          <stop offset="1" stopColor="#C98B4A" />
         </linearGradient>
       </defs>
       <rect width="1200" height="800" fill="url(#scInfraSky)" />
-      <rect x="80" y="260" width="360" height="400" fill={OUTLINE} />
+      {/* 상업 건물 — 밝은 베이지 몸체, 점등된 상점창(글자 없음) */}
+      <rect x="90" y="40" width="420" height="280" fill={INK} />
       {[0, 1].map(r => (
         <g key={r}>
-          <rect x="110" y={300 + r * 100} width="80" height="60" fill={GOLD} opacity="0.4" />
-          <rect x="210" y={300 + r * 100} width="80" height="60" fill={GOLD} opacity="0.4" />
-          <rect x="310" y={300 + r * 100} width="80" height="60" fill={GOLD} opacity="0.4" />
+          <rect x="120" y={70 + r * 90} width="100" height="62" fill={LIGHT_GOLD} />
+          <rect x="250" y={70 + r * 90} width="100" height="62" fill={LIGHT_GOLD} />
+          <rect x="380" y={70 + r * 90} width="100" height="62" fill={LIGHT_GOLD} />
         </g>
       ))}
-      <rect x="80" y="560" width="360" height="24" fill={GOLD} opacity="0.65" />
-      <path d="M520 800 C 650 650 850 650 1200 760" stroke={CREAM} strokeWidth="34" fill="none" opacity="0.5" />
-      <circle cx="640" cy="560" r="42" fill={OUTLINE} />
-      <rect x="632" y="602" width="16" height="50" fill={OUTLINE} />
-      <circle cx="840" cy="510" r="48" fill={OUTLINE} />
-      <rect x="830" y="558" width="18" height="60" fill={OUTLINE} />
-      <rect x="980" y="620" width="120" height="10" fill={INK} opacity="0.6" />
-      <rect x="990" y="630" width="10" height="30" fill={INK} opacity="0.6" />
-      <rect x="1080" y="630" width="10" height="30" fill={INK} opacity="0.6" />
-      <path d="M560 520h70l-7 70h-56Z" fill={GOLD} opacity="0.75" />
-      <path d="M572 520v-16a11 11 0 0 1 22 0v16" fill="none" stroke={GOLD} strokeWidth="4" opacity="0.75" />
+      <rect x="90" y="320" width="420" height="26" fill={OUTLINE} />
+      {/* 쇼핑백 — 밝은 포인트 */}
+      <path d="M580 120h90l-9 90h-72Z" fill={LIGHT_GOLD} />
+      <path d="M596 120v-20a14 14 0 0 1 28 0v20" fill="none" stroke={LIGHT_GOLD} strokeWidth="6" />
+      {/* 공원 나무·벤치(보조 요소) */}
+      <circle cx="790" cy="230" r="54" fill="#333A4C" />
+      <rect x="778" y="282" width="24" height="60" fill="#333A4C" />
+      <circle cx="1000" cy="180" r="60" fill="#2B3142" />
+      <rect x="986" y="236" width="28" height="70" fill="#2B3142" />
+      <rect x="1080" y="300" width="130" height="12" fill={OUTLINE} />
+      <rect x="1092" y="312" width="12" height="34" fill={OUTLINE} />
+      <rect x="1186" y="312" width="12" height="34" fill={OUTLINE} />
     </Base>
   );
 }
 
-// c) 교육 — 학교 건물(단순 형태)과 운동장, 책과 졸업모 모티프, 나무
+// c) 교육 — 학교 건물(점등된 창문), 책과 졸업모 모티프, 나무. 주요 사물을 위쪽 약 0~380 영역에
+// 모아 카드가 세로로 길어져도 아래 글자와 겹치지 않게 한다.
 export function EducationScene() {
   return (
     <Base viewBox="0 0 1200 800" slice>
       <defs>
         <linearGradient id="scEduSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1A2026" />
-          <stop offset="1" stopColor="#0E1013" />
+          <stop offset="0" stopColor="#1B2A4A" />
+          <stop offset="0.6" stopColor="#3B3A5A" />
+          <stop offset="1" stopColor="#C98B4A" />
         </linearGradient>
       </defs>
       <rect width="1200" height="800" fill="url(#scEduSky)" />
-      <rect x="300" y="300" width="500" height="360" fill={OUTLINE} />
+      {/* 학교 건물 — 밝은 베이지 몸체, 점등된 창문 2열 */}
+      <rect x="280" y="40" width="560" height="260" fill={INK} />
       {[0, 1, 2, 3, 4].map(i => (
-        <rect key={i} x={340 + i * 90} y="340" width="60" height="60" fill={GOLD} opacity="0.4" />
+        <rect key={i} x={312 + i * 102} y="68" width="64" height="48" fill={LIGHT_GOLD} />
       ))}
-      <rect x="500" y="500" width="100" height="160" fill={CREAM} />
-      <rect x="0" y="660" width="1200" height="140" fill={OUTLINE} opacity="0.3" />
-      <circle cx="180" cy="560" r="50" fill={OUTLINE} />
-      <rect x="170" y="610" width="20" height="60" fill={OUTLINE} />
-      <rect x="900" y="560" width="160" height="20" fill={GOLD} opacity="0.85" />
-      <rect x="900" y="580" width="160" height="60" fill={CREAM} />
-      <path d="M860 540 980 500 1100 540 980 580Z" fill={GOLD} opacity="0.75" />
+      {[0, 1, 2, 3, 4].map(i => (
+        <rect key={i} x={312 + i * 102} y="136" width="64" height="48" fill={LIGHT_GOLD} />
+      ))}
+      <rect x="500" y="212" width="120" height="88" fill={OUTLINE} />
+      <rect x="280" y="300" width="560" height="22" fill={OUTLINE} />
+      {/* 나무(보조 요소) */}
+      <circle cx="170" cy="250" r="54" fill="#333A4C" />
+      <rect x="156" y="300" width="28" height="60" fill="#333A4C" />
+      {/* 책 + 졸업모 모티프 — 밝은 포인트 */}
+      <rect x="930" y="250" width="200" height="22" fill={LIGHT_GOLD} />
+      <rect x="930" y="272" width="200" height="60" fill={INK} />
+      <path d="M880 210 1030 160 1180 210 1030 260Z" fill={LIGHT_GOLD} />
+      <line x1="1180" y1="210" x2="1180" y2="258" stroke={LIGHT_GOLD} strokeWidth="5" />
+      <circle cx="1180" cy="266" r="7" fill={LIGHT_GOLD} />
     </Base>
   );
 }
 
-// d) 건물·주거 특징 — 거실/침실이 분리된 투룸 실내 단면, 따뜻한 창문 조명
+// d) 건물·주거 특징 — 벽으로 나뉜 투룸 실내 단면(왼쪽 침실: 침대·베개·창문·펜던트 조명,
+// 오른쪽 거실: 소파·협탁·큰 창문·식물), 바닥선과 따뜻한 조명 빛 번짐. 베이지 상자 두 개만
+// 보이지 않도록 가구/조명을 또렷하게 그린다. 다른 장면과 마찬가지로 주요 사물을 위쪽 약 0~380
+// 영역에 모아, 카드가 세로로 길어져도(slice가 좌우만 잘라 전체 높이가 그대로 보이는 경우가 있어)
+// 아래 글자 영역과 겹치지 않게 한다.
 export function LivingScene() {
   return (
     <Base viewBox="0 0 1200 800" slice>
       <defs>
         <linearGradient id="scLivingSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1E2230" />
-          <stop offset="1" stopColor="#10121A" />
+          <stop offset="0" stopColor="#1B2A4A" />
+          <stop offset="0.6" stopColor="#3B3A5A" />
+          <stop offset="1" stopColor="#5A4438" />
         </linearGradient>
       </defs>
       <rect width="1200" height="800" fill="url(#scLivingSky)" />
-      <rect x="100" y="150" width="1000" height="500" fill={CREAM} />
-      <line x1="600" y1="150" x2="600" y2="650" stroke={INK} strokeWidth="8" opacity="0.5" />
-      <circle cx="280" cy="290" r="90" fill={GOLD} opacity="0.1" />
-      <circle cx="840" cy="290" r="90" fill={GOLD} opacity="0.1" />
-      <rect x="150" y="400" width="300" height="140" rx="20" fill={OUTLINE} />
-      <rect x="180" y="220" width="200" height="140" rx="6" fill={GOLD} opacity="0.3" />
-      <rect x="700" y="420" width="260" height="160" rx="10" fill={OUTLINE} />
-      <rect x="700" y="420" width="260" height="40" rx="10" fill={GOLD} opacity="0.25" />
-      <rect x="760" y="220" width="160" height="140" rx="6" fill={GOLD} opacity="0.3" />
+      {/* 방 벽/바닥 */}
+      <rect x="80" y="20" width="1040" height="300" fill={CREAM} />
+      <rect x="80" y="320" width="1040" height="18" fill={OUTLINE} />
+      <line x1="600" y1="20" x2="600" y2="320" stroke={INK} strokeWidth="10" />
+
+      {/* 왼쪽: 침실 — 창문 빛 번짐 + 펜던트 조명 + 침대/베개 */}
+      <circle cx="260" cy="110" r="92" fill={LIGHT_GOLD} opacity="0.18" />
+      <rect x="150" y="50" width="220" height="120" rx="6" fill={LIGHT_GOLD} opacity="0.4" />
+      <rect x="150" y="50" width="220" height="120" rx="6" fill="none" stroke={INK} strokeWidth="4" />
+      <line x1="500" y1="20" x2="500" y2="90" stroke={INK} strokeWidth="4" />
+      <circle cx="500" cy="100" r="18" fill={LIGHT_GOLD} />
+      <rect x="140" y="236" width="380" height="68" rx="12" fill={PAPER} />
+      <rect x="140" y="210" width="380" height="34" rx="10" fill={PAPER} opacity="0.9" />
+      <rect x="160" y="186" width="90" height="40" rx="16" fill={PAPER} />
+      <rect x="260" y="186" width="90" height="40" rx="16" fill={PAPER} />
+
+      {/* 오른쪽: 거실 — 큰 창문, 소파, 협탁, 식물 */}
+      <circle cx="930" cy="120" r="108" fill={LIGHT_GOLD} opacity="0.16" />
+      <rect x="820" y="50" width="260" height="150" rx="6" fill={LIGHT_GOLD} opacity="0.38" />
+      <rect x="820" y="50" width="260" height="150" rx="6" fill="none" stroke={INK} strokeWidth="4" />
+      <rect x="700" y="236" width="300" height="76" rx="18" fill={PAPER} />
+      <rect x="690" y="210" width="320" height="42" rx="14" fill={PAPER} opacity="0.92" />
+      <rect x="1030" y="248" width="66" height="54" rx="6" fill={OUTLINE} />
+      <circle cx="1048" cy="228" r="22" fill={OUTLINE} />
+      <circle cx="1068" cy="236" r="16" fill={OUTLINE} />
     </Base>
   );
 }

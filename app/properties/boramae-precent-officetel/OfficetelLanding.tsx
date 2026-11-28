@@ -222,17 +222,20 @@ function ComplexBanner({
 
   return (
     <div className={styles.complexBannerWrap} data-reveal>
-      <button type="button" className={styles.complexBanner} onClick={() => onOpen(photo)} aria-label="사진 확대">
+      <div className={styles.complexBannerPhotoWrap}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photo.url}
           alt={parsed.text || `프리센트 오피스텔 ${photoTagLabel(tagValue)}`}
           loading="lazy"
-          className={styles.complexBannerImg}
+          className={styles.complexBannerBgImg}
         />
         {parsed.isImageCut && <span className={styles.imageCutBadge}>이미지컷</span>}
-      </button>
-      <div className={styles.complexBannerTableWrap}>{table}</div>
+        <button type="button" className={styles.complexBannerClickArea} onClick={() => onOpen(photo)} aria-label="사진 확대" />
+      </div>
+      <div className={styles.complexBannerInner}>
+        <div className={styles.complexBannerTableWrap}>{table}</div>
+      </div>
     </div>
   );
 }
@@ -279,6 +282,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
   const transportLines = locationLines.filter(l => classifyLocationLine(l) === 'transport');
   const schoolLines = locationLines.filter(l => classifyLocationLine(l) === 'school');
   const infraLines = locationLines.filter(l => classifyLocationLine(l) === 'infra');
+  const photoCardCount = [transportLines.length > 0, infraLines.length > 0, schoolLines.length > 0, buildingLines.length > 0].filter(Boolean).length;
 
   // 각 카드/배너에 쓰는 태그별 첫 사진 — 카드에 실제로 쓰인 사진은 모자이크에서 제외해 중복 노출을 막는다.
   // (같은 태그 사진이 2장 이상이면 첫 사진만 카드에 쓰고 나머지는 모자이크에 그대로 남는다)
@@ -515,7 +519,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         <section className={styles.sectionAlt}>
           <div className={`${styles.wrap} ${styles.wrapWide}`}>
             <SectionHead eyebrow={`${sectionNum()} · Location & Living`} title="입지·주거 환경" />
-            <div className={styles.photoCardGrid}>
+            <div className={styles.photoCardGrid} data-count={photoCardCount}>
               {transportLines.length > 0 && (
                 <PhotoCard
                   eyebrow="Fast Traffic"
@@ -574,7 +578,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         <section className={styles.sectionLight}>
           <div className={styles.wrap}>
             <SectionHead eyebrow={`${sectionNum()} · For You`} title="이런 분께 추천합니다" />
-            <div className={styles.targetGrid}>
+            <div className={styles.targetGrid} data-count={targetItems.length}>
               {targetItems.map((item, i) => {
                 const Icon = TARGET_ICONS[i % TARGET_ICONS.length];
                 return (
