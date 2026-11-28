@@ -9,9 +9,8 @@ import CountUpValue from './CountUpValue';
 import PhotoLightbox, { type LightboxState } from './PhotoLightbox';
 import { notoSansKR, notoSerifKR } from './fonts';
 import { photoTagLabel, parsePhotoCaption } from '@/lib/precentOfficetelTags';
-import { OFFICETEL_MAP_EMBED_SRC, OFFICETEL_MAP_SEARCH_URL } from './mapConstants';
 import {
-  BenefitIllustration, ComplexIllustration, BuildingIllustration, TargetIllustration, FaqIllustration,
+  BenefitIllustration, ComplexIllustration, BuildingIllustration, FaqIllustration,
   TransportRowIllustration, InfraRowIllustration, SchoolRowIllustration,
   ITEM_ICON_MAP, matchItemIcon, LOCATION_ICON_MAP, matchLocationIcon,
 } from './Illustrations';
@@ -118,35 +117,58 @@ function SectionHead({ eyebrow, title, sub, icon }: { eyebrow: string; title: st
   );
 }
 
-function CheckList({ lines, emphasizeFirst }: { lines: string[]; emphasizeFirst?: boolean }) {
+// 입지·주거 환경 카드 4개(교통/생활 인프라/교육/건물·주거 특징) 공용 카드.
+// 사진이 있으면 사진을, 없으면 일러스트를 보여준다. 교통/생활인프라/교육은 키워드 아이콘,
+// 건물·주거 특징은 체크 아이콘(useCheckIcon)을 쓴다. 캡션의 "이미지컷" 처리는 다른 사진들과 동일.
+function LocationCard({
+  eyebrow, title, photo, tagValue, illustration, lines, useCheckIcon, onOpen,
+}: {
+  eyebrow: string;
+  title: string;
+  photo?: OfficetelPhoto;
+  tagValue: string;
+  illustration: React.ReactNode;
+  lines: string[];
+  useCheckIcon?: boolean;
+  onOpen: (photo: OfficetelPhoto) => void;
+}) {
+  const parsed = photo ? parsePhotoCaption(photo.caption) : null;
   return (
-    <ul className={styles.checkList}>
-      {lines.map((line, i) => (
-        <li key={i} className={styles.checkItem}>
-          <span className={styles.checkIconWrap}>
-            <Check size={16} color="#B8873B" strokeWidth={2.6} />
-          </span>
-          <span className={emphasizeFirst && i === 0 ? styles.checkItemStrong : undefined}>{line}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-// 입지·교통 각 줄(키워드 아이콘 포함) — 건물/추천 CheckList와 달리 매칭된 교통·쇼핑·공원·학교 아이콘을 쓴다.
-function LocList({ lines }: { lines: string[] }) {
-  return (
-    <ul className={styles.rowList}>
-      {lines.map((line, i) => {
-        const Icon = LOCATION_ICON_MAP[matchLocationIcon(line)];
-        return (
-          <li key={i} className={styles.rowListItem}>
-            <span className={styles.rowListIcon}><Icon /></span>
-            <span className={i === 0 ? styles.checkItemStrong : undefined}>{line}</span>
-          </li>
-        );
-      })}
-    </ul>
+    <div className={styles.locCard} data-reveal-card>
+      <div className={styles.locCardImageWrap}>
+        {photo && parsed ? (
+          <button type="button" className={styles.locCardImgBtn} onClick={() => onOpen(photo)} aria-label="사진 확대">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url}
+              alt={parsed.text || `프리센트 오피스텔 ${photoTagLabel(tagValue)}`}
+              loading="lazy"
+              className={styles.locCardImg}
+            />
+            {parsed.isImageCut && <span className={styles.imageCutBadge}>이미지컷</span>}
+          </button>
+        ) : (
+          <div className={styles.locCardIlluWrap}>{illustration}</div>
+        )}
+      </div>
+      <div className={styles.locCardBody}>
+        <span className={styles.rowEyebrow}>{eyebrow}</span>
+        <h3 className={styles.locCardTitle}>{title}</h3>
+        <ul className={styles.rowList}>
+          {lines.map((line, i) => {
+            const Icon = useCheckIcon ? null : LOCATION_ICON_MAP[matchLocationIcon(line)];
+            return (
+              <li key={i} className={styles.rowListItem}>
+                <span className={styles.rowListIcon}>
+                  {Icon ? <Icon /> : <Check size={16} color="#B8873B" strokeWidth={2.6} />}
+                </span>
+                <span className={i === 0 ? styles.checkItemStrong : undefined}>{line}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }
 
@@ -210,7 +232,6 @@ const INFO_ICON: Record<string, typeof Home> = {
 
 export default function OfficetelLanding({ data, photos }: { data: OfficetelPageData; photos: OfficetelPhoto[] }) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
-  const [mapActive, setMapActive] = useState(false);
   const openLightbox = (list: OfficetelPhoto[], index: number) => setLightbox({ photos: list, index });
 
   const heroPhoto = photos[0] ?? null;
@@ -265,9 +286,6 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
 
   const mosaicVisible = mosaicPhotos.length >= 5 ? mosaicPhotos.slice(0, 5) : mosaicPhotos;
   const mosaicMoreCount = mosaicPhotos.length > 5 ? mosaicPhotos.length - 5 : 0;
-
-  // 입지·교통 줄 사이 점선 구분선 — 이 섹션에서 실제로 렌더되는 첫 줄만 구분선을 안 그린다.
-  let locRowIndex = 0;
 
   return (
     <main id={rootId} className={`${styles.root} ${notoSansKR.variable} ${notoSerifKR.variable}`}>
@@ -490,113 +508,76 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         </section>
       )}
 
-      {/* ── 입지·교통: 큰 지도 + 교통/생활 인프라/교육 줄 ── */}
-      {locationLines.length > 0 && (
+      {/* ── 입지·주거 환경: 교통/생활 인프라/교육/건물·주거 특징 카드 4개 + 추천 대상 칩 ── */}
+      {(transportLines.length > 0 || infraLines.length > 0 || schoolLines.length > 0 || buildingLines.length > 0 || targetLines.length > 0) && (
         <section className={styles.sectionAlt}>
           <div className={styles.wrap}>
-            <div className={styles.mapWrap} data-reveal>
-              <div className={`${styles.mapFrameWrap} ${mapActive ? styles.mapFrameActive : ''}`}>
-                <iframe
-                  src={OFFICETEL_MAP_EMBED_SRC}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="동작 보라매역 프리센트 위치 지도"
-                  className={styles.mapFrame}
+            <SectionHead eyebrow={`${sectionNum()} · Location & Living`} title="입지·주거 환경" />
+            <div className={styles.locCardGrid}>
+              {transportLines.length > 0 && (
+                <LocationCard
+                  eyebrow="Fast Traffic"
+                  title="교통"
+                  photo={transportPhoto}
+                  tagValue="transport"
+                  illustration={<TransportRowIllustration />}
+                  lines={transportLines}
+                  onOpen={p => openLightbox([p], 0)}
                 />
-                {!mapActive && (
-                  <button
-                    type="button"
-                    className={styles.mapTapOverlay}
-                    aria-label="지도를 터치하면 지도를 조작할 수 있습니다"
-                    onClick={() => setMapActive(true)}
-                  />
-                )}
-              </div>
-              <div className={styles.mapFooter}>
-                <a href={OFFICETEL_MAP_SEARCH_URL} target="_blank" rel="noopener noreferrer" className={styles.mapLink}>
-                  지도 크게 보기 →
-                </a>
-                <p className={styles.mapCaption}>
-                  ※ 상기 지역은 소비자의 이해를 돕기 위한 것으로 실제와 차이가 있을 수 있습니다.
-                </p>
-              </div>
+              )}
+              {infraLines.length > 0 && (
+                <LocationCard
+                  eyebrow="Daily Infra"
+                  title="생활 인프라"
+                  photo={infraPhoto}
+                  tagValue="infra"
+                  illustration={<InfraRowIllustration />}
+                  lines={infraLines}
+                  onOpen={p => openLightbox([p], 0)}
+                />
+              )}
+              {schoolLines.length > 0 && (
+                <LocationCard
+                  eyebrow="Education"
+                  title="교육"
+                  photo={schoolPhoto}
+                  tagValue="school"
+                  illustration={<SchoolRowIllustration />}
+                  lines={schoolLines}
+                  onOpen={p => openLightbox([p], 0)}
+                />
+              )}
+              {buildingLines.length > 0 && (
+                <LocationCard
+                  eyebrow="Living"
+                  title="건물·주거 특징"
+                  photo={viewPhoto}
+                  tagValue="view"
+                  illustration={<BuildingIllustration />}
+                  lines={buildingLines}
+                  useCheckIcon
+                  onOpen={p => openLightbox([p], 0)}
+                />
+              )}
             </div>
 
-            {transportLines.length > 0 && (
-              <Row
-                side="left"
-                eyebrow="Fast Traffic"
-                title="교통"
-                photo={transportPhoto}
-                tagValue="transport"
-                illustration={<TransportRowIllustration />}
-                onOpen={p => openLightbox([p], 0)}
-                divider={locRowIndex++ > 0}
-              >
-                <LocList lines={transportLines} />
-              </Row>
-            )}
-            {infraLines.length > 0 && (
-              <Row
-                side="right"
-                eyebrow="Daily Infra"
-                title="생활 인프라"
-                photo={infraPhoto}
-                tagValue="infra"
-                illustration={<InfraRowIllustration />}
-                onOpen={p => openLightbox([p], 0)}
-                divider={locRowIndex++ > 0}
-              >
-                <LocList lines={infraLines} />
-              </Row>
-            )}
-            {schoolLines.length > 0 && (
-              <Row
-                side="left"
-                eyebrow="Education"
-                title="교육"
-                photo={schoolPhoto}
-                tagValue="school"
-                illustration={<SchoolRowIllustration />}
-                onOpen={p => openLightbox([p], 0)}
-                divider={locRowIndex++ > 0}
-              >
-                <LocList lines={schoolLines} />
-              </Row>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ── 건물·주거 특징 / 이런 분께 추천 — 한 섹션에 두 줄(번갈아) ── */}
-      {(buildingLines.length > 0 || targetLines.length > 0) && (
-        <section className={styles.sectionLight}>
-          <div className={styles.wrap}>
-            {buildingLines.length > 0 && (
-              <Row
-                side="left"
-                eyebrow="Living"
-                title="건물·주거 특징"
-                photo={viewPhoto}
-                tagValue="view"
-                illustration={<BuildingIllustration />}
-                onOpen={p => openLightbox([p], 0)}
-              >
-                <CheckList lines={buildingLines} />
-              </Row>
-            )}
             {targetLines.length > 0 && (
-              <Row
-                side="right"
-                eyebrow="For You"
-                title="이런 분께 추천합니다"
-                illustration={<TargetIllustration />}
-                onOpen={p => openLightbox([p], 0)}
-                divider={buildingLines.length > 0}
-              >
-                <CheckList lines={targetLines} />
-              </Row>
+              <div className={styles.targetChipsWrap} data-reveal>
+                <h3 className={styles.targetChipsTitle}>이런 분께 추천합니다</h3>
+                <div className={styles.targetChips}>
+                  {targetLines.map((line, i) => (
+                    <span key={i} className={styles.targetChip}>
+                      <Check size={14} color="#B8873B" strokeWidth={2.8} />
+                      {line}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
+
+            <p className={styles.sectionNote}>
+              ※ 상기 지역은 소비자의 이해를 돕기 위한 것으로 실제와 차이가 있을 수 있습니다.
+            </p>
           </div>
         </section>
       )}

@@ -166,15 +166,7 @@
 .itemCardText { font-size: 15px; color: #3A2F26; font-weight: 500; line-height: 1.4; }
 @media (min-width: 768px) { .itemCardText { font-size: 16px; } }
 
-/* ── 체크 목록 (입지/건물/추천) ── */
-.checkList { display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none; }
-.checkItem { display: flex; align-items: flex-start; gap: 14px; font-size: 17px; color: #3A2F26; line-height: 1.8; }
-@media (min-width: 768px) { .checkItem { font-size: 18px; } }
 .checkItemStrong { font-weight: 700; }
-.checkIconWrap {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: rgba(184,135,59,0.14);
-  display: flex; align-items: center; justify-content: center; margin-top: 2px;
-}
 
 /* ── 숫자 띠 ── */
 .statsBand { padding: 14px 0; background: #FFFFFF; border-bottom: 1px solid #E7DAC4; }
@@ -245,7 +237,7 @@
 }
 .rowIlluWrap svg { max-height: 200px; max-width: 70%; width: auto; height: auto; }
 .rowEyebrow {
-  display: block; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #B8873B;
+  display: block; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #B8873B;
   text-transform: uppercase; margin-bottom: 8px;
 }
 .rowTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 24px; color: #3A2F26; margin: 0 0 14px; }
@@ -272,24 +264,36 @@
   font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; line-height: 1.4; z-index: 1;
 }
 
-/* ── 입지·교통 지도 ── */
-.mapWrap { margin-bottom: 8px; }
-.mapFrameWrap {
-  position: relative; width: 100%; height: 440px; border-radius: 16px; overflow: hidden; border: 1px solid #E7DAC4;
-  box-shadow: 0 10px 30px rgba(90,70,40,0.08); box-sizing: border-box;
+/* ── 입지·주거 환경: 카드 4개(교통/생활 인프라/교육/건물·주거 특징) ──
+   auto-fit + 카드별 최대폭(400px) + justify-content:center 조합으로 카드가 1~4개 어느 경우에도
+   자연스럽게 배치됨(4개=2x2, 3개=2열+1, 1~2개=가운데 정렬) — 별도 분기 CSS 없이 한 규칙으로 처리. */
+.locCardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 400px)); gap: 24px; justify-content: center; align-items: stretch; }
+@media (max-width: 767px) { .locCardGrid { grid-template-columns: 1fr; gap: 20px; } }
+.locCard {
+  display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 16px;
+  overflow: hidden; box-shadow: 0 6px 20px rgba(90,70,40,0.06);
 }
-.mapFrame { width: 100%; height: 100%; border: 0; display: block; pointer-events: auto; }
-@media (max-width: 767px) { .mapFrameWrap { height: 280px; } }
-@media (max-width: 1023px) {
-  .mapFrame { pointer-events: none; }
-  .mapFrameActive .mapFrame { pointer-events: auto; }
+.locCardImageWrap { width: 100%; height: 170px; flex-shrink: 0; }
+@media (max-width: 767px) { .locCardImageWrap { height: 140px; } }
+.locCardImgBtn { display: block; width: 100%; height: 100%; border: none; padding: 0; margin: 0; cursor: pointer; position: relative; }
+.locCardImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.locCardIlluWrap { width: 100%; height: 100%; background: #F3EADB; display: flex; align-items: center; justify-content: center; }
+.locCardIlluWrap svg { max-height: 70%; max-width: 60%; width: auto; height: auto; }
+.locCardBody { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+@media (min-width: 768px) { .locCardBody { padding: 24px; } }
+.locCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 22px; color: #3A2F26; margin: 0 0 14px; }
+@media (min-width: 768px) { .locCardTitle { font-size: 24px; } }
+
+/* ── 이런 분께 추천 — 칩 영역 ── */
+.targetChipsWrap { margin-top: 36px; }
+.targetChipsTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 20px; color: #3A2F26; margin: 0 0 16px; }
+.targetChips { display: flex; flex-wrap: wrap; gap: 10px; }
+.targetChip {
+  display: inline-flex; align-items: center; gap: 6px; background: #F3EADB; border: 1px solid #E7DAC4;
+  color: #3A2F26; font-size: 15px; font-weight: 500; padding: 8px 16px; border-radius: 999px;
 }
-.mapTapOverlay { position: absolute; inset: 0; background: transparent; border: none; padding: 0; margin: 0; cursor: pointer; z-index: 2; }
-@media (min-width: 1024px) { .mapTapOverlay { display: none; } }
-.mapFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
-.mapLink { color: #B8873B; font-weight: 700; font-size: 15px; text-decoration: none; }
-.mapLink:hover { text-decoration: underline; }
-.mapCaption { font-size: 14px; color: #7A6B5B; margin: 0; }
+
+.sectionNote { text-align: center; font-size: 14px; color: #7A6B5B; margin: 28px 0 0; }
 
 /* ── 사진 라이트박스 (모자이크/공간 둘러보기/평면도/지그재그 공용) ── */
 .lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(20,14,8,0.92); display: flex; align-items: center; justify-content: center; }

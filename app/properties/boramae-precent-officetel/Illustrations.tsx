@@ -91,19 +91,6 @@ export function BuildingIllustration() {
   );
 }
 
-// f) 이런 분께 추천 — 사람(단순 도형)과 집
-export function TargetIllustration() {
-  return (
-    <Base viewBox="0 0 160 160">
-      <rect x="86" y="84" width="48" height="52" fill={CREAM} stroke={INK} strokeWidth="2.5" />
-      <path d="M80 84 L110 56 L140 84 Z" fill={PAPER} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />
-      <rect x="102" y="104" width="16" height="32" rx="2" fill={GOLD} />
-      <circle cx="38" cy="58" r="14" fill={PAPER} stroke={INK} strokeWidth="3" />
-      <path d="M18 138c0-28 40-28 40 0" fill={CREAM} stroke={INK} strokeWidth="3" />
-    </Base>
-  );
-}
-
 // g) FAQ 제목 옆 — 말풍선 + 물음표(모양만, <text> 아님)
 export function FaqIllustration() {
   return (
