@@ -9,6 +9,11 @@ import CountUpValue from './CountUpValue';
 import PhotoLightbox, { type LightboxState } from './PhotoLightbox';
 import { notoSansKR, notoSerifKR } from './fonts';
 import { photoTagLabel } from '@/lib/precentOfficetelTags';
+import { OFFICETEL_MAP_EMBED_SRC, OFFICETEL_MAP_SEARCH_URL } from './mapConstants';
+import {
+  BenefitIllustration, ComplexIllustration, BuildingIllustration, TargetIllustration, FaqIllustration,
+  ITEM_ICON_MAP, matchItemIcon, LOCATION_ICON_MAP, matchLocationIcon,
+} from './Illustrations';
 import styles from './officetel.module.css';
 
 // select('*')로 읽으므로(아래 "SQL 실행 전에도 정상 동작" 참고) 모든 필드를 optional로 둔다 —
@@ -88,9 +93,10 @@ export function parseStats(text?: string | null): StatItem[] {
   });
 }
 
-function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
+function SectionHead({ eyebrow, title, sub, icon }: { eyebrow: string; title: string; sub?: string; icon?: React.ReactNode }) {
   return (
     <div className={styles.sectionHead} data-reveal>
+      {icon && <span className={styles.sectionHeadIcon}>{icon}</span>}
       <span className={styles.eyebrow}>{eyebrow}</span>
       <h2 className={styles.sectionTitle}>{title}</h2>
       <span className={styles.titleBar} />
@@ -114,29 +120,35 @@ function CheckList({ lines, emphasizeFirst }: { lines: string[]; emphasizeFirst?
   );
 }
 
-// 단지 개요/입지·교통/건물 특징 옆에 태그 사진이 있을 때만 2열(사진+글)로, 없으면 children만 그대로.
+// 단지 개요/건물 특징/추천 대상 옆에 태그 사진이 있으면 사진을, 없으면 전달받은 일러스트를
+// 2열(데스크톱)로 보여준다. 사진도 일러스트도 없을 때만 children만 그대로 보여준다.
 function ZigzagWrap({
-  photo, side, tagValue, onOpen, children,
+  photo, side, tagValue, onOpen, illustration, children,
 }: {
   photo?: OfficetelPhoto;
   side: 'left' | 'right';
-  tagValue: string;
+  tagValue?: string;
   onOpen: (photo: OfficetelPhoto) => void;
+  illustration?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  if (!photo) return <>{children}</>;
+  if (!photo && !illustration) return <>{children}</>;
   return (
     <div className={`${styles.zigzag} ${side === 'left' ? styles.zigzagImageLeft : styles.zigzagImageRight}`} data-reveal>
       <div className={styles.zigzagImage}>
-        <button type="button" className={styles.zigzagImageWrap} onClick={() => onOpen(photo)} aria-label="사진 확대">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photo.url}
-            alt={photo.caption || `프리센트 오피스텔 ${photoTagLabel(tagValue)}`}
-            loading="lazy"
-            className={styles.zigzagImg}
-          />
-        </button>
+        {photo ? (
+          <button type="button" className={styles.zigzagImageWrap} onClick={() => onOpen(photo)} aria-label="사진 확대">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url}
+              alt={photo.caption || `프리센트 오피스텔 ${photoTagLabel(tagValue)}`}
+              loading="lazy"
+              className={styles.zigzagImg}
+            />
+          </button>
+        ) : (
+          <div className={styles.zigzagIlluWrap}>{illustration}</div>
+        )}
       </div>
       <div className={styles.zigzagContent}>{children}</div>
     </div>
@@ -318,11 +330,16 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         <section className={styles.sectionLight}>
           <div className={`${styles.wrap} ${styles.wrapNarrow}`}>
             <SectionHead eyebrow={`${sectionNum()} · Benefit`} title="특별 혜택" />
-            <div className={styles.benefitCard} data-reveal>
-              <h3 className={styles.benefitTitle}>{data.guarantee_title}</h3>
-              <p className={styles.benefitBody}>
-                {data.guarantee_detail || '보장 금액 및 세부 조건은 문의 시 안내드립니다.'}
-              </p>
+            <div className={styles.benefitGrid} data-reveal>
+              <div className={styles.benefitIlluWrap}>
+                <BenefitIllustration />
+              </div>
+              <div className={styles.benefitCard}>
+                <h3 className={styles.benefitTitle}>{data.guarantee_title}</h3>
+                <p className={styles.benefitBody}>
+                  {data.guarantee_detail || '보장 금액 및 세부 조건은 문의 시 안내드립니다.'}
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -366,9 +383,15 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
       {/* ── 단지 개요 ── */}
       {overviewRows.length > 0 && (
         <section className={styles.sectionAlt}>
-          <div className={`${styles.wrap} ${exteriorPhoto ? '' : styles.wrapNarrow}`}>
+          <div className={styles.wrap}>
             <SectionHead eyebrow={`${sectionNum()} · Complex`} title="단지 개요" />
-            <ZigzagWrap photo={exteriorPhoto} side="left" tagValue="exterior" onOpen={p => openLightbox([p], 0)}>
+            <ZigzagWrap
+              photo={exteriorPhoto}
+              side="left"
+              tagValue="exterior"
+              onOpen={p => openLightbox([p], 0)}
+              illustration={<ComplexIllustration />}
+            >
               <div className={styles.overviewTable} data-reveal>
                 {overviewRows.map((row, i) => (
                   <div key={i} className={`${styles.overviewRow}${row.label ? '' : ` ${styles.full}`}`}>
@@ -388,27 +411,72 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
           <div className={`${styles.wrap} ${styles.wrapNarrow}`}>
             <SectionHead eyebrow={`${sectionNum()} · Items`} title="기본 제공 품목" />
             <div className={styles.itemsGrid}>
-              {itemLines.map((line, i) => (
-                <div key={i} className={styles.itemChip} data-reveal-card>
-                  <span className={styles.itemIcon}>
-                    <Check size={16} color="#B8873B" strokeWidth={2.6} />
-                  </span>
-                  <span>{line}</span>
-                </div>
-              ))}
+              {itemLines.map((line, i) => {
+                const Icon = ITEM_ICON_MAP[matchItemIcon(line)];
+                return (
+                  <div key={i} className={styles.itemCard} data-reveal-card>
+                    <span className={styles.itemCardIconWrap}><Icon /></span>
+                    <span className={styles.itemCardText}>{line}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
       )}
 
-      {/* ── 입지·교통 ── */}
+      {/* ── 입지·교통: 지도(+사진이 있으면 함께), 아래에 아이콘 목록 ── */}
       {locationLines.length > 0 && (
         <section className={styles.sectionAlt}>
-          <div className={`${styles.wrap} ${aroundPhoto ? '' : styles.wrapNarrow}`}>
+          <div className={styles.wrap}>
             <SectionHead eyebrow={`${sectionNum()} · Location`} title="입지·교통" />
-            <ZigzagWrap photo={aroundPhoto} side="right" tagValue="around" onOpen={p => openLightbox([p], 0)}>
-              <CheckList lines={locationLines} emphasizeFirst />
-            </ZigzagWrap>
+            <div
+              className={`${styles.mapRow} ${aroundPhoto ? styles.mapRowWithPhoto : styles.mapRowSingle}`}
+              data-reveal
+            >
+              <div className={styles.mapFrameWrap}>
+                <iframe
+                  src={OFFICETEL_MAP_EMBED_SRC}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="동작 보라매역 프리센트 위치 지도"
+                  className={styles.mapFrame}
+                />
+              </div>
+              {aroundPhoto && (
+                <button
+                  type="button"
+                  className={styles.mapPhotoWrap}
+                  onClick={() => openLightbox([aroundPhoto], 0)}
+                  aria-label="주변 사진 확대"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={aroundPhoto.url}
+                    alt={aroundPhoto.caption || `프리센트 오피스텔 ${photoTagLabel('around')}`}
+                    loading="lazy"
+                    className={styles.mapPhotoImg}
+                  />
+                </button>
+              )}
+            </div>
+            <div className={styles.mapFooter}>
+              <a href={OFFICETEL_MAP_SEARCH_URL} target="_blank" rel="noopener noreferrer" className={styles.mapLink}>
+                지도 크게 보기 →
+              </a>
+              <p className={styles.mapCaption}>지도는 대략적인 위치이며 실제와 다를 수 있습니다.</p>
+            </div>
+            <div className={styles.locationListWrap} data-reveal>
+              {locationLines.map((line, i) => {
+                const Icon = LOCATION_ICON_MAP[matchLocationIcon(line)];
+                return (
+                  <div key={i} className={styles.iconListItem}>
+                    <span className={styles.iconListIconWrap}><Icon /></span>
+                    <span className={i === 0 ? styles.checkItemStrong : undefined}>{line}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
@@ -416,9 +484,15 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
       {/* ── 건물·주거 특징 ── */}
       {buildingLines.length > 0 && (
         <section className={styles.sectionLight}>
-          <div className={`${styles.wrap} ${viewPhoto ? '' : styles.wrapNarrow}`}>
+          <div className={styles.wrap}>
             <SectionHead eyebrow={`${sectionNum()} · Building`} title="건물·주거 특징" />
-            <ZigzagWrap photo={viewPhoto} side="left" tagValue="view" onOpen={p => openLightbox([p], 0)}>
+            <ZigzagWrap
+              photo={viewPhoto}
+              side="right"
+              tagValue="view"
+              onOpen={p => openLightbox([p], 0)}
+              illustration={<BuildingIllustration />}
+            >
               <CheckList lines={buildingLines} />
             </ZigzagWrap>
           </div>
@@ -428,9 +502,11 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
       {/* ── 이런 분께 추천 ── */}
       {targetLines.length > 0 && (
         <section className={styles.sectionAlt}>
-          <div className={`${styles.wrap} ${styles.wrapNarrow}`}>
+          <div className={styles.wrap}>
             <SectionHead eyebrow={`${sectionNum()} · Who`} title="이런 분께 추천합니다" />
-            <CheckList lines={targetLines} />
+            <ZigzagWrap side="left" onOpen={p => openLightbox([p], 0)} illustration={<TargetIllustration />}>
+              <CheckList lines={targetLines} />
+            </ZigzagWrap>
           </div>
         </section>
       )}
@@ -441,7 +517,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
       {faqItems.length > 0 && (
         <section className={styles.sectionLight}>
           <div className={`${styles.wrap} ${styles.wrapNarrow}`}>
-            <SectionHead eyebrow={`${sectionNum()} · FAQ`} title="자주 묻는 질문" />
+            <SectionHead eyebrow={`${sectionNum()} · FAQ`} title="자주 묻는 질문" icon={<FaqIllustration />} />
             <div data-reveal>
               {faqItems.map((item, i) => (
                 <details key={i} className={styles.faqItem}>

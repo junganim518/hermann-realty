@@ -34,6 +34,8 @@
 
 /* ── 섹션 제목 ── */
 .sectionHead { text-align: center; margin-bottom: 36px; }
+.sectionHeadIcon { display: block; width: 40px; height: 40px; margin: 0 auto 10px; }
+.sectionHeadIcon svg { width: 100%; height: 100%; display: block; }
 .eyebrow {
   display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 2.5px;
   color: #B8873B; text-transform: uppercase; margin: 0 0 10px;
@@ -110,6 +112,13 @@
 }
 
 /* ── 특별 혜택 ── */
+.benefitGrid { display: grid; grid-template-columns: 200px 1fr; gap: 28px; align-items: center; }
+@media (max-width: 767px) { .benefitGrid { grid-template-columns: 1fr; gap: 20px; } }
+.benefitIlluWrap {
+  width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  background: #FBF2E3; border: 1px solid #E3C691; border-radius: 20px; padding: 16px; box-sizing: border-box;
+}
+.benefitIlluWrap svg { width: 100%; height: 100%; }
 .benefitCard {
   position: relative; background: #FBF2E3; border: 1px solid #E3C691; border-radius: 20px;
   padding: 28px 26px; margin-top: 8px; overflow: hidden;
@@ -136,19 +145,25 @@
   .overviewLabel { padding-bottom: 4px; }
 }
 
-/* ── 기본 제공 품목 ── */
-.itemsGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-@media (max-width: 479px) { .itemsGrid { grid-template-columns: 1fr; } }
-.itemChip {
-  display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E7DAC4;
-  border-radius: 14px; padding: 16px 18px; font-size: 16px; color: #3A2F26;
+/* ── 기본 제공 품목: 아이콘 카드 그리드 ── */
+.itemsGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (min-width: 600px) { .itemsGrid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .itemsGrid { grid-template-columns: repeat(4, 1fr); } }
+.itemCard {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;
+  background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 16px; padding: 24px 14px;
   box-shadow: 0 4px 16px rgba(90,70,40,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-@media (min-width: 768px) { .itemChip { font-size: 17px; } }
 @media (hover: hover) and (pointer: fine) {
-  .itemChip:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(90,70,40,0.12); }
+  .itemCard:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(90,70,40,0.12); }
 }
-.itemIcon { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: rgba(184,135,59,0.12); display: flex; align-items: center; justify-content: center; }
+.itemCardIconWrap {
+  width: 52px; height: 52px; border-radius: 50%; background: rgba(184,135,59,0.12);
+  display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
+}
+.itemCardIconWrap svg { width: 100%; height: 100%; }
+.itemCardText { font-size: 15px; color: #3A2F26; font-weight: 500; line-height: 1.4; }
+@media (min-width: 768px) { .itemCardText { font-size: 16px; } }
 
 /* ── 체크 목록 (입지/건물/추천) ── */
 .checkList { display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none; }
@@ -220,11 +235,49 @@
   box-shadow: 0 10px 30px rgba(90,70,40,0.1);
 }
 .zigzagImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.zigzagIlluWrap {
+  width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; background: #F3EADB; border: 1px solid #E7DAC4;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(90,70,40,0.06);
+  box-sizing: border-box;
+}
+.zigzagIlluWrap svg { max-height: 200px; max-width: 70%; width: auto; height: auto; }
 @media (max-width: 1023px) {
   .zigzag { grid-template-columns: 1fr; gap: 24px; }
   .zigzagImage { order: 1 !important; }
   .zigzagContent { order: 2 !important; }
 }
+
+/* ── 입지·교통 지도 ── */
+.mapRow { display: grid; gap: 20px; }
+.mapRowSingle { grid-template-columns: 1fr; }
+.mapRowWithPhoto { grid-template-columns: 1.4fr 1fr; }
+@media (max-width: 1023px) { .mapRowWithPhoto { grid-template-columns: 1fr; } }
+.mapFrameWrap {
+  width: 100%; height: 380px; border-radius: 16px; overflow: hidden; border: 1px solid #E7DAC4;
+  box-shadow: 0 10px 30px rgba(90,70,40,0.08); box-sizing: border-box;
+}
+.mapFrame { width: 100%; height: 100%; border: 0; display: block; }
+.mapPhotoWrap {
+  display: block; width: 100%; height: 380px; border: none; padding: 0; cursor: pointer;
+  border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(90,70,40,0.08);
+}
+.mapPhotoImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 767px) {
+  .mapFrameWrap, .mapPhotoWrap { height: 280px; }
+}
+.mapFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.mapLink { color: #B8873B; font-weight: 700; font-size: 15px; text-decoration: none; }
+.mapLink:hover { text-decoration: underline; }
+.mapCaption { font-size: 13px; color: #7A6B5B; margin: 0; }
+
+.locationListWrap { display: flex; flex-direction: column; gap: 18px; margin-top: 32px; }
+.iconListItem { display: flex; align-items: flex-start; gap: 16px; font-size: 17px; color: #3A2F26; line-height: 1.8; }
+@media (min-width: 768px) { .iconListItem { font-size: 18px; } }
+.iconListIconWrap {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: rgba(184,135,59,0.12);
+  display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box; margin-top: 2px;
+}
+.iconListIconWrap svg { width: 100%; height: 100%; }
 
 /* ── 사진 라이트박스 (모자이크/공간 둘러보기/평면도/지그재그 공용) ── */
 .lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(20,14,8,0.92); display: flex; align-items: center; justify-content: center; }
