@@ -2,12 +2,26 @@
   오피스텔 소개 페이지 전용 스타일 — CSS Module이라 클래스명이 빌드 시 해시되어
   이 페이지(그리고 같은 OfficetelLanding을 쓰는 관리자 미리보기) 밖으로 새어나가지 않는다.
   전역 CSS(app/globals.css)나 다른 페이지 스타일은 전혀 건드리지 않음.
+
+  ── 색상 변수(.root에서 한 번만 정의, 모든 규칙은 var()로만 참조) ──
+  나중에 베이지 등 다른 톤으로 바꿀 때 이 블록만 고치면 된다. 버튼은 사이트 공통 주황 톤 유지.
 */
 
 .root {
+  --of-bg: #0F0F10;           /* 페이지 배경 */
+  --of-bg-alt: #17171A;       /* 교차 섹션 배경 */
+  --of-card-bg: #1E1E22;      /* 카드/입력칸 배경 */
+  --of-table-head-bg: #25252A;/* 표 항목 열 배경 */
+  --of-border: #2E2E34;       /* 테두리 */
+  --of-text: #F2EEE6;         /* 본문 글자 (bg 대비 약 17:1) */
+  --of-text-soft: #B3ADA3;    /* 보조 글자 (bg 대비 약 7.3:1) */
+  --of-gold: #C9A15B;         /* 포인트 골드 */
+  --of-btn: #c47c30;          /* 버튼(사이트 공통 주황 톤 유지) */
+  --of-btn-hover: #a8642a;
+
   font-family: var(--of-font-sans), 'Pretendard', sans-serif;
-  background: #FBF7F0;
-  color: #3A2F26;
+  background: var(--of-bg);
+  color: var(--of-text);
   font-size: 17px;
   line-height: 1.8;
 }
@@ -24,9 +38,10 @@
 /* ── 레이아웃 ── */
 .wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; }
 .wrapNarrow { max-width: 820px; }
+.wrapWide { max-width: 1120px; }
 
-.sectionLight { padding: 56px 0; background: #FBF7F0; }
-.sectionAlt { padding: 56px 0; background: #F3EADB; }
+.sectionLight { padding: 56px 0; background: var(--of-bg); }
+.sectionAlt { padding: 56px 0; background: var(--of-bg-alt); }
 @media (max-width: 767px) {
   .sectionLight, .sectionAlt { padding: 40px 0; }
   .wrap { padding: 0 18px; }
@@ -38,18 +53,18 @@
 .sectionHeadIcon svg { width: 100%; height: 100%; display: block; }
 .eyebrow {
   display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 2.5px;
-  color: #B8873B; text-transform: uppercase; margin: 0 0 10px;
+  color: var(--of-gold); text-transform: uppercase; margin: 0 0 10px;
 }
 .sectionTitle {
-  font-size: 26px; font-weight: 700; color: #3A2F26; margin: 0; letter-spacing: -0.3px;
+  font-size: 26px; font-weight: 700; color: var(--of-text); margin: 0; letter-spacing: -0.3px;
 }
 @media (min-width: 768px) {
   .sectionTitle { font-size: 34px; }
 }
-.titleBar { display: block; width: 52px; height: 3px; background: #B8873B; border-radius: 2px; margin: 16px auto 0; }
-.sectionSub { font-size: 15px; color: #7A6B5B; text-align: center; margin: 14px 0 0; }
+.titleBar { display: block; width: 52px; height: 3px; background: var(--of-gold); border-radius: 2px; margin: 16px auto 0; }
+.sectionSub { font-size: 15px; color: var(--of-text-soft); text-align: center; margin: 14px 0 0; }
 
-/* ── 히어로 (레이아웃은 그대로, 색만 새 골드 톤으로 조화) ── */
+/* ── 히어로 (레이아웃은 그대로, 배지/버튼 색만 새 다크 톤에 맞게 조정) ── */
 .heroSection { background: #0a0a1e; color: #fff; font-family: var(--of-font-sans), sans-serif; }
 .heroSplit { display: grid; grid-template-columns: 55fr 45fr; max-width: 1200px; margin: 0 auto; min-height: 380px; }
 .heroLeft { padding: 52px 52px 52px 24px; display: flex; flex-direction: column; justify-content: center; }
@@ -57,8 +72,8 @@
 .heroRight img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .heroOverlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(10,10,30,0.8) 0%, rgba(10,10,30,0.2) 60%, transparent 100%); pointer-events: none; }
 .heroBadge {
-  display: inline-block; background: rgba(184,135,59,0.2); border: 1px solid rgba(184,135,59,0.45);
-  color: #e6c284; font-size: 12px; font-weight: 700; letter-spacing: 2.5px; padding: 6px 16px;
+  display: inline-block; background: rgba(201,161,91,0.18); border: 1px solid rgba(201,161,91,0.45);
+  color: var(--of-gold); font-size: 12px; font-weight: 700; letter-spacing: 2.5px; padding: 6px 16px;
   border-radius: 20px; margin-bottom: 22px; width: fit-content;
 }
 .heroTitle { font-family: var(--of-font-serif), serif; font-size: 30px; font-weight: 700; line-height: 1.3; margin: 0 0 16px; letter-spacing: -0.3px; }
@@ -66,22 +81,22 @@
 .heroSummary { font-size: 16px; color: #cfc7bb; line-height: 1.8; margin: 0; }
 @media (min-width: 768px) { .heroSummary { font-size: 18px; } }
 .heroSpecRow { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 30px; }
-.heroChip { background: rgba(184,135,59,0.14); border: 1px solid rgba(184,135,59,0.4); color: #e6c284; font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 20px; }
+.heroChip { background: rgba(201,161,91,0.14); border: 1px solid rgba(201,161,91,0.4); color: var(--of-gold); font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 20px; }
 .ctaGroup { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .ctaBtn {
-  display: inline-flex; align-items: center; gap: 8px; background: #c47c30; color: #fff;
+  display: inline-flex; align-items: center; gap: 8px; background: var(--of-btn); color: #fff;
   font-size: 16px; font-weight: 700; padding: 15px 32px; min-height: 52px; border-radius: 10px;
   text-decoration: none; transition: background 0.15s, transform 0.15s; white-space: nowrap; box-sizing: border-box;
 }
 .ctaOutline {
   display: inline-flex; align-items: center; gap: 8px; background: transparent; color: rgba(255,255,255,0.9);
-  border: 1px solid rgba(230,194,132,0.45); font-size: 16px; font-weight: 600; padding: 15px 26px; min-height: 52px;
+  border: 1px solid rgba(201,161,91,0.45); font-size: 16px; font-weight: 600; padding: 15px 26px; min-height: 52px;
   border-radius: 10px; text-decoration: none; transition: border-color 0.15s, color 0.15s, transform 0.15s;
   white-space: nowrap; box-sizing: border-box;
 }
 @media (hover: hover) and (pointer: fine) {
-  .ctaBtn:hover { background: #a8642a; transform: translateY(-2px); }
-  .ctaOutline:hover { border-color: #e6c284; color: #e6c284; transform: translateY(-2px); }
+  .ctaBtn:hover { background: var(--of-btn-hover); transform: translateY(-2px); }
+  .ctaOutline:hover { border-color: var(--of-gold); color: var(--of-gold); transform: translateY(-2px); }
 }
 @media (max-width: 767px) {
   .heroSplit { grid-template-columns: 1fr; min-height: auto; }
@@ -96,20 +111,20 @@
 .infoGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 @media (min-width: 768px) { .infoGrid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
 .infoCard {
-  display: flex; align-items: center; gap: 14px; background: #FFFFFF; border: 1px solid #E7DAC4;
-  border-radius: 16px; padding: 16px 18px; box-shadow: 0 4px 16px rgba(90,70,40,0.06);
+  display: flex; align-items: center; gap: 14px; background: var(--of-card-bg); border: 1px solid var(--of-border);
+  border-radius: 16px; padding: 16px 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .infoIconWrap {
-  flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(184,135,59,0.12);
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(201,161,91,0.16);
   display: flex; align-items: center; justify-content: center;
 }
 .infoTextWrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.infoLabel { font-size: 14px; font-weight: 500; color: #7A6B5B; }
-.infoValue { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 18px; color: #3A2F26; line-height: 1.3; }
+.infoLabel { font-size: 14px; font-weight: 500; color: var(--of-text-soft); }
+.infoValue { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 18px; color: var(--of-text); line-height: 1.3; }
 @media (min-width: 768px) { .infoValue { font-size: 20px; } }
 @media (hover: hover) and (pointer: fine) {
-  .infoCard:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(90,70,40,0.15); }
+  .infoCard:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
 }
 
 /* ── 특별 혜택 ── */
@@ -117,27 +132,42 @@
 @media (max-width: 767px) { .benefitGrid { grid-template-columns: 1fr; gap: 20px; } }
 .benefitIlluWrap {
   width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  background: #FBF2E3; border: 1px solid #E3C691; border-radius: 20px; padding: 16px; box-sizing: border-box;
+  background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 20px; padding: 16px; box-sizing: border-box;
 }
 .benefitIlluWrap svg { width: 100%; height: 100%; }
 .benefitCard {
-  position: relative; background: #FBF2E3; border: 1px solid #E3C691; border-radius: 20px;
+  position: relative; background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 20px;
   padding: 28px 26px; margin-top: 8px; overflow: hidden;
 }
 @media (min-width: 768px) { .benefitCard { padding: 40px 44px; } }
-.benefitCard::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: #B8873B; }
-.benefitTitle { font-family: var(--of-font-serif), serif; font-size: 22px; font-weight: 700; color: #8a6425; margin: 0 0 14px; }
+.benefitCard::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--of-gold); }
+.benefitTitle { font-family: var(--of-font-serif), serif; font-size: 22px; font-weight: 700; color: var(--of-gold); margin: 0 0 14px; }
 @media (min-width: 768px) { .benefitTitle { font-size: 26px; } }
-.benefitBody { font-size: 17px; color: #4a3b2a; line-height: 1.85; margin: 0; white-space: pre-line; }
+.benefitBody { font-size: 17px; color: var(--of-text); line-height: 1.85; margin: 0; white-space: pre-line; }
 @media (min-width: 768px) { .benefitBody { font-size: 18px; } }
 
-/* ── 단지 개요 표 ── */
-.overviewTable { border-radius: 18px; overflow: hidden; border: 1px solid #E7DAC4; box-shadow: 0 6px 24px rgba(90,70,40,0.06); }
-.overviewRow { display: grid; grid-template-columns: 150px 1fr; border-bottom: 1px solid #E7DAC4; }
+/* ── 단지 개요: 풀폭 배너 + 표 ── */
+.complexBannerWrap { position: relative; }
+.complexBanner { display: block; width: 100%; height: 460px; border: none; padding: 0; margin: 0; cursor: pointer; position: relative; border-radius: 20px; overflow: hidden; }
+.complexBannerImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.complexBannerTableWrap {
+  position: absolute; right: 32px; bottom: 32px; width: min(420px, 90%);
+  background: rgba(23,23,26,0.88); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border-radius: 16px; padding: 4px; border: 1px solid var(--of-border); box-sizing: border-box;
+}
+@media (max-width: 1023px) {
+  .complexBanner { height: 260px; border-radius: 16px 16px 0 0; }
+  .complexBannerTableWrap {
+    position: static; width: 100%; background: var(--of-card-bg); backdrop-filter: none;
+    border-radius: 0 0 16px 16px; border-top: none;
+  }
+}
+.overviewTable { border-radius: 18px; overflow: hidden; border: 1px solid var(--of-border); }
+.overviewRow { display: grid; grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--of-border); }
 .overviewRow:last-child { border-bottom: none; }
 .overviewRow.full { grid-template-columns: 1fr; }
-.overviewLabel { background: #F3EADB; font-weight: 700; color: #3A2F26; padding: 16px 20px; font-size: 16px; display: flex; align-items: center; }
-.overviewValue { background: #FFFFFF; padding: 16px 20px; font-size: 16px; color: #3A2F26; line-height: 1.75; display: flex; align-items: center; }
+.overviewLabel { background: var(--of-table-head-bg); font-weight: 700; color: var(--of-text); padding: 16px 20px; font-size: 16px; display: flex; align-items: center; }
+.overviewValue { background: var(--of-card-bg); padding: 16px 20px; font-size: 16px; color: var(--of-text); line-height: 1.75; display: flex; align-items: center; }
 @media (min-width: 768px) {
   .overviewLabel, .overviewValue { font-size: 17px; padding: 18px 24px; }
 }
@@ -152,30 +182,30 @@
 @media (min-width: 1024px) { .itemsGrid { grid-template-columns: repeat(4, 1fr); } }
 .itemCard {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;
-  background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 16px; padding: 24px 14px;
-  box-shadow: 0 4px 16px rgba(90,70,40,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 16px; padding: 24px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3); transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 @media (hover: hover) and (pointer: fine) {
-  .itemCard:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(90,70,40,0.12); }
+  .itemCard:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.4); }
 }
 .itemCardIconWrap {
-  width: 52px; height: 52px; border-radius: 50%; background: rgba(184,135,59,0.12);
+  width: 52px; height: 52px; border-radius: 50%; background: rgba(201,161,91,0.16);
   display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
 }
 .itemCardIconWrap svg { width: 100%; height: 100%; }
-.itemCardText { font-size: 15px; color: #3A2F26; font-weight: 500; line-height: 1.4; }
+.itemCardText { font-size: 15px; color: var(--of-text); font-weight: 500; line-height: 1.4; }
 @media (min-width: 768px) { .itemCardText { font-size: 16px; } }
 
 .checkItemStrong { font-weight: 700; }
 
 /* ── 숫자 띠 ── */
-.statsBand { padding: 14px 0; background: #FFFFFF; border-bottom: 1px solid #E7DAC4; }
+.statsBand { padding: 14px 0; background: var(--of-bg-alt); border-bottom: 1px solid var(--of-border); }
 .statsGrid { display: flex; justify-content: space-between; gap: 12px; }
 .statItem { flex: 1; text-align: center; padding: 0 8px; position: relative; }
-.statItem + .statItem::before { content: ''; position: absolute; left: 0; top: 12%; bottom: 12%; width: 1px; background: #E7DAC4; }
-.statValue { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 24px; color: #3A2F26; white-space: nowrap; }
+.statItem + .statItem::before { content: ''; position: absolute; left: 0; top: 12%; bottom: 12%; width: 1px; background: var(--of-border); }
+.statValue { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 24px; color: var(--of-text); white-space: nowrap; }
 @media (min-width: 768px) { .statValue { font-size: 28px; } }
-.statLabel { font-size: 15px; color: #7A6B5B; margin-top: 6px; }
+.statLabel { font-size: 15px; color: var(--of-text-soft); margin-top: 6px; }
 @media (max-width: 639px) {
   .statsGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px 12px; }
   .statItem + .statItem::before { display: none; }
@@ -189,14 +219,14 @@
 .mosaicBig { grid-column: 1 / 3; grid-row: 1 / 3; }
 .mosaicTile {
   position: relative; display: block; width: 100%; overflow: hidden; border-radius: 14px;
-  border: none; padding: 0; background: #f3f4f6; cursor: pointer;
+  border: 1px solid var(--of-border); padding: 0; background: var(--of-card-bg); cursor: pointer;
 }
 .mosaicImg { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
 @media (hover: hover) and (pointer: fine) {
   .mosaicTile:hover .mosaicImg { transform: scale(1.04); }
 }
 .mosaicMore {
-  position: absolute; inset: 0; background: rgba(20,14,8,0.55); color: #fff;
+  position: absolute; inset: 0; background: rgba(0,0,0,0.6); color: #fff;
   display: flex; align-items: center; justify-content: center; text-align: center;
   font-size: 17px; font-weight: 700; font-family: var(--of-font-serif), serif; padding: 12px;
 }
@@ -208,95 +238,80 @@
 /* ── 평면도 ── */
 .floorplanRow { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 .floorplanCard {
-  display: block; flex: 1 1 320px; max-width: 480px; text-align: left; border: 1px solid #E7DAC4; cursor: pointer;
-  background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 6px 20px rgba(90,70,40,0.06);
+  display: block; flex: 1 1 320px; max-width: 480px; text-align: left; border: 1px solid var(--of-border); cursor: pointer;
+  background: var(--of-card-bg); border-radius: 16px; padding: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
-.floorplanImgWrap { position: relative; aspect-ratio: 4 / 3; background: #fff; border: 1px solid #F3EADB; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.floorplanImgWrap { position: relative; aspect-ratio: 4 / 3; background: #fff; border: 1px solid var(--of-border); border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .floorplanImg { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-.floorplanMeta { margin-top: 12px; font-size: 15px; color: #4a3b2a; line-height: 1.6; }
-.floorplanNote { text-align: center; font-size: 14px; color: #7A6B5B; margin: 20px 0 0; }
+.floorplanMeta { margin-top: 12px; font-size: 15px; color: var(--of-text-soft); line-height: 1.6; }
+.floorplanNote { text-align: center; font-size: 14px; color: var(--of-text-soft); margin: 20px 0 0; }
 
-/* ── 사진 + 글 줄(단지 개요/입지·교통/건물 특징·추천) ──
-   데스크톱 55%/45% 좌우 번갈아, 모바일은 사진 위(고정 높이)/글 아래. 줄 사이는 점선 구분. */
-.row { display: grid; grid-template-columns: 55% 45%; gap: 32px; align-items: center; padding: 32px 0; }
-.rowDivider { border-top: 1px dashed #E7DAC4; }
-.rowImgLeft .rowImage { order: 1; }
-.rowImgLeft .rowContent { order: 2; }
-.rowImgRight .rowImage { order: 2; }
-.rowImgRight .rowContent { order: 1; }
-.rowImgWrap {
-  display: block; width: 100%; border: none; padding: 0; cursor: pointer;
-  position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden;
-  box-shadow: 0 10px 30px rgba(90,70,40,0.1);
+/* ── 사진이 카드 전체를 채우는 photo-card(입지·주거 환경 4개 카드) ──
+   데스크톱 2x2(auto-fit + 카드 폭 440~560px + justify-content:center로 1~4개 모두 자연스럽게),
+   모바일 1열. 카드 전체가 버튼(사진일 때)/div(일러스트일 때)이며 이미지/일러스트가 배경을 꽉 채우고
+   아래쪽으로 갈수록 진해지는 그라데이션 위에 글자가 올라간다. */
+.photoCardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 560px)); gap: 24px; justify-content: center; align-items: stretch; }
+@media (max-width: 767px) { .photoCardGrid { grid-template-columns: 1fr; gap: 20px; } }
+.photoCard {
+  position: relative; display: block; width: 100%; min-height: 400px; border: 1px solid var(--of-border);
+  border-radius: 20px; overflow: hidden; padding: 0; margin: 0; background: var(--of-card-bg); cursor: default;
+  text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
-.rowImg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rowIlluWrap {
-  width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; background: #F3EADB; border: 1px solid #E7DAC4;
-  display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(90,70,40,0.06);
-  box-sizing: border-box;
+.photoCard:is(button) { cursor: pointer; }
+@media (max-width: 767px) { .photoCard { min-height: 360px; } }
+.photoCardImg {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.4s ease;
 }
-.rowIlluWrap svg { max-height: 200px; max-width: 70%; width: auto; height: auto; }
-.rowEyebrow {
-  display: block; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #B8873B;
-  text-transform: uppercase; margin-bottom: 8px;
+@media (hover: hover) and (pointer: fine) {
+  .photoCard:is(button):hover .photoCardImg { transform: scale(1.04); }
 }
-.rowTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 24px; color: #3A2F26; margin: 0 0 14px; }
-@media (min-width: 768px) { .rowTitle { font-size: 28px; } }
-.rowList { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
-.rowListItem { display: flex; align-items: flex-start; gap: 12px; font-size: 17px; color: #3A2F26; line-height: 1.7; }
-@media (min-width: 768px) { .rowListItem { font-size: 18px; } }
-.rowListIcon {
-  flex-shrink: 0; width: 30px; height: 30px; border-radius: 10px; background: rgba(184,135,59,0.12);
-  display: flex; align-items: center; justify-content: center; padding: 5px; box-sizing: border-box; margin-top: 1px;
+.photoCardIllu { position: absolute; inset: 0; }
+.photoCardIllu svg { width: 100%; height: 100%; display: block; }
+.photoCardOverlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.12) 72%, transparent 100%);
 }
-.rowListIcon svg { width: 100%; height: 100%; }
-@media (max-width: 767px) {
-  .row { grid-template-columns: 1fr; gap: 16px; padding: 24px 0; }
-  .rowImgLeft .rowImage, .rowImgRight .rowImage { order: 1; }
-  .rowImgLeft .rowContent, .rowImgRight .rowContent { order: 2; }
-  .rowImgWrap, .rowIlluWrap { aspect-ratio: auto; height: 220px; }
-  .rowTitle { font-size: 22px; }
+.photoCardBody { position: absolute; left: 0; right: 0; bottom: 0; padding: 24px; }
+.photoCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 26px; color: #fff; margin: 0 0 12px; }
+@media (min-width: 768px) { .photoCardTitle { font-size: 30px; } }
+@media (max-width: 767px) { .photoCardTitle { font-size: 24px; } }
+.photoCardList { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.photoCardItem { display: flex; align-items: flex-start; gap: 10px; font-size: 17px; color: rgba(255,255,255,0.9); line-height: 1.7; }
+@media (min-width: 768px) { .photoCardItem { font-size: 18px; } }
+.photoCardItemStrong { font-weight: 700; font-size: 18px; color: #fff; }
+@media (min-width: 768px) { .photoCardItemStrong { font-size: 20px; } }
+.photoCardIcon {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 8px; background: rgba(201,161,91,0.22);
+  display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; margin-top: 1px;
 }
+.photoCardIcon svg { width: 100%; height: 100%; }
 
 /* 사진/모자이크/라이트박스 공용 — 캡션에 "이미지컷"이 있으면 문구는 지우고 이 배지로만 표시 */
 .imageCutBadge {
-  position: absolute; right: 8px; bottom: 8px; background: rgba(20,14,8,0.65); color: #fff;
+  position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.65); color: #fff;
   font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; line-height: 1.4; z-index: 1;
 }
 
-/* ── 입지·주거 환경: 카드 4개(교통/생활 인프라/교육/건물·주거 특징) ──
-   auto-fit + 카드별 최대폭(400px) + justify-content:center 조합으로 카드가 1~4개 어느 경우에도
-   자연스럽게 배치됨(4개=2x2, 3개=2열+1, 1~2개=가운데 정렬) — 별도 분기 CSS 없이 한 규칙으로 처리. */
-.locCardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 400px)); gap: 24px; justify-content: center; align-items: stretch; }
-@media (max-width: 767px) { .locCardGrid { grid-template-columns: 1fr; gap: 20px; } }
-.locCard {
-  display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 16px;
-  overflow: hidden; box-shadow: 0 6px 20px rgba(90,70,40,0.06);
+/* ── 이런 분께 추천합니다 — 큰 카드 그리드 ──
+   데스크톱 auto-fit(4개=4열, 3개=3열, 2개=2열 가운데), 태블릿 2열 고정, 모바일 1열 고정. */
+.targetGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 260px)); gap: 20px; justify-content: center; }
+@media (max-width: 1023px) and (min-width: 600px) { .targetGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 599px) { .targetGrid { grid-template-columns: 1fr; } }
+.targetCard {
+  min-height: 240px; background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 18px;
+  padding: 28px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
-.locCardImageWrap { width: 100%; height: 170px; flex-shrink: 0; }
-@media (max-width: 767px) { .locCardImageWrap { height: 140px; } }
-.locCardImgBtn { display: block; width: 100%; height: 100%; border: none; padding: 0; margin: 0; cursor: pointer; position: relative; }
-.locCardImg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.locCardIlluWrap { width: 100%; height: 100%; background: #F3EADB; display: flex; align-items: center; justify-content: center; }
-.locCardIlluWrap svg { max-height: 70%; max-width: 60%; width: auto; height: auto; }
-.locCardBody { padding: 20px; display: flex; flex-direction: column; flex: 1; }
-@media (min-width: 768px) { .locCardBody { padding: 24px; } }
-.locCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 22px; color: #3A2F26; margin: 0 0 14px; }
-@media (min-width: 768px) { .locCardTitle { font-size: 24px; } }
+.targetCardIcon { width: 64px; height: 64px; }
+.targetCardIcon svg { width: 100%; height: 100%; display: block; }
+.targetCardTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 22px; color: var(--of-text); margin: 0; }
+.targetCardDesc { font-size: 17px; color: var(--of-text-soft); line-height: 1.6; margin: 0; }
 
-/* ── 이런 분께 추천 — 칩 영역 ── */
-.targetChipsWrap { margin-top: 36px; }
-.targetChipsTitle { font-family: var(--of-font-serif), serif; font-weight: 700; font-size: 20px; color: #3A2F26; margin: 0 0 16px; }
-.targetChips { display: flex; flex-wrap: wrap; gap: 10px; }
-.targetChip {
-  display: inline-flex; align-items: center; gap: 6px; background: #F3EADB; border: 1px solid #E7DAC4;
-  color: #3A2F26; font-size: 15px; font-weight: 500; padding: 8px 16px; border-radius: 999px;
-}
+.sectionNote { text-align: center; font-size: 14px; color: var(--of-text-soft); margin: 28px 0 0; }
 
-.sectionNote { text-align: center; font-size: 14px; color: #7A6B5B; margin: 28px 0 0; }
-
-/* ── 사진 라이트박스 (모자이크/공간 둘러보기/평면도/지그재그 공용) ── */
-.lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(20,14,8,0.92); display: flex; align-items: center; justify-content: center; }
+/* ── 사진 라이트박스 (모자이크/photo-card/평면도/단지 개요 배너 공용) ── */
+.lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; }
 .lightboxClose {
   position: absolute; top: 14px; right: 18px; background: none; border: none; color: rgba(255,255,255,0.75);
   font-size: 28px; cursor: pointer; line-height: 1; padding: 6px 10px; z-index: 1;
@@ -322,61 +337,61 @@
 
 /* ── FAQ ── */
 .faqItem {
-  background: #FFFFFF; border: 1px solid #E7DAC4; border-radius: 16px; margin-bottom: 14px;
-  box-shadow: 0 4px 16px rgba(90,70,40,0.05); overflow: hidden;
+  background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 16px; margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3); overflow: hidden;
 }
 .faqQ {
   display: flex; align-items: center; gap: 14px; padding: 18px 20px; cursor: pointer;
-  font-size: 16px; font-weight: 700; color: #3A2F26; list-style: none;
+  font-size: 16px; font-weight: 700; color: var(--of-text); list-style: none;
 }
 @media (min-width: 768px) { .faqQ { font-size: 17px; padding: 20px 24px; } }
 .faqQ::-webkit-details-marker { display: none; }
 .faqBadge {
-  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: #B8873B; color: #fff;
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--of-gold); color: #1a1a1a;
   font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center;
   font-family: var(--of-font-serif), serif;
 }
 .faqQText { flex: 1; }
-.faqToggle { flex-shrink: 0; font-size: 22px; font-weight: 300; color: #B8873B; transition: transform 0.2s ease; }
+.faqToggle { flex-shrink: 0; font-size: 22px; font-weight: 300; color: var(--of-gold); transition: transform 0.2s ease; }
 .faqItem[open] .faqToggle { transform: rotate(45deg); }
-.faqA { padding: 0 20px 20px 64px; font-size: 16px; color: #7A6B5B; line-height: 1.85; white-space: pre-line; }
+.faqA { padding: 0 20px 20px 64px; font-size: 16px; color: var(--of-text-soft); line-height: 1.85; white-space: pre-line; }
 @media (min-width: 768px) { .faqA { font-size: 17px; padding: 0 24px 22px 68px; } }
 @media (max-width: 480px) { .faqA { padding-left: 20px; } }
 
 /* ── 추가 소개 ── */
-.introText { font-size: 17px; color: #3A2F26; line-height: 1.9; margin: 0; white-space: pre-line; }
+.introText { font-size: 17px; color: var(--of-text); line-height: 1.9; margin: 0; white-space: pre-line; }
 @media (min-width: 768px) { .introText { font-size: 18px; } }
 
 /* ── 문의 섹션 ── */
 .inquiryGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
 @media (max-width: 1023px) { .inquiryGrid { grid-template-columns: 1fr; gap: 32px; } }
-.inquiryHeading { font-family: var(--of-font-serif), serif; font-size: 28px; font-weight: 700; color: #3A2F26; line-height: 1.35; margin: 0 0 20px; }
+.inquiryHeading { font-family: var(--of-font-serif), serif; font-size: 28px; font-weight: 700; color: var(--of-text); line-height: 1.35; margin: 0 0 20px; }
 @media (min-width: 768px) { .inquiryHeading { font-size: 34px; } }
-.inquiryGold { color: #B8873B; }
-.inquiryLead { font-size: 17px; color: #7A6B5B; line-height: 1.85; margin: 0 0 30px; }
+.inquiryGold { color: var(--of-gold); }
+.inquiryLead { font-size: 17px; color: var(--of-text-soft); line-height: 1.85; margin: 0 0 30px; }
 .contactRow { display: flex; align-items: center; gap: 14px; }
-.contactIconWrap { width: 48px; height: 48px; background: #c47c30; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.contactIconWrapSoft { width: 48px; height: 48px; background: #F3EADB; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.contactLabel { font-size: 13px; color: #7A6B5B; margin-bottom: 3px; }
-.contactValue { font-size: 19px; font-weight: 700; color: #3A2F26; }
-.contactValueSoft { font-size: 16px; font-weight: 600; color: #3A2F26; }
+.contactIconWrap { width: 48px; height: 48px; background: var(--of-btn); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contactIconWrapSoft { width: 48px; height: 48px; background: var(--of-card-bg); border: 1px solid var(--of-border); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contactLabel { font-size: 13px; color: var(--of-text-soft); margin-bottom: 3px; }
+.contactValue { font-size: 19px; font-weight: 700; color: var(--of-text); }
+.contactValueSoft { font-size: 16px; font-weight: 600; color: var(--of-text); }
 .inquiryCard {
-  background: #FFFFFF; border-radius: 20px; padding: 28px 24px; border: 1px solid #E7DAC4;
-  box-shadow: 0 10px 32px rgba(90,70,40,0.08);
+  background: var(--of-card-bg); border-radius: 20px; padding: 28px 24px; border: 1px solid var(--of-border);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.4);
 }
 @media (min-width: 768px) { .inquiryCard { padding: 36px; } }
-.inquiryCardTitle { font-family: var(--of-font-serif), serif; font-size: 20px; font-weight: 700; color: #3A2F26; margin: 0 0 22px; }
+.inquiryCardTitle { font-family: var(--of-font-serif), serif; font-size: 20px; font-weight: 700; color: var(--of-text); margin: 0 0 22px; }
 
 /* ── 모바일 하단 고정 문의 바 ── */
 .mobileBar {
   display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  background: rgba(251,247,240,0.97); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  border-top: 1px solid #E7DAC4; transition: transform 0.25s ease, opacity 0.25s ease;
+  background: rgba(15,15,16,0.95); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--of-border); transition: transform 0.25s ease, opacity 0.25s ease;
 }
 .mobileBarBtn {
   display: flex; align-items: center; justify-content: center; width: 100%; height: 52px;
-  background: #c47c30; color: #fff; font-size: 17px; font-weight: 700; border-radius: 12px;
+  background: var(--of-btn); color: #fff; font-size: 17px; font-weight: 700; border-radius: 12px;
   text-decoration: none; font-family: var(--of-font-sans), sans-serif;
 }
 .mobileBarHidden { transform: translateY(130%); opacity: 0; pointer-events: none; }
@@ -396,7 +411,7 @@
 }
 .jsReveal :global([data-reveal]).revealed { opacity: 1; transform: none; }
 
-/* 카드 그리드(핵심 정보/모자이크/공간 둘러보기)의 개별 카드 — nth-child로 최대 6개까지
+/* 카드 그리드(핵심 정보/모자이크/품목/photo-card/추천)의 개별 카드 — nth-child로 최대 6개까지
    80ms씩 지연을 줘서 순차 등장(stagger)처럼 보이게 함. 7번째 이후는 지연 없이 바로 등장. */
 .root :global([data-reveal-card]) { opacity: 1; transform: none; }
 .jsReveal :global([data-reveal-card]) {

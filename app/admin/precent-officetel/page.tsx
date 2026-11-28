@@ -396,7 +396,7 @@ export default function PrecentOfficetelAdminPage() {
               <AutoField value={page.building_text ?? ''} commit={commitField('building_text')} placeholder="미입력" autoGrow />
             </Section>
 
-            <Section title="이런 분께 추천">
+            <Section title="이런 분께 추천" help="한 줄에 하나씩 '제목 | 설명' 형식으로 적으세요. 설명은 생략할 수 있습니다.">
               <AutoField value={page.target_text ?? ''} commit={commitField('target_text')} placeholder="미입력" autoGrow />
             </Section>
 

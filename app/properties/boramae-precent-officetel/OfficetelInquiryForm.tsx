@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 const inSt: React.CSSProperties = {
-  width: '100%', height: '52px', border: '1px solid #E7DAC4', borderRadius: '10px',
-  padding: '0 16px', fontSize: '16px', outline: 'none', background: '#fff',
-  color: '#3A2F26', boxSizing: 'border-box',
+  width: '100%', height: '52px', border: '1px solid var(--of-border)', borderRadius: '10px',
+  padding: '0 16px', fontSize: '16px', outline: 'none', background: 'var(--of-card-bg)',
+  color: 'var(--of-text)', boxSizing: 'border-box',
 };
-const labelSt: React.CSSProperties = { display: 'block', fontSize: '15px', fontWeight: 600, color: '#3A2F26', marginBottom: '8px' };
+const labelSt: React.CSSProperties = { display: 'block', fontSize: '15px', fontWeight: 600, color: 'var(--of-text)', marginBottom: '8px' };
 
 const INTEREST_OPTIONS = ['실거주', '투자', '기타'];
 
@@ -51,14 +51,18 @@ export default function OfficetelInquiryForm() {
     return (
       <div style={{ textAlign: 'center', padding: '48px 20px' }}>
         <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
-        <p style={{ fontSize: '20px', fontWeight: 800, color: '#3A2F26', margin: '0 0 8px' }}>문의가 접수됐습니다</p>
-        <p style={{ fontSize: '15px', color: '#7A6B5B', margin: 0 }}>헤르만부동산에서 곧 연락드리겠습니다.</p>
+        <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--of-text)', margin: '0 0 8px' }}>문의가 접수됐습니다</p>
+        <p style={{ fontSize: '15px', color: 'var(--of-text-soft)', margin: 0 }}>헤르만부동산에서 곧 연락드리겠습니다.</p>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .of-input::placeholder { color: #8A857C; }
+        .of-input:focus { border-color: var(--of-gold) !important; }
+      ` }} />
       <div>
         <label style={labelSt}>관심 구분</label>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -69,9 +73,9 @@ export default function OfficetelInquiryForm() {
               onClick={() => setInterest(prev => prev === opt ? '' : opt)}
               style={{
                 flex: 1, height: '52px', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                border: interest === opt ? '1px solid #B8873B' : '1px solid #E7DAC4',
-                background: interest === opt ? '#FBF2E3' : '#fff',
-                color: interest === opt ? '#8a6425' : '#7A6B5B',
+                border: interest === opt ? '1px solid var(--of-gold)' : '1px solid var(--of-border)',
+                background: interest === opt ? 'rgba(201,161,91,0.16)' : 'var(--of-card-bg)',
+                color: interest === opt ? 'var(--of-gold)' : 'var(--of-text-soft)',
               }}
             >
               {opt}
@@ -82,23 +86,24 @@ export default function OfficetelInquiryForm() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <div>
           <label style={labelSt}>이름 *</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="홍길동" required style={inSt} />
+          <input type="text" className="of-input" value={name} onChange={e => setName(e.target.value)} placeholder="홍길동" required style={inSt} />
         </div>
         <div>
           <label style={labelSt}>연락처 *</label>
-          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" required style={inSt} />
+          <input type="tel" className="of-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" required style={inSt} />
         </div>
       </div>
       <div>
         <label style={labelSt}>문의 내용</label>
         <textarea
+          className="of-input"
           value={memo} onChange={e => setMemo(e.target.value)}
           placeholder="궁금하신 점을 자유롭게 남겨주세요"
           rows={3}
           style={{ ...inSt, height: 'auto', padding: '14px 16px', resize: 'vertical' }}
         />
       </div>
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '15px', color: '#7A6B5B' }}>
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '15px', color: 'var(--of-text-soft)' }}>
         <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: '3px', flexShrink: 0, width: '18px', height: '18px' }} />
         개인정보(이름·연락처)를 분양 상담 목적으로 수집·이용함에 동의합니다.
       </label>
