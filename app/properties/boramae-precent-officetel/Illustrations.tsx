@@ -118,6 +118,49 @@ export function FaqIllustration() {
   );
 }
 
+// 교통 줄(사진 없을 때) — 지하철+버스를 조합한 장면
+export function TransportRowIllustration() {
+  return (
+    <Base viewBox="0 0 160 120">
+      <rect x="10" y="30" width="60" height="40" rx="10" fill={CREAM} stroke={INK} strokeWidth="3" />
+      <circle cx="28" cy="48" r="6" fill={PAPER} stroke={GOLD} strokeWidth="2.4" />
+      <circle cx="52" cy="48" r="6" fill={PAPER} stroke={GOLD} strokeWidth="2.4" />
+      <line x1="10" y1="70" x2="70" y2="70" stroke={INK} strokeWidth="3" />
+      <circle cx="22" cy="78" r="4" fill={INK} />
+      <circle cx="58" cy="78" r="4" fill={INK} />
+      <rect x="88" y="38" width="62" height="34" rx="7" fill={PAPER} stroke={INK} strokeWidth="3" />
+      <rect x="96" y="46" width="12" height="10" fill={CREAM} stroke={GOLD} strokeWidth="2" />
+      <rect x="113" y="46" width="12" height="10" fill={CREAM} stroke={GOLD} strokeWidth="2" />
+      <rect x="130" y="46" width="12" height="10" fill={CREAM} stroke={GOLD} strokeWidth="2" />
+      <circle cx="100" cy="74" r="4" fill={INK} />
+      <circle cx="138" cy="74" r="4" fill={INK} />
+    </Base>
+  );
+}
+
+// 생활 인프라 줄(사진 없을 때) — 쇼핑백+나무(공원)를 조합한 장면
+export function InfraRowIllustration() {
+  return (
+    <Base viewBox="0 0 160 120">
+      <path d="M22 40h40l-4 40H26Z" fill={CREAM} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M30 40v-8a12 12 0 0 1 24 0v8" fill="none" stroke={GOLD} strokeWidth="3" />
+      <circle cx="120" cy="42" r="26" fill={CREAM} stroke={INK} strokeWidth="3" />
+      <rect x="113" y="64" width="14" height="22" fill={GOLD} />
+    </Base>
+  );
+}
+
+// 교육 줄(사진 없을 때) — 졸업모 일러스트를 큼직하게
+export function SchoolRowIllustration() {
+  return (
+    <Base viewBox="0 0 160 120">
+      <path d="M80 26 146 52 80 78 14 52Z" fill={CREAM} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <line x1="122" y1="58" x2="122" y2="88" stroke={GOLD} strokeWidth="3" strokeLinecap="round" />
+      <circle cx="122" cy="92" r="4" fill={GOLD} />
+    </Base>
+  );
+}
+
 /* ── 기본 제공 품목 아이콘 세트 ── */
 
 function IconAircon() {

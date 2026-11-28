@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { photoTagLabel } from '@/lib/precentOfficetelTags';
+import { photoTagLabel, parsePhotoCaption } from '@/lib/precentOfficetelTags';
 import styles from './officetel.module.css';
 import type { OfficetelPhoto } from './OfficetelLanding';
 
@@ -49,7 +49,8 @@ export default function PhotoLightbox({
   const photo = state.photos[state.index];
   if (!photo) return null;
   const hasMultiple = state.photos.length > 1;
-  const alt = photo.caption || `프리센트 오피스텔 ${photoTagLabel(photo.tag)}`;
+  const { text: cleanCaption, isImageCut } = parsePhotoCaption(photo.caption);
+  const alt = cleanCaption || `프리센트 오피스텔 ${photoTagLabel(photo.tag)}`;
 
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0]?.clientX ?? null; };
   const onTouchEnd = (e: React.TouchEvent) => {
@@ -72,9 +73,12 @@ export default function PhotoLightbox({
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo.url} alt={alt} className={styles.lightboxImg} />
-        {photo.caption && <p className={styles.lightboxCaption}>{photo.caption}</p>}
+        <div className={styles.lightboxImgWrap}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo.url} alt={alt} className={styles.lightboxImg} />
+          {isImageCut && <span className={styles.imageCutBadge}>이미지컷</span>}
+        </div>
+        {cleanCaption && <p className={styles.lightboxCaption}>{cleanCaption}</p>}
       </div>
       {hasMultiple && state.index > 0 && (
         <button

@@ -4,6 +4,9 @@ export const PHOTO_TAGS = [
   { value: 'view', label: '전망' },
   { value: 'exterior', label: '외관' },
   { value: 'around', label: '주변' },
+  { value: 'transport', label: '교통' },
+  { value: 'infra', label: '생활인프라' },
+  { value: 'school', label: '교육' },
   { value: 'floorplan', label: '평면도' },
 ] as const;
 
@@ -20,4 +23,13 @@ export function isMissingColumnError(error: { code?: string; message?: string } 
   if (!error) return false;
   if (error.code === '42703') return true;
   return /column .* does not exist/i.test(error.message ?? '');
+}
+
+// 설명(caption) 끝에 "(이미지컷)"을 적으면 화면에서는 그 문구를 지우고 대신 작은 배지로 표시한다.
+// (참고용 이미지라는 뜻 — 분양사 제공 이미지컷 등) 모자이크/줄 사진/라이트박스가 공용으로 사용.
+export function parsePhotoCaption(caption?: string | null): { text: string | null; isImageCut: boolean } {
+  if (!caption) return { text: null, isImageCut: false };
+  const isImageCut = caption.includes('이미지컷');
+  const text = caption.replace(/\(?\s*이미지컷\s*\)?/g, '').trim();
+  return { text: text || null, isImageCut };
 }

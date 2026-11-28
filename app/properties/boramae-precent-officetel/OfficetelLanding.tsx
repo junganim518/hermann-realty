@@ -8,10 +8,11 @@ import MobileInquiryBar from './MobileInquiryBar';
 import CountUpValue from './CountUpValue';
 import PhotoLightbox, { type LightboxState } from './PhotoLightbox';
 import { notoSansKR, notoSerifKR } from './fonts';
-import { photoTagLabel } from '@/lib/precentOfficetelTags';
+import { photoTagLabel, parsePhotoCaption } from '@/lib/precentOfficetelTags';
 import { OFFICETEL_MAP_EMBED_SRC, OFFICETEL_MAP_SEARCH_URL } from './mapConstants';
 import {
   BenefitIllustration, ComplexIllustration, BuildingIllustration, TargetIllustration, FaqIllustration,
+  TransportRowIllustration, InfraRowIllustration, SchoolRowIllustration,
   ITEM_ICON_MAP, matchItemIcon, LOCATION_ICON_MAP, matchLocationIcon,
 } from './Illustrations';
 import styles from './officetel.module.css';
@@ -93,6 +94,18 @@ export function parseStats(text?: string | null): StatItem[] {
   });
 }
 
+export type LocationGroup = 'transport' | 'school' | 'infra';
+
+const TRANSPORT_KEYS = ['지하철', '역', '호선', '버스', '환승', '도로', 'IC', '고속'];
+const SCHOOL_KEYS = ['학교', '학군', '초', '중', '고', '학원'];
+
+// 입지·교통 각 줄을 교통/교육/생활 인프라 세 그룹으로 자동 분류(그 외 전부는 생활 인프라).
+export function classifyLocationLine(line: string): LocationGroup {
+  if (TRANSPORT_KEYS.some(k => line.includes(k))) return 'transport';
+  if (SCHOOL_KEYS.some(k => line.includes(k))) return 'school';
+  return 'infra';
+}
+
 function SectionHead({ eyebrow, title, sub, icon }: { eyebrow: string; title: string; sub?: string; icon?: React.ReactNode }) {
   return (
     <div className={styles.sectionHead} data-reveal>
@@ -107,7 +120,7 @@ function SectionHead({ eyebrow, title, sub, icon }: { eyebrow: string; title: st
 
 function CheckList({ lines, emphasizeFirst }: { lines: string[]; emphasizeFirst?: boolean }) {
   return (
-    <ul className={styles.checkList} data-reveal>
+    <ul className={styles.checkList}>
       {lines.map((line, i) => (
         <li key={i} className={styles.checkItem}>
           <span className={styles.checkIconWrap}>
@@ -120,37 +133,65 @@ function CheckList({ lines, emphasizeFirst }: { lines: string[]; emphasizeFirst?
   );
 }
 
-// 단지 개요/건물 특징/추천 대상 옆에 태그 사진이 있으면 사진을, 없으면 전달받은 일러스트를
-// 2열(데스크톱)로 보여준다. 사진도 일러스트도 없을 때만 children만 그대로 보여준다.
-function ZigzagWrap({
-  photo, side, tagValue, onOpen, illustration, children,
+// 입지·교통 각 줄(키워드 아이콘 포함) — 건물/추천 CheckList와 달리 매칭된 교통·쇼핑·공원·학교 아이콘을 쓴다.
+function LocList({ lines }: { lines: string[] }) {
+  return (
+    <ul className={styles.rowList}>
+      {lines.map((line, i) => {
+        const Icon = LOCATION_ICON_MAP[matchLocationIcon(line)];
+        return (
+          <li key={i} className={styles.rowListItem}>
+            <span className={styles.rowListIcon}><Icon /></span>
+            <span className={i === 0 ? styles.checkItemStrong : undefined}>{line}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// 사진 + 글이 좌우로 번갈아 나오는 "줄" 하나. 사진이 있으면 사진을, 없으면 일러스트를 보여준다.
+// 캡션에 "이미지컷"이 포함되면 문구는 지우고 작은 배지로만 표시(모자이크/라이트박스와 같은 규칙).
+function Row({
+  side, eyebrow, title, photo, tagValue, illustration, onOpen, divider, children,
 }: {
-  photo?: OfficetelPhoto;
   side: 'left' | 'right';
+  eyebrow: string;
+  title: string;
+  photo?: OfficetelPhoto;
   tagValue?: string;
+  illustration: React.ReactNode;
   onOpen: (photo: OfficetelPhoto) => void;
-  illustration?: React.ReactNode;
+  divider?: boolean;
   children: React.ReactNode;
 }) {
-  if (!photo && !illustration) return <>{children}</>;
+  const parsedCaption = photo ? parsePhotoCaption(photo.caption) : null;
   return (
-    <div className={`${styles.zigzag} ${side === 'left' ? styles.zigzagImageLeft : styles.zigzagImageRight}`} data-reveal>
-      <div className={styles.zigzagImage}>
-        {photo ? (
-          <button type="button" className={styles.zigzagImageWrap} onClick={() => onOpen(photo)} aria-label="사진 확대">
+    <div
+      className={`${styles.row} ${side === 'left' ? styles.rowImgLeft : styles.rowImgRight} ${divider ? styles.rowDivider : ''}`}
+      data-reveal
+    >
+      <div className={styles.rowImage}>
+        {photo && parsedCaption ? (
+          <button type="button" className={styles.rowImgWrap} onClick={() => onOpen(photo)} aria-label="사진 확대">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={photo.url}
-              alt={photo.caption || `프리센트 오피스텔 ${photoTagLabel(tagValue)}`}
+              alt={parsedCaption.text || `프리센트 오피스텔 ${photoTagLabel(tagValue)}`}
               loading="lazy"
-              className={styles.zigzagImg}
+              className={styles.rowImg}
             />
+            {parsedCaption.isImageCut && <span className={styles.imageCutBadge}>이미지컷</span>}
           </button>
         ) : (
-          <div className={styles.zigzagIlluWrap}>{illustration}</div>
+          <div className={styles.rowIlluWrap}>{illustration}</div>
         )}
       </div>
-      <div className={styles.zigzagContent}>{children}</div>
+      <div className={styles.rowContent}>
+        <span className={styles.rowEyebrow}>{eyebrow}</span>
+        <h3 className={styles.rowTitle}>{title}</h3>
+        {children}
+      </div>
     </div>
   );
 }
@@ -169,6 +210,7 @@ const INFO_ICON: Record<string, typeof Home> = {
 
 export default function OfficetelLanding({ data, photos }: { data: OfficetelPageData; photos: OfficetelPhoto[] }) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
+  const [mapActive, setMapActive] = useState(false);
   const openLightbox = (list: OfficetelPhoto[], index: number) => setLightbox({ photos: list, index });
 
   const heroPhoto = photos[0] ?? null;
@@ -194,24 +236,38 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
   const faqItems = parseFaq(data.faq_text);
   const statsItems = parseStats(data.stats_text);
 
-  // 태그별 사진 분배 — 평면도 제외한 전부는 모자이크, floorplan만 모아 평면도 섹션,
-  // exterior/around/view 첫 사진은 각 섹션 옆 지그재그 사진으로 사용.
-  const mosaicPhotos = photos.filter(p => p.tag !== 'floorplan');
-  const floorplanPhotos = photos.filter(p => p.tag === 'floorplan');
+  const transportLines = locationLines.filter(l => classifyLocationLine(l) === 'transport');
+  const schoolLines = locationLines.filter(l => classifyLocationLine(l) === 'school');
+  const infraLines = locationLines.filter(l => classifyLocationLine(l) === 'infra');
+
+  // 각 "줄"에 쓰는 태그별 첫 사진 — 줄에 실제로 쓰인 사진은 모자이크에서 제외해 중복 노출을 막는다.
+  // (같은 태그 사진이 2장 이상이면 첫 사진만 줄에 쓰고 나머지는 모자이크에 그대로 남는다)
   const firstByTag = (tag: string) => photos.find(p => p.tag === tag);
   const exteriorPhoto = firstByTag('exterior');
-  const aroundPhoto = firstByTag('around');
   const viewPhoto = firstByTag('view');
+  const transportPhoto = firstByTag('transport');
+  const infraPhoto = firstByTag('infra') ?? firstByTag('around');
+  const schoolPhoto = firstByTag('school');
+
+  const usedPhotoIds = new Set(
+    [exteriorPhoto, viewPhoto, transportPhoto, infraPhoto, schoolPhoto].filter((p): p is OfficetelPhoto => !!p).map(p => p.id)
+  );
+  const floorplanPhotos = photos.filter(p => p.tag === 'floorplan');
+  const mosaicPhotos = photos.filter(p => p.tag !== 'floorplan' && !usedPhotoIds.has(p.id));
 
   const title = data.title ?? '프리센트 오피스텔 특별분양';
   const rootId = 'of-landing-root';
 
-  // 자동 번호 — 값이 있는 섹션만 실제로 렌더링되는 순서대로 01, 02, ... 가 매겨짐(하드코딩 없음)
+  // 자동 번호 — 값이 있는 섹션만 실제로 렌더링되는 순서대로 01, 02, ... 가 매겨짐(하드코딩 없음).
+  // 사진+글 줄(단지 개요/입지·교통/건물·추천)은 줄 안에 영문 소제목을 바로 쓰므로 번호를 매기지 않는다.
   let sectionCounter = 0;
   const sectionNum = () => String(++sectionCounter).padStart(2, '0');
 
   const mosaicVisible = mosaicPhotos.length >= 5 ? mosaicPhotos.slice(0, 5) : mosaicPhotos;
   const mosaicMoreCount = mosaicPhotos.length > 5 ? mosaicPhotos.length - 5 : 0;
+
+  // 입지·교통 줄 사이 점선 구분선 — 이 섹션에서 실제로 렌더되는 첫 줄만 구분선을 안 그린다.
+  let locRowIndex = 0;
 
   return (
     <main id={rootId} className={`${styles.root} ${notoSansKR.variable} ${notoSerifKR.variable}`}>
@@ -267,7 +323,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         </section>
       )}
 
-      {/* ── 핵심 정보 ── */}
+      {/* ── 핵심 정보 (compact: 아이콘 왼쪽, 라벨/값 오른쪽) ── */}
       {infoItems.length > 0 && (
         <section className={styles.sectionLight}>
           <div className={styles.wrap}>
@@ -278,10 +334,12 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
                 return (
                   <div key={item.key} className={styles.infoCard} data-reveal-card>
                     <div className={styles.infoIconWrap}>
-                      <Icon size={22} color="#B8873B" strokeWidth={1.8} />
+                      <Icon size={20} color="#B8873B" strokeWidth={1.8} />
                     </div>
-                    <div className={styles.infoLabel}>{item.label}</div>
-                    <div className={styles.infoValue}>{item.value}</div>
+                    <div className={styles.infoTextWrap}>
+                      <div className={styles.infoLabel}>{item.label}</div>
+                      <div className={styles.infoValue}>{item.value}</div>
+                    </div>
                   </div>
                 );
               })}
@@ -299,6 +357,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
               {mosaicVisible.map((p, i) => {
                 const isBig = mosaicPhotos.length >= 5 && i === 0;
                 const isOverlay = mosaicMoreCount > 0 && i === mosaicVisible.length - 1;
+                const { text: cleanCaption, isImageCut } = parsePhotoCaption(p.caption);
                 return (
                   <button
                     key={p.id}
@@ -310,10 +369,11 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={p.url}
-                      alt={p.caption || `프리센트 오피스텔 ${photoTagLabel(p.tag)}`}
+                      alt={cleanCaption || `프리센트 오피스텔 ${photoTagLabel(p.tag)}`}
                       loading="lazy"
                       className={styles.mosaicImg}
                     />
+                    {isImageCut && !isOverlay && <span className={styles.imageCutBadge}>이미지컷</span>}
                     {isOverlay && (
                       <span className={styles.mosaicMore}>+{mosaicMoreCount}장 더보기</span>
                     )}
@@ -351,48 +411,53 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
           <div className={`${styles.wrap} ${styles.wrapNarrow}`}>
             <SectionHead eyebrow={`${sectionNum()} · Floor Plan`} title="평면도" />
             <div className={styles.floorplanRow} data-reveal>
-              {floorplanPhotos.map((p, i) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={styles.floorplanCard}
-                  onClick={() => openLightbox(floorplanPhotos, i)}
-                >
-                  <div className={styles.floorplanImgWrap}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.url}
-                      alt={p.caption || `프리센트 오피스텔 ${photoTagLabel('floorplan')}`}
-                      loading="lazy"
-                      className={styles.floorplanImg}
-                    />
-                  </div>
-                  {(data.area_text || p.caption) && (
-                    <div className={styles.floorplanMeta}>
-                      {[data.area_text, p.caption].filter(Boolean).join(' · ')}
+              {floorplanPhotos.map((p, i) => {
+                const { text: cleanCaption, isImageCut } = parsePhotoCaption(p.caption);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={styles.floorplanCard}
+                    onClick={() => openLightbox(floorplanPhotos, i)}
+                  >
+                    <div className={styles.floorplanImgWrap}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.url}
+                        alt={cleanCaption || `프리센트 오피스텔 ${photoTagLabel('floorplan')}`}
+                        loading="lazy"
+                        className={styles.floorplanImg}
+                      />
+                      {isImageCut && <span className={styles.imageCutBadge}>이미지컷</span>}
                     </div>
-                  )}
-                </button>
-              ))}
+                    {(data.area_text || cleanCaption) && (
+                      <div className={styles.floorplanMeta}>
+                        {[data.area_text, cleanCaption].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
             <p className={styles.floorplanNote}>평면도는 이해를 돕기 위한 것으로 실제와 일부 다를 수 있습니다.</p>
           </div>
         </section>
       )}
 
-      {/* ── 단지 개요 ── */}
+      {/* ── 단지 개요: 사진+글 한 줄 ── */}
       {overviewRows.length > 0 && (
         <section className={styles.sectionAlt}>
           <div className={styles.wrap}>
-            <SectionHead eyebrow={`${sectionNum()} · Complex`} title="단지 개요" />
-            <ZigzagWrap
-              photo={exteriorPhoto}
+            <Row
               side="left"
+              eyebrow="Complex"
+              title="단지 개요"
+              photo={exteriorPhoto}
               tagValue="exterior"
-              onOpen={p => openLightbox([p], 0)}
               illustration={<ComplexIllustration />}
+              onOpen={p => openLightbox([p], 0)}
             >
-              <div className={styles.overviewTable} data-reveal>
+              <div className={styles.overviewTable}>
                 {overviewRows.map((row, i) => (
                   <div key={i} className={`${styles.overviewRow}${row.label ? '' : ` ${styles.full}`}`}>
                     {row.label && <div className={styles.overviewLabel}>{row.label}</div>}
@@ -400,7 +465,7 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
                   </div>
                 ))}
               </div>
-            </ZigzagWrap>
+            </Row>
           </div>
         </section>
       )}
@@ -425,16 +490,12 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
         </section>
       )}
 
-      {/* ── 입지·교통: 지도(+사진이 있으면 함께), 아래에 아이콘 목록 ── */}
+      {/* ── 입지·교통: 큰 지도 + 교통/생활 인프라/교육 줄 ── */}
       {locationLines.length > 0 && (
         <section className={styles.sectionAlt}>
           <div className={styles.wrap}>
-            <SectionHead eyebrow={`${sectionNum()} · Location`} title="입지·교통" />
-            <div
-              className={`${styles.mapRow} ${aroundPhoto ? styles.mapRowWithPhoto : styles.mapRowSingle}`}
-              data-reveal
-            >
-              <div className={styles.mapFrameWrap}>
+            <div className={styles.mapWrap} data-reveal>
+              <div className={`${styles.mapFrameWrap} ${mapActive ? styles.mapFrameActive : ''}`}>
                 <iframe
                   src={OFFICETEL_MAP_EMBED_SRC}
                   loading="lazy"
@@ -442,71 +503,100 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
                   title="동작 보라매역 프리센트 위치 지도"
                   className={styles.mapFrame}
                 />
-              </div>
-              {aroundPhoto && (
-                <button
-                  type="button"
-                  className={styles.mapPhotoWrap}
-                  onClick={() => openLightbox([aroundPhoto], 0)}
-                  aria-label="주변 사진 확대"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={aroundPhoto.url}
-                    alt={aroundPhoto.caption || `프리센트 오피스텔 ${photoTagLabel('around')}`}
-                    loading="lazy"
-                    className={styles.mapPhotoImg}
+                {!mapActive && (
+                  <button
+                    type="button"
+                    className={styles.mapTapOverlay}
+                    aria-label="지도를 터치하면 지도를 조작할 수 있습니다"
+                    onClick={() => setMapActive(true)}
                   />
-                </button>
-              )}
+                )}
+              </div>
+              <div className={styles.mapFooter}>
+                <a href={OFFICETEL_MAP_SEARCH_URL} target="_blank" rel="noopener noreferrer" className={styles.mapLink}>
+                  지도 크게 보기 →
+                </a>
+                <p className={styles.mapCaption}>
+                  ※ 상기 지역은 소비자의 이해를 돕기 위한 것으로 실제와 차이가 있을 수 있습니다.
+                </p>
+              </div>
             </div>
-            <div className={styles.mapFooter}>
-              <a href={OFFICETEL_MAP_SEARCH_URL} target="_blank" rel="noopener noreferrer" className={styles.mapLink}>
-                지도 크게 보기 →
-              </a>
-              <p className={styles.mapCaption}>지도는 대략적인 위치이며 실제와 다를 수 있습니다.</p>
-            </div>
-            <div className={styles.locationListWrap} data-reveal>
-              {locationLines.map((line, i) => {
-                const Icon = LOCATION_ICON_MAP[matchLocationIcon(line)];
-                return (
-                  <div key={i} className={styles.iconListItem}>
-                    <span className={styles.iconListIconWrap}><Icon /></span>
-                    <span className={i === 0 ? styles.checkItemStrong : undefined}>{line}</span>
-                  </div>
-                );
-              })}
-            </div>
+
+            {transportLines.length > 0 && (
+              <Row
+                side="left"
+                eyebrow="Fast Traffic"
+                title="교통"
+                photo={transportPhoto}
+                tagValue="transport"
+                illustration={<TransportRowIllustration />}
+                onOpen={p => openLightbox([p], 0)}
+                divider={locRowIndex++ > 0}
+              >
+                <LocList lines={transportLines} />
+              </Row>
+            )}
+            {infraLines.length > 0 && (
+              <Row
+                side="right"
+                eyebrow="Daily Infra"
+                title="생활 인프라"
+                photo={infraPhoto}
+                tagValue="infra"
+                illustration={<InfraRowIllustration />}
+                onOpen={p => openLightbox([p], 0)}
+                divider={locRowIndex++ > 0}
+              >
+                <LocList lines={infraLines} />
+              </Row>
+            )}
+            {schoolLines.length > 0 && (
+              <Row
+                side="left"
+                eyebrow="Education"
+                title="교육"
+                photo={schoolPhoto}
+                tagValue="school"
+                illustration={<SchoolRowIllustration />}
+                onOpen={p => openLightbox([p], 0)}
+                divider={locRowIndex++ > 0}
+              >
+                <LocList lines={schoolLines} />
+              </Row>
+            )}
           </div>
         </section>
       )}
 
-      {/* ── 건물·주거 특징 ── */}
-      {buildingLines.length > 0 && (
+      {/* ── 건물·주거 특징 / 이런 분께 추천 — 한 섹션에 두 줄(번갈아) ── */}
+      {(buildingLines.length > 0 || targetLines.length > 0) && (
         <section className={styles.sectionLight}>
           <div className={styles.wrap}>
-            <SectionHead eyebrow={`${sectionNum()} · Building`} title="건물·주거 특징" />
-            <ZigzagWrap
-              photo={viewPhoto}
-              side="right"
-              tagValue="view"
-              onOpen={p => openLightbox([p], 0)}
-              illustration={<BuildingIllustration />}
-            >
-              <CheckList lines={buildingLines} />
-            </ZigzagWrap>
-          </div>
-        </section>
-      )}
-
-      {/* ── 이런 분께 추천 ── */}
-      {targetLines.length > 0 && (
-        <section className={styles.sectionAlt}>
-          <div className={styles.wrap}>
-            <SectionHead eyebrow={`${sectionNum()} · Who`} title="이런 분께 추천합니다" />
-            <ZigzagWrap side="left" onOpen={p => openLightbox([p], 0)} illustration={<TargetIllustration />}>
-              <CheckList lines={targetLines} />
-            </ZigzagWrap>
+            {buildingLines.length > 0 && (
+              <Row
+                side="left"
+                eyebrow="Living"
+                title="건물·주거 특징"
+                photo={viewPhoto}
+                tagValue="view"
+                illustration={<BuildingIllustration />}
+                onOpen={p => openLightbox([p], 0)}
+              >
+                <CheckList lines={buildingLines} />
+              </Row>
+            )}
+            {targetLines.length > 0 && (
+              <Row
+                side="right"
+                eyebrow="For You"
+                title="이런 분께 추천합니다"
+                illustration={<TargetIllustration />}
+                onOpen={p => openLightbox([p], 0)}
+                divider={buildingLines.length > 0}
+              >
+                <CheckList lines={targetLines} />
+              </Row>
+            )}
           </div>
         </section>
       )}
