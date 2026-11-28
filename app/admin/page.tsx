@@ -1212,8 +1212,6 @@ function AdminDashboardInner() {
             <div className="prop-mgmt-mobile-links">
               <a href="/admin/broker-share">🤝 공동중개 리스트</a>
               <a href="/admin/agents">👤 담당자 관리</a>
-              <a href="/admin/precent-units">🏢 프리센트 호실</a>
-              <a href="/admin/precent-officetel">🏠 프리센트 오피스텔</a>
               <a href="/admin/trash">🗑️ 휴지통{trashCount > 0 ? ` (${trashCount})` : ''}</a>
             </div>
             {/* 컨트롤 그룹 */}
@@ -1273,12 +1271,6 @@ function AdminDashboardInner() {
                 </a>
                 <a href="/admin/agents" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   👤 담당자 관리
-                </a>
-                <a href="/admin/precent-units" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  🏢 프리센트 호실
-                </a>
-                <a href="/admin/precent-officetel" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  🏠 프리센트 오피스텔
                 </a>
                 <a href="/admin/trash" className="prop-mgmt-register-d" style={{ fontSize: '13px', color: '#888', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   🗑️ 휴지통{trashCount > 0 ? ` (${trashCount})` : ''}
