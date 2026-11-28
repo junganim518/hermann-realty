@@ -155,9 +155,6 @@ const INFO_ICON: Record<string, typeof Home> = {
   approval_date_text: FileCheck,
 };
 
-// 공간 둘러보기에 쓰는 태그 순서 — floorplan/exterior/around는 평면도·지그재그 전용이라 여기선 제외
-const SPACE_TAGS = ['living', 'bedroom', 'kitchen', 'bath', 'view'] as const;
-
 export default function OfficetelLanding({ data, photos }: { data: OfficetelPageData; photos: OfficetelPhoto[] }) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const openLightbox = (list: OfficetelPhoto[], index: number) => setLightbox({ photos: list, index });
@@ -186,13 +183,10 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
   const statsItems = parseStats(data.stats_text);
 
   // 태그별 사진 분배 — 평면도 제외한 전부는 모자이크, floorplan만 모아 평면도 섹션,
-  // living/bedroom/kitchen/bath/view 각각 첫 사진만 공간 둘러보기, exterior/around/view 첫 사진은 지그재그.
+  // exterior/around/view 첫 사진은 각 섹션 옆 지그재그 사진으로 사용.
   const mosaicPhotos = photos.filter(p => p.tag !== 'floorplan');
   const floorplanPhotos = photos.filter(p => p.tag === 'floorplan');
   const firstByTag = (tag: string) => photos.find(p => p.tag === tag);
-  const spaceCards = SPACE_TAGS
-    .map(tag => ({ tag, photo: firstByTag(tag) }))
-    .filter((c): c is { tag: typeof SPACE_TAGS[number]; photo: OfficetelPhoto } => !!c.photo);
   const exteriorPhoto = firstByTag('exterior');
   const aroundPhoto = firstByTag('around');
   const viewPhoto = firstByTag('view');
@@ -329,38 +323,6 @@ export default function OfficetelLanding({ data, photos }: { data: OfficetelPage
               <p className={styles.benefitBody}>
                 {data.guarantee_detail || '보장 금액 및 세부 조건은 문의 시 안내드립니다.'}
               </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── 공간 둘러보기 ── */}
-      {spaceCards.length > 0 && (
-        <section className={styles.sectionAlt}>
-          <div className={styles.wrap}>
-            <SectionHead eyebrow={`${sectionNum()} · Spaces`} title="공간 둘러보기" />
-            <div className={styles.spaceGrid}>
-              {spaceCards.map(({ tag, photo }) => (
-                <button
-                  key={tag}
-                  type="button"
-                  className={styles.spaceCard}
-                  data-reveal-card
-                  onClick={() => openLightbox([photo], 0)}
-                >
-                  <div className={styles.spaceImgWrap}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.url}
-                      alt={photo.caption || `프리센트 오피스텔 ${photoTagLabel(tag)}`}
-                      loading="lazy"
-                      className={styles.spaceImg}
-                    />
-                    <span className={styles.spaceBadge}>{photoTagLabel(tag)}</span>
-                  </div>
-                  {photo.caption && <p className={styles.spaceCaption}>{photo.caption}</p>}
-                </button>
-              ))}
             </div>
           </div>
         </section>

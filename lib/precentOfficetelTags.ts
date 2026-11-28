@@ -1,10 +1,6 @@
 // 프리센트 오피스텔 특별분양 페이지의 사진 용도 태그 — 관리자 사진 관리 화면과
 // 방문자/미리보기 화면(OfficetelLanding)이 공용으로 쓰는 단일 정의.
 export const PHOTO_TAGS = [
-  { value: 'living', label: '거실' },
-  { value: 'bedroom', label: '침실' },
-  { value: 'kitchen', label: '주방' },
-  { value: 'bath', label: '욕실' },
   { value: 'view', label: '전망' },
   { value: 'exterior', label: '외관' },
   { value: 'around', label: '주변' },

@@ -290,7 +290,7 @@ export default function OfficetelPhotos({ onError }: { onError: (msg: string | n
   return (
     <div>
       <p style={{ fontSize: '12px', color: '#999', margin: '0 0 12px 0', lineHeight: 1.6 }}>
-        용도를 지정하면 방문자 페이지의 해당 위치(공간 둘러보기, 평면도, 단지·입지 옆 사진)에 자동으로 들어갑니다.
+        용도를 지정하면 방문자 페이지의 해당 위치(평면도, 단지 개요·입지·건물 특징 옆 사진)에 자동으로 들어갑니다.
         평면도는 호수 표시나 위치도(KEY MAP)가 있으면 지우고 올려주세요. 분양사 자료는 광고 사용 허락을 확인하세요.
       </p>
 
