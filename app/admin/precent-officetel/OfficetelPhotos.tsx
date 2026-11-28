@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { triggerPrecentRevalidate } from '@/lib/triggerPrecentRevalidate';
+import { PHOTO_TAGS, isMissingColumnError } from '@/lib/precentOfficetelTags';
 import {
   DndContext,
   closestCenter,
@@ -20,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type Photo = { id: string; url: string; sort_order: number };
+type Photo = { id: string; url: string; sort_order: number; tag: string | null; caption: string | null };
 
 // 오피스텔 소개 사진 업로드 전 브라우저에서 WebP로 변환 — 호실 사진 관리(PhotoManagerModal)와 동일 기준
 const compressToWebP = (file: File, maxWidth = 1600, quality = 0.82): Promise<File> => {
@@ -56,20 +57,25 @@ const compressToWebP = (file: File, maxWidth = 1600, quality = 0.82): Promise<Fi
   });
 };
 
-function SortablePhotoThumb({
+function SortablePhotoCard({
   photo,
   index,
   onDelete,
+  onUpdateField,
 }: {
   photo: Photo;
   index: number;
   onDelete: (photo: Photo) => void;
+  onUpdateField: (photo: Photo, field: 'tag' | 'caption', value: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.id });
+  const [captionDraft, setCaptionDraft] = useState(photo.caption ?? '');
+
+  useEffect(() => { setCaptionDraft(photo.caption ?? ''); }, [photo.caption]);
 
   const style: React.CSSProperties = {
-    position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1 / 1',
-    background: '#f3f4f6',
+    position: 'relative', borderRadius: '10px', overflow: 'hidden', background: '#fff',
+    border: '1px solid #eee', display: 'flex', flexDirection: 'column',
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
@@ -79,31 +85,54 @@ function SortablePhotoThumb({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <img src={photo.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      <span
-        {...attributes}
-        {...listeners}
-        aria-label="순서 변경 손잡이"
-        style={{
-          position: 'absolute', top: '4px', left: '4px', width: '26px', height: '26px', borderRadius: '50%',
-          background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '15px', lineHeight: 1,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none',
-        }}
-      >⠿</span>
-      {index === 0 && (
-        <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
-          대표
-        </span>
-      )}
-      <button
-        onClick={() => onDelete(photo)}
-        aria-label="삭제"
-        style={{
-          position: 'absolute', bottom: '4px', right: '4px', width: '26px', height: '26px', borderRadius: '50%',
-          border: 'none', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '13px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >✕</button>
+      <div style={{ position: 'relative', aspectRatio: '4 / 3', background: '#f3f4f6', flexShrink: 0 }}>
+        <img src={photo.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <span
+          {...attributes}
+          {...listeners}
+          aria-label="순서 변경 손잡이"
+          style={{
+            position: 'absolute', top: '4px', left: '4px', width: '26px', height: '26px', borderRadius: '50%',
+            background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '15px', lineHeight: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none',
+          }}
+        >⠿</span>
+        {index === 0 && (
+          <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#c47c30', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+            대표
+          </span>
+        )}
+        <button
+          onClick={() => onDelete(photo)}
+          aria-label="삭제"
+          style={{
+            position: 'absolute', bottom: '4px', right: '4px', width: '26px', height: '26px', borderRadius: '50%',
+            border: 'none', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '13px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >✕</button>
+      </div>
+      <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <select
+          value={photo.tag ?? ''}
+          onChange={e => onUpdateField(photo, 'tag', e.target.value)}
+          style={{ width: '100%', height: '30px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '5px', padding: '0 4px', background: '#fff', color: '#333', boxSizing: 'border-box' }}
+        >
+          <option value="">미분류</option>
+          {PHOTO_TAGS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        <input
+          type="text"
+          value={captionDraft}
+          onChange={e => setCaptionDraft(e.target.value.slice(0, 40))}
+          onBlur={() => {
+            if (captionDraft !== (photo.caption ?? '')) onUpdateField(photo, 'caption', captionDraft);
+          }}
+          placeholder="설명(선택, 최대 40자)"
+          maxLength={40}
+          style={{ width: '100%', height: '30px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '5px', padding: '0 8px', boxSizing: 'border-box' }}
+        />
+      </div>
     </div>
   );
 }
@@ -116,12 +145,15 @@ export default function OfficetelPhotos({ onError }: { onError: (msg: string | n
   const busyRef = useRef(false);
 
   const load = async () => {
+    // select('*') — tag/caption 컬럼이 아직 없는(SQL 미실행) 상태에서도 에러 없이 동작해야 함
     const { data, error } = await supabase
       .from('precent_officetel_photos')
-      .select('id, url, sort_order')
+      .select('*')
       .order('sort_order');
     if (error) { onError(`사진 목록을 불러오지 못했습니다: ${error.message}`); setLoading(false); return; }
-    setPhotos((data ?? []) as Photo[]);
+    setPhotos((data ?? []).map((p: any) => ({
+      id: p.id, url: p.url, sort_order: p.sort_order, tag: p.tag ?? null, caption: p.caption ?? null,
+    })));
     setLoading(false);
   };
 
@@ -208,6 +240,18 @@ export default function OfficetelPhotos({ onError }: { onError: (msg: string | n
     triggerPrecentRevalidate('/properties/boramae-precent-officetel');
   };
 
+  const handleUpdateField = async (photo: Photo, field: 'tag' | 'caption', value: string) => {
+    const patch = { [field]: value || null };
+    setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, ...patch } : p));
+    const { error } = await supabase.from('precent_officetel_photos').update(patch).eq('id', photo.id);
+    if (error) {
+      onError(isMissingColumnError(error) ? 'SQL 적용이 필요합니다 (precent_officetel_media.sql 실행 후 다시 시도하세요)' : `저장 실패: ${error.message}`);
+      return;
+    }
+    onError(null);
+    triggerPrecentRevalidate('/properties/boramae-precent-officetel');
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 0, tolerance: 5 } })
@@ -245,6 +289,11 @@ export default function OfficetelPhotos({ onError }: { onError: (msg: string | n
 
   return (
     <div>
+      <p style={{ fontSize: '12px', color: '#999', margin: '0 0 12px 0', lineHeight: 1.6 }}>
+        용도를 지정하면 방문자 페이지의 해당 위치(공간 둘러보기, 평면도, 단지·입지 옆 사진)에 자동으로 들어갑니다.
+        평면도는 호수 표시나 위치도(KEY MAP)가 있으면 지우고 올려주세요. 분양사 자료는 광고 사용 허락을 확인하세요.
+      </p>
+
       <label style={{ display: 'block', marginBottom: '12px' }}>
         <div style={{ border: '2px dashed #ddd', borderRadius: '8px', padding: '18px', textAlign: 'center', cursor: uploading ? 'not-allowed' : 'pointer', color: '#888', fontSize: '13px' }}>
           {uploading && uploadProgress
@@ -276,9 +325,9 @@ export default function OfficetelPhotos({ onError }: { onError: (msg: string | n
           </p>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={photos.map(p => p.id)} strategy={rectSortingStrategy}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px' }}>
                 {photos.map((p, i) => (
-                  <SortablePhotoThumb key={p.id} photo={p} index={i} onDelete={handleDelete} />
+                  <SortablePhotoCard key={p.id} photo={p} index={i} onDelete={handleDelete} onUpdateField={handleUpdateField} />
                 ))}
               </div>
             </SortableContext>

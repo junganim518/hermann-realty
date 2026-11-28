@@ -28,9 +28,10 @@ async function fetchPublicPage() {
 }
 
 async function fetchPublicPhotos(): Promise<OfficetelPhoto[]> {
+  // select('*') — tag/caption 컬럼이 아직 없는(SQL 미실행) 상태에서도 에러 없이 동작해야 함
   const { data } = await supabaseNoStore
     .from('precent_officetel_photos_public')
-    .select('id, url, sort_order')
+    .select('*')
     .order('sort_order');
   return (data ?? []) as OfficetelPhoto[];
 }

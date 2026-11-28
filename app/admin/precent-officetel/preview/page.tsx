@@ -26,7 +26,7 @@ export default function PrecentOfficetelPreviewPage() {
     (async () => {
       const [{ data: pageRow, error: pageErr }, { data: photoRows, error: photoErr }] = await Promise.all([
         supabase.from('precent_officetel_page').select('*').eq('id', 1).maybeSingle(),
-        supabase.from('precent_officetel_photos').select('id, url, sort_order').order('sort_order'),
+        supabase.from('precent_officetel_photos').select('*').order('sort_order'),
       ]);
       if (pageErr) { setErrorMsg(`불러오기 실패: ${pageErr.message}`); setLoading(false); return; }
       if (photoErr) { setErrorMsg(`사진 불러오기 실패: ${photoErr.message}`); setLoading(false); return; }

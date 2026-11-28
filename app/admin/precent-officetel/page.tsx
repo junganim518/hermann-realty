@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { triggerPrecentRevalidate } from '@/lib/triggerPrecentRevalidate';
 import OfficetelPhotos from './OfficetelPhotos';
+import { isMissingColumnError } from '@/lib/precentOfficetelTags';
 
 type PageRow = {
   id: number;
@@ -30,6 +31,7 @@ type PageRow = {
   complex_text?: string | null;
   items_text?: string | null;
   faq_text?: string | null;
+  stats_text?: string | null;
   updated_at: string;
 };
 
@@ -203,7 +205,10 @@ export default function PrecentOfficetelAdminPage() {
       .from('precent_officetel_page')
       .update({ [field]: value, updated_at: new Date().toISOString() })
       .eq('id', 1);
-    if (error) { setErrorMsg(`저장 실패: ${error.message}`); return false; }
+    if (error) {
+      setErrorMsg(isMissingColumnError(error) ? 'SQL 적용이 필요합니다 (precent_officetel_media.sql 실행 후 다시 시도하세요)' : `저장 실패: ${error.message}`);
+      return false;
+    }
     setPage(prev => prev ? { ...prev, [field]: value, updated_at: new Date().toISOString() } as PageRow : prev);
     triggerPrecentRevalidate('/properties/boramae-precent-officetel');
     return true;
@@ -360,6 +365,10 @@ export default function PrecentOfficetelAdminPage() {
                   </FormRow>
                 </div>
               )}
+            </Section>
+
+            <Section title="숫자 띠" help="한 줄에 하나씩 '값 | 설명' 형식으로 적으세요. 예) 약 150m | 보라매역까지 — 비어 있으면 방문자 페이지에서 이 섹션이 숨겨집니다.">
+              <AutoField value={page.stats_text ?? ''} commit={commitField('stats_text')} placeholder="미입력" autoGrow />
             </Section>
 
             <Section title="수익보장">
